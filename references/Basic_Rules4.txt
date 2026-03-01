@@ -1,0 +1,567 @@
+BASIC RULES - AUTHORITATIVE DEFINITIONS
+- This document defines the authoritative mechanical rules of the game.
+- All systems, calculations, and resolutions described here are deterministic and take precedence over narrative interpretation unless explicitly stated otherwise.
+
+=== 1. CORE PROGRESSION SYSTEM (AUTHORITATIVE) ===
+- This section defines all rules related to character advancement, experience expenditure, and power scaling.
+- All level progression, XP costs, Challenge Rating (CR), and Rank calculations are resolved exclusively using the rules in this section
+
+1.1. STATS, SKILLS, AND SUPERNATURAL POWERS
+- Stats, Skills, and Supernatural Powers have Levels.
+- Levels are increased by spending Experience Points (XP) using the XP Buy tables.
+- Current cap: all Stats, Skills and Powers are limited to Level 5 unless explicitly stated otherwise.
+
+1.1.1. XP BUY TABLES
+- XP Buy tables are listed below under their respective table names.
+
+1.1.1.1. Stats
+| Level | Cumulative_XP_Required |
+| ----- | ---------------------- |
+| 1 | 0 |
+| 2 | 0 |
+| 3 | 6 |
+| 4 | 15 |
+| 5 | 27 |
+| 6 | 42 |
+| 7 | 60 |
+| 8 | 81 |
+| 9 | 105 |
+| 10 | 132 |
+
+1.1.1.2. T1 Skills
+| Level | Cumulative_XP_Required |
+| ----- | ---------------------- |
+| 1 | 3 |
+| 2 | 5 |
+| 3 | 9 |
+| 4 | 15 |
+| 5 | 23 |
+| 6 | 33 |
+| 7 | 45 |
+| 8 | 59 |
+| 9 | 75 |
+| 10 | 93 |
+
+1.1.1.3. T1 Powers
+| Level | Cumulative_XP_Required |
+| ----- | ---------------------- |
+| 1 | 10 |
+| 2 | 16 |
+| 3 | 28 |
+| 4 | 46 |
+| 5 | 70 |
+| 6 | 100 |
+| 7 | 136 |
+| 8 | 178 |
+| 9 | 226 |
+| 10 | 280 |
+
+1.1.1.4. T2 Skills
+| Level | Cumulative_XP_Required |
+| ----- | ---------------------- |
+| 1 | 0 |
+| 2 | 4 |
+| 3 | 12 |
+| 4 | 24 |
+| 5 | 40 |
+| 6 | 60 |
+| 7 | 84 |
+| 8 | 112 |
+| 9 | 144 |
+| 10 | 180 |
+
+1.1.1.5. T2 Powers
+| Level | Cumulative_XP_Required |
+| ----- | ---------------------- |
+| 1 | 0 |
+| 2 | 6 |
+| 3 | 18 |
+| 4 | 36 |
+| 5 | 60 |
+| 6 | 90 |
+| 7 | 126 |
+| 8 | 168 |
+| 9 | 216 |
+| 10 | 270 |
+
+1.1.1.6. Special Powers
+| Level | Cumulative_XP_Required |
+| ----- | ---------------------- |
+| 1 | 10 |
+| 2 | 20 |
+| 3 | 40 |
+| 4 | 70 |
+| 5 | 110 |
+| 6 | 160 |
+| 7 | 220 |
+| 8 | 290 |
+| 9 | 370 |
+| 10 | 460 |
+
+1.2. CHALLENGE RATING (CR) AND RANK
+
+1.2.1. General Rules
+- CR and Rank are determined solely by XP Used.
+- XP ranges are inclusive on the lower bound and exclusive on the upper bound.
+
+1.2.2. XP Used
+- XP Used is the total cumulative XP spent across all Stats, Skills, and Powers.
+- XP Used determines the character's Challenge Rating (CR) and Rank.
+- Exception: the highest CR band has no upper XP bound.
+
+1.2.3. XP USED TABLE
+
+| Rank | CR | XP_Used_Range |
+| ---- | -- | ------------- |
+| F | 0 | 0-32 |
+| E | 1 | 33-65 |
+| E | 2 | 66-98 |
+| D | 3 | 99-131 |
+| D | 4 | 132-164 |
+| C | 5 | 165-197 |
+| C | 6 | 198-230 |
+| C | 7 | 231-263 |
+| B | 8 | 264-296 |
+| B | 9 | 297-329 |
+| B | 10 | 330-362 |
+| B | 11 | 363-395 |
+| A | 12 | 396-428 |
+| A | 13 | 429-461 |
+| A | 14 | 462-494 |
+| A | 15 | 495-527 |
+| A | 16 | 528-560 |
+| A | 17 | 561-593 |
+| A | 18 | 594-626 |
+| A | 19 | 627-659 |
+| A | 20 | 660-692 |
+| A | 21 | 693-725 |
+| A | 22 | 726-758 |
+| A | 23 | 759-791 |
+| A | 24 | 792-824 |
+| A | 25 | 825-857 |
+| A | 26 | 858-890 |
+| A | 27 | 891-923 |
+| A | 28 | 924-956 |
+| A | 29 | 957-989 |
+| A | 30 | 990+ |
+
+
+=== 2. RESOLUTION SYSTEM (AUTHORITATIVE) ===
+- This section defines the universal dice and success-resolution mechanics used by all systems unless explicitly stated otherwise.
+
+2.1. Core Principle
+- This system uses a D10 success-counting mechanic.
+- The effective base difficulty threshold is 6.
+
+2.2. Dice Pool Construction
+- Let N be the total dice pool size.
+- N = relevant stat ranks + relevant skill ranks.
+
+2.3. Die Evaluation
+- Each die is evaluated independently.
+- Dice pool size (N) and die face value are separate concepts.
+
+2.4. Die results:
+- Roll of 1: -1 success
+- Roll of 2-5: 0 successes
+- Roll of 6-9: +1 success
+- Roll of 10:
+- +1 success if N < 10
+- +2 successes if N >= 10
+
+2.5. Result Calculation
+- Sum all success modifiers to obtain Total Successes.
+
+2.6. Botch Condition
+- If Total Successes < 0, the result is a Botch.
+- A Botch represents complete failure.
+- Interpretation and consequences are determined by the DM.
+- No other botch conditions exist.
+
+=== 3. ACTION ECONOMY (AUTHORITATIVE) ===
+- This section defines the action types available each turn and the rules governing their use and conversion.
+
+3.1. Turn Resources - Actions
+Each character turn provides:
+- 1 Standard Action
+- 1 Bonus Action
+- 1 Move Action
+- Reaction
+
+3.1.1. Standard Action
+- Used to perform a major action (attack, spell, complex interaction).
+- May be spent in place of one of the following:
+  - a Bonus Action, or
+  - a Move Action allowing up to 20 meters of movement, or
+  - Preparation of a Reaction (trigger defined at preparation time).
+
+3.1.2. Bonus Action
+- Represents minor actions (e.g., drawing or dropping a weapon, specific supernatural powers).
+- Cannot be converted into a Standard or Move Action.
+- A Standard Action may be spent in place of a Bonus Action to gain an additional Bonus Action.
+
+3.1.3. Move Action
+- Allows movement up to 5 meters, unless modified by another rule.
+- If a Standard Action is spent in place of a Move Action, the character may move up to 25 meters instead.
+
+3.1.4. Reaction
+- A Reaction is a contingent action that triggers automatically when a predefined condition occurs.
+- Reactions may be granted by rules, powers, or effects, or may be prepared in advance using a Standard Action.
+- Only the specified trigger and response occur; no additional actions may be taken at that time.
+- Unless explicitly stated otherwise, a Reaction may occur at most once per round.
+
+3.1.5. Restrictions
+- No other action conversions are allowed.
+
+=== 4. COMBAT RESOLUTION (AUTHORITATIVE) ===
+- This section defines how physical and magical attacks are resolved, including precedence rules, defensive resolution, and damage calculation.
+
+4.1. Damage Type Precedence
+- Every attack is either Physical or Magical.
+- Physical attacks use Physical Attack Resolution below.
+- Magical attacks use Magical Attack Resolution below.
+- DR applies only to Physical damage.
+- Soak applies only to Magical damage.
+- If any rule conflicts, this section overrides all others
+
+4.2. Magical Attack Resolution
+- Magical attacks bypass Attack Roll and Dodge entirely.
+- Magical attacks deal a fixed damage value as defined by the effect.
+- Final Magical Damage Taken = max(0, Magical Damage - Soak).
+- No dice are rolled during magical damage resolution unless explicitly stated by the effect.
+
+4.3. Physical Attack Resolution
+- This section defines the step-by-step resolution of physical attacks, including attack rolls, defensive resolution, hit comparison, and damage calculation.
+
+4.3.1. Attack Roll
+- Determine attack dice pool:
+- Melee: Dexterity + Melee + miscellaneous attack bonuses
+- Ranged: Dexterity + Ranged + miscellaneous attack bonuses
+- Roll using the D10 Success System.
+- Let A be the total number of attack successes.
+
+4.3.2. Automatic Dodge (Passive Defense)
+- Dodge is the defensive mechanism; Armor Class (AC) is its numeric value.
+- Dodge is a passive defense applied during hit resolution and does not consume actions or reactions.
+- Dodge is ignored only if explicitly disabled by a rule (e.g., paralysis).
+- All bonuses that modify Dodge contribute to Armor Class (AC).
+- Defender Dodge value (Armor Class, AC): AC = Dexterity + miscellaneous dodge bonuses
+
+4.3.3. Hit Resolution
+- Compare A and AC:
+- If AC > A, the attack misses.
+- If A > AC, the attack hits and M = A - AC.
+- If A = AC:
+- If a player character is involved, the player wins the tie.
+- Otherwise, the defender wins.
+
+4.3.4. Damage Resolution (Hit Only)
+- Determine attacker Damage Pool (DP):
+- DP = weapon damage + all damage bonuses
+- Total Damage Pool:
+- DP + M
+- Roll the Total Damage Pool using the D10 Success System.
+- Final Damage Taken:
+- max(0, damage successes - defender DR)
+
+=== 5. CHARACTER ATTRIBUTES (AUTHORITATIVE) ===
+- This section defines a character's core attributes and how each stat contributes to dice pools, defenses, and derived mechanics.
+
+5.1. STATS
+- Stats represent a character's core physical, mental and social attributes.
+- Stat levels are added directly to relevant dice pools when used.
+- Unless explicitly stated, Stats do not grant effects outside the rules listed below.
+
+5.1.1 STR - Strength
+- Adds to melee and brawl damage.
+- Determines carrying capacity.
+- Excessive load may impose penalties at the DM's discretion.
+- Used for physical actions such as breaking objects, forcing doors, and climbing.
+
+5.1.2. DEX - Dexterity
+- Determines melee, brawl, and ranged attack dice pools.
+- Determines base Dodge against physical attacks, including projectiles.
+- Used for initiative rolls.
+- Initiative roll: DEX + WITS.
+
+5.1.3. STAM - Stamina
+- Determines base Hit Points (HP).
+- Base HP formula: HP = 2 + (STAM x 2).
+- Determines base soak against supernatural (magical) damage.
+- Magical damage may be reduced by Stamina soak.
+
+5.1.4. CHA - Charisma
+- Used for convincing and persuasion rolls.
+- Dice pool: CHA + Social.
+- Used for intimidation rolls.
+- Dice pool: CHA + Intimidation.
+
+5.1.5. APP - Appearance
+- Used for seduction rolls.
+- Dice pool: APP + Social.
+
+5.1.6. MAN - Manipulation
+- Used for deception rolls.
+- Dice pool: MAN + Social.
+- Deception includes lying, withholding information, and intentionally misleading responses.
+
+5.1.7. INT - Intelligence
+- Used for knowledge-based rolls.
+- Dice pool: INT + Social, unless a different skill is specified.
+- Used for defensive rolls against convincing and persuasion attempts.
+- Defensive dice pool: INT + Social.
+
+5.1.8. WITS - Wits
+- Used for common sense and quick thinking rolls.
+- Dice pool: WITS + Social.
+- Used for defensive rolls against seduction attempts.
+- Defensive dice pool: WITS + Social.
+- Used for self-control rolls.
+- Self-control rolls use WITS alone, unless the DM specifies otherwise.
+- Used for initiative rolls.
+- Initiative roll: DEX + WITS.
+
+5.1.9. PER - Perception
+- Used to locate traps and detect hidden entities.
+- Dice pool: PER + Alertness.
+- Used to oppose Stealth rolls.
+- Dice pool: PER + Alertness.
+- Used for defensive rolls against deception.
+- Defensive dice pool: PER + Social.
+- Contributes to ranged attack dice pools.
+- Ranged bonus dice: floor((PER - 1) / 2) d10.
+
+=== 6. POWERS AND SKILLS (AUTHORITATIVE) ===
+- This section defines all skill- and power-based mechanics, including dice pool contributions, special effects, scaling rules, and resource interactions.
+
+6.1. T1 SKILLS
+- The level of a T1 Skill is always added to the relevant dice pool when that skill is used, unless explicitly stated otherwise.
+- Special effects granted by T1 Skills are applied after dice pool construction and penalties, and before result comparison, unless explicitly stated otherwise.
+- "Lowered DC (-1)" means the required success threshold for the roll is reduced by 1.
+- Social is used for both offensive and defensive interpersonal rolls unless explicitly overridden.
+
+6.1.1. Melee
+- Level 1: Enables unarmed and melee weapon attacks. Attack roll: DEX + Melee.
+- Level 5: Rolls of 10 count as 2 successes on melee attack and damage rolls.
+
+6.1.2. Ranged
+- Level 1: Enables ranged weapon attacks. Attack roll: DEX + Ranged.
+- Level 5: Rolls of 10 count as 2 successes on ranged attack and damage rolls.
+
+6.1.3. Athletics
+- Level 1: Governs running, acrobatics, jumping, and flexibility.
+- Level 3: Gain bonus Armor Class (AC). Bonus AC = Athletics Level - 2.
+- Level 4: Base running speed increases from 25 m/turn to 30 m/turn.
+- Level 5: Athletics rolls are easier. Apply Lowered DC (-1).
+
+6.1.4. Stealth
+- Level 1: Enter Stealth outside combat. Roll: DEX + Stealth.
+- Level 2: The first melee or ranged attack made from Stealth removes the target's Dodge for that attack.
+- Level 3: Ignore penalties and target-based resistance modifiers applied specifically against Stealth rolls.
+- Level 4: The first magical attack made from Stealth removes the target's Stamina soak for that attack.
+- Level 5: Stealth rolls are easier. Apply Lowered DC (-1).
+
+6.1.5. Alertness
+- Level 1: Detect hidden creatures and traps. Roll: PER + Alertness.
+- Level 2: Disarm traps and pick locks. Roll: DEX + Alertness.
+- Level 3: Add Awareness supernatural power level to Alertness rolls, if applicable.
+- Level 4: May use INT + Alertness to analyze or identify instead of detecting.
+- Level 5: Alertness rolls are easier. Apply Lowered DC (-1).
+
+6.1.6. Social
+- Level 1: Enables social influence rolls:
+  - Convince: CHA + Social
+  - Seduce: APP + Social
+  - Deceive: MAN + Social
+- Level 2: Gain +1 die on all Social rolls.
+- Level 3: On a successful Social roll, gain 1 Temporary Inspiration. Temporary Inspiration may be spent to reroll a failed roll. Maximum 3 Temporary Inspiration at any time.
+- Level 4: Once per scene, reroll one failed Social roll and keep the better result.
+- Level 5: Social rolls are easier. Apply Lowered DC (-1).
+
+6.1.7. Medicine
+- Level 1: Stabilize bleeding and heal 1 HP. Usable once per day per target. Not usable in combat. Takes 2 minutes.
+- Level 2: Usable twice per day per target.
+- Level 3: Heal 2 HP. Cure weak poisons when first aid is applied.
+- Level 4: Perform surgery if conditions are met. Cure weak diseases.
+- Level 5: Heal 3 HP. Cure moderate poisons and stat-penalty conditions. Targets at 0 to -5 HP are restored to 2 HP.
+
+6.1.8. Technology
+- Level 1: Effectively use computers, mobile devices, and common high-tech tools.
+- Level 2: Identify and understand unknown high-tech devices based on roll success. May study portal-related items and enhance item qualities with DM approval. Gain 1 Tech Point (TP).
+- Level 3: Hack non-secure systems. Roll: INT + Technology vs INT + Technology (developer). Gain 2 TP total.
+- Level 4: Hack secure systems and mobile devices. Roll: INT + Technology vs INT + Technology (developer) + firewall rank. May act as network administrator in limited organizations. Gain 3 TP total.
+- Level 5: Attempt hacks against systems protected by specialist teams. Roll: INT + Technology (developer) + firewall rank + specialist bonus. May act as network administrator in most organizations. Gain 4 TP total.
+
+6.1.8.1. Tech Point (TP) Rules
+- Spend 1 TP to increase an item's numeric property by +25%, rounded up.
+- Any numeric property may be enhanced, subject to DM discretion.
+- Maximum 2 TP may be assigned to a single item.
+- TP are reusable and reassigned:
+  - Assign before a long rest.
+  - Assignments remain active until the next long rest.
+  - Before that next long rest, TP may be reassigned.
+
+6.1.9. Academics
+- Level 1: Graduate-level knowledge in one chosen natural science. Eligible for entry-level white-collar roles.
+- Level 2: Master's-level expertise. May conduct advanced research. May study portal-related supernatural phenomena and enhance supernatural powers with DM approval. Gain 1 Enhancement Point (EP).
+- Level 3: PhD or MD in one field. Eligible for senior academic or professional roles. Gain 2 EP total.
+- Level 4: Professor-level authority. May teach and access university resources. Minimum INT 3. Gain 3 EP total.
+- Level 5: World-class authority in the field. Near-global academic access. Minimum INT 4. Gain 4 EP total.
+
+6.1.9.1. Enhancement Point (EP) Rules
+- Spend 1 EP to increase a supernatural power's numeric effect by +25%, rounded up.
+- Any numeric effect may be enhanced, subject to DM discretion.
+- Maximum 2 EP may be assigned to a single power.
+- EP are reusable and reassigned:
+  - Assign before a long rest.
+  - Assignments remain active until the next long rest.
+  - Before that next long rest, EP may be reassigned.
+
+6.1.10. Mechanics
+- Level 1: Repair common, masterwork, and uncommon items with tools. Ride bicycles. Typical duration: 10 minutes-8 hours.
+- Level 2: Repair rare items. Drive cars, buses, and motorbikes. Begin crafting common items.
+- Level 3: Craft uncommon items. Repair epic items. Drive all land vehicles. Modify uncommon and rare items using DEX + Mechanics.
+- Level 4: Craft masterwork and uncommon weapons, armor, and shields. Cost: 1/5 item value. Operate aircraft and ships. Modify epic items.
+- Level 5: Repair and modify legendary items. On great success, modifications may exceed item quality. Add INT dice to modification rolls.
+
+6.1.11. Occult
+- Level 1: Know names and basic properties of most T1 supernatural powers. May learn 1 T1 power. Gain Mana Bonus = ceil(XP Used / 100).
+- Level 2: May learn 2 T1 supernatural powers.
+- Level 3: May learn 3 T1 supernatural powers. Gain Mana Bonus = ceil(XP Used / 50).
+- Level 4: May learn 1 T2 supernatural power.
+- Level 5: May learn 2 T2 supernatural powers. Gain Mana Bonus = ceil(XP Used / 25).
+
+=== 7. META SYSTEM (AUTHORITATIVE) ===
+- This section defines meta-level systems that modify or contextualize core mechanics, including reroll resources, world-impact tracking, and character-level advantages and disadvantages.
+
+7.1. Inspiration
+Inspiration represents willpower-based rerolls.
+
+7.1.1. Types of Inspiration
+- Non-temporary Inspiration
+- Temporary Inspiration
+Either type may be spent to reroll any failed roll at any time.
+
+7.1.2. Non-temporary Inspiration
+- Awarded by the DM for:
+  - heroic or anti-heroic acts,
+  - completing major events or quests,
+  - exceptionally creative thinking or problem-solving.
+- Non-temporary Inspiration points stack.
+
+7.1.3. Temporary Inspiration
+- Granted by specific rules or perks (e.g., the Inspired Merit).
+- Temporary Inspiration points stack only if granted from different sources.
+- Temporary Inspiration points expire at the end of the game session.
+
+7.2. Karma (Authoritative Definition)
+- Karma represents the measurable impact of an entity's actions on the world.
+- Karma is assigned and adjusted by the DM based on observed impact, not intent.
+- Karma is not an alignment system and does not measure morality.
+- Both constructive and destructive impacts are tracked.
+- An entity may hold both positive and negative Karma over time.
+- Karma is a numeric value in the range [-24, +24].
+
+7.2.1. Karma Scale (Non-Exhaustive)
+- -24: Prime destructive entity; maximum world-scale harm
+- -6 to -12: Global-scale mass suffering
+- -4 to -8: National-scale harm
+- -2 to -6: Localized severe harm
+- 0: Negligible or insignificant impact
+- +2 to +6: Meaningful positive influence
+- +4 to +8: Major positive influence on communities or nations
+- +12: World-level beneficial influence
+- +24: Prime constructive entity; maximum world-scale healing and harmony
+
+7.3. Merits (Authoritative Definition)
+Merits cost XP and apply immediately upon acquisition.
+
+7.3.1. Extra HP
+Gain +1 base HP. May be taken up to 2 times.
+XP Cost: 5 / 10
+
+7.3.2. Extra Mana
+Gain +1 base Mana. May be taken up to 4 times.
+XP Cost: 3 / 6 / 9 / 12
+
+7.3.3. Gifted
+Stat soft cap increases to 6 instead of 5.
+Restriction: Cannot be taken with Weak and Meek.
+XP Cost: 20
+
+7.3.4. Rich Bitch
+Start with a high standard of living (home, car, $500,000 funds, $5,000/month passive income). Trivial purchases are ignored.
+Restriction: Cannot be taken with Huge Debt.
+XP Cost: 5
+
+7.3.5. Dao Companion
+Gain a close companion (friend or lover). Companions are non-hunters with low combat capability but may provide situational assistance. May be taken up to 2 times.
+XP Cost: 5 / 10
+
+7.3.6. Extra Language
+Learn one additional language. May be taken up to 2 x starting INT.
+XP Cost: 2 per language at character creation.
+Note: Languages learned later cost 4 XP and require 5 sessions to master.
+
+7.3.7. Dominant Dosha
+Choose Pitta, Vata, or Kapha. Gain resistance (half damage) to associated elements.
+- Pitta: fire, acid
+- Vata: lightning, cold
+- Kapha: cold, acid
+Resistance Formula: `ceil((Total Damage / 2) - Stamina)`
+XP Cost: 15
+
+7.3.8. Inspired
+- Start with 5 non-temporary Inspiration points.
+- Gain 1 temporary Inspiration at the start of each session.
+- Temporary Inspiration expires at session end.
+  XP Cost: 5
+
+7.4. Flaws (Authoritative Definition)
+Flaws grant XP and apply immediately upon acquisition.
+
+7.4.1. Permanently Wounded
+Reduce base HP by 1. May be taken up to 2 times.
+XP Gain: 5 / 10
+
+7.4.2. Magic Blindness
+May learn only 1 T1 supernatural power (and later 1 T2, if available), regardless of Occult level.
+XP Gain: 20
+
+7.4.3. Asocial
+All Social rolls and defenses roll at higher difficulty (standard DC becomes 7).
+XP Gain: 10
+
+7.4.4. Huge Debt
+Start with $500,000 debt. Beginning after the 5th session, must pay $10,000 per session until resolved.
+Restriction: Cannot be taken with Rich Bitch.
+XP Gain: 5
+
+7.4.5. Uninspired
+- The character cannot spend non-temporary Inspiration.
+- Each time the character would gain non-temporary Inspiration, reduce this flaw's potency by 1 instead.
+- After 10 such reductions, this flaw is removed and Inspiration functions normally.
+Restrictions:
+- Cannot be taken with Inspired.
+- Awareness cantrip has no effect until the flaw is removed.
+XP Gain: 10
+
+7.4.6. Weak and Meek
+Physical stat maximum is 4 instead of 5.
+Restriction: Cannot be taken with Gifted.
+XP Gain: 15
+
+=== 8. MISCELLANEOUS (NON-AUTHORITATIVE) ===
+
+8.1. RANK REFERENCE (INFORMATIVE, NON-AUTHORITATIVE, NON-MECHANICAL)
+- This section is descriptive only.
+- It provides narrative context for Rank tiers.
+- It has no mechanical effect unless explicitly referenced elsewhere.
+- Rank F: Ordinary humans with negligible world impact.
+- Rank E: Exceptional individuals or entry-level hunters.
+- Rank D: Clearly superhuman entities.
+- Rank C: Superhero-tier beings; elite hunters and major threats.
+- Rank B: Mythic or demi-god-level entities.
+- Rank A: World-shaping forces beyond common myth.
+- Rank S: Singular anomalies; narrative outliers.
+
