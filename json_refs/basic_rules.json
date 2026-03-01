@@ -1,0 +1,3437 @@
+{
+  "source": {
+    "path": "references/Basic_Rules4.txt",
+    "filename": "Basic_Rules4.txt",
+    "title": "BASIC RULES - AUTHORITATIVE DEFINITIONS"
+  },
+  "preamble": [
+    {
+      "type": "bullet",
+      "text": "This document defines the authoritative mechanical rules of the game.",
+      "raw": "- This document defines the authoritative mechanical rules of the game.",
+      "children": []
+    },
+    {
+      "type": "bullet",
+      "text": "All systems, calculations, and resolutions described here are deterministic and take precedence over narrative interpretation unless explicitly stated otherwise.",
+      "raw": "- All systems, calculations, and resolutions described here are deterministic and take precedence over narrative interpretation unless explicitly stated otherwise.",
+      "children": []
+    }
+  ],
+  "sections": [
+    {
+      "id": "1",
+      "number": "1",
+      "title": "CORE PROGRESSION SYSTEM",
+      "slug": "core_progression_system",
+      "raw_heading": "=== 1. CORE PROGRESSION SYSTEM (AUTHORITATIVE) ===",
+      "authority": "authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "authoritative"
+      ],
+      "entries": [
+        {
+          "type": "bullet",
+          "text": "This section defines all rules related to character advancement, experience expenditure, and power scaling.",
+          "raw": "- This section defines all rules related to character advancement, experience expenditure, and power scaling.",
+          "children": []
+        },
+        {
+          "type": "bullet",
+          "text": "All level progression, XP costs, Challenge Rating (CR), and Rank calculations are resolved exclusively using the rules in this section",
+          "raw": "- All level progression, XP costs, Challenge Rating (CR), and Rank calculations are resolved exclusively using the rules in this section",
+          "children": []
+        }
+      ],
+      "subsections": [
+        {
+          "id": "1.1",
+          "number": "1.1",
+          "title": "STATS, SKILLS, AND SUPERNATURAL POWERS",
+          "slug": "stats_skills_and_supernatural_powers",
+          "raw_heading": "1.1. STATS, SKILLS, AND SUPERNATURAL POWERS",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Stats, Skills, and Supernatural Powers have Levels.",
+              "raw": "- Stats, Skills, and Supernatural Powers have Levels.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Levels are increased by spending Experience Points (XP) using the XP Buy tables.",
+              "raw": "- Levels are increased by spending Experience Points (XP) using the XP Buy tables.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Current cap: all Stats, Skills and Powers are limited to Level 5 unless explicitly stated otherwise.",
+              "raw": "- Current cap: all Stats, Skills and Powers are limited to Level 5 unless explicitly stated otherwise.",
+              "children": []
+            }
+          ],
+          "subsections": [
+            {
+              "id": "1.1.1",
+              "number": "1.1.1",
+              "title": "XP BUY TABLES",
+              "slug": "xp_buy_tables",
+              "raw_heading": "1.1.1. XP BUY TABLES",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "XP Buy tables are listed below under their respective table names.",
+                  "raw": "- XP Buy tables are listed below under their respective table names.",
+                  "children": []
+                }
+              ],
+              "subsections": [
+                {
+                  "id": "1.1.1.1",
+                  "number": "1.1.1.1",
+                  "title": "Stats",
+                  "slug": "stats",
+                  "raw_heading": "1.1.1.1. Stats",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [],
+                  "entries": [
+                    {
+                      "type": "table",
+                      "title": "Stats",
+                      "columns": [
+                        "level",
+                        "cumulative_xp_required"
+                      ],
+                      "rows": [
+                        {
+                          "level": 1,
+                          "cumulative_xp_required": 0
+                        },
+                        {
+                          "level": 2,
+                          "cumulative_xp_required": 0
+                        },
+                        {
+                          "level": 3,
+                          "cumulative_xp_required": 6
+                        },
+                        {
+                          "level": 4,
+                          "cumulative_xp_required": 15
+                        },
+                        {
+                          "level": 5,
+                          "cumulative_xp_required": 27
+                        },
+                        {
+                          "level": 6,
+                          "cumulative_xp_required": 42
+                        },
+                        {
+                          "level": 7,
+                          "cumulative_xp_required": 60
+                        },
+                        {
+                          "level": 8,
+                          "cumulative_xp_required": 81
+                        },
+                        {
+                          "level": 9,
+                          "cumulative_xp_required": 105
+                        },
+                        {
+                          "level": 10,
+                          "cumulative_xp_required": 132
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                },
+                {
+                  "id": "1.1.1.2",
+                  "number": "1.1.1.2",
+                  "title": "T1 Skills",
+                  "slug": "t1_skills",
+                  "raw_heading": "1.1.1.2. T1 Skills",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [],
+                  "entries": [
+                    {
+                      "type": "table",
+                      "title": "T1 Skills",
+                      "columns": [
+                        "level",
+                        "cumulative_xp_required"
+                      ],
+                      "rows": [
+                        {
+                          "level": 1,
+                          "cumulative_xp_required": 3
+                        },
+                        {
+                          "level": 2,
+                          "cumulative_xp_required": 5
+                        },
+                        {
+                          "level": 3,
+                          "cumulative_xp_required": 9
+                        },
+                        {
+                          "level": 4,
+                          "cumulative_xp_required": 15
+                        },
+                        {
+                          "level": 5,
+                          "cumulative_xp_required": 23
+                        },
+                        {
+                          "level": 6,
+                          "cumulative_xp_required": 33
+                        },
+                        {
+                          "level": 7,
+                          "cumulative_xp_required": 45
+                        },
+                        {
+                          "level": 8,
+                          "cumulative_xp_required": 59
+                        },
+                        {
+                          "level": 9,
+                          "cumulative_xp_required": 75
+                        },
+                        {
+                          "level": 10,
+                          "cumulative_xp_required": 93
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                },
+                {
+                  "id": "1.1.1.3",
+                  "number": "1.1.1.3",
+                  "title": "T1 Powers",
+                  "slug": "t1_powers",
+                  "raw_heading": "1.1.1.3. T1 Powers",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [],
+                  "entries": [
+                    {
+                      "type": "table",
+                      "title": "T1 Powers",
+                      "columns": [
+                        "level",
+                        "cumulative_xp_required"
+                      ],
+                      "rows": [
+                        {
+                          "level": 1,
+                          "cumulative_xp_required": 10
+                        },
+                        {
+                          "level": 2,
+                          "cumulative_xp_required": 16
+                        },
+                        {
+                          "level": 3,
+                          "cumulative_xp_required": 28
+                        },
+                        {
+                          "level": 4,
+                          "cumulative_xp_required": 46
+                        },
+                        {
+                          "level": 5,
+                          "cumulative_xp_required": 70
+                        },
+                        {
+                          "level": 6,
+                          "cumulative_xp_required": 100
+                        },
+                        {
+                          "level": 7,
+                          "cumulative_xp_required": 136
+                        },
+                        {
+                          "level": 8,
+                          "cumulative_xp_required": 178
+                        },
+                        {
+                          "level": 9,
+                          "cumulative_xp_required": 226
+                        },
+                        {
+                          "level": 10,
+                          "cumulative_xp_required": 280
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                },
+                {
+                  "id": "1.1.1.4",
+                  "number": "1.1.1.4",
+                  "title": "T2 Skills",
+                  "slug": "t2_skills",
+                  "raw_heading": "1.1.1.4. T2 Skills",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [],
+                  "entries": [
+                    {
+                      "type": "table",
+                      "title": "T2 Skills",
+                      "columns": [
+                        "level",
+                        "cumulative_xp_required"
+                      ],
+                      "rows": [
+                        {
+                          "level": 1,
+                          "cumulative_xp_required": 0
+                        },
+                        {
+                          "level": 2,
+                          "cumulative_xp_required": 4
+                        },
+                        {
+                          "level": 3,
+                          "cumulative_xp_required": 12
+                        },
+                        {
+                          "level": 4,
+                          "cumulative_xp_required": 24
+                        },
+                        {
+                          "level": 5,
+                          "cumulative_xp_required": 40
+                        },
+                        {
+                          "level": 6,
+                          "cumulative_xp_required": 60
+                        },
+                        {
+                          "level": 7,
+                          "cumulative_xp_required": 84
+                        },
+                        {
+                          "level": 8,
+                          "cumulative_xp_required": 112
+                        },
+                        {
+                          "level": 9,
+                          "cumulative_xp_required": 144
+                        },
+                        {
+                          "level": 10,
+                          "cumulative_xp_required": 180
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                },
+                {
+                  "id": "1.1.1.5",
+                  "number": "1.1.1.5",
+                  "title": "T2 Powers",
+                  "slug": "t2_powers",
+                  "raw_heading": "1.1.1.5. T2 Powers",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [],
+                  "entries": [
+                    {
+                      "type": "table",
+                      "title": "T2 Powers",
+                      "columns": [
+                        "level",
+                        "cumulative_xp_required"
+                      ],
+                      "rows": [
+                        {
+                          "level": 1,
+                          "cumulative_xp_required": 0
+                        },
+                        {
+                          "level": 2,
+                          "cumulative_xp_required": 6
+                        },
+                        {
+                          "level": 3,
+                          "cumulative_xp_required": 18
+                        },
+                        {
+                          "level": 4,
+                          "cumulative_xp_required": 36
+                        },
+                        {
+                          "level": 5,
+                          "cumulative_xp_required": 60
+                        },
+                        {
+                          "level": 6,
+                          "cumulative_xp_required": 90
+                        },
+                        {
+                          "level": 7,
+                          "cumulative_xp_required": 126
+                        },
+                        {
+                          "level": 8,
+                          "cumulative_xp_required": 168
+                        },
+                        {
+                          "level": 9,
+                          "cumulative_xp_required": 216
+                        },
+                        {
+                          "level": 10,
+                          "cumulative_xp_required": 270
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                },
+                {
+                  "id": "1.1.1.6",
+                  "number": "1.1.1.6",
+                  "title": "Special Powers",
+                  "slug": "special_powers",
+                  "raw_heading": "1.1.1.6. Special Powers",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [],
+                  "entries": [
+                    {
+                      "type": "table",
+                      "title": "Special Powers",
+                      "columns": [
+                        "level",
+                        "cumulative_xp_required"
+                      ],
+                      "rows": [
+                        {
+                          "level": 1,
+                          "cumulative_xp_required": 10
+                        },
+                        {
+                          "level": 2,
+                          "cumulative_xp_required": 20
+                        },
+                        {
+                          "level": 3,
+                          "cumulative_xp_required": 40
+                        },
+                        {
+                          "level": 4,
+                          "cumulative_xp_required": 70
+                        },
+                        {
+                          "level": 5,
+                          "cumulative_xp_required": 110
+                        },
+                        {
+                          "level": 6,
+                          "cumulative_xp_required": 160
+                        },
+                        {
+                          "level": 7,
+                          "cumulative_xp_required": 220
+                        },
+                        {
+                          "level": 8,
+                          "cumulative_xp_required": 290
+                        },
+                        {
+                          "level": 9,
+                          "cumulative_xp_required": 370
+                        },
+                        {
+                          "level": 10,
+                          "cumulative_xp_required": 460
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1.2",
+          "number": "1.2",
+          "title": "CHALLENGE RATING AND RANK",
+          "slug": "challenge_rating_and_rank",
+          "raw_heading": "1.2. CHALLENGE RATING (CR) AND RANK",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [
+            "cr"
+          ],
+          "entries": [],
+          "subsections": [
+            {
+              "id": "1.2.1",
+              "number": "1.2.1",
+              "title": "General Rules",
+              "slug": "general_rules",
+              "raw_heading": "1.2.1. General Rules",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "CR and Rank are determined solely by XP Used.",
+                  "raw": "- CR and Rank are determined solely by XP Used.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "XP ranges are inclusive on the lower bound and exclusive on the upper bound.",
+                  "raw": "- XP ranges are inclusive on the lower bound and exclusive on the upper bound.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "1.2.2",
+              "number": "1.2.2",
+              "title": "XP Used",
+              "slug": "xp_used",
+              "raw_heading": "1.2.2. XP Used",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "XP Used is the total cumulative XP spent across all Stats, Skills, and Powers.",
+                  "raw": "- XP Used is the total cumulative XP spent across all Stats, Skills, and Powers.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "XP Used determines the character's Challenge Rating (CR) and Rank.",
+                  "raw": "- XP Used determines the character's Challenge Rating (CR) and Rank.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Exception: the highest CR band has no upper XP bound.",
+                  "raw": "- Exception: the highest CR band has no upper XP bound.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "1.2.3",
+              "number": "1.2.3",
+              "title": "XP USED TABLE",
+              "slug": "xp_used_table",
+              "raw_heading": "1.2.3. XP USED TABLE",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "table",
+                  "title": "XP USED TABLE",
+                  "columns": [
+                    "rank",
+                    "cr",
+                    "xp_used_range"
+                  ],
+                  "rows": [
+                    {
+                      "rank": "F",
+                      "cr": 0,
+                      "xp_used_range": "0-32",
+                      "xp_used_min": 0,
+                      "xp_used_max": 32
+                    },
+                    {
+                      "rank": "E",
+                      "cr": 1,
+                      "xp_used_range": "33-65",
+                      "xp_used_min": 33,
+                      "xp_used_max": 65
+                    },
+                    {
+                      "rank": "E",
+                      "cr": 2,
+                      "xp_used_range": "66-98",
+                      "xp_used_min": 66,
+                      "xp_used_max": 98
+                    },
+                    {
+                      "rank": "D",
+                      "cr": 3,
+                      "xp_used_range": "99-131",
+                      "xp_used_min": 99,
+                      "xp_used_max": 131
+                    },
+                    {
+                      "rank": "D",
+                      "cr": 4,
+                      "xp_used_range": "132-164",
+                      "xp_used_min": 132,
+                      "xp_used_max": 164
+                    },
+                    {
+                      "rank": "C",
+                      "cr": 5,
+                      "xp_used_range": "165-197",
+                      "xp_used_min": 165,
+                      "xp_used_max": 197
+                    },
+                    {
+                      "rank": "C",
+                      "cr": 6,
+                      "xp_used_range": "198-230",
+                      "xp_used_min": 198,
+                      "xp_used_max": 230
+                    },
+                    {
+                      "rank": "C",
+                      "cr": 7,
+                      "xp_used_range": "231-263",
+                      "xp_used_min": 231,
+                      "xp_used_max": 263
+                    },
+                    {
+                      "rank": "B",
+                      "cr": 8,
+                      "xp_used_range": "264-296",
+                      "xp_used_min": 264,
+                      "xp_used_max": 296
+                    },
+                    {
+                      "rank": "B",
+                      "cr": 9,
+                      "xp_used_range": "297-329",
+                      "xp_used_min": 297,
+                      "xp_used_max": 329
+                    },
+                    {
+                      "rank": "B",
+                      "cr": 10,
+                      "xp_used_range": "330-362",
+                      "xp_used_min": 330,
+                      "xp_used_max": 362
+                    },
+                    {
+                      "rank": "B",
+                      "cr": 11,
+                      "xp_used_range": "363-395",
+                      "xp_used_min": 363,
+                      "xp_used_max": 395
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 12,
+                      "xp_used_range": "396-428",
+                      "xp_used_min": 396,
+                      "xp_used_max": 428
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 13,
+                      "xp_used_range": "429-461",
+                      "xp_used_min": 429,
+                      "xp_used_max": 461
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 14,
+                      "xp_used_range": "462-494",
+                      "xp_used_min": 462,
+                      "xp_used_max": 494
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 15,
+                      "xp_used_range": "495-527",
+                      "xp_used_min": 495,
+                      "xp_used_max": 527
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 16,
+                      "xp_used_range": "528-560",
+                      "xp_used_min": 528,
+                      "xp_used_max": 560
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 17,
+                      "xp_used_range": "561-593",
+                      "xp_used_min": 561,
+                      "xp_used_max": 593
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 18,
+                      "xp_used_range": "594-626",
+                      "xp_used_min": 594,
+                      "xp_used_max": 626
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 19,
+                      "xp_used_range": "627-659",
+                      "xp_used_min": 627,
+                      "xp_used_max": 659
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 20,
+                      "xp_used_range": "660-692",
+                      "xp_used_min": 660,
+                      "xp_used_max": 692
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 21,
+                      "xp_used_range": "693-725",
+                      "xp_used_min": 693,
+                      "xp_used_max": 725
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 22,
+                      "xp_used_range": "726-758",
+                      "xp_used_min": 726,
+                      "xp_used_max": 758
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 23,
+                      "xp_used_range": "759-791",
+                      "xp_used_min": 759,
+                      "xp_used_max": 791
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 24,
+                      "xp_used_range": "792-824",
+                      "xp_used_min": 792,
+                      "xp_used_max": 824
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 25,
+                      "xp_used_range": "825-857",
+                      "xp_used_min": 825,
+                      "xp_used_max": 857
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 26,
+                      "xp_used_range": "858-890",
+                      "xp_used_min": 858,
+                      "xp_used_max": 890
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 27,
+                      "xp_used_range": "891-923",
+                      "xp_used_min": 891,
+                      "xp_used_max": 923
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 28,
+                      "xp_used_range": "924-956",
+                      "xp_used_min": 924,
+                      "xp_used_max": 956
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 29,
+                      "xp_used_range": "957-989",
+                      "xp_used_min": 957,
+                      "xp_used_max": 989
+                    },
+                    {
+                      "rank": "A",
+                      "cr": 30,
+                      "xp_used_range": "990+",
+                      "xp_used_min": 990,
+                      "xp_used_max": null
+                    }
+                  ]
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "number": "2",
+      "title": "RESOLUTION SYSTEM",
+      "slug": "resolution_system",
+      "raw_heading": "=== 2. RESOLUTION SYSTEM (AUTHORITATIVE) ===",
+      "authority": "authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "authoritative"
+      ],
+      "entries": [
+        {
+          "type": "bullet",
+          "text": "This section defines the universal dice and success-resolution mechanics used by all systems unless explicitly stated otherwise.",
+          "raw": "- This section defines the universal dice and success-resolution mechanics used by all systems unless explicitly stated otherwise.",
+          "children": []
+        }
+      ],
+      "subsections": [
+        {
+          "id": "2.1",
+          "number": "2.1",
+          "title": "Core Principle",
+          "slug": "core_principle",
+          "raw_heading": "2.1. Core Principle",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "This system uses a D10 success-counting mechanic.",
+              "raw": "- This system uses a D10 success-counting mechanic.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "The effective base difficulty threshold is 6.",
+              "raw": "- The effective base difficulty threshold is 6.",
+              "children": []
+            }
+          ],
+          "subsections": []
+        },
+        {
+          "id": "2.2",
+          "number": "2.2",
+          "title": "Dice Pool Construction",
+          "slug": "dice_pool_construction",
+          "raw_heading": "2.2. Dice Pool Construction",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Let N be the total dice pool size.",
+              "raw": "- Let N be the total dice pool size.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "N = relevant stat ranks + relevant skill ranks.",
+              "raw": "- N = relevant stat ranks + relevant skill ranks.",
+              "children": []
+            }
+          ],
+          "subsections": []
+        },
+        {
+          "id": "2.3",
+          "number": "2.3",
+          "title": "Die Evaluation",
+          "slug": "die_evaluation",
+          "raw_heading": "2.3. Die Evaluation",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Each die is evaluated independently.",
+              "raw": "- Each die is evaluated independently.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Dice pool size (N) and die face value are separate concepts.",
+              "raw": "- Dice pool size (N) and die face value are separate concepts.",
+              "children": []
+            }
+          ],
+          "subsections": []
+        },
+        {
+          "id": "2.4",
+          "number": "2.4",
+          "title": "Die results:",
+          "slug": "die_results",
+          "raw_heading": "2.4. Die results:",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Roll of 1: -1 success",
+              "raw": "- Roll of 1: -1 success",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Roll of 2-5: 0 successes",
+              "raw": "- Roll of 2-5: 0 successes",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Roll of 6-9: +1 success",
+              "raw": "- Roll of 6-9: +1 success",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Roll of 10:",
+              "raw": "- Roll of 10:",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "+1 success if N < 10",
+              "raw": "- +1 success if N < 10",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "+2 successes if N >= 10",
+              "raw": "- +2 successes if N >= 10",
+              "children": []
+            }
+          ],
+          "subsections": []
+        },
+        {
+          "id": "2.5",
+          "number": "2.5",
+          "title": "Result Calculation",
+          "slug": "result_calculation",
+          "raw_heading": "2.5. Result Calculation",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Sum all success modifiers to obtain Total Successes.",
+              "raw": "- Sum all success modifiers to obtain Total Successes.",
+              "children": []
+            }
+          ],
+          "subsections": []
+        },
+        {
+          "id": "2.6",
+          "number": "2.6",
+          "title": "Botch Condition",
+          "slug": "botch_condition",
+          "raw_heading": "2.6. Botch Condition",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "If Total Successes < 0, the result is a Botch.",
+              "raw": "- If Total Successes < 0, the result is a Botch.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "A Botch represents complete failure.",
+              "raw": "- A Botch represents complete failure.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Interpretation and consequences are determined by the DM.",
+              "raw": "- Interpretation and consequences are determined by the DM.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "No other botch conditions exist.",
+              "raw": "- No other botch conditions exist.",
+              "children": []
+            }
+          ],
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "number": "3",
+      "title": "ACTION ECONOMY",
+      "slug": "action_economy",
+      "raw_heading": "=== 3. ACTION ECONOMY (AUTHORITATIVE) ===",
+      "authority": "authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "authoritative"
+      ],
+      "entries": [
+        {
+          "type": "bullet",
+          "text": "This section defines the action types available each turn and the rules governing their use and conversion.",
+          "raw": "- This section defines the action types available each turn and the rules governing their use and conversion.",
+          "children": []
+        }
+      ],
+      "subsections": [
+        {
+          "id": "3.1",
+          "number": "3.1",
+          "title": "Turn Resources - Actions",
+          "slug": "turn_resources_actions",
+          "raw_heading": "3.1. Turn Resources - Actions",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "statement",
+              "text": "Each character turn provides:",
+              "raw": "Each character turn provides:"
+            },
+            {
+              "type": "bullet",
+              "text": "1 Standard Action",
+              "raw": "- 1 Standard Action",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "1 Bonus Action",
+              "raw": "- 1 Bonus Action",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "1 Move Action",
+              "raw": "- 1 Move Action",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Reaction",
+              "raw": "- Reaction",
+              "children": []
+            }
+          ],
+          "subsections": [
+            {
+              "id": "3.1.1",
+              "number": "3.1.1",
+              "title": "Standard Action",
+              "slug": "standard_action",
+              "raw_heading": "3.1.1. Standard Action",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Used to perform a major action (attack, spell, complex interaction).",
+                  "raw": "- Used to perform a major action (attack, spell, complex interaction).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "May be spent in place of one of the following:",
+                  "raw": "- May be spent in place of one of the following:",
+                  "children": [
+                    {
+                      "type": "bullet",
+                      "text": "a Bonus Action, or",
+                      "raw": "  - a Bonus Action, or",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "a Move Action allowing up to 20 meters of movement, or",
+                      "raw": "  - a Move Action allowing up to 20 meters of movement, or",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "Preparation of a Reaction (trigger defined at preparation time).",
+                      "raw": "  - Preparation of a Reaction (trigger defined at preparation time).",
+                      "children": []
+                    }
+                  ]
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "3.1.2",
+              "number": "3.1.2",
+              "title": "Bonus Action",
+              "slug": "bonus_action",
+              "raw_heading": "3.1.2. Bonus Action",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Represents minor actions (e.g., drawing or dropping a weapon, specific supernatural powers).",
+                  "raw": "- Represents minor actions (e.g., drawing or dropping a weapon, specific supernatural powers).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Cannot be converted into a Standard or Move Action.",
+                  "raw": "- Cannot be converted into a Standard or Move Action.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "A Standard Action may be spent in place of a Bonus Action to gain an additional Bonus Action.",
+                  "raw": "- A Standard Action may be spent in place of a Bonus Action to gain an additional Bonus Action.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "3.1.3",
+              "number": "3.1.3",
+              "title": "Move Action",
+              "slug": "move_action",
+              "raw_heading": "3.1.3. Move Action",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Allows movement up to 5 meters, unless modified by another rule.",
+                  "raw": "- Allows movement up to 5 meters, unless modified by another rule.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "If a Standard Action is spent in place of a Move Action, the character may move up to 25 meters instead.",
+                  "raw": "- If a Standard Action is spent in place of a Move Action, the character may move up to 25 meters instead.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "3.1.4",
+              "number": "3.1.4",
+              "title": "Reaction",
+              "slug": "reaction",
+              "raw_heading": "3.1.4. Reaction",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "A Reaction is a contingent action that triggers automatically when a predefined condition occurs.",
+                  "raw": "- A Reaction is a contingent action that triggers automatically when a predefined condition occurs.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Reactions may be granted by rules, powers, or effects, or may be prepared in advance using a Standard Action.",
+                  "raw": "- Reactions may be granted by rules, powers, or effects, or may be prepared in advance using a Standard Action.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Only the specified trigger and response occur; no additional actions may be taken at that time.",
+                  "raw": "- Only the specified trigger and response occur; no additional actions may be taken at that time.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Unless explicitly stated otherwise, a Reaction may occur at most once per round.",
+                  "raw": "- Unless explicitly stated otherwise, a Reaction may occur at most once per round.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "3.1.5",
+              "number": "3.1.5",
+              "title": "Restrictions",
+              "slug": "restrictions",
+              "raw_heading": "3.1.5. Restrictions",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "No other action conversions are allowed.",
+                  "raw": "- No other action conversions are allowed.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "number": "4",
+      "title": "COMBAT RESOLUTION",
+      "slug": "combat_resolution",
+      "raw_heading": "=== 4. COMBAT RESOLUTION (AUTHORITATIVE) ===",
+      "authority": "authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "authoritative"
+      ],
+      "entries": [
+        {
+          "type": "bullet",
+          "text": "This section defines how physical and magical attacks are resolved, including precedence rules, defensive resolution, and damage calculation.",
+          "raw": "- This section defines how physical and magical attacks are resolved, including precedence rules, defensive resolution, and damage calculation.",
+          "children": []
+        }
+      ],
+      "subsections": [
+        {
+          "id": "4.1",
+          "number": "4.1",
+          "title": "Damage Type Precedence",
+          "slug": "damage_type_precedence",
+          "raw_heading": "4.1. Damage Type Precedence",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Every attack is either Physical or Magical.",
+              "raw": "- Every attack is either Physical or Magical.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Physical attacks use Physical Attack Resolution below.",
+              "raw": "- Physical attacks use Physical Attack Resolution below.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Magical attacks use Magical Attack Resolution below.",
+              "raw": "- Magical attacks use Magical Attack Resolution below.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "DR applies only to Physical damage.",
+              "raw": "- DR applies only to Physical damage.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Soak applies only to Magical damage.",
+              "raw": "- Soak applies only to Magical damage.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "If any rule conflicts, this section overrides all others",
+              "raw": "- If any rule conflicts, this section overrides all others",
+              "children": []
+            }
+          ],
+          "subsections": []
+        },
+        {
+          "id": "4.2",
+          "number": "4.2",
+          "title": "Magical Attack Resolution",
+          "slug": "magical_attack_resolution",
+          "raw_heading": "4.2. Magical Attack Resolution",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Magical attacks bypass Attack Roll and Dodge entirely.",
+              "raw": "- Magical attacks bypass Attack Roll and Dodge entirely.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Magical attacks deal a fixed damage value as defined by the effect.",
+              "raw": "- Magical attacks deal a fixed damage value as defined by the effect.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Final Magical Damage Taken = max(0, Magical Damage - Soak).",
+              "raw": "- Final Magical Damage Taken = max(0, Magical Damage - Soak).",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "No dice are rolled during magical damage resolution unless explicitly stated by the effect.",
+              "raw": "- No dice are rolled during magical damage resolution unless explicitly stated by the effect.",
+              "children": []
+            }
+          ],
+          "subsections": []
+        },
+        {
+          "id": "4.3",
+          "number": "4.3",
+          "title": "Physical Attack Resolution",
+          "slug": "physical_attack_resolution",
+          "raw_heading": "4.3. Physical Attack Resolution",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "This section defines the step-by-step resolution of physical attacks, including attack rolls, defensive resolution, hit comparison, and damage calculation.",
+              "raw": "- This section defines the step-by-step resolution of physical attacks, including attack rolls, defensive resolution, hit comparison, and damage calculation.",
+              "children": []
+            }
+          ],
+          "subsections": [
+            {
+              "id": "4.3.1",
+              "number": "4.3.1",
+              "title": "Attack Roll",
+              "slug": "attack_roll",
+              "raw_heading": "4.3.1. Attack Roll",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Determine attack dice pool:",
+                  "raw": "- Determine attack dice pool:",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Melee: Dexterity + Melee + miscellaneous attack bonuses",
+                  "raw": "- Melee: Dexterity + Melee + miscellaneous attack bonuses",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Ranged: Dexterity + Ranged + miscellaneous attack bonuses",
+                  "raw": "- Ranged: Dexterity + Ranged + miscellaneous attack bonuses",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Roll using the D10 Success System.",
+                  "raw": "- Roll using the D10 Success System.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Let A be the total number of attack successes.",
+                  "raw": "- Let A be the total number of attack successes.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "4.3.2",
+              "number": "4.3.2",
+              "title": "Automatic Dodge",
+              "slug": "automatic_dodge",
+              "raw_heading": "4.3.2. Automatic Dodge (Passive Defense)",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [
+                "passive_defense"
+              ],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Dodge is the defensive mechanism; Armor Class (AC) is its numeric value.",
+                  "raw": "- Dodge is the defensive mechanism; Armor Class (AC) is its numeric value.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dodge is a passive defense applied during hit resolution and does not consume actions or reactions.",
+                  "raw": "- Dodge is a passive defense applied during hit resolution and does not consume actions or reactions.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dodge is ignored only if explicitly disabled by a rule (e.g., paralysis).",
+                  "raw": "- Dodge is ignored only if explicitly disabled by a rule (e.g., paralysis).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "All bonuses that modify Dodge contribute to Armor Class (AC).",
+                  "raw": "- All bonuses that modify Dodge contribute to Armor Class (AC).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Defender Dodge value (Armor Class, AC): AC = Dexterity + miscellaneous dodge bonuses",
+                  "raw": "- Defender Dodge value (Armor Class, AC): AC = Dexterity + miscellaneous dodge bonuses",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "4.3.3",
+              "number": "4.3.3",
+              "title": "Hit Resolution",
+              "slug": "hit_resolution",
+              "raw_heading": "4.3.3. Hit Resolution",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Compare A and AC:",
+                  "raw": "- Compare A and AC:",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "If AC > A, the attack misses.",
+                  "raw": "- If AC > A, the attack misses.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "If A > AC, the attack hits and M = A - AC.",
+                  "raw": "- If A > AC, the attack hits and M = A - AC.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "If A = AC:",
+                  "raw": "- If A = AC:",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "If a player character is involved, the player wins the tie.",
+                  "raw": "- If a player character is involved, the player wins the tie.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Otherwise, the defender wins.",
+                  "raw": "- Otherwise, the defender wins.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "4.3.4",
+              "number": "4.3.4",
+              "title": "Damage Resolution",
+              "slug": "damage_resolution",
+              "raw_heading": "4.3.4. Damage Resolution (Hit Only)",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [
+                "hit_only"
+              ],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Determine attacker Damage Pool (DP):",
+                  "raw": "- Determine attacker Damage Pool (DP):",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "DP = weapon damage + all damage bonuses",
+                  "raw": "- DP = weapon damage + all damage bonuses",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Total Damage Pool:",
+                  "raw": "- Total Damage Pool:",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "DP + M",
+                  "raw": "- DP + M",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Roll the Total Damage Pool using the D10 Success System.",
+                  "raw": "- Roll the Total Damage Pool using the D10 Success System.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Final Damage Taken:",
+                  "raw": "- Final Damage Taken:",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "max(0, damage successes - defender DR)",
+                  "raw": "- max(0, damage successes - defender DR)",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "number": "5",
+      "title": "CHARACTER ATTRIBUTES",
+      "slug": "character_attributes",
+      "raw_heading": "=== 5. CHARACTER ATTRIBUTES (AUTHORITATIVE) ===",
+      "authority": "authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "authoritative"
+      ],
+      "entries": [
+        {
+          "type": "bullet",
+          "text": "This section defines a character's core attributes and how each stat contributes to dice pools, defenses, and derived mechanics.",
+          "raw": "- This section defines a character's core attributes and how each stat contributes to dice pools, defenses, and derived mechanics.",
+          "children": []
+        }
+      ],
+      "subsections": [
+        {
+          "id": "5.1",
+          "number": "5.1",
+          "title": "STATS",
+          "slug": "stats",
+          "raw_heading": "5.1. STATS",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Stats represent a character's core physical, mental and social attributes.",
+              "raw": "- Stats represent a character's core physical, mental and social attributes.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Stat levels are added directly to relevant dice pools when used.",
+              "raw": "- Stat levels are added directly to relevant dice pools when used.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Unless explicitly stated, Stats do not grant effects outside the rules listed below.",
+              "raw": "- Unless explicitly stated, Stats do not grant effects outside the rules listed below.",
+              "children": []
+            }
+          ],
+          "subsections": [
+            {
+              "id": "5.1.1",
+              "number": "5.1.1",
+              "title": "STR - Strength",
+              "slug": "str_strength",
+              "raw_heading": "5.1.1 STR - Strength",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Adds to melee and brawl damage.",
+                  "raw": "- Adds to melee and brawl damage.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Determines carrying capacity.",
+                  "raw": "- Determines carrying capacity.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Excessive load may impose penalties at the DM's discretion.",
+                  "raw": "- Excessive load may impose penalties at the DM's discretion.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for physical actions such as breaking objects, forcing doors, and climbing.",
+                  "raw": "- Used for physical actions such as breaking objects, forcing doors, and climbing.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.2",
+              "number": "5.1.2",
+              "title": "DEX - Dexterity",
+              "slug": "dex_dexterity",
+              "raw_heading": "5.1.2. DEX - Dexterity",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Determines melee, brawl, and ranged attack dice pools.",
+                  "raw": "- Determines melee, brawl, and ranged attack dice pools.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Determines base Dodge against physical attacks, including projectiles.",
+                  "raw": "- Determines base Dodge against physical attacks, including projectiles.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for initiative rolls.",
+                  "raw": "- Used for initiative rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Initiative roll: DEX + WITS.",
+                  "raw": "- Initiative roll: DEX + WITS.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.3",
+              "number": "5.1.3",
+              "title": "STAM - Stamina",
+              "slug": "stam_stamina",
+              "raw_heading": "5.1.3. STAM - Stamina",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Determines base Hit Points (HP).",
+                  "raw": "- Determines base Hit Points (HP).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Base HP formula: HP = 2 + (STAM x 2).",
+                  "raw": "- Base HP formula: HP = 2 + (STAM x 2).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Determines base soak against supernatural (magical) damage.",
+                  "raw": "- Determines base soak against supernatural (magical) damage.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Magical damage may be reduced by Stamina soak.",
+                  "raw": "- Magical damage may be reduced by Stamina soak.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.4",
+              "number": "5.1.4",
+              "title": "CHA - Charisma",
+              "slug": "cha_charisma",
+              "raw_heading": "5.1.4. CHA - Charisma",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Used for convincing and persuasion rolls.",
+                  "raw": "- Used for convincing and persuasion rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: CHA + Social.",
+                  "raw": "- Dice pool: CHA + Social.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for intimidation rolls.",
+                  "raw": "- Used for intimidation rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: CHA + Intimidation.",
+                  "raw": "- Dice pool: CHA + Intimidation.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.5",
+              "number": "5.1.5",
+              "title": "APP - Appearance",
+              "slug": "app_appearance",
+              "raw_heading": "5.1.5. APP - Appearance",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Used for seduction rolls.",
+                  "raw": "- Used for seduction rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: APP + Social.",
+                  "raw": "- Dice pool: APP + Social.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.6",
+              "number": "5.1.6",
+              "title": "MAN - Manipulation",
+              "slug": "man_manipulation",
+              "raw_heading": "5.1.6. MAN - Manipulation",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Used for deception rolls.",
+                  "raw": "- Used for deception rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: MAN + Social.",
+                  "raw": "- Dice pool: MAN + Social.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Deception includes lying, withholding information, and intentionally misleading responses.",
+                  "raw": "- Deception includes lying, withholding information, and intentionally misleading responses.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.7",
+              "number": "5.1.7",
+              "title": "INT - Intelligence",
+              "slug": "int_intelligence",
+              "raw_heading": "5.1.7. INT - Intelligence",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Used for knowledge-based rolls.",
+                  "raw": "- Used for knowledge-based rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: INT + Social, unless a different skill is specified.",
+                  "raw": "- Dice pool: INT + Social, unless a different skill is specified.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for defensive rolls against convincing and persuasion attempts.",
+                  "raw": "- Used for defensive rolls against convincing and persuasion attempts.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Defensive dice pool: INT + Social.",
+                  "raw": "- Defensive dice pool: INT + Social.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.8",
+              "number": "5.1.8",
+              "title": "WITS - Wits",
+              "slug": "wits_wits",
+              "raw_heading": "5.1.8. WITS - Wits",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Used for common sense and quick thinking rolls.",
+                  "raw": "- Used for common sense and quick thinking rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: WITS + Social.",
+                  "raw": "- Dice pool: WITS + Social.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for defensive rolls against seduction attempts.",
+                  "raw": "- Used for defensive rolls against seduction attempts.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Defensive dice pool: WITS + Social.",
+                  "raw": "- Defensive dice pool: WITS + Social.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for self-control rolls.",
+                  "raw": "- Used for self-control rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Self-control rolls use WITS alone, unless the DM specifies otherwise.",
+                  "raw": "- Self-control rolls use WITS alone, unless the DM specifies otherwise.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for initiative rolls.",
+                  "raw": "- Used for initiative rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Initiative roll: DEX + WITS.",
+                  "raw": "- Initiative roll: DEX + WITS.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "5.1.9",
+              "number": "5.1.9",
+              "title": "PER - Perception",
+              "slug": "per_perception",
+              "raw_heading": "5.1.9. PER - Perception",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Used to locate traps and detect hidden entities.",
+                  "raw": "- Used to locate traps and detect hidden entities.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: PER + Alertness.",
+                  "raw": "- Dice pool: PER + Alertness.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used to oppose Stealth rolls.",
+                  "raw": "- Used to oppose Stealth rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Dice pool: PER + Alertness.",
+                  "raw": "- Dice pool: PER + Alertness.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Used for defensive rolls against deception.",
+                  "raw": "- Used for defensive rolls against deception.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Defensive dice pool: PER + Social.",
+                  "raw": "- Defensive dice pool: PER + Social.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Contributes to ranged attack dice pools.",
+                  "raw": "- Contributes to ranged attack dice pools.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Ranged bonus dice: floor((PER - 1) / 2) d10.",
+                  "raw": "- Ranged bonus dice: floor((PER - 1) / 2) d10.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "number": "6",
+      "title": "POWERS AND SKILLS",
+      "slug": "powers_and_skills",
+      "raw_heading": "=== 6. POWERS AND SKILLS (AUTHORITATIVE) ===",
+      "authority": "authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "authoritative"
+      ],
+      "entries": [
+        {
+          "type": "bullet",
+          "text": "This section defines all skill- and power-based mechanics, including dice pool contributions, special effects, scaling rules, and resource interactions.",
+          "raw": "- This section defines all skill- and power-based mechanics, including dice pool contributions, special effects, scaling rules, and resource interactions.",
+          "children": []
+        }
+      ],
+      "subsections": [
+        {
+          "id": "6.1",
+          "number": "6.1",
+          "title": "T1 SKILLS",
+          "slug": "t1_skills",
+          "raw_heading": "6.1. T1 SKILLS",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "The level of a T1 Skill is always added to the relevant dice pool when that skill is used, unless explicitly stated otherwise.",
+              "raw": "- The level of a T1 Skill is always added to the relevant dice pool when that skill is used, unless explicitly stated otherwise.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Special effects granted by T1 Skills are applied after dice pool construction and penalties, and before result comparison, unless explicitly stated otherwise.",
+              "raw": "- Special effects granted by T1 Skills are applied after dice pool construction and penalties, and before result comparison, unless explicitly stated otherwise.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "\"Lowered DC (-1)\" means the required success threshold for the roll is reduced by 1.",
+              "raw": "- \"Lowered DC (-1)\" means the required success threshold for the roll is reduced by 1.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Social is used for both offensive and defensive interpersonal rolls unless explicitly overridden.",
+              "raw": "- Social is used for both offensive and defensive interpersonal rolls unless explicitly overridden.",
+              "children": []
+            }
+          ],
+          "subsections": [
+            {
+              "id": "6.1.1",
+              "number": "6.1.1",
+              "title": "Melee",
+              "slug": "melee",
+              "raw_heading": "6.1.1. Melee",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Enables unarmed and melee weapon attacks. Attack roll: DEX + Melee.",
+                  "raw": "- Level 1: Enables unarmed and melee weapon attacks. Attack roll: DEX + Melee.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Rolls of 10 count as 2 successes on melee attack and damage rolls.",
+                  "raw": "- Level 5: Rolls of 10 count as 2 successes on melee attack and damage rolls.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.2",
+              "number": "6.1.2",
+              "title": "Ranged",
+              "slug": "ranged",
+              "raw_heading": "6.1.2. Ranged",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Enables ranged weapon attacks. Attack roll: DEX + Ranged.",
+                  "raw": "- Level 1: Enables ranged weapon attacks. Attack roll: DEX + Ranged.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Rolls of 10 count as 2 successes on ranged attack and damage rolls.",
+                  "raw": "- Level 5: Rolls of 10 count as 2 successes on ranged attack and damage rolls.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.3",
+              "number": "6.1.3",
+              "title": "Athletics",
+              "slug": "athletics",
+              "raw_heading": "6.1.3. Athletics",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Governs running, acrobatics, jumping, and flexibility.",
+                  "raw": "- Level 1: Governs running, acrobatics, jumping, and flexibility.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: Gain bonus Armor Class (AC). Bonus AC = Athletics Level - 2.",
+                  "raw": "- Level 3: Gain bonus Armor Class (AC). Bonus AC = Athletics Level - 2.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: Base running speed increases from 25 m/turn to 30 m/turn.",
+                  "raw": "- Level 4: Base running speed increases from 25 m/turn to 30 m/turn.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Athletics rolls are easier. Apply Lowered DC (-1).",
+                  "raw": "- Level 5: Athletics rolls are easier. Apply Lowered DC (-1).",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.4",
+              "number": "6.1.4",
+              "title": "Stealth",
+              "slug": "stealth",
+              "raw_heading": "6.1.4. Stealth",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Enter Stealth outside combat. Roll: DEX + Stealth.",
+                  "raw": "- Level 1: Enter Stealth outside combat. Roll: DEX + Stealth.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: The first melee or ranged attack made from Stealth removes the target's Dodge for that attack.",
+                  "raw": "- Level 2: The first melee or ranged attack made from Stealth removes the target's Dodge for that attack.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: Ignore penalties and target-based resistance modifiers applied specifically against Stealth rolls.",
+                  "raw": "- Level 3: Ignore penalties and target-based resistance modifiers applied specifically against Stealth rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: The first magical attack made from Stealth removes the target's Stamina soak for that attack.",
+                  "raw": "- Level 4: The first magical attack made from Stealth removes the target's Stamina soak for that attack.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Stealth rolls are easier. Apply Lowered DC (-1).",
+                  "raw": "- Level 5: Stealth rolls are easier. Apply Lowered DC (-1).",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.5",
+              "number": "6.1.5",
+              "title": "Alertness",
+              "slug": "alertness",
+              "raw_heading": "6.1.5. Alertness",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Detect hidden creatures and traps. Roll: PER + Alertness.",
+                  "raw": "- Level 1: Detect hidden creatures and traps. Roll: PER + Alertness.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: Disarm traps and pick locks. Roll: DEX + Alertness.",
+                  "raw": "- Level 2: Disarm traps and pick locks. Roll: DEX + Alertness.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: Add Awareness supernatural power level to Alertness rolls, if applicable.",
+                  "raw": "- Level 3: Add Awareness supernatural power level to Alertness rolls, if applicable.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: May use INT + Alertness to analyze or identify instead of detecting.",
+                  "raw": "- Level 4: May use INT + Alertness to analyze or identify instead of detecting.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Alertness rolls are easier. Apply Lowered DC (-1).",
+                  "raw": "- Level 5: Alertness rolls are easier. Apply Lowered DC (-1).",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.6",
+              "number": "6.1.6",
+              "title": "Social",
+              "slug": "social",
+              "raw_heading": "6.1.6. Social",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Enables social influence rolls:",
+                  "raw": "- Level 1: Enables social influence rolls:",
+                  "children": [
+                    {
+                      "type": "bullet",
+                      "text": "Convince: CHA + Social",
+                      "raw": "  - Convince: CHA + Social",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "Seduce: APP + Social",
+                      "raw": "  - Seduce: APP + Social",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "Deceive: MAN + Social",
+                      "raw": "  - Deceive: MAN + Social",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: Gain +1 die on all Social rolls.",
+                  "raw": "- Level 2: Gain +1 die on all Social rolls.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: On a successful Social roll, gain 1 Temporary Inspiration. Temporary Inspiration may be spent to reroll a failed roll. Maximum 3 Temporary Inspiration at any time.",
+                  "raw": "- Level 3: On a successful Social roll, gain 1 Temporary Inspiration. Temporary Inspiration may be spent to reroll a failed roll. Maximum 3 Temporary Inspiration at any time.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: Once per scene, reroll one failed Social roll and keep the better result.",
+                  "raw": "- Level 4: Once per scene, reroll one failed Social roll and keep the better result.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Social rolls are easier. Apply Lowered DC (-1).",
+                  "raw": "- Level 5: Social rolls are easier. Apply Lowered DC (-1).",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.7",
+              "number": "6.1.7",
+              "title": "Medicine",
+              "slug": "medicine",
+              "raw_heading": "6.1.7. Medicine",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Stabilize bleeding and heal 1 HP. Usable once per day per target. Not usable in combat. Takes 2 minutes.",
+                  "raw": "- Level 1: Stabilize bleeding and heal 1 HP. Usable once per day per target. Not usable in combat. Takes 2 minutes.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: Usable twice per day per target.",
+                  "raw": "- Level 2: Usable twice per day per target.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: Heal 2 HP. Cure weak poisons when first aid is applied.",
+                  "raw": "- Level 3: Heal 2 HP. Cure weak poisons when first aid is applied.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: Perform surgery if conditions are met. Cure weak diseases.",
+                  "raw": "- Level 4: Perform surgery if conditions are met. Cure weak diseases.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Heal 3 HP. Cure moderate poisons and stat-penalty conditions. Targets at 0 to -5 HP are restored to 2 HP.",
+                  "raw": "- Level 5: Heal 3 HP. Cure moderate poisons and stat-penalty conditions. Targets at 0 to -5 HP are restored to 2 HP.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.8",
+              "number": "6.1.8",
+              "title": "Technology",
+              "slug": "technology",
+              "raw_heading": "6.1.8. Technology",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Effectively use computers, mobile devices, and common high-tech tools.",
+                  "raw": "- Level 1: Effectively use computers, mobile devices, and common high-tech tools.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: Identify and understand unknown high-tech devices based on roll success. May study portal-related items and enhance item qualities with DM approval. Gain 1 Tech Point (TP).",
+                  "raw": "- Level 2: Identify and understand unknown high-tech devices based on roll success. May study portal-related items and enhance item qualities with DM approval. Gain 1 Tech Point (TP).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: Hack non-secure systems. Roll: INT + Technology vs INT + Technology (developer). Gain 2 TP total.",
+                  "raw": "- Level 3: Hack non-secure systems. Roll: INT + Technology vs INT + Technology (developer). Gain 2 TP total.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: Hack secure systems and mobile devices. Roll: INT + Technology vs INT + Technology (developer) + firewall rank. May act as network administrator in limited organizations. Gain 3 TP total.",
+                  "raw": "- Level 4: Hack secure systems and mobile devices. Roll: INT + Technology vs INT + Technology (developer) + firewall rank. May act as network administrator in limited organizations. Gain 3 TP total.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Attempt hacks against systems protected by specialist teams. Roll: INT + Technology (developer) + firewall rank + specialist bonus. May act as network administrator in most organizations. Gain 4 TP total.",
+                  "raw": "- Level 5: Attempt hacks against systems protected by specialist teams. Roll: INT + Technology (developer) + firewall rank + specialist bonus. May act as network administrator in most organizations. Gain 4 TP total.",
+                  "children": []
+                }
+              ],
+              "subsections": [
+                {
+                  "id": "6.1.8.1",
+                  "number": "6.1.8.1",
+                  "title": "Tech Point Rules",
+                  "slug": "tech_point_rules",
+                  "raw_heading": "6.1.8.1. Tech Point (TP) Rules",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [
+                    "tp"
+                  ],
+                  "entries": [
+                    {
+                      "type": "bullet",
+                      "text": "Spend 1 TP to increase an item's numeric property by +25%, rounded up.",
+                      "raw": "- Spend 1 TP to increase an item's numeric property by +25%, rounded up.",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "Any numeric property may be enhanced, subject to DM discretion.",
+                      "raw": "- Any numeric property may be enhanced, subject to DM discretion.",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "Maximum 2 TP may be assigned to a single item.",
+                      "raw": "- Maximum 2 TP may be assigned to a single item.",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "TP are reusable and reassigned:",
+                      "raw": "- TP are reusable and reassigned:",
+                      "children": [
+                        {
+                          "type": "bullet",
+                          "text": "Assign before a long rest.",
+                          "raw": "  - Assign before a long rest.",
+                          "children": []
+                        },
+                        {
+                          "type": "bullet",
+                          "text": "Assignments remain active until the next long rest.",
+                          "raw": "  - Assignments remain active until the next long rest.",
+                          "children": []
+                        },
+                        {
+                          "type": "bullet",
+                          "text": "Before that next long rest, TP may be reassigned.",
+                          "raw": "  - Before that next long rest, TP may be reassigned.",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                }
+              ]
+            },
+            {
+              "id": "6.1.9",
+              "number": "6.1.9",
+              "title": "Academics",
+              "slug": "academics",
+              "raw_heading": "6.1.9. Academics",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Graduate-level knowledge in one chosen natural science. Eligible for entry-level white-collar roles.",
+                  "raw": "- Level 1: Graduate-level knowledge in one chosen natural science. Eligible for entry-level white-collar roles.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: Master's-level expertise. May conduct advanced research. May study portal-related supernatural phenomena and enhance supernatural powers with DM approval. Gain 1 Enhancement Point (EP).",
+                  "raw": "- Level 2: Master's-level expertise. May conduct advanced research. May study portal-related supernatural phenomena and enhance supernatural powers with DM approval. Gain 1 Enhancement Point (EP).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: PhD or MD in one field. Eligible for senior academic or professional roles. Gain 2 EP total.",
+                  "raw": "- Level 3: PhD or MD in one field. Eligible for senior academic or professional roles. Gain 2 EP total.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: Professor-level authority. May teach and access university resources. Minimum INT 3. Gain 3 EP total.",
+                  "raw": "- Level 4: Professor-level authority. May teach and access university resources. Minimum INT 3. Gain 3 EP total.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: World-class authority in the field. Near-global academic access. Minimum INT 4. Gain 4 EP total.",
+                  "raw": "- Level 5: World-class authority in the field. Near-global academic access. Minimum INT 4. Gain 4 EP total.",
+                  "children": []
+                }
+              ],
+              "subsections": [
+                {
+                  "id": "6.1.9.1",
+                  "number": "6.1.9.1",
+                  "title": "Enhancement Point Rules",
+                  "slug": "enhancement_point_rules",
+                  "raw_heading": "6.1.9.1. Enhancement Point (EP) Rules",
+                  "authority": "authoritative",
+                  "authority_source": "inherited",
+                  "qualifiers": [
+                    "ep"
+                  ],
+                  "entries": [
+                    {
+                      "type": "bullet",
+                      "text": "Spend 1 EP to increase a supernatural power's numeric effect by +25%, rounded up.",
+                      "raw": "- Spend 1 EP to increase a supernatural power's numeric effect by +25%, rounded up.",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "Any numeric effect may be enhanced, subject to DM discretion.",
+                      "raw": "- Any numeric effect may be enhanced, subject to DM discretion.",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "Maximum 2 EP may be assigned to a single power.",
+                      "raw": "- Maximum 2 EP may be assigned to a single power.",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "EP are reusable and reassigned:",
+                      "raw": "- EP are reusable and reassigned:",
+                      "children": [
+                        {
+                          "type": "bullet",
+                          "text": "Assign before a long rest.",
+                          "raw": "  - Assign before a long rest.",
+                          "children": []
+                        },
+                        {
+                          "type": "bullet",
+                          "text": "Assignments remain active until the next long rest.",
+                          "raw": "  - Assignments remain active until the next long rest.",
+                          "children": []
+                        },
+                        {
+                          "type": "bullet",
+                          "text": "Before that next long rest, EP may be reassigned.",
+                          "raw": "  - Before that next long rest, EP may be reassigned.",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": []
+                }
+              ]
+            },
+            {
+              "id": "6.1.10",
+              "number": "6.1.10",
+              "title": "Mechanics",
+              "slug": "mechanics",
+              "raw_heading": "6.1.10. Mechanics",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Repair common, masterwork, and uncommon items with tools. Ride bicycles. Typical duration: 10 minutes-8 hours.",
+                  "raw": "- Level 1: Repair common, masterwork, and uncommon items with tools. Ride bicycles. Typical duration: 10 minutes-8 hours.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: Repair rare items. Drive cars, buses, and motorbikes. Begin crafting common items.",
+                  "raw": "- Level 2: Repair rare items. Drive cars, buses, and motorbikes. Begin crafting common items.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: Craft uncommon items. Repair epic items. Drive all land vehicles. Modify uncommon and rare items using DEX + Mechanics.",
+                  "raw": "- Level 3: Craft uncommon items. Repair epic items. Drive all land vehicles. Modify uncommon and rare items using DEX + Mechanics.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: Craft masterwork and uncommon weapons, armor, and shields. Cost: 1/5 item value. Operate aircraft and ships. Modify epic items.",
+                  "raw": "- Level 4: Craft masterwork and uncommon weapons, armor, and shields. Cost: 1/5 item value. Operate aircraft and ships. Modify epic items.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: Repair and modify legendary items. On great success, modifications may exceed item quality. Add INT dice to modification rolls.",
+                  "raw": "- Level 5: Repair and modify legendary items. On great success, modifications may exceed item quality. Add INT dice to modification rolls.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "6.1.11",
+              "number": "6.1.11",
+              "title": "Occult",
+              "slug": "occult",
+              "raw_heading": "6.1.11. Occult",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Level 1: Know names and basic properties of most T1 supernatural powers. May learn 1 T1 power. Gain Mana Bonus = ceil(XP Used / 100).",
+                  "raw": "- Level 1: Know names and basic properties of most T1 supernatural powers. May learn 1 T1 power. Gain Mana Bonus = ceil(XP Used / 100).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 2: May learn 2 T1 supernatural powers.",
+                  "raw": "- Level 2: May learn 2 T1 supernatural powers.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 3: May learn 3 T1 supernatural powers. Gain Mana Bonus = ceil(XP Used / 50).",
+                  "raw": "- Level 3: May learn 3 T1 supernatural powers. Gain Mana Bonus = ceil(XP Used / 50).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 4: May learn 1 T2 supernatural power.",
+                  "raw": "- Level 4: May learn 1 T2 supernatural power.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Level 5: May learn 2 T2 supernatural powers. Gain Mana Bonus = ceil(XP Used / 25).",
+                  "raw": "- Level 5: May learn 2 T2 supernatural powers. Gain Mana Bonus = ceil(XP Used / 25).",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "7",
+      "number": "7",
+      "title": "META SYSTEM",
+      "slug": "meta_system",
+      "raw_heading": "=== 7. META SYSTEM (AUTHORITATIVE) ===",
+      "authority": "authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "authoritative"
+      ],
+      "entries": [
+        {
+          "type": "bullet",
+          "text": "This section defines meta-level systems that modify or contextualize core mechanics, including reroll resources, world-impact tracking, and character-level advantages and disadvantages.",
+          "raw": "- This section defines meta-level systems that modify or contextualize core mechanics, including reroll resources, world-impact tracking, and character-level advantages and disadvantages.",
+          "children": []
+        }
+      ],
+      "subsections": [
+        {
+          "id": "7.1",
+          "number": "7.1",
+          "title": "Inspiration",
+          "slug": "inspiration",
+          "raw_heading": "7.1. Inspiration",
+          "authority": "authoritative",
+          "authority_source": "inherited",
+          "qualifiers": [],
+          "entries": [
+            {
+              "type": "statement",
+              "text": "Inspiration represents willpower-based rerolls.",
+              "raw": "Inspiration represents willpower-based rerolls."
+            }
+          ],
+          "subsections": [
+            {
+              "id": "7.1.1",
+              "number": "7.1.1",
+              "title": "Types of Inspiration",
+              "slug": "types_of_inspiration",
+              "raw_heading": "7.1.1. Types of Inspiration",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Non-temporary Inspiration",
+                  "raw": "- Non-temporary Inspiration",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Temporary Inspiration",
+                  "raw": "- Temporary Inspiration",
+                  "children": []
+                },
+                {
+                  "type": "statement",
+                  "text": "Either type may be spent to reroll any failed roll at any time.",
+                  "raw": "Either type may be spent to reroll any failed roll at any time."
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.1.2",
+              "number": "7.1.2",
+              "title": "Non-temporary Inspiration",
+              "slug": "non_temporary_inspiration",
+              "raw_heading": "7.1.2. Non-temporary Inspiration",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Awarded by the DM for:",
+                  "raw": "- Awarded by the DM for:",
+                  "children": [
+                    {
+                      "type": "bullet",
+                      "text": "heroic or anti-heroic acts,",
+                      "raw": "  - heroic or anti-heroic acts,",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "completing major events or quests,",
+                      "raw": "  - completing major events or quests,",
+                      "children": []
+                    },
+                    {
+                      "type": "bullet",
+                      "text": "exceptionally creative thinking or problem-solving.",
+                      "raw": "  - exceptionally creative thinking or problem-solving.",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "type": "bullet",
+                  "text": "Non-temporary Inspiration points stack.",
+                  "raw": "- Non-temporary Inspiration points stack.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.1.3",
+              "number": "7.1.3",
+              "title": "Temporary Inspiration",
+              "slug": "temporary_inspiration",
+              "raw_heading": "7.1.3. Temporary Inspiration",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Granted by specific rules or perks (e.g., the Inspired Merit).",
+                  "raw": "- Granted by specific rules or perks (e.g., the Inspired Merit).",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Temporary Inspiration points stack only if granted from different sources.",
+                  "raw": "- Temporary Inspiration points stack only if granted from different sources.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Temporary Inspiration points expire at the end of the game session.",
+                  "raw": "- Temporary Inspiration points expire at the end of the game session.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        },
+        {
+          "id": "7.2",
+          "number": "7.2",
+          "title": "Karma",
+          "slug": "karma",
+          "raw_heading": "7.2. Karma (Authoritative Definition)",
+          "authority": "authoritative",
+          "authority_source": "explicit",
+          "qualifiers": [
+            "authoritative_definition"
+          ],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "Karma represents the measurable impact of an entity's actions on the world.",
+              "raw": "- Karma represents the measurable impact of an entity's actions on the world.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Karma is assigned and adjusted by the DM based on observed impact, not intent.",
+              "raw": "- Karma is assigned and adjusted by the DM based on observed impact, not intent.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Karma is not an alignment system and does not measure morality.",
+              "raw": "- Karma is not an alignment system and does not measure morality.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Both constructive and destructive impacts are tracked.",
+              "raw": "- Both constructive and destructive impacts are tracked.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "An entity may hold both positive and negative Karma over time.",
+              "raw": "- An entity may hold both positive and negative Karma over time.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Karma is a numeric value in the range [-24, +24].",
+              "raw": "- Karma is a numeric value in the range [-24, +24].",
+              "children": []
+            }
+          ],
+          "subsections": [
+            {
+              "id": "7.2.1",
+              "number": "7.2.1",
+              "title": "Karma Scale",
+              "slug": "karma_scale",
+              "raw_heading": "7.2.1. Karma Scale (Non-Exhaustive)",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [
+                "non_exhaustive"
+              ],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "-24: Prime destructive entity; maximum world-scale harm",
+                  "raw": "- -24: Prime destructive entity; maximum world-scale harm",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "-6 to -12: Global-scale mass suffering",
+                  "raw": "- -6 to -12: Global-scale mass suffering",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "-4 to -8: National-scale harm",
+                  "raw": "- -4 to -8: National-scale harm",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "-2 to -6: Localized severe harm",
+                  "raw": "- -2 to -6: Localized severe harm",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "0: Negligible or insignificant impact",
+                  "raw": "- 0: Negligible or insignificant impact",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "+2 to +6: Meaningful positive influence",
+                  "raw": "- +2 to +6: Meaningful positive influence",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "+4 to +8: Major positive influence on communities or nations",
+                  "raw": "- +4 to +8: Major positive influence on communities or nations",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "+12: World-level beneficial influence",
+                  "raw": "- +12: World-level beneficial influence",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "+24: Prime constructive entity; maximum world-scale healing and harmony",
+                  "raw": "- +24: Prime constructive entity; maximum world-scale healing and harmony",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        },
+        {
+          "id": "7.3",
+          "number": "7.3",
+          "title": "Merits",
+          "slug": "merits",
+          "raw_heading": "7.3. Merits (Authoritative Definition)",
+          "authority": "authoritative",
+          "authority_source": "explicit",
+          "qualifiers": [
+            "authoritative_definition"
+          ],
+          "entries": [
+            {
+              "type": "statement",
+              "text": "Merits cost XP and apply immediately upon acquisition.",
+              "raw": "Merits cost XP and apply immediately upon acquisition."
+            }
+          ],
+          "subsections": [
+            {
+              "id": "7.3.1",
+              "number": "7.3.1",
+              "title": "Extra HP",
+              "slug": "extra_hp",
+              "raw_heading": "7.3.1. Extra HP",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Gain +1 base HP. May be taken up to 2 times.",
+                  "raw": "Gain +1 base HP. May be taken up to 2 times."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 5 / 10",
+                  "raw": "XP Cost: 5 / 10",
+                  "label": "xp_cost",
+                  "value": "5 / 10"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.3.2",
+              "number": "7.3.2",
+              "title": "Extra Mana",
+              "slug": "extra_mana",
+              "raw_heading": "7.3.2. Extra Mana",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Gain +1 base Mana. May be taken up to 4 times.",
+                  "raw": "Gain +1 base Mana. May be taken up to 4 times."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 3 / 6 / 9 / 12",
+                  "raw": "XP Cost: 3 / 6 / 9 / 12",
+                  "label": "xp_cost",
+                  "value": "3 / 6 / 9 / 12"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.3.3",
+              "number": "7.3.3",
+              "title": "Gifted",
+              "slug": "gifted",
+              "raw_heading": "7.3.3. Gifted",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Stat soft cap increases to 6 instead of 5.",
+                  "raw": "Stat soft cap increases to 6 instead of 5."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "Restriction: Cannot be taken with Weak and Meek.",
+                  "raw": "Restriction: Cannot be taken with Weak and Meek.",
+                  "label": "restriction",
+                  "value": "Cannot be taken with Weak and Meek."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 20",
+                  "raw": "XP Cost: 20",
+                  "label": "xp_cost",
+                  "value": "20"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.3.4",
+              "number": "7.3.4",
+              "title": "Rich Bitch",
+              "slug": "rich_bitch",
+              "raw_heading": "7.3.4. Rich Bitch",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Start with a high standard of living (home, car, $500,000 funds, $5,000/month passive income). Trivial purchases are ignored.",
+                  "raw": "Start with a high standard of living (home, car, $500,000 funds, $5,000/month passive income). Trivial purchases are ignored."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "Restriction: Cannot be taken with Huge Debt.",
+                  "raw": "Restriction: Cannot be taken with Huge Debt.",
+                  "label": "restriction",
+                  "value": "Cannot be taken with Huge Debt."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 5",
+                  "raw": "XP Cost: 5",
+                  "label": "xp_cost",
+                  "value": "5"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.3.5",
+              "number": "7.3.5",
+              "title": "Dao Companion",
+              "slug": "dao_companion",
+              "raw_heading": "7.3.5. Dao Companion",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Gain a close companion (friend or lover). Companions are non-hunters with low combat capability but may provide situational assistance. May be taken up to 2 times.",
+                  "raw": "Gain a close companion (friend or lover). Companions are non-hunters with low combat capability but may provide situational assistance. May be taken up to 2 times."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 5 / 10",
+                  "raw": "XP Cost: 5 / 10",
+                  "label": "xp_cost",
+                  "value": "5 / 10"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.3.6",
+              "number": "7.3.6",
+              "title": "Extra Language",
+              "slug": "extra_language",
+              "raw_heading": "7.3.6. Extra Language",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Learn one additional language. May be taken up to 2 x starting INT.",
+                  "raw": "Learn one additional language. May be taken up to 2 x starting INT."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 2 per language at character creation.",
+                  "raw": "XP Cost: 2 per language at character creation.",
+                  "label": "xp_cost",
+                  "value": "2 per language at character creation."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "Note: Languages learned later cost 4 XP and require 5 sessions to master.",
+                  "raw": "Note: Languages learned later cost 4 XP and require 5 sessions to master.",
+                  "label": "note",
+                  "value": "Languages learned later cost 4 XP and require 5 sessions to master."
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.3.7",
+              "number": "7.3.7",
+              "title": "Dominant Dosha",
+              "slug": "dominant_dosha",
+              "raw_heading": "7.3.7. Dominant Dosha",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Choose Pitta, Vata, or Kapha. Gain resistance (half damage) to associated elements.",
+                  "raw": "Choose Pitta, Vata, or Kapha. Gain resistance (half damage) to associated elements."
+                },
+                {
+                  "type": "bullet",
+                  "text": "Pitta: fire, acid",
+                  "raw": "- Pitta: fire, acid",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Vata: lightning, cold",
+                  "raw": "- Vata: lightning, cold",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Kapha: cold, acid",
+                  "raw": "- Kapha: cold, acid",
+                  "children": []
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "Resistance Formula: `ceil((Total Damage / 2) - Stamina)`",
+                  "raw": "Resistance Formula: `ceil((Total Damage / 2) - Stamina)`",
+                  "label": "resistance_formula",
+                  "value": "`ceil((Total Damage / 2) - Stamina)`"
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 15",
+                  "raw": "XP Cost: 15",
+                  "label": "xp_cost",
+                  "value": "15"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.3.8",
+              "number": "7.3.8",
+              "title": "Inspired",
+              "slug": "inspired",
+              "raw_heading": "7.3.8. Inspired",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Start with 5 non-temporary Inspiration points.",
+                  "raw": "- Start with 5 non-temporary Inspiration points.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Gain 1 temporary Inspiration at the start of each session.",
+                  "raw": "- Gain 1 temporary Inspiration at the start of each session.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Temporary Inspiration expires at session end.",
+                  "raw": "- Temporary Inspiration expires at session end.",
+                  "children": []
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Cost: 5",
+                  "raw": "XP Cost: 5",
+                  "label": "xp_cost",
+                  "value": "5"
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        },
+        {
+          "id": "7.4",
+          "number": "7.4",
+          "title": "Flaws",
+          "slug": "flaws",
+          "raw_heading": "7.4. Flaws (Authoritative Definition)",
+          "authority": "authoritative",
+          "authority_source": "explicit",
+          "qualifiers": [
+            "authoritative_definition"
+          ],
+          "entries": [
+            {
+              "type": "statement",
+              "text": "Flaws grant XP and apply immediately upon acquisition.",
+              "raw": "Flaws grant XP and apply immediately upon acquisition."
+            }
+          ],
+          "subsections": [
+            {
+              "id": "7.4.1",
+              "number": "7.4.1",
+              "title": "Permanently Wounded",
+              "slug": "permanently_wounded",
+              "raw_heading": "7.4.1. Permanently Wounded",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Reduce base HP by 1. May be taken up to 2 times.",
+                  "raw": "Reduce base HP by 1. May be taken up to 2 times."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Gain: 5 / 10",
+                  "raw": "XP Gain: 5 / 10",
+                  "label": "xp_gain",
+                  "value": "5 / 10"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.4.2",
+              "number": "7.4.2",
+              "title": "Magic Blindness",
+              "slug": "magic_blindness",
+              "raw_heading": "7.4.2. Magic Blindness",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "May learn only 1 T1 supernatural power (and later 1 T2, if available), regardless of Occult level.",
+                  "raw": "May learn only 1 T1 supernatural power (and later 1 T2, if available), regardless of Occult level."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Gain: 20",
+                  "raw": "XP Gain: 20",
+                  "label": "xp_gain",
+                  "value": "20"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.4.3",
+              "number": "7.4.3",
+              "title": "Asocial",
+              "slug": "asocial",
+              "raw_heading": "7.4.3. Asocial",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "All Social rolls and defenses roll at higher difficulty (standard DC becomes 7).",
+                  "raw": "All Social rolls and defenses roll at higher difficulty (standard DC becomes 7)."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Gain: 10",
+                  "raw": "XP Gain: 10",
+                  "label": "xp_gain",
+                  "value": "10"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.4.4",
+              "number": "7.4.4",
+              "title": "Huge Debt",
+              "slug": "huge_debt",
+              "raw_heading": "7.4.4. Huge Debt",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Start with $500,000 debt. Beginning after the 5th session, must pay $10,000 per session until resolved.",
+                  "raw": "Start with $500,000 debt. Beginning after the 5th session, must pay $10,000 per session until resolved."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "Restriction: Cannot be taken with Rich Bitch.",
+                  "raw": "Restriction: Cannot be taken with Rich Bitch.",
+                  "label": "restriction",
+                  "value": "Cannot be taken with Rich Bitch."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Gain: 5",
+                  "raw": "XP Gain: 5",
+                  "label": "xp_gain",
+                  "value": "5"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.4.5",
+              "number": "7.4.5",
+              "title": "Uninspired",
+              "slug": "uninspired",
+              "raw_heading": "7.4.5. Uninspired",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "The character cannot spend non-temporary Inspiration.",
+                  "raw": "- The character cannot spend non-temporary Inspiration.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Each time the character would gain non-temporary Inspiration, reduce this flaw's potency by 1 instead.",
+                  "raw": "- Each time the character would gain non-temporary Inspiration, reduce this flaw's potency by 1 instead.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "After 10 such reductions, this flaw is removed and Inspiration functions normally.",
+                  "raw": "- After 10 such reductions, this flaw is removed and Inspiration functions normally.",
+                  "children": []
+                },
+                {
+                  "type": "statement",
+                  "text": "Restrictions:",
+                  "raw": "Restrictions:"
+                },
+                {
+                  "type": "bullet",
+                  "text": "Cannot be taken with Inspired.",
+                  "raw": "- Cannot be taken with Inspired.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Awareness cantrip has no effect until the flaw is removed.",
+                  "raw": "- Awareness cantrip has no effect until the flaw is removed.",
+                  "children": []
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Gain: 10",
+                  "raw": "XP Gain: 10",
+                  "label": "xp_gain",
+                  "value": "10"
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "7.4.6",
+              "number": "7.4.6",
+              "title": "Weak and Meek",
+              "slug": "weak_and_meek",
+              "raw_heading": "7.4.6. Weak and Meek",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "statement",
+                  "text": "Physical stat maximum is 4 instead of 5.",
+                  "raw": "Physical stat maximum is 4 instead of 5."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "Restriction: Cannot be taken with Gifted.",
+                  "raw": "Restriction: Cannot be taken with Gifted.",
+                  "label": "restriction",
+                  "value": "Cannot be taken with Gifted."
+                },
+                {
+                  "type": "labeled_rule",
+                  "text": "XP Gain: 15",
+                  "raw": "XP Gain: 15",
+                  "label": "xp_gain",
+                  "value": "15"
+                }
+              ],
+              "subsections": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "number": "8",
+      "title": "MISCELLANEOUS",
+      "slug": "miscellaneous",
+      "raw_heading": "=== 8. MISCELLANEOUS (NON-AUTHORITATIVE) ===",
+      "authority": "non_authoritative",
+      "authority_source": "explicit",
+      "qualifiers": [
+        "non_authoritative"
+      ],
+      "entries": [],
+      "subsections": [
+        {
+          "id": "8.1",
+          "number": "8.1",
+          "title": "RANK REFERENCE",
+          "slug": "rank_reference",
+          "raw_heading": "8.1. RANK REFERENCE (INFORMATIVE, NON-AUTHORITATIVE, NON-MECHANICAL)",
+          "authority": "non_authoritative",
+          "authority_source": "explicit",
+          "qualifiers": [
+            "informative",
+            "non_authoritative",
+            "non_mechanical"
+          ],
+          "entries": [
+            {
+              "type": "bullet",
+              "text": "This section is descriptive only.",
+              "raw": "- This section is descriptive only.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "It provides narrative context for Rank tiers.",
+              "raw": "- It provides narrative context for Rank tiers.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "It has no mechanical effect unless explicitly referenced elsewhere.",
+              "raw": "- It has no mechanical effect unless explicitly referenced elsewhere.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Rank F: Ordinary humans with negligible world impact.",
+              "raw": "- Rank F: Ordinary humans with negligible world impact.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Rank E: Exceptional individuals or entry-level hunters.",
+              "raw": "- Rank E: Exceptional individuals or entry-level hunters.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Rank D: Clearly superhuman entities.",
+              "raw": "- Rank D: Clearly superhuman entities.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Rank C: Superhero-tier beings; elite hunters and major threats.",
+              "raw": "- Rank C: Superhero-tier beings; elite hunters and major threats.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Rank B: Mythic or demi-god-level entities.",
+              "raw": "- Rank B: Mythic or demi-god-level entities.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Rank A: World-shaping forces beyond common myth.",
+              "raw": "- Rank A: World-shaping forces beyond common myth.",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Rank S: Singular anomalies; narrative outliers.",
+              "raw": "- Rank S: Singular anomalies; narrative outliers.",
+              "children": []
+            }
+          ],
+          "subsections": []
+        }
+      ]
+    }
+  ]
+}
