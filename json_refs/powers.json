@@ -1,0 +1,12 @@
+{
+  "source": {
+    "status": "placeholder",
+    "path": null,
+    "notes": [
+      "A dedicated authoritative powers source is not present in this repository yet.",
+      "Replace this placeholder with structured power definitions once the source rules are available."
+    ]
+  },
+  "schema_version": 1,
+  "powers": []
+}

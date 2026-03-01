@@ -1,0 +1,13 @@
+{
+  "source": {
+    "status": "placeholder",
+    "path": null,
+    "notes": [
+      "A dedicated authoritative item rules source is not present in this repository yet.",
+      "Replace this placeholder with structured item template data once the source rules are available."
+    ]
+  },
+  "schema_version": 1,
+  "templates": [],
+  "effect_definitions": []
+}
