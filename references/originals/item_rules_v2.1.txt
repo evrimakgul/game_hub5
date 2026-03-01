@@ -1,0 +1,95 @@
+=== ITEM CREATION AND SCALING RULES (AUTHORITATIVE) ===
+-	This document defines the authoritative mechanical rules for item property scaling, quality tiers, and item creation.
+-	All supplemental, magical, or advanced item modifiers are budgeted using the Property Point (PP) system.
+
+1.	CORE PRINCIPLES OF ITEM PROPERTIES
+-	Base Item Stats: Mundane/base item properties (e.g., a standard one-handed weapon dealing STR + 2 damage, or a standard Kevlar vest granting 2 DR) cost 0 PP.
+-	The PP budget applies exclusively to the magical, advanced, or supplementary bonuses placed on the item above its mundane baseline.
+-	An item's total PP cost is the sum of all its positive properties minus the sum of all its drawbacks/curses.
+
+2.	PROPERTY POINT (PP) COSTS
+-	Properties are divided into Tiers and Special categories. Costs listed below are applied per point or per instance.
+
+2.1. TIER 1: POOLS AND MINOR COMBAT
+-	Cost: 1 PP per point
+-	+1 Maximum HP
+-	+1 Maximum Mana
+-	+1 Initiative
+
+2.2. TIER 2: COMBAT AND SKILL MODIFIERS
+-	Cost: 2 PP per point
+-	+1 to any specific Skill (e.g., Melee, Ranged, Stealth, Athletics, etc.)
+-	+1 Hit (adds directly to Attack Dice Pool)
+-	+1 Damage (adds directly to Damage Dice Pool)
+-	+1 Armor Class (AC)
+-	+1 Damage Reduction (DR)
+
+2.3. TIER 3: CORE STATS
+-	Cost: 3 PP per point
+-	+1 to any single Core Stat (STR, DEX, STAM, INT, WITS, PER, CHA, MAN, APP)
+-	+1 Hit (adds directly to Attack Resolution)
+-	+1 Damage (adds directly to Damage Resolution)
+-	+1 Success to any types of roll
+
+2.4. SPECIAL PROPERTIES
+-	Variable PP Cost
+-	Minor Utility (e.g., night vision, minor cosmetic changes, glowing, basic portal utility): 1 to 3 PP
+-	+1 to a selected spell: 4 PP
+-	+1 to a supernatural power: 6 PP
+-	Major Effect (e.g., AoE damage, lifesteal/vampirism, ignoring up to 3 enemy DR): 6 to 10 PP
+-	Elemental Resistance (e.g., half damage taken from one specific element): 8 PP
+-	Bundle: +1 to All Stats (discounted flat cost for global stat increase): 12 PP
+-	Immunity (e.g., total immunity to one specific element or crowd control type): 15 PP
+-	Game-Altering Effect (e.g., granting an extra Standard Action, reality-bending mechanics): 15 to 20+ PP
+
+3.	DRAWBACKS AND CURSES (PP REFUNDS)
+-	Applying a permanent penalty to an item refunds PP, increasing the item's available PP budget for stronger positive effects.
+-	-1 Maximum HP, Maximum Mana, or Initiative: Refunds 1 PP
+-	-1 to any specific Skill, Hit, Damage, AC, or DR: Refunds 2 PP
+-	-1 to any single Core Stat: Refunds 3 PP
+
+4.	ITEM QUALITY SYSTEM (PP BUDGETS)
+-	An item's Quality is strictly defined by its total net PP capacity (Total Positive PP - Total Refunded PP).
+-	Items cannot exceed the PP capacity of their designated Quality tier unless specifically authorized by the DM.
+
+Item Quality Tiers and PP Budget Capacities:
+-	Common: 0 PP (Standard mundane items; base stats only)
+-	Uncommon / Masterwork: 1 to 4 PP (Minor enhancements or master-crafted gear)
+-	Rare: 5 to 10 PP (Elite gear; typically introduces core stat bonuses)
+-	Epic: 11 to 18 PP (Immensely powerful gear; introduces resistances and major effects)
+-	Legendary: 19 to 30 PP (Relics of myth with extreme combat impact)
+-	Mythical / Celestial / Demonic: 31 to 60+ PP (Reality-bending items that define character builds)
+-	Artifact: 1 to 4 PP Base (Starts equivalent to Uncommon. Scales indefinitely by fulfilling specific blood-bound conditions)
+
+5.	BASE ITEM TEMPLATES (0 PP COST)
+-	This section defines the baseline statistics for mundane items.
+-	These items cost 0 PP and serve as the foundation for creating magical items.
+-	Magical properties (tiers 1-4) are added on top of these base statistics.
+
+5.1. MELEE WEAPONS
+-	Unarmed / Brawl: Damage = STR. (Hands: 1)
+-	Standard 1-Handed Weapon (Sword, Mace, Baton): Damage = STR + 2. (Hands: 1)
+-	Standard 2-Handed Weapon (Greatsword, Spear): Damage = STR + 6. (Hands: 2). Requirement: Minimum STR 4 to wield.
+-	3-Handed Weapon (Oversized): Damage = STR + 9. (Hands: 2). Requirement: Minimum STR 6 to wield.
+
+5.2. RANGED WEAPONS
+-	Short Bow, Light Crossbow: Damage = 5d10. Range = 25m. (Hands: 2)
+-	Pistol: Damage = 6d10. Range = 25m. (Hands: 1)
+-	Long Bow: Damage = 6d10. Range = 50m. (Hands: 2)
+-	Rifle: Damage = 7d10. Range = 50m. (Hands: 2)
+-	Heavy Crossbow: Damage = 8d10. Range = 50m. (Hands: 2)
+-	Shotgun: Damage = 10d10. Range = 10m. (Hands: 2)
+-	Chaingun: Damage = 12d10. Range = 50m. (Hands: 2). Requirement: Minimum STR 8 to wield.
+-	Rocket Launcher: Damage = 20d10 (AoE). Range = 100m. (Hands: 2). Special: Deals Area of Effect damage.
+
+5.3. ARMOR AND SHIELDS
+-	No Armor / Clothing / Robes: Initiative +2, DR +0. (Slot: Chest)
+-	Light Armors: Initiative +1, DR +1. (Slot: Chest)
+-	Medium Armors: Stealth -1, DR +2. (Slot: Chest)
+-	Heavy Armors: Initiative -1, Stealth -2, DR +3. (Slot: Chest)
+-	Light Shields: DR +1. (Slot: Hand: 1)
+-	Heavy Shields: DR +2. (Slot: Hand: 1)
+
+5.4. OCCULT ITEMS
+-	Occult Focus (Orb, Wand, Staff, etc.): Allows the user to cast spells while holding this item. (Slot: Hand). Base Mana Bonus: +0. 
+

@@ -1,13 +1,508 @@
 {
   "source": {
-    "status": "placeholder",
-    "path": null,
-    "notes": [
-      "A dedicated authoritative item rules source is not present in this repository yet.",
-      "Replace this placeholder with structured item template data once the source rules are available."
-    ]
+    "path": "references/originals/item_rules_v2.1.txt",
+    "filename": "item_rules_v2.1.txt",
+    "title": "ITEM CREATION AND SCALING RULES",
+    "authority": "authoritative"
   },
   "schema_version": 1,
-  "templates": [],
-  "effect_definitions": []
+  "core_principles": [
+    "Base item stats cost 0 PP and represent the mundane baseline of an item.",
+    "PP budget applies only to magical, advanced, or supplementary bonuses above the mundane baseline.",
+    "An item's total PP cost is positive properties minus drawbacks or curses."
+  ],
+  "property_point_costs": {
+    "tier_1_minor_combat": {
+      "cost_per_point": 1,
+      "modifiers": [
+        {
+          "target": "max_hp",
+          "amount": 1
+        },
+        {
+          "target": "max_mana",
+          "amount": 1
+        },
+        {
+          "target": "initiative",
+          "amount": 1
+        }
+      ]
+    },
+    "tier_2_combat_and_skills": {
+      "cost_per_point": 2,
+      "modifiers": [
+        {
+          "target": "specific_skill",
+          "amount": 1
+        },
+        {
+          "target": "attack_dice_pool_hit_bonus",
+          "amount": 1
+        },
+        {
+          "target": "damage_dice_pool_bonus",
+          "amount": 1
+        },
+        {
+          "target": "armor_class",
+          "amount": 1
+        },
+        {
+          "target": "damage_reduction",
+          "amount": 1
+        }
+      ]
+    },
+    "tier_3_core_stats": {
+      "cost_per_point": 3,
+      "modifiers": [
+        {
+          "target": "single_core_stat",
+          "amount": 1,
+          "allowed_stats": [
+            "STR",
+            "DEX",
+            "STAM",
+            "INT",
+            "WITS",
+            "PER",
+            "CHA",
+            "MAN",
+            "APP"
+          ]
+        },
+        {
+          "target": "attack_resolution_hit_bonus",
+          "amount": 1
+        },
+        {
+          "target": "damage_resolution_bonus",
+          "amount": 1
+        },
+        {
+          "target": "successes_to_any_roll",
+          "amount": 1
+        }
+      ]
+    },
+    "special_properties": [
+      {
+        "name": "Minor Utility",
+        "pp_cost": {
+          "min": 1,
+          "max": 3
+        },
+        "examples": [
+          "night vision",
+          "minor cosmetic changes",
+          "glowing",
+          "basic portal utility"
+        ]
+      },
+      {
+        "name": "+1 to a selected spell",
+        "pp_cost": 4
+      },
+      {
+        "name": "+1 to a supernatural power",
+        "pp_cost": 6
+      },
+      {
+        "name": "Major Effect",
+        "pp_cost": {
+          "min": 6,
+          "max": 10
+        },
+        "examples": [
+          "AoE damage",
+          "lifesteal or vampirism",
+          "ignoring up to 3 enemy DR"
+        ]
+      },
+      {
+        "name": "Elemental Resistance",
+        "pp_cost": 8,
+        "examples": [
+          "half damage taken from one specific element"
+        ]
+      },
+      {
+        "name": "Bundle: +1 to All Stats",
+        "pp_cost": 12
+      },
+      {
+        "name": "Immunity",
+        "pp_cost": 15,
+        "examples": [
+          "total immunity to one specific element",
+          "total immunity to one crowd control type"
+        ]
+      },
+      {
+        "name": "Game-Altering Effect",
+        "pp_cost": {
+          "min": 15,
+          "max": null
+        },
+        "examples": [
+          "granting an extra Standard Action",
+          "reality-bending mechanics"
+        ]
+      }
+    ]
+  },
+  "drawback_refunds": [
+    {
+      "target_group": [
+        "max_hp",
+        "max_mana",
+        "initiative"
+      ],
+      "refund_per_point": 1
+    },
+    {
+      "target_group": [
+        "specific_skill",
+        "hit",
+        "damage",
+        "armor_class",
+        "damage_reduction"
+      ],
+      "refund_per_point": 2
+    },
+    {
+      "target_group": [
+        "single_core_stat"
+      ],
+      "refund_per_point": 3
+    }
+  ],
+  "quality_tiers": [
+    {
+      "name": "Common",
+      "pp_capacity": {
+        "min": 0,
+        "max": 0
+      },
+      "notes": [
+        "Standard mundane items",
+        "base stats only"
+      ]
+    },
+    {
+      "name": "Uncommon / Masterwork",
+      "pp_capacity": {
+        "min": 1,
+        "max": 4
+      },
+      "notes": [
+        "Minor enhancements",
+        "master-crafted gear"
+      ]
+    },
+    {
+      "name": "Rare",
+      "pp_capacity": {
+        "min": 5,
+        "max": 10
+      },
+      "notes": [
+        "Elite gear",
+        "typically introduces core stat bonuses"
+      ]
+    },
+    {
+      "name": "Epic",
+      "pp_capacity": {
+        "min": 11,
+        "max": 18
+      },
+      "notes": [
+        "Immensely powerful gear",
+        "introduces resistances and major effects"
+      ]
+    },
+    {
+      "name": "Legendary",
+      "pp_capacity": {
+        "min": 19,
+        "max": 30
+      },
+      "notes": [
+        "Relics of myth with extreme combat impact"
+      ]
+    },
+    {
+      "name": "Mythical / Celestial / Demonic",
+      "pp_capacity": {
+        "min": 31,
+        "max": 60
+      },
+      "notes": [
+        "Reality-bending items that define character builds",
+        "source text indicates 60+ PP at this tier"
+      ]
+    },
+    {
+      "name": "Artifact",
+      "pp_capacity": {
+        "min": 1,
+        "max": 4
+      },
+      "notes": [
+        "Starts equivalent to Uncommon",
+        "scales indefinitely by fulfilling blood-bound conditions"
+      ]
+    }
+  ],
+  "base_item_templates": {
+    "melee_weapons": [
+      {
+        "id": "unarmed_brawl",
+        "name": "Unarmed / Brawl",
+        "hands_required": 1,
+        "damage": {
+          "type": "formula",
+          "expression": "STR"
+        }
+      },
+      {
+        "id": "standard_one_handed_weapon",
+        "name": "Standard 1-Handed Weapon",
+        "examples": [
+          "Sword",
+          "Mace",
+          "Baton"
+        ],
+        "hands_required": 1,
+        "damage": {
+          "type": "formula",
+          "expression": "STR + 2"
+        }
+      },
+      {
+        "id": "standard_two_handed_weapon",
+        "name": "Standard 2-Handed Weapon",
+        "examples": [
+          "Greatsword",
+          "Spear"
+        ],
+        "hands_required": 2,
+        "damage": {
+          "type": "formula",
+          "expression": "STR + 6"
+        },
+        "requirements": [
+          {
+            "stat": "STR",
+            "minimum": 4
+          }
+        ]
+      },
+      {
+        "id": "oversized_three_handed_weapon",
+        "name": "3-Handed Weapon (Oversized)",
+        "hands_required": 2,
+        "damage": {
+          "type": "formula",
+          "expression": "STR + 9"
+        },
+        "requirements": [
+          {
+            "stat": "STR",
+            "minimum": 6
+          }
+        ],
+        "notes": [
+          "Source text names this template as a 3-Handed Weapon but lists Hands: 2."
+        ]
+      }
+    ],
+    "ranged_weapons": [
+      {
+        "id": "short_bow",
+        "name": "Short Bow",
+        "hands_required": 2,
+        "range_meters": 25,
+        "damage": {
+          "type": "dice",
+          "dice_count": 5,
+          "dice_sides": 10
+        }
+      },
+      {
+        "id": "light_crossbow",
+        "name": "Light Crossbow",
+        "hands_required": 2,
+        "range_meters": 25,
+        "damage": {
+          "type": "dice",
+          "dice_count": 5,
+          "dice_sides": 10
+        }
+      },
+      {
+        "id": "pistol",
+        "name": "Pistol",
+        "hands_required": 1,
+        "range_meters": 25,
+        "damage": {
+          "type": "dice",
+          "dice_count": 6,
+          "dice_sides": 10
+        }
+      },
+      {
+        "id": "long_bow",
+        "name": "Long Bow",
+        "hands_required": 2,
+        "range_meters": 50,
+        "damage": {
+          "type": "dice",
+          "dice_count": 6,
+          "dice_sides": 10
+        }
+      },
+      {
+        "id": "rifle",
+        "name": "Rifle",
+        "hands_required": 2,
+        "range_meters": 50,
+        "damage": {
+          "type": "dice",
+          "dice_count": 7,
+          "dice_sides": 10
+        }
+      },
+      {
+        "id": "heavy_crossbow",
+        "name": "Heavy Crossbow",
+        "hands_required": 2,
+        "range_meters": 50,
+        "damage": {
+          "type": "dice",
+          "dice_count": 8,
+          "dice_sides": 10
+        }
+      },
+      {
+        "id": "shotgun",
+        "name": "Shotgun",
+        "hands_required": 2,
+        "range_meters": 10,
+        "damage": {
+          "type": "dice",
+          "dice_count": 10,
+          "dice_sides": 10
+        }
+      },
+      {
+        "id": "chaingun",
+        "name": "Chaingun",
+        "hands_required": 2,
+        "range_meters": 50,
+        "damage": {
+          "type": "dice",
+          "dice_count": 12,
+          "dice_sides": 10
+        },
+        "requirements": [
+          {
+            "stat": "STR",
+            "minimum": 8
+          }
+        ]
+      },
+      {
+        "id": "rocket_launcher",
+        "name": "Rocket Launcher",
+        "hands_required": 2,
+        "range_meters": 100,
+        "damage": {
+          "type": "dice",
+          "dice_count": 20,
+          "dice_sides": 10
+        },
+        "special": [
+          "Deals Area of Effect damage"
+        ]
+      }
+    ],
+    "armor_and_shields": [
+      {
+        "id": "no_armor",
+        "name": "No Armor / Clothing / Robes",
+        "slot": "chest",
+        "modifiers": {
+          "initiative": 2,
+          "damage_reduction": 0
+        }
+      },
+      {
+        "id": "light_armor",
+        "name": "Light Armors",
+        "slot": "chest",
+        "modifiers": {
+          "initiative": 1,
+          "damage_reduction": 1
+        }
+      },
+      {
+        "id": "medium_armor",
+        "name": "Medium Armors",
+        "slot": "chest",
+        "modifiers": {
+          "stealth": -1,
+          "damage_reduction": 2
+        }
+      },
+      {
+        "id": "heavy_armor",
+        "name": "Heavy Armors",
+        "slot": "chest",
+        "modifiers": {
+          "initiative": -1,
+          "stealth": -2,
+          "damage_reduction": 3
+        }
+      },
+      {
+        "id": "light_shield",
+        "name": "Light Shields",
+        "slot": "hand",
+        "hands_required": 1,
+        "modifiers": {
+          "damage_reduction": 1
+        }
+      },
+      {
+        "id": "heavy_shield",
+        "name": "Heavy Shields",
+        "slot": "hand",
+        "hands_required": 1,
+        "modifiers": {
+          "damage_reduction": 2
+        }
+      }
+    ],
+    "occult_items": [
+      {
+        "id": "occult_focus",
+        "name": "Occult Focus",
+        "examples": [
+          "Orb",
+          "Wand",
+          "Staff"
+        ],
+        "slot": "hand",
+        "modifiers": {
+          "base_mana_bonus": 0
+        },
+        "special": [
+          "Allows the user to cast spells while holding this item"
+        ]
+      }
+    ]
+  }
 }

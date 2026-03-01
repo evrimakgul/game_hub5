@@ -1,12 +1,286 @@
 {
   "source": {
-    "status": "placeholder",
-    "path": null,
-    "notes": [
-      "A dedicated authoritative powers source is not present in this repository yet.",
-      "Replace this placeholder with structured power definitions once the source rules are available."
-    ]
+    "path": "references/originals/T1_Supernatural_Powers4.txt",
+    "filename": "T1_Supernatural_Powers4.txt",
+    "title": "T1 Supernatural Powers"
   },
   "schema_version": 1,
-  "powers": []
+  "coverage": {
+    "included_tiers": [
+      "t1"
+    ],
+    "missing_tiers": [
+      "t2",
+      "special"
+    ],
+    "notes": [
+      "This file currently reflects only the T1 powers source that exists in the repository."
+    ]
+  },
+  "powers": [
+    {
+      "id": "awareness",
+      "name": "Awareness",
+      "governing_stat": "PER",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Add awareness level to alertness skill checks. Identify stats and skills of simple NPCs. Identify common, uncommon, and masterwork items. Identifying items costs no mana; identifying creatures costs 1 mana."
+        },
+        {
+          "level": 2,
+          "description": "Identify stronger targets, their special or supernatural skills, and possible loot. Identify epic or lesser items."
+        },
+        {
+          "level": 3,
+          "description": "Techno-infused invisibility devices do not work on you."
+        },
+        {
+          "level": 4,
+          "description": "Increase identification strength further and identify legendary or lesser items."
+        },
+        {
+          "level": 5,
+          "description": "Identify all living, not-living, and non-living NPCs except supreme beings."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 3,
+        "description": "Gain +1 inspiration per game session. It does not stack. If the person has an uninspired flaw, they must remove that status first and the cantrip speeds up that process."
+      },
+      "notes": [
+        "All identifications are bonus action.",
+        "Informing other players or NPCs in your party costs your standard or move action."
+      ]
+    },
+    {
+      "id": "body_reinforcement",
+      "name": "Body Reinforcement",
+      "abbreviation": "BR",
+      "governing_stat": "STAM",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Increase one physical stat by 1: STR, DEX, or STAM. Increasing stamina does not change max mana. Effect lasts 10 minutes or 1 portal duration, whichever is longer. One physical stat can be increased only once, but multiple physical stats can be increased with additional casting. Requires standard action. Mana cost: 2."
+        },
+        {
+          "level": 2,
+          "description": "Use this skill on other people by touching them."
+        },
+        {
+          "level": 3,
+          "description": "Increase a physical stat by 2 if you use 3 mana instead of 2."
+        },
+        {
+          "level": 4,
+          "description": "People under the effect gain 1 DR. This stacks with armor, protection items, and bonuses from other supernatural skills. Outside portals, the effect lasts 30 minutes instead of 10."
+        },
+        {
+          "level": 5,
+          "description": "Increase a physical stat by 3 if you use 4 mana. Physical protection becomes 2 DR. Outside portals, the effect lasts 8 hours instead of 30 minutes. The cantrip becomes stronger."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 2,
+        "description": "If you become incapacitated at HP <= 0, up to -5, you automatically stand up with 1 HP after a turn. Usable once per day. If skill is 5 dots, stand up with 4 HP."
+      }
+    },
+    {
+      "id": "crowd_control",
+      "name": "Crowd Control",
+      "abbreviation": "CC",
+      "governing_stat": "CHA",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Paralyze a living target if their (Wits + Cha) roll is lower than your (Cha + Int) roll. Mana cost: 1 if successful. If they take damage, the spell breaks and they cannot be controlled for 1 day. Requires standard action. Maintained control costs 1 mana per turn. Standard range: 25m."
+        },
+        {
+          "level": 2,
+          "description": "Compel a controlled target to do simple acts without self-harm. Ordering them costs bonus action. Mana cost: 1 per turn. If controlled targets take damage, the spell breaks."
+        },
+        {
+          "level": 3,
+          "description": "Control 2 living targets at once and in one turn if they are in range. Ordering both takes 1 bonus action. If they take damage from anything except you, the spell does not break. Mana cost: 1 per target per turn."
+        },
+        {
+          "level": 4,
+          "description": "Controlling targets becomes a bonus action instead of standard action. Compelling orders becomes instant and free. The spell no longer breaks regardless of the damage source."
+        },
+        {
+          "level": 5,
+          "description": "Control 3 mobs at once. This skill can be used against non-living targets except summoned ones created by another occult skill. Mana cost remains up to 3 per turn."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 2,
+        "description": "Gain +1 bonus to social and intimidation dice pools. If skill is 5, also gain +1 bonus to mechanical and technological dice pools."
+      },
+      "notes": [
+        "If you fail to control a creature, or after control ends while they are still alive, they know you did something to them and you might be first on their aggro list."
+      ]
+    },
+    {
+      "id": "elementalist",
+      "name": "Elementalist",
+      "governing_stat": "INT",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Elemental Bolt damages one target for Int + 1. Standard range about 25 meters. Mana cost: 1. Requires standard action. Choose one element and keep it until long rest."
+        },
+        {
+          "level": 2,
+          "description": "Elemental Bolt damage becomes Int + 2. You can split the damage across two targets in range, rounding each half up. Mana cost: 1. Requires standard action."
+        },
+        {
+          "level": 3,
+          "description": "Elemental Bolt damage becomes Int + 3. Change damage type between fire, cold, lightning, and acid at will. Vulnerable creatures take 1.5x damage, rounded up. Split damage can be increased by +2 per mana up to undivided damage."
+        },
+        {
+          "level": 4,
+          "description": "Elemental Bolt damage becomes Int + 4. Total damage divided by 2, rounded up, can be applied to 3 different targets in range. Mana cost: 1. Requires standard action."
+        },
+        {
+          "level": 5,
+          "description": "Elemental Bolt damage becomes Int + 5. Necrotic becomes available. All living creatures are vulnerable to necrotic damage. Total damage divided by 2, rounded up, can be applied to 4 different targets. Necrotic costs 2 mana; other elements still cost 1."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 2,
+        "description": "The cantrip costs no mana and deals damage equal to Int. At level 4, cantrip damage becomes Int + 1 and can be used as a bonus action if you have not cast another harming spell that turn. At level 5, cantrip damage divided by 2, rounded up, can be split between 2 targets. Necrotic cannot be used as a cantrip."
+      }
+    },
+    {
+      "id": "healing",
+      "name": "Healing",
+      "governing_stat": "INT",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Heal a target for Int + 1 and remove bleeding. Mana cost: 2. You must touch the target. Requires standard action."
+        },
+        {
+          "level": 2,
+          "description": "Healing becomes Int + 2. No touch is needed. Spread the total healing among up to 4 friendly targets within standard range. Mana cost: 2."
+        },
+        {
+          "level": 3,
+          "description": "Healing becomes Int + 3. Cure poison, disease, or curse by touch. Mana cost: 3."
+        },
+        {
+          "level": 4,
+          "description": "Healing becomes Int + 4. Regrow missing limbs. You no longer need to touch to cure ailments within standard range."
+        },
+        {
+          "level": 5,
+          "description": "Healing becomes Int + 5. Once per character per day, healing can exceed max health up to the target's stamina."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 3,
+        "description": "Heal 2 HP or stop bleeding with no mana cost. If skill is 5 dots, heal 4 HP. A single target cannot be mended this way more than twice per day. At level 4, cantrip healing becomes 3 HP. At level 5, cantrip healing becomes 4 HP."
+      }
+    },
+    {
+      "id": "light_support",
+      "name": "Light Support",
+      "abbreviation": "LS",
+      "governing_stat": "APP",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Create a light source on yourself with 50m radius. Neutral, friendly, and allied targets in range gain +2 hit bonus to melee and ranged attack dice. Effect lasts 10 minutes or 1 portal duration, whichever is longer. Requires standard action. Mana cost: 2."
+        },
+        {
+          "level": 2,
+          "description": "Hostile targets cannot see the light source and cannot detect you because of it. The light source gains +1 DR. Bonuses remain +2 hit and +1 DR. Outside portals, the effect lasts 30 minutes."
+        },
+        {
+          "level": 3,
+          "description": "The light source gains +1 soak. Bonuses become +3 hit, +1 DR, and +1 soak. Outside portals, the effect lasts 1 hour."
+        },
+        {
+          "level": 4,
+          "description": "Bonuses become +3 hit, +2 DR, and +1 soak. Range becomes 100m. Once per long rest or once in a portal, restore mana to a human target including yourself up to 2x Appearance. Outside portals, the effect lasts 3 hours."
+        },
+        {
+          "level": 5,
+          "description": "Bonuses become +4 hit, +2 DR, and +2 soak. The light can last 8 hours outside a portal. Expose darkness removes or downgrades darkness-based immunities and resistances while you maintain concentration with bonus actions. This effect is a standard action and costs no mana."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 1,
+        "description": "Gain nightvision and +1 mana bonus. At level 3, mana bonus becomes +2. At level 5, mana bonus becomes +3."
+      }
+    },
+    {
+      "id": "necromancy",
+      "name": "Necromancy",
+      "governing_stat": "APP",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Create one simple skeleton for 10 minutes outside portals or one portal duration. Skeleton has melee skill 3, Str/Dex/Stam equal to 1 + half Appearance rounded up, a 1-handed melee weapon, natural DR 3, mental stats 0, and uses your initiative. Requires standard action. Mana cost: 2. Only 1 skeleton may be active."
+        },
+        {
+          "level": 2,
+          "description": "Create 2 simple skeletons or 1 skeleton king with a 2-handed sword, melee skill 4, Str/Dex/Stam equal to 2 + half Appearance rounded up, +1 hit, +1 damage, natural DR 5, and resistance to shadow, cold, and lightning. Mana cost: 3."
+        },
+        {
+          "level": 3,
+          "description": "Use necrotic touch at 25 meters. It deals Appearance + Necromancy Level necrotic damage, 1.5x against living, heal yourself by Necromancy Level even if damage dealt is 0, heals undead at x1, and does not work on shadow or incorporeal creatures. Requires standard action. Mana cost: 3."
+        },
+        {
+          "level": 4,
+          "description": "Outside portals, undead last 60 minutes. Undead gain half your Necromancy level to attacks and damage. You may create a zombie instead of skeletons. The zombie has melee 4, Str/Dex/Stam equal to Appearance, two brawl attacks, natural DR 5, and resistance to shadow, cold, and lightning. Zombies can receive group buffs but still cannot be healed. Mana cost: 4."
+        },
+        {
+          "level": 5,
+          "description": "Bonus to undead summons becomes equal to your Necromancy level. Their melee skill becomes 5. Necrotic touch damage becomes Appearance + 2 x Necromancy level. You can resurrect a recently fallen human up to 1 hour after death. Mana cost: 6."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 2,
+        "description": "You are last on a hostile undead's aggro list. If you have 5 dots, they do not attack you unless you attack first. Gain +1 bonus to melee skill, increasing by +1 every other Necromancy level thereafter."
+      },
+      "notes": [
+        "Skeletons do not benefit from single or group buffs and cannot be healed.",
+        "All summoned creatures appear next to you and you cannot choose their summoning location.",
+        "All summons cancel stealth or invisible effects."
+      ]
+    },
+    {
+      "id": "shadow_control",
+      "name": "Shadow Control",
+      "abbreviation": "SC",
+      "governing_stat": "MAN",
+      "levels": [
+        {
+          "level": 1,
+          "description": "Create a Cloak of Shadow for 10 minutes or 1 portal duration. It grants intimidation and stealth skills equal to Shadow Control level and +1 AC. Requires standard action. Mana cost: 2."
+        },
+        {
+          "level": 2,
+          "description": "Shadow Walk lets you dive into your shadow and appear near the shadow of a living target. Maximum range is 25m times Shadow Control rank. Mana cost: 2. This can be used as either a bonus or standard action."
+        },
+        {
+          "level": 3,
+          "description": "Cloak of Shadow AC bonus increases to +2. Shadow Manipulation attacks a target's own shadow automatically for damage equal to Man + Shadow Control. It is shadow damage, soakable with stamina, standard range 25 meters, standard action, mana cost 2, and counts as an attack that cancels stealth or invisibility."
+        },
+        {
+          "level": 4,
+          "description": "Cloak of Shadow AC bonus can be applied to all or selected allies within 25 meters. Mana cost: 2 if self only, 4 if shared with allies. Outside portals, Cloak of Shadow lasts 60 minutes."
+        },
+        {
+          "level": 5,
+          "description": "Cloak of Shadow AC bonus increases to +3. Shadow Soldier creates a semi-shadow soldier with a 2-handed sword, +2 hit, +2 damage, melee skill 5, Str/Dex/Stam equal to 3 + Man, natural DR 6, shadow and cold immunity, physical resistance, radiant vulnerability, and switchable physical or shadow damage type. It can receive group and single buffs but cannot be healed. Creating it is a standard action, mana cost 4, counts as an attack, cancels stealth or invisibility, and only 1 may be active."
+        }
+      ],
+      "cantrip": {
+        "introduced_at_level": 3,
+        "description": "Apply cosmetic changes to clothes or armor without changing stats. At level 5, make minor cosmetic body changes such as hair, eye, or skin color."
+      }
+    }
+  ]
 }
