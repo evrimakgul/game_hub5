@@ -10,6 +10,58 @@ function assertNonNegativeInteger(value: number, name: string): void {
   }
 }
 
+export const CORE_STATS = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"] as const;
+
+export type CoreStat = (typeof CORE_STATS)[number];
+
+export const STAT_CATEGORY_CHILDREN = {
+  Physical: ["STR", "DEX", "STAM"],
+  Social: ["CHA", "APP", "MAN"],
+  Mental: ["INT", "WITS", "PER"],
+} as const satisfies Record<string, readonly CoreStat[]>;
+
+export type StatCategory = keyof typeof STAT_CATEGORY_CHILDREN;
+
+const STAT_TO_CATEGORY: Record<CoreStat, StatCategory> = {
+  STR: "Physical",
+  DEX: "Physical",
+  STAM: "Physical",
+  CHA: "Social",
+  APP: "Social",
+  MAN: "Social",
+  INT: "Mental",
+  WITS: "Mental",
+  PER: "Mental",
+};
+
+export function isCoreStat(value: string): value is CoreStat {
+  return CORE_STATS.includes(value as CoreStat);
+}
+
+export function getStatCategory(stat: CoreStat): StatCategory {
+  return STAT_TO_CATEGORY[stat];
+}
+
+export function getStatsForCategory(category: StatCategory): CoreStat[] {
+  return [...STAT_CATEGORY_CHILDREN[category]];
+}
+
+export function isStatInCategory(stat: CoreStat, category: StatCategory): boolean {
+  return getStatCategory(stat) === category;
+}
+
+export function isPhysicalStat(stat: CoreStat): boolean {
+  return isStatInCategory(stat, "Physical");
+}
+
+export function getStatCapForStat(
+  stat: CoreStat,
+  hasGifted: boolean,
+  hasWeakAndMeek: boolean
+): number {
+  return getStatCap(isPhysicalStat(stat), hasGifted, hasWeakAndMeek);
+}
+
 export function getStatCap(
   isPhysical: boolean,
   hasGifted: boolean,

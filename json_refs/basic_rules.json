@@ -4,6 +4,69 @@
     "filename": "Basic_Rules4.txt",
     "title": "BASIC RULES - AUTHORITATIVE DEFINITIONS"
   },
+  "normalized_rules": {
+    "core_stats": [
+      {
+        "id": "STR",
+        "name": "Strength",
+        "category": "Physical"
+      },
+      {
+        "id": "DEX",
+        "name": "Dexterity",
+        "category": "Physical"
+      },
+      {
+        "id": "STAM",
+        "name": "Stamina",
+        "category": "Physical"
+      },
+      {
+        "id": "CHA",
+        "name": "Charisma",
+        "category": "Social"
+      },
+      {
+        "id": "APP",
+        "name": "Appearance",
+        "category": "Social"
+      },
+      {
+        "id": "MAN",
+        "name": "Manipulation",
+        "category": "Social"
+      },
+      {
+        "id": "INT",
+        "name": "Intelligence",
+        "category": "Mental"
+      },
+      {
+        "id": "WITS",
+        "name": "Wits",
+        "category": "Mental"
+      },
+      {
+        "id": "PER",
+        "name": "Perception",
+        "category": "Mental"
+      }
+    ],
+    "stat_categories": [
+      {
+        "id": "Physical",
+        "children": ["STR", "DEX", "STAM"]
+      },
+      {
+        "id": "Social",
+        "children": ["CHA", "APP", "MAN"]
+      },
+      {
+        "id": "Mental",
+        "children": ["INT", "WITS", "PER"]
+      }
+    ]
+  },
   "preamble": [
     {
       "type": "bullet",
