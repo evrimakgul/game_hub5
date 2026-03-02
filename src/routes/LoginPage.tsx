@@ -11,12 +11,11 @@ export function LoginPage() {
   const errorMessage = useAuthStore((state) => state.errorMessage);
 
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleMagicLinkSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function requestMagicLink() {
     if (!configured) {
       setFeedback("Supabase environment variables are missing. Add them before testing auth.");
       return;
@@ -41,6 +40,33 @@ export function LoginPage() {
       setFeedback(`Magic link sent to ${email}.`);
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "Unable to start sign-in.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePasswordSignIn(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!configured) {
+      setFeedback("Supabase environment variables are missing. Add them before testing auth.");
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback(null);
+
+    try {
+      const client = getSupabaseBrowserClient();
+      const { error } = await client.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        throw error;
+      }
+
+      setFeedback(`Signed in as ${email}.`);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Unable to sign in with password.");
     } finally {
       setSubmitting(false);
     }
@@ -82,8 +108,9 @@ export function LoginPage() {
 
         <h1>Login</h1>
         <p className="hero-copy">
-          This screen uses Supabase magic-link auth. It is wired for real sessions, but it degrades
-          safely when the environment variables are not configured yet.
+          This screen uses Supabase auth for both password sign-in and magic-link login. It is wired
+          for real sessions, but it degrades safely when the environment variables are not
+          configured yet.
         </p>
 
         <nav className="route-nav" aria-label="Primary routes">
@@ -102,11 +129,11 @@ export function LoginPage() {
                   ? errorMessage ?? "Authentication failed."
                   : user
                     ? "The browser holds an active Supabase session."
-                    : "Use a magic link to sign in on this browser."}
+                    : "Use password sign-in or request a magic link for this browser."}
             </p>
           </div>
 
-          <form className="auth-form" onSubmit={handleMagicLinkSubmit}>
+          <form className="auth-form" onSubmit={handlePasswordSignIn}>
             <label className="auth-label" htmlFor="email">
               Email
             </label>
@@ -122,11 +149,41 @@ export function LoginPage() {
               required
             />
 
+            <label className="auth-label" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              className="auth-input"
+              type="password"
+              value={password}
+              autoComplete="current-password"
+              placeholder="Enter password"
+              onChange={(event) => setPassword(event.target.value)}
+              disabled={submitting || !configured}
+              required
+            />
+
             <div className="auth-actions">
               <button type="submit" disabled={submitting || !configured}>
-                {submitting ? "Working..." : "Send Magic Link"}
+                {submitting ? "Working..." : "Sign In"}
               </button>
-              <button type="button" className="ghost-button" onClick={handleSignOut} disabled={submitting || !user}>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => {
+                  void requestMagicLink();
+                }}
+                disabled={submitting || !configured || !email}
+              >
+                Send Magic Link
+              </button>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={handleSignOut}
+                disabled={submitting || !user}
+              >
                 Sign Out
               </button>
             </div>
