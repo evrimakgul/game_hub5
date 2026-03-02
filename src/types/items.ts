@@ -1,6 +1,5 @@
 import type {
   CharacterId,
-  CoreStatId,
   EquipmentSlot,
   ISODateString,
   ItemBodyPart,
@@ -9,33 +8,10 @@ import type {
   ItemSpec,
   ItemTemplateId,
   ItemType,
-  PowerId,
-  SkillId,
 } from "./game";
+import type { EffectDefinition, ModifierEffect } from "./effects";
 
-export type DerivedItemModifierTarget =
-  | "max_hp"
-  | "max_mana"
-  | "initiative"
-  | "armor_class"
-  | "damage_reduction"
-  | "soak"
-  | "attack_dice_pool_hit_bonus"
-  | "damage_dice_pool_bonus"
-  | "attack_resolution_hit_bonus"
-  | "damage_resolution_bonus"
-  | "successes_to_any_roll";
-
-export type ItemModifierTarget = CoreStatId | SkillId | PowerId | DerivedItemModifierTarget | string;
-
-export interface ItemModifier {
-  target: ItemModifierTarget;
-  amount?: number;
-  formula?: string;
-  condition?: string;
-  notes?: string | null;
-  metadata?: Record<string, unknown>;
-}
+export type ItemModifier = ModifierEffect;
 
 export interface ItemTemplate {
   itemTemplateId: ItemTemplateId;
@@ -49,6 +25,7 @@ export interface ItemTemplate {
   bidCost: number | null;
   buyoutCost: number | null;
   modifiers: ItemModifier[];
+  effects: EffectDefinition[];
   remarks: string | null;
 }
 

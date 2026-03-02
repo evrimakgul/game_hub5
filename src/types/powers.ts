@@ -1,4 +1,5 @@
 import type { ActionType, CoreStatId, NumericFormula, PowerId } from "./game";
+import type { EffectDefinition } from "./effects";
 
 export type PowerActionType = ActionType | "bonus_or_standard" | "bonus_plus_standard";
 
@@ -7,6 +8,7 @@ export interface PowerLevelDefinition {
   actionType?: PowerActionType | null;
   manaCost?: number | null;
   manaCostVariants?: Record<string, number>;
+  effects: EffectDefinition[];
   mechanics: Record<string, unknown>;
   adjudication?: Record<string, unknown>;
   description?: string;
@@ -16,6 +18,7 @@ export interface PowerCantripLevelDefinition {
   powerLevel: number;
   actionType?: PowerActionType | null;
   manaCost?: number | null;
+  effects: EffectDefinition[];
   mechanics: Record<string, unknown>;
   description?: string;
 }

@@ -7,6 +7,7 @@ import type {
   StatusEffectId,
 } from "./game";
 import type { EquipmentLoadout } from "./items";
+import type { EffectDefinition } from "./effects";
 import type { KnownPower } from "./powers";
 
 export type CoreStatLevels = Record<CoreStatId, number>;
@@ -27,6 +28,7 @@ export interface StatusEffectState {
   appliedAt: ISODateString | null;
   expiresAt: ISODateString | null;
   remainingRounds: number | null;
+  effects: EffectDefinition[];
   payload: Record<string, unknown>;
 }
 
