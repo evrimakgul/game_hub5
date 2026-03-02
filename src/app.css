@@ -43,6 +43,13 @@ button {
   margin-bottom: 24px;
 }
 
+.hero-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
 .eyebrow,
 .panel-label {
   margin: 0 0 8px;
@@ -64,6 +71,52 @@ button {
   color: #d6c4b6;
 }
 
+.route-nav,
+.view-switch {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.route-nav {
+  margin-top: 18px;
+}
+
+.route-nav a,
+.view-switch button {
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 233, 214, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f3efe6;
+  text-decoration: none;
+}
+
+.view-switch {
+  margin-bottom: 20px;
+}
+
+.view-switch button.active,
+.route-nav a:hover {
+  background: rgba(241, 179, 125, 0.18);
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+
+.status-pill.ok {
+  background: rgba(89, 168, 112, 0.18);
+  color: #bde2c7;
+}
+
+.status-pill.warn {
+  background: rgba(201, 117, 58, 0.18);
+  color: #ffd6b1;
+}
+
 .preview-grid {
   display: grid;
   gap: 20px;
@@ -72,6 +125,13 @@ button {
 
 .panel {
   padding: 22px;
+  opacity: 0.68;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.panel.is-active {
+  opacity: 1;
+  transform: translateY(-2px);
 }
 
 .panel-header,
@@ -173,6 +233,11 @@ button {
 @media (max-width: 640px) {
   .app-shell {
     padding: 20px 14px 32px;
+  }
+
+  .hero-topline {
+    align-items: start;
+    flex-direction: column;
   }
 
   .hero-card,
