@@ -25,9 +25,10 @@ import {
   setInventoryItemSlot,
   spendCombatAction,
 } from "../lib/playerActions";
+import { subscribeToPlayerSheetState } from "../lib/realtime";
 import { loadPlayerSheetForProfile, type PlayerSheetData } from "../lib/playerSheet";
 import { useAuthStore } from "../state/authStore";
-import { CORE_STAT_IDS, type EquipmentSlot } from "../types";
+import { CORE_STAT_IDS, type EquipmentSlot, type PowerId } from "../types";
 
 type LoadState = "idle" | "loading" | "ready" | "empty" | "error";
 type MutationState = "idle" | "running";
@@ -99,6 +100,16 @@ export function PlayerSheetPage() {
       cancelled = true;
     };
   }, [authUser, configured, reloadToken]);
+
+  useEffect(() => {
+    if (!configured || !authUser) {
+      return;
+    }
+
+    return subscribeToPlayerSheetState(authUser.id, () => {
+      setReloadToken((value) => value + 1);
+    });
+  }, [authUser, configured]);
 
   const character = sheetData?.character ?? null;
   const encounter = sheetData?.encounter ?? null;
@@ -227,7 +238,7 @@ export function PlayerSheetPage() {
     }
   }
 
-  async function handlePowerCast(powerId: (typeof knownPowers)[number]["powerId"]) {
+  async function handlePowerCast(powerId: PowerId) {
     if (!character || mutationState === "running") {
       return;
     }
