@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { getActionAvailability, type RequestedAction } from "../config/actions";
 import {
   calculateArmorClass,
   calculateInitiative,
@@ -10,11 +11,25 @@ import {
 } from "../config/stats";
 import { getCrAndRankFromXpUsed } from "../config/xpTables";
 import { isSupabaseConfigured } from "../lib/env";
+import {
+  setCharacterResources,
+  setInventoryItemSlot,
+  spendCombatAction,
+} from "../lib/playerActions";
 import { loadPlayerSheetForProfile, type PlayerSheetData } from "../lib/playerSheet";
 import { useAuthStore } from "../state/authStore";
-import { CORE_STAT_IDS } from "../types";
+import { CORE_STAT_IDS, type EquipmentSlot } from "../types";
 
 type LoadState = "idle" | "loading" | "ready" | "empty" | "error";
+type MutationState = "idle" | "running";
+
+const ACTION_BUTTONS: Array<{ requested: RequestedAction; label: string }> = [
+  { requested: "standard", label: "Spend Standard" },
+  { requested: "bonus", label: "Spend Bonus" },
+  { requested: "move", label: "Spend Move" },
+  { requested: "reaction", label: "Spend Reaction" },
+  { requested: "prepare_reaction", label: "Prepare Reaction" },
+];
 
 function formatSlotLabel(slot: string): string {
   return slot.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -28,6 +43,11 @@ export function PlayerSheetPage() {
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [sheetData, setSheetData] = useState<PlayerSheetData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [mutationState, setMutationState] = useState<MutationState>("idle");
+  const [mutationMessage, setMutationMessage] = useState<string | null>(null);
+  const [hpAmount, setHpAmount] = useState(1);
+  const [manaAmount, setManaAmount] = useState(1);
 
   useEffect(() => {
     if (!configured || !authUser) {
@@ -69,9 +89,10 @@ export function PlayerSheetPage() {
     return () => {
       cancelled = true;
     };
-  }, [authUser, configured]);
+  }, [authUser, configured, reloadToken]);
 
   const character = sheetData?.character ?? null;
+  const encounter = sheetData?.encounter ?? null;
   const progression = character ? getCrAndRankFromXpUsed(character.xpUsed) : null;
   const derived = character
     ? {
@@ -87,8 +108,91 @@ export function PlayerSheetPage() {
     : null;
 
   const equippedItems = sheetData?.equippedItems ?? [];
+  const inventoryItems = sheetData?.inventoryItems ?? [];
+  const itemTemplatesById = sheetData?.itemTemplatesById ?? {};
   const knownPowers = character?.knownPowers ?? [];
   const statusEffects = character?.statusEffects ?? [];
+
+  async function refreshSheetWithMessage(message: string) {
+    setMutationMessage(message);
+    setReloadToken((value) => value + 1);
+  }
+
+  async function handleResourceChange(resource: "hp" | "mana", mode: "increase" | "decrease") {
+    if (!character || mutationState === "running") {
+      return;
+    }
+
+    const amount = resource === "hp" ? hpAmount : manaAmount;
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setMutationMessage("Adjustment amount must be a positive whole number.");
+      return;
+    }
+
+    const nextCurrentHp =
+      resource === "hp"
+        ? Math.max(0, character.currentHp + (mode === "increase" ? amount : -amount))
+        : character.currentHp;
+    const nextCurrentMana =
+      resource === "mana"
+        ? Math.max(0, character.currentMana + (mode === "increase" ? amount : -amount))
+        : character.currentMana;
+
+    setMutationState("running");
+    setMutationMessage(null);
+
+    try {
+      await setCharacterResources(character.characterId, nextCurrentHp, nextCurrentMana);
+      await refreshSheetWithMessage(
+        resource === "hp"
+          ? `${mode === "increase" ? "Healed" : "Applied damage"} for ${amount}.`
+          : `${mode === "increase" ? "Restored" : "Spent"} ${amount} Mana.`
+      );
+    } catch (error) {
+      setMutationMessage(error instanceof Error ? error.message : "Unable to update resources.");
+    } finally {
+      setMutationState("idle");
+    }
+  }
+
+  async function handleEquipChange(itemInstanceId: string, slot: EquipmentSlot | null) {
+    if (mutationState === "running") {
+      return;
+    }
+
+    setMutationState("running");
+    setMutationMessage(null);
+
+    try {
+      await setInventoryItemSlot(itemInstanceId, slot);
+      await refreshSheetWithMessage(slot ? `Equipped item in ${formatSlotLabel(slot)}.` : "Item unequipped.");
+    } catch (error) {
+      setMutationMessage(error instanceof Error ? error.message : "Unable to update equipment.");
+    } finally {
+      setMutationState("idle");
+    }
+  }
+
+  async function handleActionSpend(requestedAction: RequestedAction) {
+    if (!encounter || mutationState === "running") {
+      return;
+    }
+
+    setMutationState("running");
+    setMutationMessage(null);
+
+    try {
+      const result = await spendCombatAction(encounter.encounterId, requestedAction, encounter.revision);
+      await refreshSheetWithMessage(
+        `Consumed ${result.consumed_from}${result.movement_meters > 0 ? ` for ${result.movement_meters}m movement` : ""}.`
+      );
+    } catch (error) {
+      setMutationMessage(error instanceof Error ? error.message : "Unable to spend the selected action.");
+    } finally {
+      setMutationState("idle");
+    }
+  }
 
   return (
     <main className="app-shell">
@@ -100,10 +204,10 @@ export function PlayerSheetPage() {
           </span>
         </div>
 
-        <h1>Read-Only Player View</h1>
+        <h1>Interactive Player View</h1>
         <p className="hero-copy">
-          This route now reads stored character state from Supabase, then derives sheet values in
-          the client engine. No write actions are enabled here yet.
+          This route reads stored character state from Supabase, derives sheet values in the client
+          engine, and supports live inventory, resource, and action-state writes.
         </p>
         <nav className="route-nav" aria-label="Primary routes">
           <Link to="/">Player Route</Link>
@@ -201,6 +305,81 @@ export function PlayerSheetPage() {
                 <strong>{character.money}</strong>
               </div>
             </div>
+            <div className="write-grid">
+              <div className="write-card">
+                <label className="auth-label" htmlFor="hp-adjustment">
+                  HP Adjustment
+                </label>
+                <input
+                  id="hp-adjustment"
+                  className="auth-input"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={hpAmount}
+                  onChange={(event) => setHpAmount(Math.max(1, Number(event.target.value) || 1))}
+                  disabled={mutationState === "running"}
+                />
+                <div className="auth-actions">
+                  <button
+                    type="button"
+                    disabled={mutationState === "running"}
+                    onClick={() => {
+                      void handleResourceChange("hp", "decrease");
+                    }}
+                  >
+                    Damage
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={mutationState === "running"}
+                    onClick={() => {
+                      void handleResourceChange("hp", "increase");
+                    }}
+                  >
+                    Heal
+                  </button>
+                </div>
+              </div>
+
+              <div className="write-card">
+                <label className="auth-label" htmlFor="mana-adjustment">
+                  Mana Adjustment
+                </label>
+                <input
+                  id="mana-adjustment"
+                  className="auth-input"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={manaAmount}
+                  onChange={(event) => setManaAmount(Math.max(1, Number(event.target.value) || 1))}
+                  disabled={mutationState === "running"}
+                />
+                <div className="auth-actions">
+                  <button
+                    type="button"
+                    disabled={mutationState === "running"}
+                    onClick={() => {
+                      void handleResourceChange("mana", "decrease");
+                    }}
+                  >
+                    Spend
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={mutationState === "running"}
+                    onClick={() => {
+                      void handleResourceChange("mana", "increase");
+                    }}
+                  >
+                    Restore
+                  </button>
+                </div>
+              </div>
+            </div>
           </article>
 
           <article className="section-card">
@@ -272,6 +451,128 @@ export function PlayerSheetPage() {
           </article>
 
           <article className="section-card">
+            <p className="panel-label">Inventory Flow</p>
+            <div className="list-block">
+              {inventoryItems.length > 0 ? (
+                inventoryItems.map((inventoryItem) => {
+                  const template = itemTemplatesById[inventoryItem.templateId] ?? null;
+                  const label = inventoryItem.customName ?? template?.name ?? inventoryItem.templateId;
+                  const compatibleSlots = template?.slotCompatibility ?? [];
+
+                  return (
+                    <div key={inventoryItem.itemInstanceId} className="inventory-row">
+                      <div>
+                        <span>{label}</span>
+                        <strong>
+                          {inventoryItem.equippedSlot
+                            ? `Equipped: ${formatSlotLabel(inventoryItem.equippedSlot)}`
+                            : "Not equipped"}
+                        </strong>
+                      </div>
+                      <div className="chip-actions">
+                        {compatibleSlots.map((slot) => (
+                          <button
+                            key={`${inventoryItem.itemInstanceId}-${slot}`}
+                            type="button"
+                            className={inventoryItem.equippedSlot === slot ? "chip-button active" : "chip-button"}
+                            disabled={mutationState === "running"}
+                            onClick={() => {
+                              void handleEquipChange(inventoryItem.itemInstanceId, slot);
+                            }}
+                          >
+                            {formatSlotLabel(slot)}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className="chip-button"
+                          disabled={mutationState === "running" || inventoryItem.equippedSlot === null}
+                          onClick={() => {
+                            void handleEquipChange(inventoryItem.itemInstanceId, null);
+                          }}
+                        >
+                          Unequip
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="muted-copy">No inventory rows are stored for this character.</p>
+              )}
+            </div>
+          </article>
+
+          <article className="section-card">
+            <p className="panel-label">Action Flow</p>
+            {encounter ? (
+              <div className="list-block">
+                <div className="list-row">
+                  <span>{encounter.label}</span>
+                  <strong>
+                    Round {encounter.roundNumber} | Revision {encounter.revision}
+                  </strong>
+                </div>
+                <div className="resource-row">
+                  <div>
+                    <span>Standard</span>
+                    <strong>
+                      {encounter.actionState.available.standard} / {encounter.actionState.spent.standard}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Bonus</span>
+                    <strong>
+                      {encounter.actionState.available.bonus} / {encounter.actionState.spent.bonus}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Move</span>
+                    <strong>
+                      {encounter.actionState.available.move} / {encounter.actionState.spent.move}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Reaction</span>
+                    <strong>
+                      {encounter.actionState.available.reaction} / {encounter.actionState.spent.reaction}
+                    </strong>
+                  </div>
+                </div>
+                <p className="muted-copy">
+                  {encounter.isActiveTurn
+                    ? "It is currently your turn."
+                    : "Action spending is disabled until this participant becomes the active turn."}
+                </p>
+                <div className="chip-actions">
+                  {ACTION_BUTTONS.map(({ requested, label }) => {
+                    const availability = getActionAvailability(encounter.actionState, requested);
+                    const disabled =
+                      mutationState === "running" || !encounter.isActiveTurn || !availability.allowed;
+
+                    return (
+                      <button
+                        key={requested}
+                        type="button"
+                        className="chip-button"
+                        title={disabled ? availability.reason ?? "Action is not currently available." : label}
+                        disabled={disabled}
+                        onClick={() => {
+                          void handleActionSpend(requested);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="muted-copy">This character is not currently in an encounter.</p>
+            )}
+          </article>
+
+          <article className="section-card">
             <p className="panel-label">Status Effects</p>
             <div className="list-block">
               {statusEffects.length > 0 ? (
@@ -286,6 +587,13 @@ export function PlayerSheetPage() {
               )}
             </div>
           </article>
+
+          {mutationMessage && (
+            <article className="section-card">
+              <p className="panel-label">Write Result</p>
+              <p className="muted-copy">{mutationMessage}</p>
+            </article>
+          )}
         </section>
       )}
     </main>

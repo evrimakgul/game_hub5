@@ -1,4 +1,5 @@
 import type {
+  ActionState,
   Character,
   CoreStatLevels,
   InventoryItem,
@@ -93,6 +94,39 @@ type ItemTemplateRow = {
   remarks: string | null;
 };
 
+type PlayerCombatParticipantRow = {
+  participant_id: string;
+  encounter_id: string;
+  display_name: string;
+  state: "active" | "defeated" | "removed";
+  initiative: number;
+};
+
+type CombatEncounterRow = {
+  encounter_id: string;
+  label: string;
+};
+
+type CombatTrackerRow = {
+  encounter_id: string;
+  round_number: number;
+  active_participant_id: string | null;
+  active_index: number | null;
+  available_standard: number;
+  available_bonus: number;
+  available_move: number;
+  available_reaction: number;
+  available_free: number | null;
+  spent_standard: number;
+  spent_bonus: number;
+  spent_move: number;
+  spent_reaction: number;
+  spent_free: number;
+  turn_started_at: string | null;
+  updated_at: string | null;
+  revision: number;
+};
+
 export type EquippedItemView = {
   slot: EquipmentSlot;
   inventoryItem: InventoryItem;
@@ -104,6 +138,21 @@ export type PlayerSheetData = {
   inventoryItems: InventoryItem[];
   itemTemplatesById: Record<string, ItemTemplate>;
   equippedItems: EquippedItemView[];
+  encounter: PlayerEncounterView | null;
+};
+
+export type PlayerEncounterView = {
+  encounterId: string;
+  label: string;
+  participantId: string;
+  participantState: PlayerCombatParticipantRow["state"];
+  initiative: number;
+  isActiveTurn: boolean;
+  roundNumber: number;
+  revision: number;
+  actionState: ActionState;
+  turnStartedAt: string | null;
+  updatedAt: string | null;
 };
 
 function createEmptyCoreStats(): CoreStatLevels {
@@ -253,6 +302,25 @@ function buildEquippedItemViews(
     .sort((left, right) => (slotOrder.get(left.slot) ?? 999) - (slotOrder.get(right.slot) ?? 999));
 }
 
+function toActionState(tracker: CombatTrackerRow): ActionState {
+  return {
+    available: {
+      standard: tracker.available_standard,
+      bonus: tracker.available_bonus,
+      move: tracker.available_move,
+      reaction: tracker.available_reaction,
+      free: tracker.available_free,
+    },
+    spent: {
+      standard: tracker.spent_standard,
+      bonus: tracker.spent_bonus,
+      move: tracker.spent_move,
+      reaction: tracker.spent_reaction,
+      free: tracker.spent_free,
+    },
+  };
+}
+
 export async function loadPlayerSheetForProfile(profileId: string): Promise<PlayerSheetData | null> {
   const client = getSupabaseBrowserClient();
 
@@ -370,10 +438,67 @@ export async function loadPlayerSheetForProfile(profileId: string): Promise<Play
     inventoryItems
   );
 
+  const { data: participantRow, error: participantError } = await client
+    .from("combat_participants")
+    .select("participant_id, encounter_id, display_name, state, initiative")
+    .eq("character_id", characterId)
+    .neq("state", "removed")
+    .limit(1)
+    .maybeSingle<PlayerCombatParticipantRow>();
+
+  if (participantError) {
+    throw participantError;
+  }
+
+  let encounter: PlayerEncounterView | null = null;
+
+  if (participantRow) {
+    const [{ data: encounterRow, error: encounterError }, { data: trackerRow, error: trackerError }] =
+      await Promise.all([
+        client
+          .from("combat_encounters")
+          .select("encounter_id, label")
+          .eq("encounter_id", participantRow.encounter_id)
+          .maybeSingle<CombatEncounterRow>(),
+        client
+          .from("combat_tracker")
+          .select(
+            "encounter_id, round_number, active_participant_id, active_index, available_standard, available_bonus, available_move, available_reaction, available_free, spent_standard, spent_bonus, spent_move, spent_reaction, spent_free, turn_started_at, updated_at, revision"
+          )
+          .eq("encounter_id", participantRow.encounter_id)
+          .maybeSingle<CombatTrackerRow>(),
+      ]);
+
+    if (encounterError) {
+      throw encounterError;
+    }
+
+    if (trackerError) {
+      throw trackerError;
+    }
+
+    if (encounterRow && trackerRow) {
+      encounter = {
+        encounterId: encounterRow.encounter_id,
+        label: encounterRow.label,
+        participantId: participantRow.participant_id,
+        participantState: participantRow.state,
+        initiative: participantRow.initiative,
+        isActiveTurn: trackerRow.active_participant_id === participantRow.participant_id,
+        roundNumber: trackerRow.round_number,
+        revision: trackerRow.revision,
+        actionState: toActionState(trackerRow),
+        turnStartedAt: trackerRow.turn_started_at,
+        updatedAt: trackerRow.updated_at,
+      };
+    }
+  }
+
   return {
     character,
     inventoryItems,
     itemTemplatesById,
     equippedItems: buildEquippedItemViews(inventoryItems, itemTemplatesById),
+    encounter,
   };
 }

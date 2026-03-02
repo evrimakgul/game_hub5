@@ -204,6 +204,20 @@ button {
   gap: 10px;
 }
 
+.write-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.write-card {
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 12px;
+}
+
 .tag-list {
   grid-template-columns: repeat(auto-fit, minmax(140px, max-content));
 }
@@ -222,6 +236,43 @@ button {
   padding: 12px 14px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.inventory-row {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inventory-row span,
+.inventory-row strong {
+  display: block;
+}
+
+.chip-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chip-button {
+  border-radius: 999px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 233, 214, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f3efe6;
+  cursor: pointer;
+}
+
+.chip-button.active {
+  background: rgba(241, 179, 125, 0.18);
+}
+
+.chip-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .active-row {
