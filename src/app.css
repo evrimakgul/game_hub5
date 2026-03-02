@@ -132,6 +132,12 @@ button {
   gap: 18px;
 }
 
+.dashboard-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
 .section-card {
   border: 1px solid rgba(255, 233, 214, 0.12);
   border-radius: 24px;
@@ -216,6 +222,36 @@ button {
   padding: 12px 14px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.active-row {
+  outline: 1px solid rgba(241, 179, 125, 0.35);
+  background: rgba(241, 179, 125, 0.12);
+}
+
+.encounter-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.encounter-tabs button {
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 233, 214, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f3efe6;
+  cursor: pointer;
+}
+
+.encounter-tabs button.active {
+  background: rgba(241, 179, 125, 0.18);
+}
+
+.encounter-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .auth-card {
