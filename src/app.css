@@ -71,6 +71,10 @@ button {
   color: #d6c4b6;
 }
 
+.auth-summary {
+  color: #f0d3b5;
+}
+
 .route-nav,
 .view-switch {
   display: flex;
@@ -121,6 +125,79 @@ button {
   display: grid;
   gap: 20px;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.auth-card {
+  border: 1px solid rgba(255, 233, 214, 0.12);
+  border-radius: 24px;
+  background: rgba(34, 24, 20, 0.9);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+  padding: 28px;
+}
+
+.auth-panel {
+  margin-top: 24px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.auth-status,
+.auth-form {
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-note,
+.auth-feedback {
+  margin: 10px 0 0;
+  color: #d6c4b6;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-label {
+  font-size: 0.9rem;
+  color: #f0d3b5;
+}
+
+.auth-input {
+  width: 100%;
+  border: 1px solid rgba(255, 233, 214, 0.16);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(12, 9, 7, 0.64);
+  color: #f3efe6;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.auth-actions button {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #cf7c3b 0%, #b24e2b 100%);
+  color: #fff9f3;
+  cursor: pointer;
+}
+
+.auth-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ghost-button {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 233, 214, 0.14) !important;
 }
 
 .panel {

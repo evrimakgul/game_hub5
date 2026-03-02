@@ -8,6 +8,7 @@ import {
   calculateRangedBonusDice,
 } from "../config/stats";
 import { isSupabaseConfigured } from "../lib/env";
+import { useAuthStore } from "../state/authStore";
 import type { PreviewView } from "../state/uiStore";
 import { useUiStore } from "../state/uiStore";
 
@@ -40,6 +41,8 @@ const derivedPreview = {
 export function HomePage({ initialView = "player" }: HomePageProps) {
   const previewView = useUiStore((state) => state.previewView);
   const setPreviewView = useUiStore((state) => state.setPreviewView);
+  const authStatus = useAuthStore((state) => state.status);
+  const authUser = useAuthStore((state) => state.user);
 
   useEffect(() => {
     setPreviewView(initialView);
@@ -58,12 +61,20 @@ export function HomePage({ initialView = "player" }: HomePageProps) {
         </div>
         <h1>Game Hub Foundations</h1>
         <p className="hero-copy">
-          The React shell, router, shared state, and Supabase bootstrap are now in place. The next
-          layer is connecting real character state to the engine.
+          The React shell, auth bootstrap, and Supabase wiring are now in place. The next layer is
+          replacing this preview data with live character state from the database.
+        </p>
+        <p className="hero-copy auth-summary">
+          {authUser?.email
+            ? `Signed in as ${authUser.email}.`
+            : authStatus === "loading"
+              ? "Checking browser session."
+              : "Preview mode is open without an active session."}
         </p>
         <nav className="route-nav" aria-label="Preview routes">
           <Link to="/">Player Route</Link>
           <Link to="/dm">DM Route</Link>
+          <Link to="/login">Login</Link>
         </nav>
       </section>
 
