@@ -4,7 +4,7 @@
     "filename": "T1_Supernatural_Powers4.txt",
     "title": "T1 Supernatural Powers"
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "coverage": {
     "included_tiers": [
       "t1"
@@ -26,97 +26,95 @@
         {
           "level": 1,
           "action_type": "bonus",
-          "mana_cost": null,
-          "range_meters": null,
-          "duration": null,
-          "mana_cost_variants": [
-            {
-              "use": "identify_item",
-              "mana_cost": 0
-            },
-            {
-              "use": "identify_creature",
-              "mana_cost": 1
-            }
-          ],
-          "description": "Add awareness level to alertness skill checks. Identify stats and skills of simple NPCs. Identify common, uncommon, and masterwork items. Identifying items costs no mana; identifying creatures costs 1 mana."
+          "mana_cost": 0,
+          "mechanics": {
+            "alertness_skill_bonus_equals_power_level": true,
+            "item_identification_max_quality": "masterwork",
+            "creature_identification_scope": "simple_npcs"
+          },
+          "adjudication": {
+            "range": null,
+            "duration": null
+          },
+          "description": "You add your awareness level to your alertness skill checks. You also can identify stats / skills of simple NPCs. You can identify common, uncommon, masterwork items."
         },
         {
           "level": 2,
           "action_type": "bonus",
-          "mana_cost": null,
-          "range_meters": null,
-          "duration": null,
-          "mana_cost_variants": [
-            {
-              "use": "identify_item",
-              "mana_cost": 0
-            },
-            {
-              "use": "identify_creature",
-              "mana_cost": 1
-            }
-          ],
-          "description": "Increase identification strength against stronger targets, their special or supernatural skills, and possible loot. Identify epic or lesser items."
+          "mana_cost": 0,
+          "mechanics": {
+            "alertness_skill_bonus_equals_power_level": true,
+            "item_identification_max_quality": "epic",
+            "creature_identification_scope": "stronger_targets_with_special_skills_and_loot"
+          },
+          "adjudication": {
+            "range": null,
+            "duration": null
+          },
+          "description": "You increase your identify power against stronger targets. You can also know their special or supernatural skills if there are any, and possible loot. You can now identify epic or lesser items."
         },
         {
           "level": 3,
           "action_type": "bonus",
-          "mana_cost": null,
-          "range_meters": null,
-          "duration": null,
-          "mana_cost_variants": [
-            {
-              "use": "identify_item",
-              "mana_cost": 0
-            },
-            {
-              "use": "identify_creature",
-              "mana_cost": 1
-            }
-          ],
-          "description": "Techno-infused invisibility devices do not work on you."
+          "mana_cost": 0,
+          "mechanics": {
+            "alertness_skill_bonus_equals_power_level": true,
+            "item_identification_max_quality": "epic",
+            "creature_identification_scope": "stronger_targets_with_special_skills_and_loot",
+            "ignores_techno_infused_invisibility_devices": true
+          },
+          "adjudication": {
+            "range": null,
+            "duration": null
+          },
+          "description": "Techno infused invisibility devices do not work on you."
         },
         {
           "level": 4,
           "action_type": "bonus",
-          "mana_cost": null,
-          "range_meters": null,
-          "duration": null,
-          "mana_cost_variants": [
-            {
-              "use": "identify_item",
-              "mana_cost": 0
-            },
-            {
-              "use": "identify_creature",
-              "mana_cost": 1
-            }
-          ],
-          "description": "Increase identification strength further and identify legendary or lesser items."
+          "mana_cost": 0,
+          "mechanics": {
+            "alertness_skill_bonus_equals_power_level": true,
+            "item_identification_max_quality": "legendary",
+            "creature_identification_scope": "rank_c_and_b_hunters_and_stronger_targets",
+            "ignores_techno_infused_invisibility_devices": true
+          },
+          "adjudication": {
+            "range": null,
+            "duration": null
+          },
+          "description": "You increase your identify power further and can identify legendary or lesser items."
         },
         {
           "level": 5,
           "action_type": "bonus",
-          "mana_cost": null,
-          "range_meters": null,
-          "duration": null,
-          "mana_cost_variants": [
-            {
-              "use": "identify_item",
-              "mana_cost": 0
-            },
-            {
-              "use": "identify_creature",
-              "mana_cost": 1
-            }
-          ],
-          "description": "Identify all living, not-living, and non-living NPCs except supreme beings."
+          "mana_cost": 0,
+          "mechanics": {
+            "alertness_skill_bonus_equals_power_level": true,
+            "item_identification_max_quality": "all",
+            "creature_identification_scope": "all_except_supreme_beings",
+            "ignores_techno_infused_invisibility_devices": true
+          },
+          "adjudication": {
+            "range": null,
+            "duration": null
+          },
+          "description": "You can now identify all living, not-living, non-living NPCs except for supreme beings."
         }
       ],
       "cantrip": {
         "introduced_at_level": 3,
-        "description": "Gain +1 inspiration per game session. It does not stack. If the person has an uninspired flaw, they must remove that status first and the cantrip speeds up that process."
+        "levels": [
+          {
+            "power_level": 3,
+            "mechanics": {
+              "inspiration_per_session": 1,
+              "stacks": false
+            },
+            "description": "You gain +1 inspiration per game session, and it does not stack."
+          }
+        ],
+        "description": "If the person has an uninspired flaw, they need to get rid of their uninspired status first and the cantrip speeds up that process."
       },
       "notes": [
         "All identifications are bonus action.",
@@ -133,73 +131,123 @@
           "level": 1,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "10 minutes or 1 portal duration, whichever is longer",
-          "affected_stats": [
-            "STR",
-            "DEX",
-            "STAM"
-          ],
-          "description": "Increase one physical stat by 1: STR, DEX, or STAM. Increasing stamina does not change max mana. One physical stat can be increased only once, but multiple physical stats can be increased with additional casting."
+          "mechanics": {
+            "allowed_stats": [
+              "STR",
+              "DEX",
+              "STAM"
+            ],
+            "stat_bonus": 1,
+            "max_bonus_applications_per_stat": 1
+          },
+          "adjudication": {
+            "targeting": "self",
+            "duration": "10 minutes or 1 portal duration, whichever is longer"
+          },
+          "description": "You can increase one of your physical stats by 1."
         },
         {
           "level": 2,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "touch",
-          "duration": "10 minutes or 1 portal duration, whichever is longer",
-          "affected_stats": [
-            "STR",
-            "DEX",
-            "STAM"
-          ],
-          "description": "Use this skill on other people by touching them."
+          "mechanics": {
+            "allowed_stats": [
+              "STR",
+              "DEX",
+              "STAM"
+            ],
+            "stat_bonus": 1,
+            "max_bonus_applications_per_stat": 1
+          },
+          "adjudication": {
+            "targeting": "touch",
+            "duration": "10 minutes or 1 portal duration, whichever is longer"
+          },
+          "description": "Now you can use this skill on other people by touching them."
         },
         {
           "level": 3,
           "action_type": "standard",
           "mana_cost": 3,
-          "range_meters": "touch",
-          "duration": "10 minutes or 1 portal duration, whichever is longer",
-          "affected_stats": [
-            "STR",
-            "DEX",
-            "STAM"
-          ],
-          "description": "Increase a physical stat by 2 if you use 3 mana instead of 2."
+          "mechanics": {
+            "allowed_stats": [
+              "STR",
+              "DEX",
+              "STAM"
+            ],
+            "stat_bonus": 2,
+            "max_bonus_applications_per_stat": 1
+          },
+          "adjudication": {
+            "targeting": "touch",
+            "duration": "10 minutes or 1 portal duration, whichever is longer"
+          },
+          "description": "You can now increase a physical stat by 2."
         },
         {
           "level": 4,
           "action_type": "standard",
           "mana_cost": 3,
-          "range_meters": "touch",
-          "duration": "30 minutes outside portals or 1 portal duration, whichever is longer",
-          "affected_stats": [
-            "STR",
-            "DEX",
-            "STAM"
-          ],
-          "grants_damage_reduction": 1,
-          "description": "People under the effect gain 1 DR. This stacks with armor, protection items, and bonuses from other supernatural skills. Outside portals, the effect lasts 30 minutes instead of 10."
+          "mechanics": {
+            "allowed_stats": [
+              "STR",
+              "DEX",
+              "STAM"
+            ],
+            "stat_bonus": 2,
+            "max_bonus_applications_per_stat": 1,
+            "damage_reduction_bonus": 1
+          },
+          "adjudication": {
+            "targeting": "touch",
+            "duration": "30 minutes outside portals or 1 portal duration, whichever is longer"
+          },
+          "description": "People under the effect of this power also gain some physical protection."
         },
         {
           "level": 5,
           "action_type": "standard",
           "mana_cost": 4,
-          "range_meters": "touch",
-          "duration": "8 hours outside portals or 1 portal duration, whichever is longer",
-          "affected_stats": [
-            "STR",
-            "DEX",
-            "STAM"
-          ],
-          "grants_damage_reduction": 2,
-          "description": "Increase a physical stat by 3 if you use 4 mana. Physical protection becomes 2 DR. Outside portals, the effect lasts 8 hours instead of 30 minutes. The cantrip becomes stronger."
+          "mechanics": {
+            "allowed_stats": [
+              "STR",
+              "DEX",
+              "STAM"
+            ],
+            "stat_bonus": 3,
+            "max_bonus_applications_per_stat": 1,
+            "damage_reduction_bonus": 2
+          },
+          "adjudication": {
+            "targeting": "touch",
+            "duration": "8 hours outside portals or 1 portal duration, whichever is longer"
+          },
+          "description": "You can now increase a physical stat by 3, and the physical protection bonus is increased."
         }
       ],
       "cantrip": {
         "introduced_at_level": 2,
-        "description": "If you become incapacitated at HP <= 0, up to -5, you automatically stand up with 1 HP after a turn. Usable once per day. If skill is 5 dots, stand up with 4 HP."
+        "levels": [
+          {
+            "power_level": 2,
+            "mechanics": {
+              "trigger": "incapacitated",
+              "revive_hp": 1,
+              "uses_per_day": 1
+            },
+            "description": "If you become incapacitated, you automatically stand up with 1 HP after a turn."
+          },
+          {
+            "power_level": 5,
+            "mechanics": {
+              "trigger": "incapacitated",
+              "revive_hp": 4,
+              "uses_per_day": 1
+            },
+            "description": "At 5 dots, the cantrip stands you up with 4 HP."
+          }
+        ],
+        "description": "Usable only 1 time per day."
       }
     },
     {
@@ -211,73 +259,144 @@
         {
           "level": 1,
           "action_type": "standard",
-          "mana_cost": 1,
-          "range_meters": 25,
-          "duration": "Until broken or until maintenance stops",
-          "mana_cost_condition": "Only if successful",
-          "maintenance_mana_cost": 1,
-          "target_count": 1,
-          "description": "Paralyze a living target if their (Wits + Cha) roll is lower than your (Cha + Int) roll. If they take damage, the spell breaks and they cannot be controlled for 1 day."
+          "mana_cost": 0,
+          "mechanics": {
+            "contest": {
+              "caster_pool": "CHA + INT",
+              "target_pool": "WITS + CHA"
+            },
+            "max_controlled_targets": 1,
+            "maintenance_mana_cost_per_turn": 1,
+            "command_action_type": null,
+            "breaks_on_damage_from_caster": true,
+            "breaks_on_damage_from_others": true,
+            "control_immunity_after_break_days": 1
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": "until broken or maintenance stops"
+          },
+          "description": "You can paralyze a living target if their roll is lower than yours. While they are controlled, taking damage breaks the spell."
         },
         {
           "level": 2,
           "action_type": "standard",
-          "mana_cost": 1,
-          "range_meters": 25,
-          "duration": "Until broken or until maintenance stops",
-          "mana_cost_condition": "Only if successful",
-          "maintenance_mana_cost": 1,
-          "target_count": 1,
-          "command_action_type": "bonus",
-          "command_mana_cost": 1,
-          "description": "Compel a controlled target to do simple acts without self-harm. Ordering them costs bonus action. If controlled targets take damage, the spell breaks."
+          "mana_cost": 0,
+          "mechanics": {
+            "contest": {
+              "caster_pool": "CHA + INT",
+              "target_pool": "WITS + CHA"
+            },
+            "max_controlled_targets": 1,
+            "maintenance_mana_cost_per_turn": 1,
+            "command_action_type": "bonus",
+            "breaks_on_damage_from_caster": true,
+            "breaks_on_damage_from_others": true,
+            "allowed_commands": "simple_acts_non_self_harm"
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": "until broken or maintenance stops"
+          },
+          "description": "Your controlled target can now be compelled to do simple acts, and ordering them costs a bonus action."
         },
         {
           "level": 3,
           "action_type": "standard",
-          "mana_cost": 1,
-          "range_meters": 25,
-          "duration": "Until broken or until maintenance stops",
-          "mana_cost_condition": "Only if successful",
-          "maintenance_mana_cost": 1,
-          "mana_cost_per_target_per_turn": 1,
-          "target_count": 2,
-          "command_action_type": "bonus",
-          "description": "Control 2 living targets at once and in one turn if they are in range. Ordering both takes 1 bonus action. If they take damage from anything except you, the spell does not break."
+          "mana_cost": 0,
+          "mechanics": {
+            "contest": {
+              "caster_pool": "CHA + INT",
+              "target_pool": "WITS + CHA"
+            },
+            "max_controlled_targets": 2,
+            "maintenance_mana_cost_per_target_per_turn": 1,
+            "command_action_type": "bonus",
+            "breaks_on_damage_from_caster": true,
+            "breaks_on_damage_from_others": false,
+            "allowed_commands": "simple_acts_non_self_harm"
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": "until broken or maintenance stops"
+          },
+          "description": "You can control 2 living targets at once and in one turn."
         },
         {
           "level": 4,
           "action_type": "bonus",
-          "mana_cost": 1,
-          "range_meters": 25,
-          "duration": "Until dismissed or no longer maintained",
-          "mana_cost_condition": "Only if successful",
-          "maintenance_mana_cost": 1,
-          "mana_cost_per_target_per_turn": 1,
-          "target_count": 2,
-          "command_action_type": "free",
-          "description": "Controlling targets becomes a bonus action instead of standard action. Compelling orders becomes instant and free. The spell no longer breaks regardless of the damage source."
+          "mana_cost": 0,
+          "mechanics": {
+            "contest": {
+              "caster_pool": "CHA + INT",
+              "target_pool": "WITS + CHA"
+            },
+            "max_controlled_targets": 2,
+            "maintenance_mana_cost_per_target_per_turn": 1,
+            "command_action_type": "free",
+            "breaks_on_damage_from_caster": false,
+            "breaks_on_damage_from_others": false,
+            "allowed_commands": "simple_acts_non_self_harm"
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": "until dismissed or maintenance stops"
+          },
+          "description": "Controlling targets is now a bonus action, and compelling orders is now instant and free."
         },
         {
           "level": 5,
           "action_type": "bonus",
-          "mana_cost": 1,
-          "range_meters": 25,
-          "duration": "Until dismissed or no longer maintained",
-          "maintenance_mana_cost": 1,
-          "mana_cost_per_target_per_turn": 1,
-          "target_count": 3,
-          "command_action_type": "free",
-          "description": "Control 3 mobs at once. This skill can be used against non-living targets except summoned ones created by another occult skill. Mana cost remains 1 per target per turn, up to 3 per turn."
+          "mana_cost": 0,
+          "mechanics": {
+            "contest": {
+              "caster_pool": "CHA + INT",
+              "target_pool": "WITS + CHA"
+            },
+            "max_controlled_targets": 3,
+            "maintenance_mana_cost_per_target_per_turn": 1,
+            "command_action_type": "free",
+            "breaks_on_damage_from_caster": false,
+            "breaks_on_damage_from_others": false,
+            "allowed_commands": "simple_acts_non_self_harm",
+            "allowed_target_types": [
+              "living",
+              "non_living_except_other_occult_summons"
+            ]
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": "until dismissed or maintenance stops"
+          },
+          "description": "You can control 3 mobs at once. This skill can now be used against non-living targets, except summoned ones by another occult skill."
         }
       ],
       "cantrip": {
         "introduced_at_level": 2,
-        "description": "Gain +1 bonus to social and intimidation dice pools. If skill is 5, also gain +1 bonus to mechanical and technological dice pools."
-      },
-      "notes": [
-        "If you fail to control a creature, or after control ends while they are still alive, they know you did something to them and you might be first on their aggro list."
-      ]
+        "levels": [
+          {
+            "power_level": 2,
+            "mechanics": {
+              "social_skill_bonus": 1,
+              "intimidation_skill_bonus": 1,
+              "mechanics_skill_bonus": 0,
+              "technology_skill_bonus": 0
+            },
+            "description": "You gain +1 bonus to your social and intimidation dice pools."
+          },
+          {
+            "power_level": 5,
+            "mechanics": {
+              "social_skill_bonus": 1,
+              "intimidation_skill_bonus": 1,
+              "mechanics_skill_bonus": 1,
+              "technology_skill_bonus": 1
+            },
+            "description": "At 5 dots, you also get +1 bonus to your mechanical and technological dice pools."
+          }
+        ],
+        "description": "If you fail to control a creature, or after the control if they are still alive, they will know you did something to them."
+      }
     },
     {
       "id": "elementalist",
@@ -288,97 +407,186 @@
           "level": 1,
           "action_type": "standard",
           "mana_cost": 1,
-          "range_meters": 25,
-          "duration": null,
-          "damage_formula": "INT + 1",
-          "target_count": 1,
-          "damage_type_options": [
-            "chosen element until long rest"
-          ],
-          "description": "Elemental Bolt damages one target for Int + 1. Choose one element and keep it until long rest."
+          "mechanics": {
+            "damage": {
+              "base_stat": "INT",
+              "flat_bonus": 1,
+              "max_targets": 1
+            }
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null,
+            "notes": [
+              "Choose an element for your attacks and stick to that element until long rest."
+            ]
+          },
+          "description": "Elemental Bolt is a single elemental attack that damages one target directly."
         },
         {
           "level": 2,
           "action_type": "standard",
           "mana_cost": 1,
-          "range_meters": 25,
-          "duration": null,
-          "damage_formula": "INT + 2",
-          "target_count": 2,
-          "description": "Elemental Bolt damage becomes Int + 2. You can split the damage across two targets in range, rounding each half up."
+          "mechanics": {
+            "damage": {
+              "base_stat": "INT",
+              "flat_bonus": 2,
+              "max_targets": 2,
+              "split_divisor": 2,
+              "split_round": "up"
+            }
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null
+          },
+          "description": "Your Elemental Bolt damage is increased, and you can divide it between two targets."
         },
         {
           "level": 3,
           "action_type": "standard",
           "mana_cost": 1,
-          "range_meters": 25,
-          "duration": null,
-          "damage_formula": "INT + 3",
-          "target_count": 2,
-          "damage_type_options": [
-            "fire",
-            "cold",
-            "lightning",
-            "acid"
-          ],
-          "split_damage_bonus_per_mana": 2,
-          "description": "Elemental Bolt damage becomes Int + 3. Change damage type between fire, cold, lightning, and acid at will. Vulnerable creatures take 1.5x damage, rounded up. Split damage can be increased by +2 per mana up to undivided damage."
+          "mechanics": {
+            "damage": {
+              "base_stat": "INT",
+              "flat_bonus": 3,
+              "max_targets": 2,
+              "split_divisor": 2,
+              "split_round": "up",
+              "split_bonus_per_mana": 2,
+              "damage_types": [
+                "fire",
+                "cold",
+                "lightning",
+                "acid"
+              ],
+              "vulnerability_multiplier": 1.5
+            }
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null
+          },
+          "description": "Damage is further increased. You can change your Elemental Bolt damage type from fire, cold, lightning, acid at will."
         },
         {
           "level": 4,
           "action_type": "standard",
           "mana_cost": 1,
-          "range_meters": 25,
-          "duration": null,
-          "damage_formula": "INT + 4",
-          "target_count": 3,
-          "split_damage_rule": "total damage / 2, rounded up, can be applied to each of up to 3 targets",
-          "description": "Elemental Bolt damage becomes Int + 4. Total damage divided by 2, rounded up, can be applied to 3 different targets in range."
+          "mechanics": {
+            "damage": {
+              "base_stat": "INT",
+              "flat_bonus": 4,
+              "max_targets": 3,
+              "split_divisor": 2,
+              "split_round": "up"
+            }
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null
+          },
+          "description": "Damage is further increased, and total damage divided by 2 can be applied to 3 different targets."
         },
         {
           "level": 5,
           "action_type": "standard",
           "mana_cost": 1,
-          "range_meters": 25,
-          "duration": null,
-          "damage_formula": "INT + 5",
-          "target_count": 4,
-          "split_damage_rule": "total damage / 2, rounded up, can be applied to each of up to 4 targets",
-          "mana_cost_variants": [
-            {
-              "damage_type": "fire",
-              "mana_cost": 1
+          "mechanics": {
+            "damage": {
+              "base_stat": "INT",
+              "flat_bonus": 5,
+              "max_targets": 4,
+              "split_divisor": 2,
+              "split_round": "up",
+              "damage_types": [
+                "fire",
+                "cold",
+                "lightning",
+                "acid",
+                "necrotic"
+              ],
+              "vulnerability_multiplier": 1.5
             },
-            {
-              "damage_type": "cold",
-              "mana_cost": 1
-            },
-            {
-              "damage_type": "lightning",
-              "mana_cost": 1
-            },
-            {
-              "damage_type": "acid",
-              "mana_cost": 1
-            },
-            {
-              "damage_type": "necrotic",
-              "mana_cost": 2
-            }
-          ],
-          "damage_type_options": [
-            "fire",
-            "cold",
-            "lightning",
-            "acid",
-            "necrotic"
-          ],
-          "description": "Elemental Bolt damage becomes Int + 5. Necrotic becomes available. All living creatures are vulnerable to necrotic damage. Total damage divided by 2, rounded up, can be applied to 4 different targets."
+            "mana_cost_variants": [
+              {
+                "damage_type": "fire",
+                "mana_cost": 1
+              },
+              {
+                "damage_type": "cold",
+                "mana_cost": 1
+              },
+              {
+                "damage_type": "lightning",
+                "mana_cost": 1
+              },
+              {
+                "damage_type": "acid",
+                "mana_cost": 1
+              },
+              {
+                "damage_type": "necrotic",
+                "mana_cost": 2
+              }
+            ]
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null
+          },
+          "description": "Damage is further increased, necrotic damage type becomes available, and total damage divided by 2 can be applied to 4 different targets."
         }
       ],
       "cantrip": {
         "introduced_at_level": 2,
-        "description": "The cantrip costs no mana and deals damage equal to Int. At level 4, cantrip damage becomes Int + 1 and can be used as a bonus action if you have not cast another harming spell that turn. At level 5, cantrip damage divided by 2, rounded up, can be split between 2 targets. Necrotic cannot be used as a cantrip."
+        "levels": [
+          {
+            "power_level": 2,
+            "action_type": "standard",
+            "mana_cost": 0,
+            "mechanics": {
+              "damage": {
+                "base_stat": "INT",
+                "flat_bonus": 0,
+                "max_targets": 1
+              }
+            },
+            "description": "It does not spend mana and its damage is equal to your Int."
+          },
+          {
+            "power_level": 4,
+            "action_type": "bonus",
+            "mana_cost": 0,
+            "mechanics": {
+              "damage": {
+                "base_stat": "INT",
+                "flat_bonus": 1,
+                "max_targets": 1
+              }
+            },
+            "description": "Cantrip damage is increased by 1 and can be used as a bonus action if you have not cast any other harming spell during this turn."
+          },
+          {
+            "power_level": 5,
+            "action_type": "bonus",
+            "mana_cost": 0,
+            "mechanics": {
+              "damage": {
+                "base_stat": "INT",
+                "flat_bonus": 1,
+                "max_targets": 2,
+                "split_divisor": 2,
+                "split_round": "up",
+                "disallowed_damage_types": [
+                  "necrotic"
+                ]
+              }
+            },
+            "description": "Total cantrip damage divided by 2, rounded up, can be divided to 2 different targets in range."
+          }
+        ],
+        "description": "You cannot use necrotic damage type as a cantrip."
       }
     },
     {
@@ -390,56 +598,163 @@
           "level": 1,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "touch",
-          "duration": null,
-          "healing_formula": "INT + 1",
-          "target_count": 1,
-          "description": "Heal a target for Int + 1 and remove bleeding."
+          "mechanics": {
+            "healing": {
+              "base_stat": "INT",
+              "flat_bonus": 1,
+              "max_targets": 1
+            },
+            "removes_statuses": [
+              "bleeding"
+            ]
+          },
+          "adjudication": {
+            "range": "touch",
+            "duration": null
+          },
+          "description": "Heals a target and also removes bleeding."
         },
         {
           "level": 2,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": 25,
-          "duration": null,
-          "healing_formula": "INT + 2",
-          "target_count": 4,
-          "description": "Healing becomes Int + 2. No touch is needed. Spread the total healing among up to 4 friendly targets within standard range."
+          "mechanics": {
+            "healing": {
+              "base_stat": "INT",
+              "flat_bonus": 2,
+              "max_targets": 4
+            },
+            "removes_statuses": [
+              "bleeding"
+            ]
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null
+          },
+          "description": "Your healing becomes stronger and can be spread across friendly targets in range."
         },
         {
           "level": 3,
           "action_type": "standard",
           "mana_cost": 3,
-          "range_meters": "touch",
-          "duration": null,
-          "healing_formula": "INT + 3",
-          "target_count": 1,
-          "description": "Healing becomes Int + 3. Cure poison, disease, or curse by touch."
+          "mechanics": {
+            "healing": {
+              "base_stat": "INT",
+              "flat_bonus": 3,
+              "max_targets": 1
+            },
+            "removes_statuses": [
+              "bleeding",
+              "poison",
+              "disease",
+              "curse"
+            ]
+          },
+          "adjudication": {
+            "range": "touch",
+            "duration": null
+          },
+          "description": "Your healing becomes stronger and can cure poison, disease, and curse."
         },
         {
           "level": 4,
           "action_type": "standard",
           "mana_cost": 3,
-          "range_meters": 25,
-          "duration": null,
-          "healing_formula": "INT + 4",
-          "target_count": 1,
-          "description": "Healing becomes Int + 4. Regrow missing limbs. You no longer need to touch to cure ailments within standard range."
+          "mechanics": {
+            "healing": {
+              "base_stat": "INT",
+              "flat_bonus": 4,
+              "max_targets": 1
+            },
+            "removes_statuses": [
+              "bleeding",
+              "poison",
+              "disease",
+              "curse"
+            ],
+            "can_regrow_limbs": true
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null
+          },
+          "description": "Your healing becomes stronger and can also regrow missing limbs."
         },
         {
           "level": 5,
           "action_type": "standard",
           "mana_cost": 3,
-          "range_meters": 25,
-          "duration": null,
-          "healing_formula": "INT + 5",
-          "target_count": 1,
-          "description": "Healing becomes Int + 5. Once per character per day, healing can exceed max health up to the target's stamina."
+          "mechanics": {
+            "healing": {
+              "base_stat": "INT",
+              "flat_bonus": 5,
+              "max_targets": 1
+            },
+            "removes_statuses": [
+              "bleeding",
+              "poison",
+              "disease",
+              "curse"
+            ],
+            "can_regrow_limbs": true,
+            "overheal": {
+              "enabled": true,
+              "uses_per_character_per_day": 1,
+              "cap_stat": "STAM"
+            }
+          },
+          "adjudication": {
+            "range": "standard (25m)",
+            "duration": null
+          },
+          "description": "Your healing becomes stronger and can exceed a target's max health for a single use each day."
         }
       ],
       "cantrip": {
         "introduced_at_level": 3,
-        "description": "Heal 2 HP or stop bleeding with no mana cost. If skill is 5 dots, heal 4 HP. A single target cannot be mended this way more than twice per day. At level 4, cantrip healing becomes 3 HP. At level 5, cantrip healing becomes 4 HP."
+        "levels": [
+          {
+            "power_level": 3,
+            "action_type": "standard",
+            "mana_cost": 0,
+            "mechanics": {
+              "healing": {
+                "flat_amount": 2
+              },
+              "stops_bleeding": true,
+              "max_uses_per_target_per_day": 2
+            },
+            "description": "A simple wound mending spell. You can heal by 2 HP or stop bleeding."
+          },
+          {
+            "power_level": 4,
+            "action_type": "standard",
+            "mana_cost": 0,
+            "mechanics": {
+              "healing": {
+                "flat_amount": 3
+              },
+              "stops_bleeding": true,
+              "max_uses_per_target_per_day": 2
+            },
+            "description": "The healing cantrip becomes stronger and heals 3 HP."
+          },
+          {
+            "power_level": 5,
+            "action_type": "standard",
+            "mana_cost": 0,
+            "mechanics": {
+              "healing": {
+                "flat_amount": 4
+              },
+              "stops_bleeding": true,
+              "max_uses_per_target_per_day": 2
+            },
+            "description": "The healing cantrip becomes stronger and heals 4 HP."
+          }
+        ],
+        "description": "Cantrip does not require mana."
       }
     },
     {
@@ -452,177 +767,748 @@
           "level": 1,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "10 minutes or 1 portal duration, whichever is longer",
-          "effect_radius_meters": 50,
-          "description": "Create a light source on yourself with 50m radius. Neutral, friendly, and allied targets in range gain +2 hit bonus to melee and ranged attack dice."
+          "mechanics": {
+            "aura_bonuses": {
+              "attack_dice_bonus": 2,
+              "damage_reduction_bonus": 0,
+              "soak_bonus": 0
+            }
+          },
+          "adjudication": {
+            "targeting": "self_aura",
+            "radius": "50m",
+            "duration": "10 minutes or 1 portal duration, whichever is longer"
+          },
+          "description": "You create a light source on yourself, and targets in your light's range gain +2 hit bonus to their melee and ranged attack dice."
         },
         {
           "level": 2,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "30 minutes outside portals or 1 portal duration, whichever is longer",
-          "effect_radius_meters": 50,
-          "description": "Hostile targets cannot see the light source and cannot detect you because of it. The light source gains +1 DR. Bonuses remain +2 hit and +1 DR."
+          "mechanics": {
+            "aura_bonuses": {
+              "attack_dice_bonus": 2,
+              "damage_reduction_bonus": 1,
+              "soak_bonus": 0
+            }
+          },
+          "adjudication": {
+            "targeting": "self_aura",
+            "radius": "50m",
+            "duration": "30 minutes outside portals or 1 portal duration, whichever is longer"
+          },
+          "description": "Hostile targets cannot see the light source, and your light source gains +1 DR."
         },
         {
           "level": 3,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "1 hour outside portals or 1 portal duration, whichever is longer",
-          "effect_radius_meters": 50,
-          "description": "The light source gains +1 soak. Bonuses become +3 hit, +1 DR, and +1 soak."
+          "mechanics": {
+            "aura_bonuses": {
+              "attack_dice_bonus": 3,
+              "damage_reduction_bonus": 1,
+              "soak_bonus": 1
+            }
+          },
+          "adjudication": {
+            "targeting": "self_aura",
+            "radius": "50m",
+            "duration": "1 hour outside portals or 1 portal duration, whichever is longer"
+          },
+          "description": "Your light source gains +1 Soak bonus and stronger hit support."
         },
         {
           "level": 4,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "3 hours outside portals or 1 portal duration, whichever is longer",
-          "effect_radius_meters": 100,
-          "description": "Bonuses become +3 hit, +2 DR, and +1 soak. Range becomes 100m. Once per long rest or once in a portal, restore mana to a human target including yourself up to 2x Appearance."
+          "mechanics": {
+            "aura_bonuses": {
+              "attack_dice_bonus": 3,
+              "damage_reduction_bonus": 2,
+              "soak_bonus": 1
+            },
+            "mana_restore": {
+              "enabled": true,
+              "uses_per_long_rest": 1,
+              "max_amount_formula": {
+                "base_stat": "APP",
+                "multiplier": 2
+              }
+            }
+          },
+          "adjudication": {
+            "targeting": "self_aura",
+            "radius": "100m",
+            "duration": "3 hours outside portals or 1 portal duration, whichever is longer"
+          },
+          "description": "Your light source bonuses become +3 hit, +2 DR, and +1 Soak. It also gains a mana restoration effect."
         },
         {
           "level": 5,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "8 hours outside portals or 1 portal duration, whichever is longer",
-          "effect_radius_meters": 100,
-          "description": "Bonuses become +4 hit, +2 DR, and +2 soak. The light can last 8 hours outside a portal. Expose darkness removes or downgrades darkness-based immunities and resistances while you maintain concentration with bonus actions. This effect is a standard action and costs no mana."
+          "mechanics": {
+            "aura_bonuses": {
+              "attack_dice_bonus": 4,
+              "damage_reduction_bonus": 2,
+              "soak_bonus": 2
+            },
+            "mana_restore": {
+              "enabled": true,
+              "uses_per_long_rest": 1,
+              "max_amount_formula": {
+                "base_stat": "APP",
+                "multiplier": 2
+              }
+            },
+            "expose_darkness": {
+              "action_type": "standard",
+              "mana_cost": 0,
+              "resistance_level_delta": -1,
+              "concentration_action_type": "bonus"
+            }
+          },
+          "adjudication": {
+            "targeting": "self_aura",
+            "radius": "100m",
+            "duration": "8 hours outside portals or 1 portal duration, whichever is longer"
+          },
+          "description": "Your light source bonuses become +4 hit, +2 DR, and +2 Soak. Expose darkness can reduce or remove darkness-based resistances and immunities while you maintain concentration."
         }
       ],
       "cantrip": {
         "introduced_at_level": 1,
-        "description": "Gain nightvision and +1 mana bonus. At level 3, mana bonus becomes +2. At level 5, mana bonus becomes +3."
+        "levels": [
+          {
+            "power_level": 1,
+            "mechanics": {
+              "nightvision": true,
+              "mana_bonus": 1
+            },
+            "description": "You gain nightvision and +1 mana bonus."
+          },
+          {
+            "power_level": 3,
+            "mechanics": {
+              "nightvision": true,
+              "mana_bonus": 2
+            },
+            "description": "You gain nightvision and +2 mana bonus."
+          },
+          {
+            "power_level": 5,
+            "mechanics": {
+              "nightvision": true,
+              "mana_bonus": 3
+            },
+            "description": "You gain nightvision and +3 mana bonus."
+          }
+        ]
       }
     },
     {
       "id": "necromancy",
       "name": "Necromancy",
+      "abbreviation": "NE",
       "governing_stat": "APP",
+      "summon_templates": {
+        "simple_skeleton": {
+          "initiative": {
+            "uses_caster_initiative": true,
+            "acts_after_caster": true
+          },
+          "combat_summary": {
+            "melee_skill": 3,
+            "natural_damage_reduction": 3
+          },
+          "stats": {
+            "STR": {
+              "formula": "1 + ceil(APP / 2)"
+            },
+            "DEX": {
+              "formula": "1 + ceil(APP / 2)"
+            },
+            "STAM": {
+              "formula": "1 + ceil(APP / 2)"
+            },
+            "INT": 0,
+            "PER": 0,
+            "WITS": 0
+          },
+          "attacks": [
+            {
+              "name": "one_handed_melee",
+              "attack_formula": "DEX + melee_skill",
+              "damage_formula": "STR + 2",
+              "attack_bonus": 0,
+              "damage_bonus": 2
+            }
+          ],
+          "equipment_rules": {
+            "can_use_other_weapons": false,
+            "can_use_armor": false,
+            "can_use_accessories": false
+          },
+          "buff_rules": {
+            "can_receive_single_buffs": false,
+            "can_receive_group_buffs": false,
+            "can_be_healed": false
+          },
+          "summoning_rules": {
+            "appears_adjacent_to_caster": true,
+            "summon_location_selectable": false,
+            "breaks_stealth_on_summon": true
+          }
+        },
+        "skeleton_king": {
+          "initiative": {
+            "uses_caster_initiative": true,
+            "acts_after_caster": true
+          },
+          "combat_summary": {
+            "melee_skill": 4,
+            "natural_damage_reduction": 5
+          },
+          "stats": {
+            "STR": {
+              "formula": "2 + ceil(APP / 2)"
+            },
+            "DEX": {
+              "formula": "2 + ceil(APP / 2)"
+            },
+            "STAM": {
+              "formula": "2 + ceil(APP / 2)"
+            },
+            "INT": 0,
+            "PER": 0,
+            "WITS": 0
+          },
+          "attacks": [
+            {
+              "name": "two_handed_sword",
+              "attack_formula": "DEX + melee_skill + 1",
+              "damage_formula": "STR + 7",
+              "attack_bonus": 1,
+              "damage_bonus": 7
+            }
+          ],
+          "resistances": [
+            "shadow",
+            "cold",
+            "lightning"
+          ],
+          "equipment_rules": {
+            "can_use_other_weapons": false,
+            "can_use_armor": false,
+            "can_use_accessories": false
+          },
+          "buff_rules": {
+            "can_receive_single_buffs": false,
+            "can_receive_group_buffs": false,
+            "can_be_healed": false
+          },
+          "summoning_rules": {
+            "appears_adjacent_to_caster": true,
+            "summon_location_selectable": false,
+            "breaks_stealth_on_summon": true
+          }
+        },
+        "zombie": {
+          "initiative": {
+            "uses_caster_initiative": true,
+            "acts_after_caster": true
+          },
+          "combat_summary": {
+            "melee_skill": 4,
+            "natural_damage_reduction": 5
+          },
+          "stats": {
+            "STR": {
+              "formula": "APP"
+            },
+            "DEX": {
+              "formula": "APP"
+            },
+            "STAM": {
+              "formula": "APP"
+            },
+            "INT": 0,
+            "PER": 0,
+            "WITS": 0
+          },
+          "attacks": [
+            {
+              "name": "dual_brawl",
+              "attack_formula": "DEX + melee_skill + 2",
+              "damage_formula": "STR + 2",
+              "attacks_per_action": 2,
+              "attack_bonus": 2,
+              "damage_bonus": 2
+            }
+          ],
+          "resistances": [
+            "shadow",
+            "cold",
+            "lightning"
+          ],
+          "equipment_rules": {
+            "can_use_other_weapons": false,
+            "can_use_armor": false,
+            "can_use_accessories": false
+          },
+          "buff_rules": {
+            "can_receive_single_buffs": false,
+            "can_receive_group_buffs": true,
+            "can_be_healed": false
+          },
+          "summoning_rules": {
+            "appears_adjacent_to_caster": true,
+            "summon_location_selectable": false,
+            "breaks_stealth_on_summon": true
+          }
+        }
+      },
       "levels": [
         {
           "level": 1,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "10 minutes outside portals or 1 portal duration",
-          "description": "Create one simple skeleton for 10 minutes outside portals or one portal duration. Skeleton has melee skill 3, Str/Dex/Stam equal to 1 + half Appearance rounded up, a 1-handed melee weapon, natural DR 3, mental stats 0, and uses your initiative. Only 1 skeleton may be active."
+          "mechanics": {
+            "summoning": {
+              "max_active": 1,
+              "options": [
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "adjudication": {
+            "duration": "10 minutes outside portals or 1 portal duration"
+          },
+          "description": "You create one simple skeleton to fight at your side till it dies (again) or a portal duration."
         },
         {
           "level": 2,
           "action_type": "standard",
           "mana_cost": 3,
-          "range_meters": "self",
-          "duration": "10 minutes outside portals or 1 portal duration",
-          "description": "Create 2 simple skeletons or 1 skeleton king with a 2-handed sword, melee skill 4, Str/Dex/Stam equal to 2 + half Appearance rounded up, +1 hit, +1 damage, natural DR 5, and resistance to shadow, cold, and lightning."
+          "mechanics": {
+            "summoning": {
+              "max_active": 2,
+              "options_are_mutually_exclusive": true,
+              "options": [
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2
+                },
+                {
+                  "template_id": "skeleton_king",
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "adjudication": {
+            "duration": "10 minutes outside portals or 1 portal duration"
+          },
+          "description": "You can create 2 simple skeletons, or 1 skeleton king with a 2 handed sword."
         },
         {
           "level": 3,
           "action_type": "standard",
           "mana_cost": 3,
-          "range_meters": 25,
-          "duration": null,
-          "damage_formula": "APP + Necromancy Level",
-          "description": "Use necrotic touch at 25 meters. It deals Appearance + Necromancy Level necrotic damage, 1.5x against living, heals yourself by Necromancy Level even if damage dealt is 0, heals undead at x1, and does not work on shadow or incorporeal creatures."
+          "mechanics": {
+            "summoning": {
+              "max_active": 2,
+              "options_are_mutually_exclusive": true,
+              "options": [
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2
+                },
+                {
+                  "template_id": "skeleton_king",
+                  "quantity": 1
+                }
+              ]
+            },
+            "necrotic_touch": {
+              "damage": {
+                "base_stat": "APP",
+                "flat_bonus": 4,
+                "damage_type": "necrotic",
+                "soak_stat": "STAM"
+              },
+              "living_damage_multiplier": 1.5,
+              "self_heal_flat_amount": 4,
+              "undead_heal_flat_amount": 4,
+              "auto_hit": false,
+              "invalid_targets": [
+                "shadow",
+                "incorporeal"
+              ]
+            }
+          },
+          "adjudication": {
+            "range": "25 meters",
+            "duration": null
+          },
+          "description": "You can make a ranged touch attack (necrotic touch) to a target and they take necrotic damage equal to your appearance plus your necromancy level."
         },
         {
           "level": 4,
           "action_type": "standard",
           "mana_cost": 4,
-          "range_meters": "self",
-          "duration": "60 minutes outside portals or 1 portal duration",
-          "description": "Outside portals, undead last 60 minutes. Undead gain half your Necromancy level to attacks and damage. You may create a zombie instead of skeletons. The zombie has melee 4, Str/Dex/Stam equal to Appearance, two brawl attacks, natural DR 5, and resistance to shadow, cold, and lightning."
+          "mechanics": {
+            "summoning": {
+              "max_active": 2,
+              "attack_bonus": 2,
+              "damage_bonus": 2,
+              "options_are_mutually_exclusive": true,
+              "options": [
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2
+                },
+                {
+                  "template_id": "skeleton_king",
+                  "quantity": 1
+                },
+                {
+                  "template_id": "zombie",
+                  "quantity": 1
+                }
+              ]
+            },
+            "necrotic_touch": {
+              "damage": {
+                "base_stat": "APP",
+                "flat_bonus": 3,
+                "damage_type": "necrotic",
+                "soak_stat": "STAM"
+              },
+              "living_damage_multiplier": 1.5,
+              "self_heal_flat_amount": 3,
+              "undead_heal_flat_amount": 3,
+              "auto_hit": false,
+              "invalid_targets": [
+                "shadow",
+                "incorporeal"
+              ]
+            }
+          },
+          "adjudication": {
+            "duration": "60 minutes outside portals or 1 portal duration"
+          },
+          "description": "Your undead summons last longer outside portals, gain bonuses to attacks and damage, and you can summon a zombie instead of skeletons."
         },
         {
           "level": 5,
           "action_type": "standard",
           "mana_cost": 6,
-          "range_meters": "touch",
-          "duration": null,
-          "description": "Bonus to undead summons becomes equal to your Necromancy level. Their melee skill becomes 5. Necrotic touch damage becomes Appearance + 2 x Necromancy level. You can resurrect a recently fallen human up to 1 hour after death."
+          "mechanics": {
+            "summoning": {
+              "max_active": 2,
+              "attack_bonus": 5,
+              "damage_bonus": 5,
+              "melee_skill_override": 5,
+              "options_are_mutually_exclusive": true,
+              "options": [
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2
+                },
+                {
+                  "template_id": "skeleton_king",
+                  "quantity": 1
+                },
+                {
+                  "template_id": "zombie",
+                  "quantity": 1
+                }
+              ]
+            },
+            "necrotic_touch": {
+              "damage": {
+                "base_stat": "APP",
+                "flat_bonus": 10,
+                "power_level_multiplier": 2,
+                "damage_type": "necrotic",
+                "soak_stat": "STAM"
+              },
+              "living_damage_multiplier": 1.5,
+              "self_heal_flat_amount": 5,
+              "undead_heal_flat_amount": 5,
+              "auto_hit": false,
+              "invalid_targets": [
+                "shadow",
+                "incorporeal"
+              ]
+            },
+            "resurrection": {
+              "enabled": true,
+              "target_type": "recently_fallen_human"
+            }
+          },
+          "adjudication": {
+            "resurrection_window": "up to 1 hour after death",
+            "duration": "60 minutes outside portals or 1 portal duration"
+          },
+          "description": "Your undead summons gain stronger bonuses, their melee skill becomes 5, your necrotic touch becomes stronger, and you can resurrect a recently fallen human."
         }
       ],
       "cantrip": {
         "introduced_at_level": 2,
-        "description": "You are last on a hostile undead's aggro list. If you have 5 dots, they do not attack you unless you attack first. Gain +1 bonus to melee skill, increasing by +1 every other Necromancy level thereafter."
-      },
-      "notes": [
-        "Skeletons do not benefit from single or group buffs and cannot be healed.",
-        "All summoned creatures appear next to you and you cannot choose their summoning location.",
-        "All summons cancel stealth or invisible effects."
-      ]
+        "levels": [
+          {
+            "power_level": 2,
+            "mechanics": {
+              "hostile_undead_aggro_priority": "last",
+              "melee_skill_bonus": 1
+            },
+            "description": "You will be the last on a hostile undead's aggro list and gain +1 melee skill."
+          },
+          {
+            "power_level": 4,
+            "mechanics": {
+              "hostile_undead_aggro_priority": "last",
+              "melee_skill_bonus": 2
+            },
+            "description": "Your necromancy cantrip melee skill bonus increases to +2."
+          },
+          {
+            "power_level": 5,
+            "mechanics": {
+              "hostile_undead_aggro_priority": "ignore_unless_attacked",
+              "melee_skill_bonus": 2
+            },
+            "description": "Hostile undead will not attack you unless you attack first."
+          }
+        ]
+      }
     },
     {
       "id": "shadow_control",
       "name": "Shadow Control",
       "abbreviation": "SC",
       "governing_stat": "MAN",
+      "summon_templates": {
+        "shadow_soldier": {
+          "combat_summary": {
+            "melee_skill": 5,
+            "natural_damage_reduction": 6
+          },
+          "stats": {
+            "STR": {
+              "formula": "3 + MAN"
+            },
+            "DEX": {
+              "formula": "3 + MAN"
+            },
+            "STAM": {
+              "formula": "3 + MAN"
+            }
+          },
+          "attacks": [
+            {
+              "name": "two_handed_sword",
+              "attack_bonus": 2,
+              "damage_bonus": 2,
+              "damage_types": [
+                "physical",
+                "shadow"
+              ]
+            }
+          ],
+          "defenses": {
+            "immunities": [
+              "shadow",
+              "cold"
+            ],
+            "resistances": [
+              "physical"
+            ],
+            "vulnerabilities": [
+              "radiant"
+            ]
+          },
+          "buff_rules": {
+            "can_receive_single_buffs": true,
+            "can_receive_group_buffs": true,
+            "can_be_healed": false
+          },
+          "summoning_rules": {
+            "appears_adjacent_to_caster": true,
+            "summon_location_selectable": false,
+            "breaks_stealth_on_summon": true,
+            "max_active": 1
+          }
+        }
+      },
       "levels": [
         {
           "level": 1,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "10 minutes or 1 portal duration",
-          "description": "Create a Cloak of Shadow. It grants intimidation and stealth skills equal to Shadow Control level and +1 AC."
+          "mechanics": {
+            "cloak_of_shadow": {
+              "stealth_skill_bonus": 1,
+              "intimidation_skill_bonus": 1,
+              "armor_class_bonus": 1
+            }
+          },
+          "adjudication": {
+            "duration": "10 minutes outside portals or 1 portal duration"
+          },
+          "description": "You create a cloak of shadow around you that grants intimidation, stealth, and +1 AC."
         },
         {
           "level": 2,
-          "action_type": null,
+          "action_type": "bonus",
           "mana_cost": 2,
-          "range_meters": null,
-          "duration": null,
-          "action_type_options": [
-            "bonus",
-            "standard"
-          ],
-          "range_formula": "25m x Shadow Control rank",
-          "description": "Shadow Walk lets you dive into your shadow and appear near the shadow of a living target."
+          "mechanics": {
+            "cloak_of_shadow": {
+              "stealth_skill_bonus": 2,
+              "intimidation_skill_bonus": 2,
+              "armor_class_bonus": 1
+            },
+            "shadow_walk": {
+              "enabled": true,
+              "range_per_power_level_meters": 25
+            }
+          },
+          "adjudication": {
+            "duration": "10 minutes outside portals or 1 portal duration",
+            "shadow_walk_range": "25 meters x Shadow Control level"
+          },
+          "description": "Shadow walk allows you to dive into your shadow and appear near the shadow of a living target."
         },
         {
           "level": 3,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": 25,
-          "duration": null,
-          "damage_formula": "MAN + Shadow Control",
-          "description": "Cloak of Shadow AC bonus increases to +2. Shadow Manipulation attacks a target's own shadow automatically for damage equal to Man + Shadow Control. It is shadow damage, soakable with stamina, and counts as an attack that cancels stealth or invisibility."
+          "mechanics": {
+            "cloak_of_shadow": {
+              "stealth_skill_bonus": 3,
+              "intimidation_skill_bonus": 3,
+              "armor_class_bonus": 2
+            },
+            "shadow_walk": {
+              "enabled": true,
+              "range_per_power_level_meters": 25
+            },
+            "shadow_manipulation": {
+              "auto_hit": true,
+              "damage": {
+                "base_stat": "MAN",
+                "flat_bonus": 4,
+                "damage_type": "shadow",
+                "soak_stat": "STAM"
+              },
+              "breaks_stealth": true
+            }
+          },
+          "adjudication": {
+            "duration": "10 minutes outside portals or 1 portal duration",
+            "range": "25 meters"
+          },
+          "description": "Your cloak of shadow becomes stronger and you can manipulate a target's own shadow to attack them."
         },
         {
           "level": 4,
           "action_type": "standard",
           "mana_cost": 2,
-          "range_meters": "self",
-          "duration": "60 minutes outside portals or 1 portal duration",
-          "mana_cost_variants": [
-            {
-              "use": "self_only_cloak",
-              "mana_cost": 2
+          "mechanics": {
+            "cloak_of_shadow": {
+              "stealth_skill_bonus": 4,
+              "intimidation_skill_bonus": 4,
+              "armor_class_bonus": 2,
+              "shared_with_allies": true
             },
-            {
-              "use": "shared_cloak",
-              "mana_cost": 4
+            "mana_cost_variants": {
+              "self_only": 2,
+              "shared_with_allies": 4
+            },
+            "shadow_walk": {
+              "enabled": true,
+              "range_per_power_level_meters": 25
+            },
+            "shadow_manipulation": {
+              "auto_hit": true,
+              "damage": {
+                "base_stat": "MAN",
+                "flat_bonus": 5,
+                "damage_type": "shadow",
+                "soak_stat": "STAM"
+              },
+              "breaks_stealth": true
             }
-          ],
-          "effect_radius_meters": 25,
-          "description": "Cloak of Shadow AC bonus can be applied to all or selected allies within 25 meters. Outside portals, Cloak of Shadow lasts 60 minutes."
+          },
+          "adjudication": {
+            "duration": "60 minutes outside portals or 1 portal duration",
+            "shared_range": "25 meters"
+          },
+          "description": "Your cloak of shadow can now protect all or selected allies within range."
         },
         {
           "level": 5,
           "action_type": "standard",
           "mana_cost": 4,
-          "range_meters": "self",
-          "duration": null,
-          "description": "Cloak of Shadow AC bonus increases to +3. Shadow Soldier creates a semi-shadow soldier with a 2-handed sword, +2 hit, +2 damage, melee skill 5, Str/Dex/Stam equal to 3 + Man, natural DR 6, shadow and cold immunity, physical resistance, radiant vulnerability, and switchable physical or shadow damage type. It can receive group and single buffs but cannot be healed. Only 1 may be active."
+          "mechanics": {
+            "cloak_of_shadow": {
+              "stealth_skill_bonus": 5,
+              "intimidation_skill_bonus": 5,
+              "armor_class_bonus": 3,
+              "shared_with_allies": true
+            },
+            "mana_cost_variants": {
+              "self_only": 2,
+              "shared_with_allies": 4
+            },
+            "shadow_walk": {
+              "enabled": true,
+              "range_per_power_level_meters": 25
+            },
+            "shadow_manipulation": {
+              "auto_hit": true,
+              "damage": {
+                "base_stat": "MAN",
+                "flat_bonus": 3,
+                "damage_type": "shadow",
+                "soak_stat": "STAM"
+              },
+              "breaks_stealth": true
+            },
+            "summoning": {
+              "options": [
+                {
+                  "template_id": "shadow_soldier",
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "adjudication": {
+            "duration": "60 minutes outside portals or 1 portal duration"
+          },
+          "description": "Your cloak of shadow grows stronger and you can summon a shadow soldier."
         }
       ],
       "cantrip": {
         "introduced_at_level": 3,
-        "description": "Apply cosmetic changes to clothes or armor without changing stats. At level 5, make minor cosmetic body changes such as hair, eye, or skin color."
+        "levels": [
+          {
+            "power_level": 3,
+            "mechanics": {},
+            "description": "You can do cosmetic changes on your clothes or armor."
+          },
+          {
+            "power_level": 5,
+            "mechanics": {},
+            "description": "You can also make minor cosmetic appearance modifications on your body."
+          }
+        ]
       }
     }
   ]
