@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 
 import { getActionAvailability, type RequestedAction } from "../config/actions";
 import {
+  getDerivedModifierBonus,
+  getEffectiveCoreStat,
+  getEffectiveSkillLevel,
+  hasModifierTag,
+  resolveCharacterModifiers,
+} from "../config/modifiers";
+import { getCastablePowerOptions } from "../config/powers";
+import {
   calculateArmorClass,
   calculateInitiative,
   calculateMaxHP,
@@ -11,6 +19,7 @@ import {
 } from "../config/stats";
 import { getCrAndRankFromXpUsed } from "../config/xpTables";
 import { isSupabaseConfigured } from "../lib/env";
+import { castKnownPower } from "../lib/powerActions";
 import {
   setCharacterResources,
   setInventoryItemSlot,
@@ -93,25 +102,49 @@ export function PlayerSheetPage() {
 
   const character = sheetData?.character ?? null;
   const encounter = sheetData?.encounter ?? null;
-  const progression = character ? getCrAndRankFromXpUsed(character.xpUsed) : null;
-  const derived = character
-    ? {
-        maxHp: calculateMaxHP(character.coreStats.STAM),
-        initiative: calculateInitiative(character.coreStats.DEX, character.coreStats.WITS),
-        armorClass: calculateArmorClass(
-          character.coreStats.DEX,
-          character.skillLevels.athletics
-        ),
-        rangedBonus: calculateRangedBonusDice(character.coreStats.PER),
-        manaBonus: calculateOccultManaBonus(character.skillLevels.occultism, character.xpUsed),
-      }
-    : null;
-
   const equippedItems = sheetData?.equippedItems ?? [];
   const inventoryItems = sheetData?.inventoryItems ?? [];
   const itemTemplatesById = sheetData?.itemTemplatesById ?? {};
   const knownPowers = character?.knownPowers ?? [];
   const statusEffects = character?.statusEffects ?? [];
+  const castablePowers = getCastablePowerOptions(knownPowers);
+  const progression = character ? getCrAndRankFromXpUsed(character.xpUsed) : null;
+  const modifierSummary = character
+    ? resolveCharacterModifiers(
+        character,
+        equippedItems.map((equippedItem) => equippedItem.template)
+      )
+    : null;
+  const derived =
+    character && modifierSummary
+      ? {
+          maxHp: calculateMaxHP(
+            getEffectiveCoreStat(character, modifierSummary, "STAM")
+          ),
+          initiative: calculateInitiative(
+            getEffectiveCoreStat(character, modifierSummary, "DEX"),
+            getEffectiveCoreStat(character, modifierSummary, "WITS")
+          ),
+          armorClass: calculateArmorClass(
+            getEffectiveCoreStat(character, modifierSummary, "DEX"),
+            getEffectiveSkillLevel(character, modifierSummary, "athletics"),
+            getDerivedModifierBonus(modifierSummary, "armor_class")
+          ),
+          rangedBonus: calculateRangedBonusDice(
+            getEffectiveCoreStat(character, modifierSummary, "PER")
+          ),
+          manaBonus:
+            calculateOccultManaBonus(
+              getEffectiveSkillLevel(character, modifierSummary, "occultism"),
+              character.xpUsed
+            ) + getDerivedModifierBonus(modifierSummary, "mana_bonus"),
+          damageReduction: getDerivedModifierBonus(modifierSummary, "damage_reduction"),
+          soak: getDerivedModifierBonus(modifierSummary, "soak"),
+          hitBonus: getDerivedModifierBonus(modifierSummary, "attack_dice_pool_hit_bonus"),
+          alertness: getEffectiveSkillLevel(character, modifierSummary, "alertness"),
+          hasNightvision: hasModifierTag(modifierSummary, "nightvision"),
+        }
+      : null;
 
   async function refreshSheetWithMessage(message: string) {
     setMutationMessage(message);
@@ -189,6 +222,33 @@ export function PlayerSheetPage() {
       );
     } catch (error) {
       setMutationMessage(error instanceof Error ? error.message : "Unable to spend the selected action.");
+    } finally {
+      setMutationState("idle");
+    }
+  }
+
+  async function handlePowerCast(powerId: (typeof knownPowers)[number]["powerId"]) {
+    if (!character || mutationState === "running") {
+      return;
+    }
+
+    setMutationState("running");
+    setMutationMessage(null);
+
+    try {
+      const result = await castKnownPower(
+        character.characterId,
+        powerId,
+        encounter?.encounterId ?? null,
+        encounter?.revision ?? null
+      );
+      await refreshSheetWithMessage(
+        `Cast ${result.status_label}. Spent ${result.mana_spent} Mana${
+          result.consumed_from ? ` and consumed ${result.consumed_from}.` : "."
+        }`
+      );
+    } catch (error) {
+      setMutationMessage(error instanceof Error ? error.message : "Unable to cast the selected power.");
     } finally {
       setMutationState("idle");
     }
@@ -413,6 +473,22 @@ export function PlayerSheetPage() {
                 <span>Occult Mana Bonus</span>
                 <strong>{derived.manaBonus}</strong>
               </div>
+              <div>
+                <span>Damage Reduction</span>
+                <strong>{derived.damageReduction}</strong>
+              </div>
+              <div>
+                <span>Soak</span>
+                <strong>{derived.soak}</strong>
+              </div>
+              <div>
+                <span>Hit Bonus</span>
+                <strong>{derived.hitBonus}</strong>
+              </div>
+              <div>
+                <span>Alertness</span>
+                <strong>{derived.alertness}</strong>
+              </div>
             </div>
           </article>
 
@@ -430,6 +506,64 @@ export function PlayerSheetPage() {
                   ))
               ) : (
                 <p className="muted-copy">No powers recorded on this character yet.</p>
+              )}
+            </div>
+            {derived.hasNightvision && (
+              <p className="muted-copy">Passive power effects currently grant Nightvision.</p>
+            )}
+          </article>
+
+          <article className="section-card">
+            <p className="panel-label">Power Actions</p>
+            <div className="list-block">
+              {castablePowers.length > 0 ? (
+                castablePowers.map((power) => {
+                  const actionAvailability =
+                    power.actionType && encounter
+                      ? getActionAvailability(encounter.actionState, power.actionType)
+                      : null;
+                  const disabled =
+                    mutationState === "running" ||
+                    character.currentMana < power.manaCost ||
+                    Boolean(encounter && (!encounter.isActiveTurn || !actionAvailability?.allowed));
+                  const title =
+                    character.currentMana < power.manaCost
+                      ? `Needs ${power.manaCost} Mana.`
+                      : encounter && !encounter.isActiveTurn
+                        ? "This power requires your active turn in combat."
+                        : actionAvailability && !actionAvailability.allowed
+                          ? actionAvailability.reason ?? power.description
+                          : power.description;
+
+                  return (
+                    <div key={power.powerId} className="inventory-row">
+                      <div>
+                        <span>
+                          {power.powerName} Lv {power.level}
+                        </span>
+                        <strong>
+                          {power.manaCost} Mana
+                          {power.actionType ? ` | ${formatSlotLabel(power.actionType)} Action` : ""}
+                        </strong>
+                      </div>
+                      <div className="chip-actions">
+                        <button
+                          type="button"
+                          className="chip-button"
+                          title={title}
+                          disabled={disabled}
+                          onClick={() => {
+                            void handlePowerCast(power.powerId);
+                          }}
+                        >
+                          {power.label}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="muted-copy">No live-cast power actions are supported for this build yet.</p>
               )}
             </div>
           </article>

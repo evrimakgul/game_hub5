@@ -65,6 +65,7 @@ export type ResourceTarget = (typeof RESOURCE_TARGETS)[number];
 export const DERIVED_STAT_TARGETS = [
   "max_hp",
   "max_mana",
+  "mana_bonus",
   "initiative",
   "armor_class",
   "damage_reduction",
