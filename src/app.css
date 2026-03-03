@@ -1,12 +1,12 @@
 :root {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: #f3efe6;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1f1b17;
   background:
-    radial-gradient(circle at top, rgba(201, 117, 58, 0.18), transparent 35%),
-    linear-gradient(180deg, #1f1612 0%, #100c0a 100%);
-  line-height: 1.5;
+    radial-gradient(circle at top left, rgba(182, 132, 79, 0.22), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(129, 78, 43, 0.18), transparent 24%),
+    linear-gradient(180deg, #e9decb 0%, #d7c4a7 100%);
+  line-height: 1.45;
   font-weight: 400;
-  color-scheme: dark;
 }
 
 * {
@@ -19,229 +19,497 @@ body {
   min-height: 100vh;
 }
 
-button {
-  font: inherit;
-}
-
-.app-shell {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 32px 20px 48px;
-}
-
-.hero-card,
-.panel {
-  border: 1px solid rgba(255, 233, 214, 0.12);
-  border-radius: 24px;
-  background: rgba(34, 24, 20, 0.84);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(12px);
-}
-
-.hero-card {
-  padding: 28px;
-  margin-bottom: 24px;
-}
-
-.hero-topline {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.eyebrow,
-.panel-label {
-  margin: 0 0 8px;
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #f1b37d;
-}
-
-.hero-card h1,
-.panel h2 {
+h1,
+h2,
+h3,
+p,
+ul {
   margin: 0;
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
 }
 
-.hero-copy {
-  margin: 12px 0 0;
-  max-width: 62ch;
-  color: #d6c4b6;
+.sheet-page {
+  padding: 28px 18px 48px;
 }
 
-.route-nav,
-.view-switch {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.sheet-frame {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid rgba(84, 57, 37, 0.2);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255, 250, 241, 0.96), rgba(244, 232, 210, 0.94)),
+    #f7eedf;
+  box-shadow:
+    0 30px 90px rgba(61, 41, 28, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
-.route-nav {
-  margin-top: 18px;
-}
-
-.route-nav a,
-.view-switch button {
-  border-radius: 999px;
-  padding: 10px 14px;
-  border: 1px solid rgba(255, 233, 214, 0.12);
-  background: rgba(255, 255, 255, 0.03);
-  color: #f3efe6;
-  text-decoration: none;
-}
-
-.view-switch {
-  margin-bottom: 20px;
-}
-
-.view-switch button.active,
-.route-nav a:hover {
-  background: rgba(241, 179, 125, 0.18);
-}
-
-.status-pill {
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 0.82rem;
-}
-
-.status-pill.ok {
-  background: rgba(89, 168, 112, 0.18);
-  color: #bde2c7;
-}
-
-.status-pill.warn {
-  background: rgba(201, 117, 58, 0.18);
-  color: #ffd6b1;
-}
-
-.preview-grid {
+.sheet-header {
   display: grid;
-  gap: 20px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.7fr);
+  gap: 24px;
+  align-items: end;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(84, 57, 37, 0.16);
 }
 
-.panel {
-  padding: 22px;
-  opacity: 0.68;
-  transition: opacity 160ms ease, transform 160ms ease;
+.sheet-kicker,
+.section-kicker {
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8e5d37;
 }
 
-.panel.is-active {
-  opacity: 1;
-  transform: translateY(-2px);
+.sheet-header h1 {
+  margin-top: 10px;
+  font-size: clamp(2.4rem, 5vw, 4.4rem);
+  line-height: 0.94;
+  color: #26170d;
 }
 
-.panel-header,
-.resource-row,
-.stats-grid,
-.actions-row {
-  display: flex;
+.sheet-concept {
+  margin-top: 10px;
+  max-width: 58ch;
+  font-size: 1.02rem;
+  color: #5f4736;
+}
+
+.sheet-badges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
-.panel-header {
-  justify-content: space-between;
-  align-items: start;
-  margin-bottom: 18px;
-}
-
-.badge-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.badge-stack span,
-.round-pill {
-  border-radius: 999px;
-  padding: 6px 10px;
-  background: rgba(241, 179, 125, 0.14);
-  color: #ffd6b1;
-  font-size: 0.86rem;
-}
-
-.resource-row,
-.stats-grid {
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.resource-row > div,
-.stats-grid > div {
-  flex: 1 1 120px;
+.sheet-badges div,
+.sheet-banner div {
+  padding: 14px 16px;
   border-radius: 18px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(105, 71, 44, 0.08);
+  border: 1px solid rgba(105, 71, 44, 0.12);
 }
 
-.resource-row span,
-.stats-grid span {
+.sheet-badges span,
+.sheet-banner span,
+.combat-grid span,
+.resource-strip span,
+.stat-row span,
+.skill-row span,
+.power-row span,
+.equipment-row span {
   display: block;
-  margin-bottom: 6px;
-  color: #bea996;
-  font-size: 0.85rem;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #88654d;
 }
 
-.resource-row strong,
-.stats-grid strong {
+.sheet-badges strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.5rem;
+  color: #2b180d;
+}
+
+.sheet-banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.sheet-banner strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.02rem;
+  color: #352115;
+}
+
+.banner-date-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.xp-block-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 6px;
+}
+
+.xp-block-grid span {
+  font-size: 0.68rem;
+}
+
+.xp-block-grid strong {
+  margin-top: 0;
   font-size: 1.15rem;
 }
 
-.actions-row {
-  flex-wrap: wrap;
+.sheet-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 0.95fr;
+  gap: 16px;
+  margin-top: 20px;
 }
 
-.actions-row button {
-  border: 0;
-  border-radius: 14px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #cf7c3b 0%, #b24e2b 100%);
-  color: #fff9f3;
-  cursor: pointer;
+.sheet-card {
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(84, 57, 37, 0.15);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 246, 0.92), rgba(240, 226, 201, 0.9)),
+    #fbf5ea;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-.initiative-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 18px;
+.sheet-card h2 {
+  margin-top: 8px;
+  font-size: 1.45rem;
+  color: #2b190f;
+}
+
+.biography-card,
+.combat-card,
+.stat-card {
+  grid-column: span 2;
+}
+
+.resource-strip,
+.combat-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.resource-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.combat-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.resource-strip div,
+.combat-grid div {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.resource-strip strong,
+.combat-grid strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.26rem;
+  color: #26170d;
+}
+
+.biography-card p:not(.section-kicker) {
+  margin-top: 14px;
+  color: #554233;
+}
+
+.stat-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.stat-group {
+  border-radius: 20px;
+  padding: 16px;
+  border: 1px solid rgba(84, 57, 37, 0.12);
+}
+
+.stat-group-physical {
+  background: rgba(168, 101, 54, 0.1);
+}
+
+.stat-group-social {
+  background: rgba(171, 126, 59, 0.1);
+}
+
+.stat-group-mental {
+  background: rgba(95, 111, 72, 0.1);
+}
+
+.stat-group header {
+  display: flex;
+  justify-content: flex-start;
+  padding-bottom: 12px;
+}
+
+.stat-group h3 {
+  font-size: 1.08rem;
+  color: #2d1b10;
+}
+
+.stat-group header span {
+  font-size: 0.72rem;
+  color: #7f6049;
+}
+
+.stat-list,
+.skill-table,
+.power-list,
+.equipment-list {
   display: grid;
   gap: 10px;
 }
 
-.initiative-list li {
+.stat-row,
+.skill-row,
+.power-row,
+.equipment-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(84, 57, 37, 0.1);
 }
 
-.log-block {
+.stat-row:first-child,
+.skill-row:first-child,
+.power-row:first-child,
+.equipment-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.stat-row strong,
+.skill-row strong,
+.power-row strong,
+.equipment-row strong {
+  display: block;
+  color: #2a1a10;
+}
+
+.stat-row small {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.78rem;
+  color: #745745;
+}
+
+.skill-row small {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.78rem;
+  color: #745745;
+}
+
+.row-main {
+  min-width: 0;
+}
+
+.row-side {
+  min-width: 132px;
+  text-align: right;
+}
+
+.row-side span {
+  font-size: 0.7rem;
+}
+
+.stat-row em,
+.skill-row em,
+.power-row em,
+.equipment-row em {
+  align-self: center;
+  font-style: normal;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 1.02rem;
+  color: #7e4122;
+}
+
+.notes-card ul {
+  margin-top: 18px;
+  padding-left: 20px;
+  color: #564232;
+}
+
+.notes-card li + li {
+  margin-top: 10px;
+}
+
+.power-benefits {
+  margin-top: 8px;
+  padding-left: 18px;
+  color: #564232;
+}
+
+.power-benefits li + li {
+  margin-top: 6px;
+}
+
+.history-card {
+  grid-column: 1 / -1;
+}
+
+.status-list,
+.inventory-list {
   display: grid;
-  gap: 8px;
-  color: #d6c4b6;
+  gap: 10px;
+  margin-top: 18px;
 }
 
-.log-block p {
-  margin: 0;
+.status-list div,
+.inventory-header {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.54);
 }
 
-@media (max-width: 640px) {
-  .app-shell {
-    padding: 20px 14px 32px;
+.status-list strong,
+.inventory-header strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.05rem;
+  color: #26170d;
+}
+
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.inventory-header strong {
+  margin-top: 0;
+}
+
+.inventory-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(84, 57, 37, 0.1);
+}
+
+.inventory-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.inventory-row strong {
+  display: block;
+  color: #2a1a10;
+}
+
+.inventory-row span {
+  display: block;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #88654d;
+}
+
+.inventory-row em {
+  align-self: center;
+  font-style: normal;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.95rem;
+  color: #7e4122;
+}
+
+.notes-input {
+  width: 100%;
+  min-height: 140px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(84, 57, 37, 0.15);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #2a1a10;
+  font: inherit;
+  resize: vertical;
+}
+
+.notes-submit {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #6d4021;
+  color: #fff7ee;
+  font: inherit;
+  cursor: pointer;
+}
+
+.history-empty {
+  margin-top: 18px;
+  color: #564232;
+}
+
+.history-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.history-entry {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.history-entry strong {
+  display: block;
+  color: #2a1a10;
+}
+
+.history-entry p {
+  margin-top: 8px;
+  color: #564232;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1120px) {
+  .sheet-header,
+  .sheet-grid,
+  .sheet-banner,
+  .combat-grid,
+  .stat-groups {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .hero-topline {
-    align-items: start;
-    flex-direction: column;
+  .biography-card,
+  .combat-card,
+  .stat-card {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .sheet-page {
+    padding: 16px 12px 28px;
   }
 
-  .hero-card,
-  .panel {
-    border-radius: 18px;
+  .sheet-frame {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .sheet-header,
+  .sheet-badges,
+  .sheet-banner,
+  .sheet-grid,
+  .resource-strip,
+  .combat-grid,
+  .stat-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .biography-card,
+  .combat-card,
+  .stat-card {
+    grid-column: span 1;
   }
 }

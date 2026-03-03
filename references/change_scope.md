@@ -14,3 +14,8 @@ This branch restarts from the Phase 3 foundation in order to redesign the applic
 - Item creation tool
 
 Those creation tools will be added later, after the redesigned sheet, combat flow, and UI foundation are stable.
+
+## Deferred Follow-Ups
+- DM dashboard needs an editable in-game date/time control that propagates to player sheets as derived session data.
+- DM dashboard needs a session XP award flow so cumulative XP earned can be updated after each session.
+- Player note submission and game history should later be persisted instead of remaining local UI-only behavior.

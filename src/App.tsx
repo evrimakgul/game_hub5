@@ -8,7 +8,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/player" element={<Navigate to="/" replace />} />
-      <Route path="/dm" element={<HomePage initialView="dm" />} />
+      <Route path="/dm" element={<Navigate to="/" replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
