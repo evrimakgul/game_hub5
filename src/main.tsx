@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
 import "./app.css";
+import { AppFlowProvider } from "./state/appFlow";
 
 const rootElement = document.getElementById("root");
 
@@ -13,8 +14,10 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <AppFlowProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </AppFlowProvider>
   </StrictMode>
 );
