@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "damage_types": [
+    { "id": "fire", "label": "Fire", "family": "elemental" },
+    { "id": "ice", "label": "Ice", "family": "elemental" },
+    { "id": "acid", "label": "Acid", "family": "elemental" },
+    { "id": "lightning", "label": "Lightning", "family": "elemental" },
+    { "id": "shadow", "label": "Shadow", "family": "mystic" },
+    { "id": "radiant", "label": "Radiant", "family": "mystic" },
+    { "id": "necrotic", "label": "Necrotic", "family": "mystic" },
+    { "id": "sonic", "label": "Sonic", "family": "elemental" },
+    { "id": "mental", "label": "Mental", "family": "psychic" },
+    { "id": "divine", "label": "Divine", "family": "mystic" },
+    { "id": "physical", "label": "Physical", "family": "mundane" }
+  ],
+  "resistance_levels": {
+    "-2": { "label": "Fragile", "damage_multiplier": 2 },
+    "-1": { "label": "Vulnerable", "damage_multiplier": 1.5 },
+    "0": { "label": "Normal", "damage_multiplier": 1 },
+    "1": { "label": "Resist", "damage_multiplier": 0.5 },
+    "2": { "label": "Immune", "damage_multiplier": 0 }
+  },
+  "defaults": {
+    "all_damage_types": 0
+  },
+  "families": {
+    "elemental": ["fire", "ice", "acid", "lightning", "sonic"]
+  },
+  "power_interactions": {
+    "light_support_level_5_expose_darkness": {
+      "affects_damage_types": ["physical", "fire", "ice", "acid", "lightning", "sonic"],
+      "resist_to_normal": {
+        "from_level": 1,
+        "to_level": 0
+      },
+      "immune_to_resist": {
+        "from_level": 2,
+        "to_level": 1
+      }
+    }
+  }
+}
