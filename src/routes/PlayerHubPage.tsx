@@ -1,10 +1,13 @@
 import { Navigate, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 import { useAppFlow } from "../state/appFlow";
 
 export function PlayerHubPage() {
   const navigate = useNavigate();
-  const { roleChoice, characters, createCharacter, selectCharacter } = useAppFlow();
+  const { roleChoice, characters, createCharacter, selectCharacter, deleteCharacter } =
+    useAppFlow();
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   if (roleChoice !== "player") {
     return <Navigate to="/role" replace />;
@@ -12,12 +15,27 @@ export function PlayerHubPage() {
 
   function handleCreateCharacter(): void {
     createCharacter();
+    setPendingDeleteId(null);
     navigate("/player/character");
   }
 
   function handleSelectCharacter(characterId: string): void {
     selectCharacter(characterId);
+    setPendingDeleteId(null);
     navigate("/player/character");
+  }
+
+  function handleDeletePrompt(characterId: string): void {
+    setPendingDeleteId(characterId);
+  }
+
+  function handleDeleteConfirm(characterId: string): void {
+    deleteCharacter(characterId);
+    setPendingDeleteId(null);
+  }
+
+  function handleDeleteCancel(): void {
+    setPendingDeleteId(null);
   }
 
   return (
@@ -29,16 +47,47 @@ export function PlayerHubPage() {
           <button type="button" className="flow-primary" onClick={handleCreateCharacter}>
             Create New Character
           </button>
-          {characters.map((character) => (
-            <button
-              key={character.id}
-              type="button"
-              className="flow-secondary"
-              onClick={() => handleSelectCharacter(character.id)}
-            >
-              {character.sheet.name.trim() || "Unnamed Character"}
-            </button>
-          ))}
+          {characters.map((character) => {
+            const isDeletePending = pendingDeleteId === character.id;
+
+            return (
+              <div key={character.id} className="character-access-row">
+                <button
+                  type="button"
+                  className="flow-secondary character-open"
+                  onClick={() => handleSelectCharacter(character.id)}
+                >
+                  {character.sheet.name.trim() || "Unnamed Character"}
+                </button>
+                {!isDeletePending ? (
+                  <button
+                    type="button"
+                    className="flow-danger"
+                    onClick={() => handleDeletePrompt(character.id)}
+                  >
+                    Delete
+                  </button>
+                ) : (
+                  <div className="delete-confirm-wrap">
+                    <button
+                      type="button"
+                      className="flow-danger is-confirm"
+                      onClick={() => handleDeleteConfirm(character.id)}
+                    >
+                      Confirm Delete
+                    </button>
+                    <button
+                      type="button"
+                      className="flow-cancel"
+                      onClick={handleDeleteCancel}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     </main>

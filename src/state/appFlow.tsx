@@ -28,6 +28,7 @@ type AppFlowContextValue = {
   chooseRole: (choice: Exclude<RoleChoice, null>) => void;
   createCharacter: () => string;
   selectCharacter: (characterId: string) => void;
+  deleteCharacter: (characterId: string) => void;
   updateActiveCharacter: (updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)) => void;
 };
 
@@ -61,6 +62,15 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
 
   function selectCharacter(characterId: string): void {
     setActiveCharacterId(characterId);
+  }
+
+  function deleteCharacter(characterId: string): void {
+    setCharacters((currentCharacters) =>
+      currentCharacters.filter((character) => character.id !== characterId)
+    );
+    setActiveCharacterId((currentActiveCharacterId) =>
+      currentActiveCharacterId === characterId ? null : currentActiveCharacterId
+    );
   }
 
   function updateActiveCharacter(
@@ -98,6 +108,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         chooseRole: setRoleChoice,
         createCharacter,
         selectCharacter,
+        deleteCharacter,
         updateActiveCharacter,
       }}
     >

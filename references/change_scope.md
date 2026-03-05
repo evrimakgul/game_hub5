@@ -18,4 +18,5 @@ Those creation tools will be added later, after the redesigned sheet, combat flo
 ## Deferred Follow-Ups
 - DM dashboard needs an editable in-game date/time control that propagates to player sheets as derived session data.
 - DM dashboard needs a session XP award flow so cumulative XP earned can be updated after each session.
+- Edit mode should later send an approval/request signal to the DM before persistent character changes are finalized.
 - Player note submission and game history should later be persisted instead of remaining local UI-only behavior.

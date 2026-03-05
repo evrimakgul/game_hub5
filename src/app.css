@@ -78,6 +78,46 @@ select {
   color: #2b190f;
 }
 
+.character-access-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.character-open {
+  text-align: left;
+}
+
+.flow-danger,
+.flow-cancel {
+  padding: 11px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.flow-danger {
+  border: 0;
+  background: #8c2f22;
+  color: #fff7ee;
+}
+
+.flow-danger.is-confirm {
+  background: #7d2419;
+}
+
+.flow-cancel {
+  border: 1px solid rgba(84, 57, 37, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  color: #3a2416;
+}
+
+.delete-confirm-wrap {
+  display: flex;
+  gap: 8px;
+}
+
 h1,
 h2,
 h3,
@@ -1013,5 +1053,14 @@ ul {
   .biography-card,
   .combat-card {
     grid-column: span 1;
+  }
+
+  .character-access-row {
+    grid-template-columns: 1fr;
+  }
+
+  .delete-confirm-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }
