@@ -1,72 +1,52 @@
-# Master Implementation Plan
+# Roadmap Reset v2 (Cleanup-First, Combat-First)
 
-## PHASE 0 - Preparations (Data & Design)
-0.1 Convert text rules to JSON references (authoritative text layer)
-    - `json_refs/basic_rules.json` (Done)
-    - `json_refs/item_rules.json`
-    - `json_refs/powers.json`
-0.2 Document the "State vs Derived" boundary
-    - **State (DB):** Base stats, skill/power levels, inventory IDs, current HP/Mana, action state.
-    - **Derived (Client):** Max HP, AC, Initiative, dice pools, calculated damage.
-0.3 Sketch UI wireframes (Mobile-friendly Player Sheet + Desktop DM Dashboard).
+This roadmap is the active implementation source of truth for the current branch.
 
-## PHASE 1 - Domain Types & Engine Core
-1.1 Define Shared TypeScript Types (`src/types/`)
-    - Define exact shapes for `Character`, `Item`, `Power`, and `TurnState`.
-    - These types will be the absolute law for both your UI and your Database.
-1.2 Define Structured Effect Schemas *(from Plan 1)*
-    - Define how a passive/active effect payload looks so the engine can read it (e.g., `{ target: "str", value: 2, type: "flat" }`).
-1.3 Add Engine Tests
-    - Add unit tests for `xpTables.ts`, `stats.ts`, `combat.ts`, and future `actions.ts`.
-    - Use a few known rule examples so math regressions are obvious.
-1.4 Engine Logic (`src/config/`)
-    - `xpTables.ts` (Done)
-    - `stats.ts` (Done)
-    - `combat.ts` (Done)
-    - `actions.ts` (Generate next)
+## Phase 0 - Documentation Cleanup
+0.1 Archive prior roadmap and stale direction docs.
+    - Move legacy roadmap to `retired_files/reference_archive/`.
+    - Move old scope/wireframe docs to `retired_files/reference_archive/`.
+0.2 Keep relevant references active and update stale notes.
+    - Refresh outdated items in `references/state_vs_derived.md`.
+0.3 Create one reference index that marks documents as `active` or `legacy`.
 
-## PHASE 2 - Project Initialization
-2.1 Create Vite React TS app (`npm create vite@latest`)
-2.2 Install dependencies: `supabase-js`, `react-router-dom`, `zustand`
-2.3 Create Supabase client file and set up environment variables.
+## Phase 1 - Combat Core + Scheduler
+1.1 Define engine-owned combat runtime types.
+    - `CombatState`, `CombatantProfile`, `TurnCursor`, `ActionBudget`, `CombatEvent`.
+1.2 Implement deterministic scheduler APIs.
+    - `startCombat`, `advanceTurn`, `dispatchAction`, `resolve`, `finalize`.
+1.3 Keep combat math and action-economy enforcement in engine code only.
 
-## PHASE 3 - Database Setup (Guided by Phase 1 Types)
-3.1 Create Tables based strictly on the "State" defined in 0.2:
-    - `profiles` (Auth link)
-    - `characters` (State only)
-    - `items` (Templates and equipped instances)
-    - `combat_tracker` (Initiative order, active turn)
-    - `combat_logs` (Audit-friendly history of actions) *(from Plan 1)*
-3.2 Define Access Control Rules
-    - Set up Postgres policies so players can only edit their own HP/Actions, while the DM can edit anything.
-3.3 Define Realtime Conflict Rules *(from Plan 1)*
-    - Decide who is allowed to advance turns, consume actions, and resolve simultaneous combat writes.
-    - Make combat state ownership explicit so two clients cannot progress the same turn differently.
-3.4 Enable Supabase Realtime for necessary tables.
+## Phase 2 - NPC Mechanics (DM-Ready Ownership Model)
+2.1 Implement NPC combat profile model (combat-only fields).
+2.2 Add ownership metadata on combatants (`player`, `dm`, `system`).
+2.3 Add authorization mode switch:
+    - `sandbox` for local testing where one operator can run both sides.
+    - `role_enforced` for DM/player ownership checks.
 
-## PHASE 4 - Read-Only UI (Vertical Slice)
-4.1 Login / Auth Screen.
-4.2 Player Sheet (Read-Only):
-    - Fetch raw STATE from Supabase -> Pass to `src/config/` engine -> Render DERIVED stats.
-4.3 DM Dashboard (Read-Only):
-    - View all characters and the basic combat list.
+## Phase 3 - Power Mechanics
+3.1 Add structured engine-facing power mechanics (no runtime parsing from prose).
+3.2 Implement power lifecycle:
+    - cost validation
+    - apply effects
+    - maintenance handling
+    - expiration/removal
+3.3 Ensure power effects are consumed by derived and combat resolution paths.
 
-## PHASE 5 - Interactive UI (Write Actions)
-5.1 Inventory Flow: Equip/Unequip items (updates DB state, UI instantly recalculates derived stats).
-5.2 Health Flow: Apply damage/healing (updates `current_hp` in DB).
-5.3 Action Flow: Toggle Standard/Bonus/Move actions (updates `action_state` via `actions.ts` logic).
+## Phase 4 - DM Dashboard
+4.1 Build encounter setup and participant management.
+4.2 Build initiative/turn/action controls and combat event log.
+4.3 Add NPC control actions and combat finalization controls.
+4.4 Keep authorization checks centralized to support smooth `sandbox` -> `role_enforced` transition.
 
-## PHASE 6 - Powers & Advanced Effects *(from Plan 1)*
-6.1 Passive Powers: Wire permanent buffs to auto-apply to the derived stats engine.
-6.2 Active Powers: Create clickable actions that validate costs (Mana/Action), execute the effect, and update DB State.
+## Phase 5 - Persistence Handoff
+5.1 Keep local-first while mechanics stabilize.
+5.2 Introduce storage adapters under stable engine contracts.
+5.3 Add Supabase-backed adapter and realtime pass without changing engine behavior.
 
-## PHASE 7 - Realtime Combat Hardening *(from Plan 1)*
-7.1 Subscribe React components to `postgres_changes`.
-7.2 Combat Log: Write a string to `combat_logs` every time `combat.ts` resolves a hit/damage.
-7.3 Turn Progression: Handle Initiative sorting and "Next Turn" logic.
-7.4 Playtest: Ensure two clients seeing the same combat don't desync when buttons are clicked simultaneously.
-
-## PHASE 8 - Deployment
-8.1 Push to GitHub.
-8.2 Deploy to Vercel (add Supabase URL/Key to Vercel Env Vars).
-8.3 Final live playtest.
+## Validation
+- Cleanup validation: reference index matches active/legacy placement.
+- Combat validation: initiative ordering, turn progression, and action legality.
+- NPC/auth validation: same scenario works in `sandbox` and rejects unauthorized commands in `role_enforced`.
+- Power validation: costs, targets, passive/active effects, and maintenance/expiration behavior.
+- Integration validation: PC + pseudo NPC encounter from setup to finalization.

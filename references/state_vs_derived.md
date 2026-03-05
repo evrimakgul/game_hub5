@@ -79,6 +79,6 @@ This document defines which gameplay values belong in persistent state and which
 - When a stored input changes, the client should recalculate affected derived values immediately.
 
 ## Current Gaps
-- Item rule definitions are not authored yet in `json_refs/item_rules.json`.
-- Power definitions are not authored yet in `json_refs/powers.json`.
-- Action-state structure still needs to be formalized in a shared TypeScript type.
+- Runtime scheduler and combat authorization mode split (`sandbox` vs `role_enforced`) still need to be fully wired through UI flows.
+- Structured power effects are authored, but active lifecycle handling (apply, maintain, expire/remove) is still being implemented in engine runtime.
+- Local-first storage adapter is in use for active development; persistence handoff to Supabase-backed adapters remains a later phase.

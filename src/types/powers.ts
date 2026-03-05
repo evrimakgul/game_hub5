@@ -1,4 +1,10 @@
-import type { ActionType, CoreStatId, NumericFormula, PowerId } from "./game";
+import type {
+  ActionType,
+  CoreStatId,
+  NumericFormula,
+  ParticipantId,
+  PowerId,
+} from "./game";
 import type { EffectDefinition } from "./effects";
 
 export type PowerActionType = ActionType | "bonus_or_standard" | "bonus_plus_standard";
@@ -59,4 +65,13 @@ export interface KnownPower {
   level: number;
   learnedFrom: "xp" | "item" | "npc" | "other";
   unlockedAtXp: number | null;
+}
+
+export interface CastCommand {
+  actorParticipantId: ParticipantId;
+  powerId: PowerId;
+  requestedAction: ActionType;
+  targetParticipantId?: ParticipantId | null;
+  selectedStat?: CoreStatId | null;
+  useCantrip?: boolean;
 }
