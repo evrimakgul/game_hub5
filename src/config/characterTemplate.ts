@@ -71,6 +71,10 @@ export type PowerTemplate = {
   levelBenefits: Record<number, string[]>;
 };
 
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 1;
+
+const STAT_IDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
+
 const BLANK_STAT_ENTRY = (): StatEntry => ({
   base: 2,
   gearSources: [],
@@ -256,4 +260,235 @@ export function getPowerTemplate(powerId: string): PowerTemplate | undefined {
 export function getPowerBenefits(powerId: string, level: number): string[] {
   const template = getPowerTemplate(powerId);
   return template?.levelBenefits[level] ?? [`Level ${level} details pending in draft.`];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function coerceString(value: unknown, fallback: string): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function coerceNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function coerceNullableNumber(value: unknown, fallback: number | null): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function hydrateStatSources(value: unknown): StatSource[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    return [
+      {
+        label: coerceString(entry.label, "Unknown"),
+        value: Math.trunc(coerceNumber(entry.value, 0)),
+      },
+    ];
+  });
+}
+
+function hydrateResistanceLevel(value: unknown, fallback: ResistanceLevel): ResistanceLevel {
+  if (value === -2 || value === -1 || value === 0 || value === 1 || value === 2) {
+    return value;
+  }
+
+  return fallback;
+}
+
+function hydrateStatEntry(value: unknown, fallback: StatEntry): StatEntry {
+  const record = isRecord(value) ? value : {};
+
+  return {
+    base: Math.max(0, Math.trunc(coerceNumber(record.base, fallback.base))),
+    gearSources: hydrateStatSources(record.gearSources),
+    buffSources: hydrateStatSources(record.buffSources),
+  };
+}
+
+function hydrateSkillEntry(value: unknown, fallback: SkillEntry): SkillEntry {
+  const record = isRecord(value) ? value : {};
+
+  return {
+    id: coerceString(record.id, fallback.id),
+    label: coerceString(record.label, fallback.label),
+    base: Math.max(0, Math.trunc(coerceNumber(record.base, fallback.base))),
+    rollStat: coerceString(record.rollStat, fallback.rollStat),
+    gearSources: hydrateStatSources(record.gearSources),
+    buffSources: hydrateStatSources(record.buffSources),
+  };
+}
+
+function hydrateSkills(value: unknown): SkillEntry[] {
+  const persistedSkills = Array.isArray(value)
+    ? value.filter((entry): entry is Record<string, unknown> => isRecord(entry))
+    : [];
+
+  const persistedById = new Map(
+    persistedSkills
+      .map((entry) => [coerceString(entry.id, ""), entry] as const)
+      .filter(([id]) => id.length > 0)
+  );
+
+  const matchedSkills = BLANK_SKILLS.map((skill) =>
+    hydrateSkillEntry(persistedById.get(skill.id), skill)
+  );
+
+  const extraSkills = persistedSkills
+    .filter((entry) => {
+      const skillId = coerceString(entry.id, "");
+      return skillId.length > 0 && !BLANK_SKILLS.some((skill) => skill.id === skillId);
+    })
+    .map((entry) =>
+      hydrateSkillEntry(entry, {
+        id: coerceString(entry.id, "unknown-skill"),
+        label: coerceString(entry.label, "Unknown Skill"),
+        base: 0,
+        rollStat: coerceString(entry.rollStat, ""),
+        gearSources: [],
+        buffSources: [],
+      })
+    );
+
+  return [...matchedSkills, ...extraSkills];
+}
+
+function hydratePowers(value: unknown): PowerEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const powerId = coerceString(entry.id, "");
+    if (!powerId) {
+      return [];
+    }
+
+    const template = getPowerTemplate(powerId);
+    return [
+      {
+        id: powerId,
+        name: template?.name ?? coerceString(entry.name, powerId),
+        level: Math.max(0, Math.trunc(coerceNumber(entry.level, 0))),
+        governingStat: template?.governingStat ?? coerceString(entry.governingStat, ""),
+      },
+    ];
+  });
+}
+
+function hydrateEquipment(
+  value: unknown
+): Array<{ slot: string; item: string; effect: string }> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    return [
+      {
+        slot: coerceString(entry.slot, "Unknown Slot"),
+        item: coerceString(entry.item, ""),
+        effect: coerceString(entry.effect, ""),
+      },
+    ];
+  });
+}
+
+function hydrateInventory(
+  value: unknown
+): Array<{ name: string; category: string; note: string }> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    return [
+      {
+        name: coerceString(entry.name, "Unnamed Item"),
+        category: coerceString(entry.category, ""),
+        note: coerceString(entry.note, ""),
+      },
+    ];
+  });
+}
+
+function hydrateEffects(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+export function hydrateCharacterDraft(value: unknown): CharacterDraft {
+  const defaults = PLAYER_CHARACTER_TEMPLATE.createInstance();
+  const record = isRecord(value) ? value : {};
+  const statState = Object.fromEntries(
+    STAT_IDS.map((statId) => [
+      statId,
+      hydrateStatEntry(record.statState && isRecord(record.statState) ? record.statState[statId] : undefined, defaults.statState[statId]),
+    ])
+  ) as Record<StatId, StatEntry>;
+  const resistances = { ...defaults.resistances };
+
+  if (isRecord(record.resistances)) {
+    for (const damageTypeId of Object.keys(resistances) as DamageTypeId[]) {
+      resistances[damageTypeId] = hydrateResistanceLevel(
+        record.resistances[damageTypeId],
+        resistances[damageTypeId]
+      );
+    }
+  }
+
+  const defaultHp = calculateMaxHP(statState.STAM.base);
+
+  return {
+    name: coerceString(record.name, defaults.name),
+    concept: coerceString(record.concept, defaults.concept),
+    faction: coerceString(record.faction, defaults.faction),
+    age: coerceNullableNumber(record.age, defaults.age),
+    gameDateTime: coerceString(record.gameDateTime, defaults.gameDateTime),
+    biographyPrimary: coerceString(record.biographyPrimary, defaults.biographyPrimary),
+    biographySecondary: coerceString(record.biographySecondary, defaults.biographySecondary),
+    xpEarned: Math.max(0, Math.trunc(coerceNumber(record.xpEarned, defaults.xpEarned))),
+    xpUsed: Math.max(0, Math.trunc(coerceNumber(record.xpUsed, defaults.xpUsed))),
+    money: Math.max(0, Math.trunc(coerceNumber(record.money, defaults.money))),
+    inspiration: Math.max(0, Math.trunc(coerceNumber(record.inspiration, defaults.inspiration))),
+    positiveKarma: Math.max(0, Math.trunc(coerceNumber(record.positiveKarma, defaults.positiveKarma))),
+    negativeKarma: Math.max(0, Math.trunc(coerceNumber(record.negativeKarma, defaults.negativeKarma))),
+    currentHp: Math.max(0, Math.trunc(coerceNumber(record.currentHp, defaultHp))),
+    currentMana: Math.max(0, Math.trunc(coerceNumber(record.currentMana, defaults.currentMana))),
+    resistances,
+    statState,
+    skills: hydrateSkills(record.skills),
+    powers: hydratePowers(record.powers),
+    equipment: hydrateEquipment(record.equipment),
+    inventory: hydrateInventory(record.inventory),
+    effects: hydrateEffects(record.effects),
+  };
 }

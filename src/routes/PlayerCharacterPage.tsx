@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { resolveDicePool } from "../config/combat";
 import {
@@ -149,8 +149,9 @@ function D10Icon() {
 }
 
 export function PlayerCharacterPage() {
-  const { activeCharacter, updateActiveCharacter } = useAppFlow();
+  const { activePlayerCharacter, activeDmCharacter, updateCharacter } = useAppFlow();
   const navigate = useNavigate();
+  const location = useLocation();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editSessionStatFloor, setEditSessionStatFloor] = useState<Record<StatId, number> | null>(
@@ -171,6 +172,10 @@ export function PlayerCharacterPage() {
     offsetX: 0,
     offsetY: 0,
   });
+  const isDmReadOnlyView = location.pathname.startsWith("/dm/character");
+  const isDmEditableView = location.pathname.startsWith("/dm/npc-character");
+  const isReadOnlyView = isDmReadOnlyView;
+  const activeCharacter = isDmEditableView ? activeDmCharacter : activePlayerCharacter;
 
   useEffect(() => {
     function handleMouseMove(event: globalThis.MouseEvent): void {
@@ -203,7 +208,11 @@ export function PlayerCharacterPage() {
   function setSheetState(
     updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
   ): void {
-    updateActiveCharacter(updater);
+    if (isReadOnlyView || !activeCharacter) {
+      return;
+    }
+
+    updateCharacter(activeCharacter.id, updater);
   }
 
   useEffect(() => {
@@ -218,7 +227,12 @@ export function PlayerCharacterPage() {
   }, [activeCharacter?.id, activeSheet?.effects]);
 
   if (!activeCharacter || !activeSheet) {
-    return <Navigate to="/player" replace />;
+    return (
+      <Navigate
+        to={isDmEditableView ? "/dm/npc-creator" : isDmReadOnlyView ? "/dm/characters" : "/player"}
+        replace
+      />
+    );
   }
 
   const sheetState = activeSheet;
@@ -514,6 +528,10 @@ export function PlayerCharacterPage() {
   }
 
   function handleToggleEditMode(): void {
+    if (isReadOnlyView) {
+      return;
+    }
+
     if (isEditMode) {
       setIsEditMode(false);
       setEditSessionStatFloor(null);
@@ -683,8 +701,24 @@ export function PlayerCharacterPage() {
           <button type="button" className="sheet-nav-button" onClick={() => navigate("/")}>
             Main Menu
           </button>
-          <button type="button" className="sheet-nav-button" onClick={() => navigate("/player")}>
-            Player Menu
+          <button
+            type="button"
+            className="sheet-nav-button"
+            onClick={() =>
+              navigate(
+                isDmEditableView
+                  ? "/dm/npc-creator"
+                  : isDmReadOnlyView
+                    ? "/dm/characters"
+                    : "/player"
+              )
+            }
+          >
+            {isDmEditableView
+              ? "NPC Creator"
+              : isDmReadOnlyView
+                ? "Player Characters"
+                : "Player Menu"}
           </button>
         </div>
 
@@ -780,9 +814,13 @@ export function PlayerCharacterPage() {
           </div>
           <div className="edit-card">
             <span>Edit Sheet</span>
-            <button type="button" className="edit-trigger" onClick={handleToggleEditMode}>
-              {isEditMode ? "Lock" : "Edit"}
-            </button>
+            {isReadOnlyView ? (
+              <strong className="edit-mode-indicator">DM View</strong>
+            ) : (
+              <button type="button" className="edit-trigger" onClick={handleToggleEditMode}>
+                {isEditMode ? "Lock" : "Edit"}
+              </button>
+            )}
           </div>
         </section>
 
@@ -1092,10 +1130,13 @@ export function PlayerCharacterPage() {
               className="notes-input"
               value={sessionNotes}
               onChange={(event) => setSessionNotes(event.target.value)}
+              readOnly={isReadOnlyView}
             />
-            <button type="button" className="notes-submit" onClick={handleAppendHistory}>
-              Add To Game History
-            </button>
+            {!isReadOnlyView ? (
+              <button type="button" className="notes-submit" onClick={handleAppendHistory}>
+                Add To Game History
+              </button>
+            ) : null}
           </article>
 
           <article className="sheet-card history-card">

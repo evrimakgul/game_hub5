@@ -1,5 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import { CombatDashboardPage } from "./routes/CombatDashboardPage";
+import { CombatEncounterPage } from "./routes/CombatEncounterPage";
+import { DmCharacterHubPage } from "./routes/DmCharacterHubPage";
+import { DmNpcCreatorPage } from "./routes/DmNpcCreatorPage";
 import { DmPage } from "./routes/DmPage";
 import { LoginPage } from "./routes/LoginPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
@@ -15,6 +19,12 @@ export default function App() {
       <Route path="/player" element={<PlayerHubPage />} />
       <Route path="/player/character" element={<PlayerCharacterPage />} />
       <Route path="/dm" element={<DmPage />} />
+      <Route path="/dm/characters" element={<DmCharacterHubPage />} />
+      <Route path="/dm/character" element={<PlayerCharacterPage />} />
+      <Route path="/dm/npc-creator" element={<DmNpcCreatorPage />} />
+      <Route path="/dm/npc-character" element={<PlayerCharacterPage />} />
+      <Route path="/dm/combat" element={<CombatDashboardPage />} />
+      <Route path="/dm/combat/encounter" element={<CombatEncounterPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

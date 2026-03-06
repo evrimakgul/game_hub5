@@ -8,13 +8,14 @@ export function PlayerHubPage() {
   const { roleChoice, characters, createCharacter, selectCharacter, deleteCharacter } =
     useAppFlow();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const playerCharacters = characters.filter((character) => character.ownerRole === "player");
 
   if (roleChoice !== "player") {
     return <Navigate to="/role" replace />;
   }
 
   function handleCreateCharacter(): void {
-    createCharacter();
+    createCharacter("player");
     setPendingDeleteId(null);
     navigate("/player/character");
   }
@@ -47,7 +48,7 @@ export function PlayerHubPage() {
           <button type="button" className="flow-primary" onClick={handleCreateCharacter}>
             Create New Character
           </button>
-          {characters.map((character) => {
+          {playerCharacters.map((character) => {
             const isDeletePending = pendingDeleteId === character.id;
 
             return (
