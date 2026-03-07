@@ -15,6 +15,9 @@ This roadmap is the active implementation source of truth for the current branch
 ## Phase 1 - Real Combat Engine Foundations
 1.1 Define rule-accurate local combat runtime types and command model.
     - Combatants, ownership, action windows, reaction windows, movement budget, encounter flags.
+    - Formalize the combat UX + engine contract in `references/combat_ux_engine_contract.md` before UI rewrites.
+    - Implement the new contract layer in this order: types, reducer/state machine, selectors, tests.
+    - Store staged workflow state explicitly: action family, subtype, targets, parameters, step, and controller.
 1.2 Implement the initiative engine.
     - `DEX + WITS` defines the initiative dice pool.
     - Rolls determine the initiative order.

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
-import { startCombat } from "../config/combatRuntime";
-import type { CombatantProfile } from "../types/combat";
+import { createCombatEngineState } from "../config/combatReducer";
+import type { CombatEngineParticipantInput } from "../types/combatEngine";
 import { POWER_IDS, type PowerId } from "../types/game";
 import { type CharacterRecord, useAppFlow } from "../state/appFlow";
 
@@ -44,7 +44,7 @@ function asPowerId(value: string): PowerId | null {
   return null;
 }
 
-function mapCharacterToCombatantProfile(character: CharacterRecord): CombatantProfile {
+function mapCharacterToCombatantInput(character: CharacterRecord): CombatEngineParticipantInput {
   const sheet = character.sheet;
   const displayName = sheet.name.trim() || "Unnamed Character";
   const knownPowers = Object.fromEntries(
@@ -65,6 +65,7 @@ function mapCharacterToCombatantProfile(character: CharacterRecord): CombatantPr
     displayName,
     kind: character.ownerRole === "player" ? "character" : "npc",
     ownerRole: character.ownerRole,
+    teamId: character.ownerRole === "player" ? "players" : "enemies",
     characterId: character.id,
     coreStats: {
       STR: getCurrentStatValue(sheet.statState.STR),
@@ -83,15 +84,19 @@ function mapCharacterToCombatantProfile(character: CharacterRecord): CombatantPr
     knownPowers,
     currentHp: sheet.currentHp,
     currentMana: sheet.currentMana,
+    currentInspiration: sheet.inspiration,
+    currentPositiveKarma: sheet.positiveKarma,
+    currentNegativeKarma: sheet.negativeKarma,
   };
 }
 
-function buildNpcProfile(entry: Extract<CombatRosterEntry, { kind: "npc" }>): CombatantProfile {
+function buildNpcInput(entry: Extract<CombatRosterEntry, { kind: "npc" }>): CombatEngineParticipantInput {
   return {
     participantId: entry.entryId,
     displayName: entry.displayName.trim() || "Unnamed NPC",
     kind: "npc",
     ownerRole: "dm",
+    teamId: "enemies",
     characterId: null,
     coreStats: {
       STR: 3,
@@ -185,10 +190,10 @@ export function CombatDashboardPage() {
       const combatants = combatRoster.flatMap((entry) => {
         if (entry.kind === "character") {
           const character = characters.find((candidate) => candidate.id === entry.characterId);
-          return character ? [mapCharacterToCombatantProfile(character)] : [];
+          return character ? [mapCharacterToCombatantInput(character)] : [];
         }
 
-        return [buildNpcProfile(entry)];
+        return [buildNpcInput(entry)];
       });
 
       if (combatants.length === 0) {
@@ -196,11 +201,11 @@ export function CombatDashboardPage() {
       }
 
       beginCombatEncounter(
-        startCombat({
+        createCombatEngineState({
           encounterId: `encounter-${Date.now()}`,
           label: encounterLabel.trim() || "Combat Encounter",
-          authorizationMode: "sandbox",
-          combatants,
+          authorizationMode: "role_enforced",
+          participants: combatants,
         })
       );
       setDashboardError(null);

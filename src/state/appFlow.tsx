@@ -13,7 +13,7 @@ import {
   type CharacterDraft,
   hydrateCharacterDraft,
 } from "../config/characterTemplate";
-import type { CombatState } from "../types/combat";
+import type { CombatEngineState } from "../types/combatEngine";
 
 type AuthChoice = "login" | "signup" | null;
 type RoleChoice = "player" | "dm" | null;
@@ -39,7 +39,7 @@ type AppFlowContextValue = {
   characters: CharacterRecord[];
   activePlayerCharacter: CharacterRecord | null;
   activeDmCharacter: CharacterRecord | null;
-  activeCombat: CombatState | null;
+  activeCombat: CombatEngineState | null;
   chooseAuth: (choice: Exclude<AuthChoice, null>) => void;
   chooseRole: (choice: Exclude<RoleChoice, null>) => void;
   createCharacter: (ownerRole?: CharacterOwnerRole) => string;
@@ -49,8 +49,12 @@ type AppFlowContextValue = {
     characterId: string,
     updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
   ) => void;
-  beginCombatEncounter: (combatState: CombatState) => void;
-  updateCombatEncounter: (updater: CombatState | ((current: CombatState) => CombatState)) => void;
+  beginCombatEncounter: (combatState: CombatEngineState) => void;
+  updateCombatEncounter: (
+    updater:
+      | CombatEngineState
+      | ((current: CombatEngineState) => CombatEngineState)
+  ) => void;
   clearCombatEncounter: () => void;
 };
 
@@ -169,7 +173,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   const [activeDmCharacterId, setActiveDmCharacterId] = useState<string | null>(
     persistedCharacters.activeDmCharacterId
   );
-  const [activeCombat, setActiveCombat] = useState<CombatState | null>(null);
+  const [activeCombat, setActiveCombat] = useState<CombatEngineState | null>(null);
 
   const activePlayerCharacter = useMemo(
     () => characters.find((character) => character.id === activePlayerCharacterId) ?? null,
@@ -287,12 +291,14 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     );
   }
 
-  function beginCombatEncounter(combatState: CombatState): void {
+  function beginCombatEncounter(combatState: CombatEngineState): void {
     setActiveCombat(combatState);
   }
 
   function updateCombatEncounter(
-    updater: CombatState | ((current: CombatState) => CombatState)
+    updater:
+      | CombatEngineState
+      | ((current: CombatEngineState) => CombatEngineState)
   ): void {
     setActiveCombat((currentCombat) => {
       if (!currentCombat) {

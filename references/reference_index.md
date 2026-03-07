@@ -7,6 +7,7 @@ This file marks which documents are active objective drivers and which are retai
 - `references/project_objective.md`
 - `references/project_risks.md`
 - `references/current_notes.md`
+- `references/combat_ux_engine_contract.md`
 - `references/state_vs_derived.md`
 - `references/database_state_model.md`
 - `references/access_control_model.md`

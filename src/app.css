@@ -107,6 +107,10 @@ select {
   grid-column: 1 / -1;
 }
 
+.dm-encounter-grid {
+  align-items: start;
+}
+
 .dm-field {
   display: grid;
   gap: 6px;
@@ -207,6 +211,16 @@ select {
   background: rgba(255, 255, 255, 0.54);
 }
 
+.dm-order-select {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
 .dm-order-row strong,
 .dm-log-row strong {
   display: block;
@@ -229,6 +243,22 @@ select {
 
 .dm-order-row.is-active {
   border: 1px solid rgba(109, 64, 33, 0.35);
+}
+
+.dm-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dm-entry-actions button {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(84, 57, 37, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+  color: #2b190f;
+  cursor: pointer;
 }
 
 .dm-action-grid {
@@ -285,6 +315,49 @@ select {
   background: rgba(255, 255, 255, 0.82);
   color: #2b190f;
   cursor: pointer;
+}
+
+.dm-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.dm-option-grid,
+.dm-parameter-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.dm-option-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dm-summary-box {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.dm-summary-box strong,
+.dm-summary-box span {
+  display: block;
+}
+
+.dm-summary-box strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #88654d;
+}
+
+.dm-summary-box span {
+  margin-top: 6px;
+  color: #2b190f;
+}
+
+.dm-target-button {
+  width: 100%;
 }
 
 .dm-error {
@@ -1331,6 +1404,8 @@ ul {
   .dm-hub-grid,
   .dm-setup-grid,
   .dm-dashboard-grid,
+  .dm-option-grid,
+  .dm-parameter-grid,
   .dm-two-up,
   .dm-inline-controls,
   .dm-inline-controls-two-up {
