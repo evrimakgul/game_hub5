@@ -149,7 +149,7 @@ function D10Icon() {
 }
 
 export function PlayerCharacterPage() {
-  const { activePlayerCharacter, activeDmCharacter, updateCharacter } = useAppFlow();
+  const { characters, activePlayerCharacter, activeDmCharacter, updateCharacter } = useAppFlow();
   const navigate = useNavigate();
   const location = useLocation();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
@@ -174,8 +174,14 @@ export function PlayerCharacterPage() {
   });
   const isDmReadOnlyView = location.pathname.startsWith("/dm/character");
   const isDmEditableView = location.pathname.startsWith("/dm/npc-character");
+  const characterIdFromQuery = new URLSearchParams(location.search).get("characterId");
+  const queriedCharacter =
+    characterIdFromQuery
+      ? characters.find((character) => character.id === characterIdFromQuery) ?? null
+      : null;
   const isReadOnlyView = isDmReadOnlyView;
-  const activeCharacter = isDmEditableView ? activeDmCharacter : activePlayerCharacter;
+  const activeCharacter =
+    queriedCharacter ?? (isDmEditableView ? activeDmCharacter : activePlayerCharacter);
 
   useEffect(() => {
     function handleMouseMove(event: globalThis.MouseEvent): void {

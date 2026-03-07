@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import {
+  buildEncounterParticipantInput,
+  createCombatEncounter,
+} from "../config/combatEncounter";
 import { type CharacterRecord, useAppFlow } from "../state/appFlow";
 
 type CombatRosterEntry = {
@@ -14,9 +18,10 @@ function getCharacterName(character: CharacterRecord | undefined): string {
 
 export function CombatDashboardPage() {
   const navigate = useNavigate();
-  const { roleChoice, characters } = useAppFlow();
+  const { roleChoice, characters, beginCombatEncounter } = useAppFlow();
   const [encounterLabel, setEncounterLabel] = useState("Combat Encounter");
   const [combatRoster, setCombatRoster] = useState<CombatRosterEntry[]>([]);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const playerCharacters = characters.filter((character) => character.ownerRole === "player");
   const dmCharacters = characters.filter((character) => character.ownerRole === "dm");
 
@@ -44,6 +49,38 @@ export function CombatDashboardPage() {
     setCombatRoster((currentRoster) =>
       currentRoster.filter((entry) => entry.entryId !== entryId)
     );
+  }
+
+  function handleStartEncounter(): void {
+    try {
+      if (combatRoster.length === 0) {
+        throw new RangeError("Add at least one combatant before starting the encounter.");
+      }
+
+      const selectedCharacters = combatRoster.flatMap((entry) => {
+        const character = characters.find((candidate) => candidate.id === entry.characterId);
+        return character ? [character] : [];
+      });
+
+      if (selectedCharacters.length === 0) {
+        throw new RangeError("Combatants could not be resolved from the current roster.");
+      }
+
+      beginCombatEncounter(
+        createCombatEncounter(
+          encounterLabel,
+          selectedCharacters.map((character) =>
+            buildEncounterParticipantInput(character.id, character.ownerRole, character.sheet)
+          )
+        )
+      );
+      setDashboardError(null);
+      navigate("/dm/combat/encounter");
+    } catch (error) {
+      setDashboardError(
+        error instanceof Error ? error.message : "Combat encounter could not be started."
+      );
+    }
   }
 
   return (
@@ -184,16 +221,17 @@ export function CombatDashboardPage() {
             <p className="section-kicker">Combat Encounter</p>
             <h2>Start Combat</h2>
             <p className="dm-summary-line">
-              The combat encounter trigger is intentionally inactive on this branch. The combat
-              engine and combat encounter UI have been removed.
+              Starting the encounter rolls initiative for the selected combatants and opens the
+              Combat Encounter Page.
             </p>
             <div className="dm-control-row">
-              <button type="button" className="flow-primary" disabled>
+              <button type="button" className="flow-primary" onClick={handleStartEncounter}>
                 Combat Encounter
               </button>
             </div>
           </article>
         </section>
+        {dashboardError ? <p className="dm-error">{dashboardError}</p> : null}
       </section>
     </main>
   );

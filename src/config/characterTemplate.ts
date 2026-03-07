@@ -1,5 +1,9 @@
-import { createDefaultResistances, type DamageTypeId, type ResistanceLevel } from "./resistances";
-import { calculateMaxHP } from "./stats";
+import {
+  createDefaultResistances,
+  type DamageTypeId,
+  type ResistanceLevel,
+} from "./resistances.ts";
+import { calculateMaxHP } from "./stats.ts";
 
 export type StatSource = {
   label: string;

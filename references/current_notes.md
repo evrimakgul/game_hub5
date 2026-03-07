@@ -12,9 +12,11 @@ This file tracks active reminders and implementation notes for the current branc
   - DM dashboard
   - DM-side player character access
   - DM NPC creator and DM-owned character sheets
-  - combat dashboard as a roster/setup page
+  - combat dashboard as the encounter staging page
 - The pseudo NPC quick-add path has been removed from the combat dashboard.
-- The combat encounter button is intentionally inactive on this branch.
-- The current combat engine and combat encounter UI have been removed from this branch.
+- The new combat rebuild starts with encounter start, initiative ordering, and the first DM combat encounter page.
 - The current branch does not use Supabase at runtime.
-- Old Supabase schema and realtime reference documents are being removed from this branch.
+- Old Supabase schema and realtime reference documents have been removed from this branch.
+- Reminder for later: add movement info to the character sheet combat summary as `20 + 5`.
+  - `20` from standard-action conversion
+  - `5` from move action
