@@ -48,7 +48,7 @@ export function DmPage() {
             <p className="section-kicker">NPC Creator Block</p>
             <h2>NPC Creator</h2>
             <p className="dm-summary-line">
-              Placeholder route for the later NPC creation workflow.
+              Open the DM-side character creation flow.
             </p>
             <button
               type="button"

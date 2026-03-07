@@ -1,14 +1,15 @@
 # State vs Derived Boundary
 
 ## Purpose
-This document defines which gameplay values belong in persistent state and which values must be calculated on demand by the client engine.
+This document defines which gameplay values belong in authoritative persisted state and which values should be calculated on demand by frontend logic.
 
 ## Core Rule
-- Store only authoritative mutable state in the database.
+- Store only authoritative mutable state.
 - Derive computed values from stored state plus deterministic rules in `src/config/`.
-- Do not persist a value if it can be recalculated safely from current state and engine rules.
+- Do not persist a value if it can be recalculated safely from current state and rules.
+- Current branch implementation uses browser-local storage, not a database.
 
-## Store In Database
+## Persist As Authoritative State
 ### Character Identity
 - `character_id`
 - `profile_id`
@@ -22,11 +23,14 @@ This document defines which gameplay values belong in persistent state and which
 - Trait, merit, and flaw selections
 - XP spent or equivalent progression inputs
 
-### Character Runtime State
+### Character Resource State
 - `current_hp`
 - `current_mana`
 - Current inspiration or equivalent consumable resources
-- Temporary status effects that modify legal actions or survivability
+- Current positive and negative karma
+
+These are **not derived values**. They are mutable runtime resources.  
+Example: a character's `max_hp` may be derived from stamina and bonuses, but `current_hp` changes as damage and healing happen during play. The same logic applies to `current_mana`.
 
 ### Inventory And Equipment State
 - Inventory item instances owned by a character
@@ -34,51 +38,42 @@ This document defines which gameplay values belong in persistent state and which
 - Item quality, rarity, and other authored item properties
 - Consumable counts, charges, and durability if those exist in the rules
 
-### Combat State
-- Encounter ID
-- Combat participant membership
-- Initiative order once a combat round has been established
-- Active turn pointer
-- Remaining action availability for the current turn
-- Combat log entries and timestamps
-
 ## Derive On The Client
 ### Progression And Rank
 - CR and rank from XP spent using `src/config/xpTables.ts`
 
 ### Character Combat Stats
 - Max HP from stamina plus modifiers using `src/config/stats.ts`
+- Max Mana from governing-power rules, occult bonuses, item bonuses, and similar formulas once those rules are defined
 - Initiative from dex and wits using `src/config/stats.ts`
 - Armor Class from dex, athletics, and bonuses using `src/config/stats.ts`
 - Ranged bonus dice from perception using `src/config/stats.ts`
 - Occult mana bonus from occult level and XP used using `src/config/stats.ts`
+- Final stat and skill totals after gear and buff sources are applied
 
 ### Resolution Results
 - Dice pool success totals
 - Botch results
-- Hit or miss result
-- Damage after DR, soak, or resistance
+- Any future hit or miss result
+- Any future damage result after defenses or resistances
 
 ### Aggregated Build Results
-- Final derived stat totals after equipment, passive powers, and temporary effects
-- Available dice pools for attacks, defenses, and checks
+- Available dice pools for checks
 - Any preview value shown before the player confirms an action
 
 ## Do Not Store
 - `max_hp`
+- `max_mana`
 - `armor_class`
-- `initiative` as a character-sheet stat outside active combat setup
+- `initiative` as a character-sheet summary value
 - Derived damage totals
 - Derived dice pools
 - Any value that is only a deterministic combination of stored inputs
 
-## Write Model Notes
-- The database is authoritative for current mutable state.
-- The client engine is authoritative for deterministic calculations.
-- Realtime sync should distribute state changes, not replace the rule engine.
-- When a stored input changes, the client should recalculate affected derived values immediately.
+## Deferred For Later Redesign
+- Combat encounter state
+- Combat action tracking
+- Realtime synchronization
+- Access-control or server write models
 
-## Current Gaps
-- Runtime scheduler and combat authorization mode split (`sandbox` vs `role_enforced`) still need to be fully wired through UI flows.
-- Structured power effects are authored, but active lifecycle handling (apply, maintain, expire/remove) is still being implemented in engine runtime.
-- Local-first storage adapter is in use for active development; persistence handoff to Supabase-backed adapters remains a later phase.
+Those are intentionally undefined on this branch until a new combat engine and backend plan are created.

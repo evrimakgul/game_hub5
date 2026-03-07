@@ -1,10 +1,13 @@
 # Project Risks
 
-## Effect Modeling Risk
-Items and powers are the highest-risk area. If `powers.json` and item property definitions remain too text-like, the frontend will drift toward ad hoc logic per power or item, and the engine boundary will become inconsistent.
+## Requirement Drift Risk
+The biggest short-term risk is reintroducing stale assumptions from removed systems. Old combat-engine or backend ideas can easily leak back into code or docs unless the branch stays disciplined about its current local-only scope.
 
-## Combat State Authority and Concurrency Risk
-Client-side deterministic math is acceptable for this project, but combat state still needs one clear write model. Initiative advancement, action consumption, HP updates, and simultaneous client actions must have predictable ownership and conflict behavior.
+## Rules Capture Risk
+Items, powers, and combat rules are still mostly reference-driven. If the next engine rebuild starts before the required mechanics are specified cleanly, implementation will drift toward guesswork or ad hoc behavior.
 
-## Module Boundary Risk
-If executable engine logic, constants, schemas, and UI-facing helpers are all placed together without a clear boundary, the codebase will become harder to scale. The split between reference data, pure engine logic, and application state should stay explicit as the system grows.
+## Persistence Migration Risk
+The current branch is local-only. When backend persistence returns later, the project will need a clean distinction between stored mutable state and derived values so migration from local storage to a server model does not corrupt character data.
+
+## Document Drift Risk
+Reference documents can become misleading faster than code. Any markdown that still describes removed backend or engine systems creates confusion and should either be rewritten to match the branch or removed.
