@@ -1,13 +1,49 @@
 import type {
   ActionType,
   CoreStatId,
-  NumericFormula,
   ParticipantId,
   PowerId,
 } from "./game";
 import type { EffectDefinition } from "./effects";
+import type { DamageTypeId, ResistanceLevel } from "../config/resistances";
 
 export type PowerActionType = ActionType | "bonus_or_standard" | "bonus_plus_standard";
+
+export type FormulaRound = "up" | "down" | "nearest";
+
+export interface PowerValueFormula {
+  base?: number;
+  base_stat?: CoreStatId;
+  base_stat_multiplier?: number;
+  base_stat_divisor?: number;
+  base_stat_round?: FormulaRound | null;
+  power_level_multiplier?: number;
+}
+
+export interface PowerSummonAttackPool {
+  base_stat: CoreStatId;
+  skill_source?: string;
+  flat_bonus?: number;
+}
+
+export interface PowerSummonDamageValue {
+  base_stat?: CoreStatId;
+  flat_bonus?: number;
+  power_level_multiplier?: number;
+}
+
+export interface PowerSummonAttackDefinition {
+  name: string;
+  attack_pool?: PowerSummonAttackPool;
+  damage_value?: PowerSummonDamageValue;
+  attacks_per_action?: number;
+  damage_types?: DamageTypeId[];
+}
+
+export interface PowerSummonDefenseProfile {
+  resistance_levels?: Partial<Record<DamageTypeId, ResistanceLevel>>;
+  [key: string]: unknown;
+}
 
 export interface PowerLevelDefinition {
   level: number;
@@ -36,13 +72,10 @@ export interface PowerCantripDefinition {
 }
 
 export interface PowerSummonTemplate {
-  combatSummary?: Record<string, number | NumericFormula | string | boolean>;
-  stats?: Record<string, number | NumericFormula>;
-  attacks?: Array<Record<string, unknown>>;
-  defenses?: Record<string, unknown>;
-  resistances?: string[];
-  immunities?: string[];
-  vulnerabilities?: string[];
+  combatSummary?: Record<string, number | PowerValueFormula | string | boolean>;
+  stats?: Record<string, number | PowerValueFormula>;
+  attacks?: PowerSummonAttackDefinition[];
+  defenses?: PowerSummonDefenseProfile;
   initiative?: Record<string, unknown>;
   buffRules?: Record<string, unknown>;
   equipmentRules?: Record<string, unknown>;

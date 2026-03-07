@@ -66,6 +66,14 @@ export async function runCombatEncounterTests(): Promise<void> {
         assert.equal(snapshot.visibleResistances.length, 1);
         assert.equal(snapshot.visibleResistances[0].label, "Fire");
         assert.equal(snapshot.highlightedSkills.length, 3);
+        assert.equal(
+          snapshot.combatSummary.find((field) => field.id === "movement")?.value,
+          "20 + 5"
+        );
+        assert.equal(
+          snapshot.combatSummary.find((field) => field.id === "movement")?.selectableValue,
+          25
+        );
       },
     },
   ]);

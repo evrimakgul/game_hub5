@@ -7,6 +7,7 @@ This roadmap is the active implementation source of truth for this branch.
 - Build the new combat system locally from scratch.
 - Start with a narrow first slice: encounter start, initiative order scheduler, and the first DM combat encounter page.
 - Preserve the source reference files under `references/originals/` and the derived JSON files.
+- Use `Basic_Rules5.txt` and `T1_Supernatural_Powers5.txt` as the current authoritative rule sources.
 
 ## Phase 0 - Clean Slate Baseline
 0.1 Keep the branch local-only.
@@ -29,10 +30,16 @@ This roadmap is the active implementation source of truth for this branch.
       - all stats fields
       - intimidation, stealth, alertness
       - a button to open the full character sheet in a pop-up window
-1.4 Build the `Dice Pool Helper` panel.
+1.4 Build the `Roll Helper` popover.
+    - Use a popover window interaction similar to the character sheet roll helper.
+    - Show one combatant at a time, with a selector to switch the active combatant.
+    - Include real dice rolling behavior.
     - Show the same combatant fields except HP, Mana, AC, DR, Soak, and resistances.
 
-## Later Reminder
-- Add movement info to the character sheet combat summary later as `20 + 5`.
-  - `20` from standard-action conversion
-  - `5` from move action
+## Power Data Prep
+P.1 Keep `json_refs/powers.json` normalized for runtime work before implementing the `Cast Power Mechanism`.
+    - Use structured scaling for powers that depend on current power level.
+    - Use numeric resistance levels (`-2` to `+2`) instead of prose-only summon defenses.
+    - Use `cold` as the damage-type name across rules, JSON, and UI.
+P.2 Keep attack delivery and mitigation separate in the rules model.
+    - Magical attacks may still deal Physical damage and therefore be reduced by DR.

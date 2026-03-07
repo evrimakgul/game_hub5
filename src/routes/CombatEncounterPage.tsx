@@ -1,9 +1,31 @@
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { resolveDicePool } from "../config/combat";
 import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
 import { useAppFlow } from "../state/appFlow";
 
-const HELPER_EXCLUDED_SUMMARY_IDS = new Set(["hp", "mana", "ac", "dr", "soak"]);
+const ROLLER_EXCLUDED_SUMMARY_IDS = new Set(["hp", "mana", "ac", "dr", "soak"]);
+
+type RollResult = {
+  labels: string[];
+  poolSize: number;
+  faces: number[];
+  successes: number;
+  isBotch: boolean;
+};
+
+type CustomRollModifier = {
+  id: number;
+  value: number;
+};
+
+type RollTarget = {
+  id: string;
+  label: string;
+  value: number;
+  category: "summary" | "stat" | "skill";
+};
 
 function formatEncounterTime(isoDateTime: string): string {
   const date = new Date(isoDateTime);
@@ -14,17 +36,77 @@ function formatEncounterTime(isoDateTime: string): string {
   return date.toLocaleString();
 }
 
+function D10Icon() {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" className="d10-icon">
+      <path
+        d="M32 4 52 18 58 40 44 58 20 58 6 40 12 18Z"
+        fill="currentColor"
+        opacity="0.16"
+      />
+      <path
+        d="M32 4 52 18 58 40 44 58 20 58 6 40 12 18Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 18h40M6 40h52M20 58l12-54 12 54"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinejoin="round"
+      />
+      <text x="32" y="38" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">
+        10
+      </text>
+    </svg>
+  );
+}
+
 export function CombatEncounterPage() {
   const navigate = useNavigate();
   const { roleChoice, activeCombatEncounter, characters } = useAppFlow();
+  const [isDiceOpen, setIsDiceOpen] = useState(false);
+  const [dicePosition, setDicePosition] = useState({ x: 24, y: 24 });
+  const [selectedCombatantId, setSelectedCombatantId] = useState("");
+  const [selectedRollIds, setSelectedRollIds] = useState<string[]>([]);
+  const [customRollInput, setCustomRollInput] = useState("");
+  const [customRollModifiers, setCustomRollModifiers] = useState<CustomRollModifier[]>([]);
+  const [lastRoll, setLastRoll] = useState<RollResult | null>(null);
+  const dragRef = useRef<{ active: boolean; moved: boolean; offsetX: number; offsetY: number }>({
+    active: false,
+    moved: false,
+    offsetX: 0,
+    offsetY: 0,
+  });
 
-  if (roleChoice !== "dm") {
-    return <Navigate to="/role" replace />;
-  }
+  useEffect(() => {
+    function handleMouseMove(event: globalThis.MouseEvent): void {
+      if (!dragRef.current.active) {
+        return;
+      }
 
-  if (!activeCombatEncounter) {
-    return <Navigate to="/dm/combat" replace />;
-  }
+      dragRef.current.moved = true;
+      setDicePosition({
+        x: Math.max(24, window.innerWidth - event.clientX - dragRef.current.offsetX),
+        y: Math.max(24, window.innerHeight - event.clientY - dragRef.current.offsetY),
+      });
+    }
+
+    function handleMouseUp(): void {
+      dragRef.current.active = false;
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
 
   function openCharacterSheet(characterId: string, ownerRole: "player" | "dm"): void {
     const routePath = ownerRole === "dm" ? "/dm/npc-character" : "/dm/character";
@@ -37,24 +119,398 @@ export function CombatEncounterPage() {
     );
   }
 
-  const encounterParticipants = activeCombatEncounter.participants.map((participant) => {
-    const character = characters.find((entry) => entry.id === participant.characterId) ?? null;
-    const snapshot = character ? buildCharacterEncounterSnapshot(character.sheet) : null;
+  const encounterParticipants = activeCombatEncounter
+    ? activeCombatEncounter.participants.map((participant) => {
+        const character = characters.find((entry) => entry.id === participant.characterId) ?? null;
+        const snapshot = character ? buildCharacterEncounterSnapshot(character.sheet) : null;
 
-    return {
-      participant,
-      character,
-      snapshot,
-    };
-  });
+        return {
+          participant,
+          character,
+          snapshot,
+        };
+      })
+    : [];
+
+  const selectedCombatant =
+    encounterParticipants.find(({ participant }) => participant.characterId === selectedCombatantId) ??
+    encounterParticipants[0] ??
+    null;
+  const selectedSnapshot = selectedCombatant?.snapshot ?? null;
+  const rollTargets: RollTarget[] = selectedSnapshot
+    ? [
+        ...selectedSnapshot.combatSummary
+          .filter(
+            (field) =>
+              !ROLLER_EXCLUDED_SUMMARY_IDS.has(field.id) && field.selectableValue !== null
+          )
+          .map((field) => ({
+            id: `summary:${field.id}`,
+            label: field.label,
+            value: field.selectableValue ?? 0,
+            category: "summary" as const,
+          })),
+        ...selectedSnapshot.stats.map((field) => ({
+          id: `stat:${field.id}`,
+          label: field.label,
+          value: Number(field.value),
+          category: "stat" as const,
+        })),
+        ...selectedSnapshot.highlightedSkills.map((field) => ({
+          id: `skill:${field.id}`,
+          label: field.label,
+          value: Number(field.value),
+          category: "skill" as const,
+        })),
+      ]
+    : [];
+  const summaryRollTargets = rollTargets.filter((target) => target.category === "summary");
+  const statRollTargets = rollTargets.filter((target) => target.category === "stat");
+  const skillRollTargets = rollTargets.filter((target) => target.category === "skill");
+  const selectedRollTargets = selectedRollIds
+    .map((targetId) => rollTargets.find((target) => target.id === targetId))
+    .filter((target): target is RollTarget => target !== undefined);
+  const customRollPool = customRollModifiers.reduce((total, modifier) => total + modifier.value, 0);
+  const selectedRollPool =
+    selectedRollTargets.reduce((total, target) => total + target.value, 0) + customRollPool;
+
+  useEffect(() => {
+    if (encounterParticipants.length === 0) {
+      setSelectedCombatantId("");
+      return;
+    }
+
+    if (
+      !selectedCombatantId ||
+      !encounterParticipants.some(
+        ({ participant }) => participant.characterId === selectedCombatantId
+      )
+    ) {
+      setSelectedCombatantId(encounterParticipants[0].participant.characterId);
+    }
+  }, [encounterParticipants, selectedCombatantId]);
+
+  useEffect(() => {
+    setSelectedRollIds([]);
+    setCustomRollModifiers([]);
+    setCustomRollInput("");
+    setLastRoll(null);
+  }, [selectedCombatantId]);
+
+  if (roleChoice !== "dm") {
+    return <Navigate to="/role" replace />;
+  }
+
+  if (!activeCombatEncounter) {
+    return <Navigate to="/dm/combat" replace />;
+  }
+
+  function handleDiceMouseDown(event: React.MouseEvent<HTMLButtonElement>): void {
+    dragRef.current.active = true;
+    dragRef.current.moved = false;
+    dragRef.current.offsetX = window.innerWidth - event.clientX - dicePosition.x;
+    dragRef.current.offsetY = window.innerHeight - event.clientY - dicePosition.y;
+  }
+
+  function handleDiceClick(): void {
+    if (dragRef.current.moved) {
+      dragRef.current.moved = false;
+      return;
+    }
+
+    setIsDiceOpen((open) => !open);
+  }
+
+  function toggleRollTarget(targetId: string): void {
+    setSelectedRollIds((currentIds) => {
+      if (currentIds.includes(targetId)) {
+        return currentIds.filter((entryId) => entryId !== targetId);
+      }
+
+      if (currentIds.length >= 9) {
+        return currentIds;
+      }
+
+      return [...currentIds, targetId];
+    });
+  }
+
+  function handleAddCustomRollModifier(): void {
+    const value = Number.parseInt(customRollInput.trim(), 10);
+    if (!Number.isFinite(value) || value === 0) {
+      return;
+    }
+
+    setCustomRollModifiers((currentModifiers) => [
+      ...currentModifiers,
+      {
+        id: currentModifiers.length + 1,
+        value,
+      },
+    ]);
+    setCustomRollInput("");
+  }
+
+  function removeCustomRollModifier(modifierId: number): void {
+    setCustomRollModifiers((currentModifiers) =>
+      currentModifiers.filter((modifier) => modifier.id !== modifierId)
+    );
+  }
+
+  function handleRoll(): void {
+    if (selectedRollTargets.length === 0 && customRollModifiers.length === 0) {
+      return;
+    }
+
+    const faces = Array.from({ length: selectedRollPool }, () => Math.floor(Math.random() * 10) + 1);
+    const resolution = resolveDicePool(faces, selectedRollPool);
+
+    setLastRoll({
+      labels: [
+        ...selectedRollTargets.map((target) => target.label),
+        ...customRollModifiers.map(
+          (modifier) => `Custom ${modifier.value >= 0 ? "+" : ""}${modifier.value}`
+        ),
+      ],
+      poolSize: selectedRollPool,
+      faces,
+      successes: resolution.successes,
+      isBotch: resolution.isBotch,
+    });
+  }
 
   return (
     <main className="dm-page">
+      <button
+        type="button"
+        className="floating-dice"
+        style={{ right: `${dicePosition.x}px`, bottom: `${dicePosition.y}px` }}
+        onMouseDown={handleDiceMouseDown}
+        onClick={handleDiceClick}
+        aria-label="Open dice roller"
+      >
+        <D10Icon />
+        <span className="sr-only">Open dice roller</span>
+      </button>
+
+      {isDiceOpen ? (
+        <aside
+          className="dice-popover"
+          style={{ right: `${dicePosition.x}px`, bottom: `${dicePosition.y + 72}px` }}
+        >
+          <div className="dice-popover-head">
+            <D10Icon />
+            <p className="section-kicker">10 Roll Helper</p>
+          </div>
+          <h2>Dice Roller</h2>
+
+          <label className="dm-field dice-popover-field">
+            <span>Combatant</span>
+            <select
+              value={selectedCombatant?.participant.characterId ?? ""}
+              onChange={(event) => setSelectedCombatantId(event.target.value)}
+            >
+              {encounterParticipants.map(({ participant }, index) => (
+                <option key={participant.characterId} value={participant.characterId}>
+                  {index + 1}. {participant.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {selectedCombatant && selectedSnapshot ? (
+            <>
+              <div className="dice-summary">
+                <span>Initiative</span>
+                <strong>
+                  Pool {selectedCombatant.participant.initiativePool} | Roll{" "}
+                  {selectedCombatant.participant.initiativeFaces.join(", ")} | Successes{" "}
+                  {selectedCombatant.participant.initiativeSuccesses}
+                </strong>
+              </div>
+
+              <div className="dm-summary-mini-grid dice-summary-grid">
+                {selectedSnapshot.combatSummary
+                  .filter((field) => !ROLLER_EXCLUDED_SUMMARY_IDS.has(field.id))
+                  .map((field) => (
+                    <div key={field.id}>
+                      <span>{field.label}</span>
+                      <strong>{field.value}</strong>
+                    </div>
+                  ))}
+                <div>
+                  <span>Inspiration</span>
+                  <strong>{selectedSnapshot.inspiration}</strong>
+                </div>
+              </div>
+
+              <div className="dice-summary">
+                <span>Selected</span>
+                <strong>
+                  {selectedRollTargets.length > 0 || customRollModifiers.length > 0
+                    ? [
+                        ...selectedRollTargets.map((target) => target.label),
+                        ...customRollModifiers.map(
+                          (modifier) =>
+                            `Custom ${modifier.value >= 0 ? "+" : ""}${modifier.value}`
+                        ),
+                      ].join(" + ")
+                    : "None"}
+                </strong>
+              </div>
+              <div className="dice-summary">
+                <span>Pool</span>
+                <strong>{selectedRollPool}</strong>
+              </div>
+
+              <section className="dice-summary-section">
+                <h3>Combat Summary</h3>
+                <div className="dice-summary-targets">
+                  {summaryRollTargets.map((target) => {
+                    const isSelected = selectedRollIds.includes(target.id);
+                    const wouldExceedLimit = !isSelected && selectedRollIds.length >= 9;
+
+                    return (
+                      <button
+                        key={target.id}
+                        type="button"
+                        className={`dice-target${isSelected ? " is-selected" : ""}`}
+                        onClick={() => toggleRollTarget(target.id)}
+                        disabled={wouldExceedLimit}
+                      >
+                        <span>{target.label}</span>
+                        <strong>{target.value}</strong>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <div className="dice-columns">
+                <section className="dice-column">
+                  <h3>Stats</h3>
+                  <div className="dice-targets">
+                    {statRollTargets.map((target) => {
+                      const isSelected = selectedRollIds.includes(target.id);
+                      const wouldExceedLimit = !isSelected && selectedRollIds.length >= 9;
+
+                      return (
+                        <button
+                          key={target.id}
+                          type="button"
+                          className={`dice-target${isSelected ? " is-selected" : ""}`}
+                          onClick={() => toggleRollTarget(target.id)}
+                          disabled={wouldExceedLimit}
+                        >
+                          <span>{target.label}</span>
+                          <strong>{target.value}</strong>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="dice-custom-add">
+                    <span>Add</span>
+                    <div className="dice-custom-row">
+                      <input
+                        type="number"
+                        value={customRollInput}
+                        onChange={(event) => setCustomRollInput(event.target.value)}
+                        placeholder="+/-"
+                      />
+                      <button type="button" onClick={handleAddCustomRollModifier}>
+                        Add
+                      </button>
+                    </div>
+                    {customRollModifiers.length > 0 ? (
+                      <div className="dice-custom-list">
+                        {customRollModifiers.map((modifier) => (
+                          <button
+                            key={modifier.id}
+                            type="button"
+                            className="dice-custom-chip"
+                            onClick={() => removeCustomRollModifier(modifier.id)}
+                          >
+                            {modifier.value >= 0 ? "+" : ""}
+                            {modifier.value}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+
+                <section className="dice-column">
+                  <h3>Skills</h3>
+                  <div className="dice-targets">
+                    {skillRollTargets.map((target) => {
+                      const isSelected = selectedRollIds.includes(target.id);
+                      const wouldExceedLimit = !isSelected && selectedRollIds.length >= 9;
+
+                      return (
+                        <button
+                          key={target.id}
+                          type="button"
+                          className={`dice-target${isSelected ? " is-selected" : ""}`}
+                          onClick={() => toggleRollTarget(target.id)}
+                          disabled={wouldExceedLimit}
+                        >
+                          <span>{target.label}</span>
+                          <strong>{target.value}</strong>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              </div>
+
+              <div className="dice-actions">
+                <button
+                  type="button"
+                  onClick={handleRoll}
+                  disabled={
+                    selectedRollTargets.length === 0 && customRollModifiers.length === 0
+                  }
+                >
+                  Roll
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedRollIds([]);
+                    setCustomRollModifiers([]);
+                    setCustomRollInput("");
+                    setLastRoll(null);
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+
+              {lastRoll ? (
+                <div className="roll-result">
+                  <span>Last Roll</span>
+                  <strong>
+                    {lastRoll.successes} successes{lastRoll.isBotch ? " (botch)" : ""}
+                  </strong>
+                  <small>{lastRoll.labels.join(" + ")}</small>
+                  <small>{lastRoll.faces.join(", ")}</small>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="dm-summary-line">
+              This combatant no longer resolves to a saved character sheet.
+            </p>
+          )}
+        </aside>
+      ) : null}
+
       <section className="dm-shell">
         <header className="dm-topbar">
           <div>
             <p className="section-kicker">Dungeon Master</p>
-            <h1>Combat Encounter Page</h1>
+            <h1>Combat Encounter</h1>
           </div>
           <div className="dm-nav-actions">
             <button
@@ -72,7 +528,7 @@ export function CombatEncounterPage() {
 
         <section className="dm-encounter-layout">
           <article className="sheet-card">
-            <p className="section-kicker">Encounter</p>
+            <p className="section-kicker">Combat Encounter</p>
             <h2>{activeCombatEncounter.label}</h2>
             <p className="dm-summary-line">
               Initiative has been rolled for {activeCombatEncounter.participants.length} combatants.
@@ -83,75 +539,9 @@ export function CombatEncounterPage() {
                 <strong>{formatEncounterTime(activeCombatEncounter.createdAt)}</strong>
               </div>
               <div>
-                <span>Encounter Id</span>
+                <span>Combat Encounter Id</span>
                 <strong>{activeCombatEncounter.encounterId}</strong>
               </div>
-            </div>
-          </article>
-
-          <article className="sheet-card">
-            <p className="section-kicker">Dice Pool Helper</p>
-            <h2>Reference Panel</h2>
-            <div className="dm-helper-grid">
-              {encounterParticipants.map(({ participant, snapshot }, index) => (
-                <section key={participant.characterId} className="dm-helper-card">
-                  <div className="dm-helper-head">
-                    <div>
-                      <strong>
-                        {index + 1}. {participant.displayName}
-                      </strong>
-                      <small>
-                        Init Pool {participant.initiativePool} | Roll{" "}
-                        {participant.initiativeFaces.join(", ")} | Successes{" "}
-                        {participant.initiativeSuccesses}
-                      </small>
-                    </div>
-                  </div>
-
-                  {snapshot ? (
-                    <>
-                      <div className="dm-summary-mini-grid">
-                        {snapshot.combatSummary
-                          .filter((field) => !HELPER_EXCLUDED_SUMMARY_IDS.has(field.id))
-                          .map((field) => (
-                            <div key={field.id}>
-                              <span>{field.label}</span>
-                              <strong>{field.value}</strong>
-                            </div>
-                          ))}
-                        <div>
-                          <span>Inspiration</span>
-                          <strong>{snapshot.inspiration}</strong>
-                        </div>
-                      </div>
-
-                      <div className="dm-compact-grid">
-                        {snapshot.stats.map((field) => (
-                          <div key={field.id} className="dm-compact-row">
-                            <span>{field.label}</span>
-                            <strong>{field.value}</strong>
-                            <small>{field.summary}</small>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="dm-compact-grid">
-                        {snapshot.highlightedSkills.map((field) => (
-                          <div key={field.id} className="dm-compact-row">
-                            <span>{field.label}</span>
-                            <strong>{field.value}</strong>
-                            <small>{field.summary}</small>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="dm-summary-line">
-                      This combatant no longer resolves to a saved character sheet.
-                    </p>
-                  )}
-                </section>
-              ))}
             </div>
           </article>
 
@@ -224,15 +614,15 @@ export function CombatEncounterPage() {
                         ) : null}
 
                         <div className="dm-stack">
-                          <div>
-                            <p className="section-kicker">Stats</p>
-                            <div className="dm-detail-grid">
+                            <div>
+                              <p className="section-kicker">Stats</p>
+                            <div className="dm-detail-grid dm-detail-grid-compact">
                               {snapshot.stats.map((field) => (
-                                <article key={field.id} className="dm-detail-card">
+                                <article key={field.id} className="dm-detail-card dm-detail-card-compact">
                                   <span>{field.label}</span>
                                   <strong>{field.value}</strong>
-                                  <small>{field.summary}</small>
-                                  <small>{field.detail}</small>
+                                  <small className="dm-detail-summary">{field.summary}</small>
+                                  <small className="dm-detail-detail">{field.detail}</small>
                                 </article>
                               ))}
                             </div>
@@ -240,13 +630,13 @@ export function CombatEncounterPage() {
 
                           <div>
                             <p className="section-kicker">Highlighted Skills</p>
-                            <div className="dm-detail-grid-small">
+                            <div className="dm-detail-grid-small dm-detail-grid-compact">
                               {snapshot.highlightedSkills.map((field) => (
-                                <article key={field.id} className="dm-detail-card">
+                                <article key={field.id} className="dm-detail-card dm-detail-card-compact">
                                   <span>{field.label}</span>
                                   <strong>{field.value}</strong>
-                                  <small>{field.summary}</small>
-                                  <small>{field.detail}</small>
+                                  <small className="dm-detail-summary">{field.summary}</small>
+                                  <small className="dm-detail-detail">{field.detail}</small>
                                 </article>
                               ))}
                             </div>

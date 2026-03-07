@@ -175,16 +175,19 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
       id: "hp",
       label: "HP",
       value: `${sheet.currentHp} / ${calculateMaxHP(currentStats.STAM)}`,
+      selectableValue: null,
     },
     {
       id: "mana",
       label: "Mana",
       value: `${sheet.currentMana} / ${sheet.currentMana + occultManaBonus}`,
+      selectableValue: null,
     },
     {
       id: "initiative",
       label: "Initiative",
       value: calculateInitiative(currentStats.DEX, currentStats.WITS),
+      selectableValue: calculateInitiative(currentStats.DEX, currentStats.WITS),
     },
     {
       id: "ac",
@@ -194,21 +197,25 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
         getCurrentSkillValue(sheet.skills, "athletics"),
         0
       ),
+      selectableValue: null,
     },
     {
       id: "dr",
       label: "DR",
       value: 0,
+      selectableValue: null,
     },
     {
       id: "soak",
       label: "Soak",
       value: currentStats.STAM,
+      selectableValue: null,
     },
     {
       id: "melee_attack",
       label: "Melee Attack",
       value: getCurrentSkillValue(sheet.skills, "melee") + currentStats.DEX,
+      selectableValue: getCurrentSkillValue(sheet.skills, "melee") + currentStats.DEX,
     },
     {
       id: "ranged_attack",
@@ -217,16 +224,28 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
         getCurrentSkillValue(sheet.skills, "ranged") +
         currentStats.DEX +
         calculateRangedBonusDice(currentStats.PER),
+      selectableValue:
+        getCurrentSkillValue(sheet.skills, "ranged") +
+        currentStats.DEX +
+        calculateRangedBonusDice(currentStats.PER),
     },
     {
       id: "melee_damage",
       label: "Melee Damage",
       value: currentStats.STR,
+      selectableValue: currentStats.STR,
     },
     {
       id: "ranged_damage",
       label: "Ranged Damage",
       value: "-",
+      selectableValue: null,
+    },
+    {
+      id: "movement",
+      label: "Movement",
+      value: "20 + 5",
+      selectableValue: 25,
     },
   ];
 

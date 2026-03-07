@@ -373,28 +373,11 @@ select {
   gap: 14px;
 }
 
-.dm-helper-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.dm-helper-card {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.54);
-}
-
-.dm-helper-head strong,
 .dm-accordion-summary strong {
   display: block;
   color: #2b190f;
 }
 
-.dm-helper-head small,
 .dm-accordion-summary small,
 .dm-compact-row small,
 .dm-detail-card small {
@@ -506,6 +489,35 @@ select {
 .dm-detail-grid-small {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 8px;
+}
+
+.dm-detail-grid-compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.dm-detail-card-compact {
+  padding: 8px 9px;
+}
+
+.dm-detail-card-compact strong {
+  margin-top: 4px;
+  font-size: 0.98rem;
+}
+
+.dm-detail-card-compact small {
+  margin-top: 3px;
+  font-size: 0.67rem;
+  line-height: 1.25;
+}
+
+.dm-detail-summary {
+  color: #6d4e3c;
+}
+
+.dm-detail-detail {
+  color: #7b5f4c;
+  overflow-wrap: anywhere;
 }
 
 .flow-card h1 {
@@ -1273,6 +1285,22 @@ ul {
   background: rgba(255, 255, 255, 0.54);
 }
 
+.dice-summary-section {
+  margin-top: 8px;
+}
+
+.dice-summary-section h3 {
+  margin: 0 0 6px;
+  font-size: 0.74rem;
+  color: #2a1a10;
+}
+
+.dice-summary-targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
 .dice-summary strong,
 .roll-result strong {
   display: block;
@@ -1470,6 +1498,10 @@ ul {
   .combat-card {
     grid-column: span 2;
   }
+
+  .dm-detail-grid-compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -1512,6 +1544,10 @@ ul {
     grid-template-columns: 1fr;
   }
 
+  .dice-summary-targets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dice-column:first-child .dice-targets,
   .dice-column:last-child .dice-targets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1544,7 +1580,6 @@ ul {
   .dm-hub-grid,
   .dm-setup-grid,
   .dm-dashboard-grid,
-  .dm-helper-grid,
   .dm-option-grid,
   .dm-parameter-grid,
   .dm-two-up,
@@ -1558,5 +1593,9 @@ ul {
   .dm-detail-grid,
   .dm-detail-grid-small {
     grid-template-columns: 1fr;
+  }
+
+  .dm-detail-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

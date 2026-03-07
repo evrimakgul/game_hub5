@@ -21,11 +21,11 @@ export function RoleSelectPage() {
         <p className="section-kicker">Role</p>
         <h1>Choose Your Side</h1>
         <div className="flow-actions">
-          <button type="button" className="flow-primary" onClick={() => handleRole("player")}>
-            Player
-          </button>
-          <button type="button" className="flow-secondary" onClick={() => handleRole("dm")}>
+          <button type="button" className="flow-primary" onClick={() => handleRole("dm")}>
             Dungeon Master
+          </button>
+          <button type="button" className="flow-secondary" onClick={() => handleRole("player")}>
+            Player
           </button>
         </div>
       </section>

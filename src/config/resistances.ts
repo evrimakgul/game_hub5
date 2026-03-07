@@ -1,6 +1,6 @@
 export const DAMAGE_TYPES = [
   { id: "fire", label: "Fire", family: "elemental" },
-  { id: "ice", label: "Ice", family: "elemental" },
+  { id: "cold", label: "Cold", family: "elemental" },
   { id: "acid", label: "Acid", family: "elemental" },
   { id: "lightning", label: "Lightning", family: "elemental" },
   { id: "shadow", label: "Shadow", family: "mystic" },
@@ -29,7 +29,7 @@ export const RESISTANCE_LEVELS: Record<
 
 export const ELEMENTAL_DAMAGE_TYPES: DamageTypeId[] = [
   "fire",
-  "ice",
+  "cold",
   "acid",
   "lightning",
   "sonic",
@@ -43,7 +43,7 @@ export const LIGHT_SUPPORT_LEVEL_FIVE_EXPOSE_DARKNESS_TYPES: DamageTypeId[] = [
 export function createDefaultResistances(): Record<DamageTypeId, ResistanceLevel> {
   return {
     fire: 0,
-    ice: 0,
+    cold: 0,
     acid: 0,
     lightning: 0,
     shadow: 0,
@@ -55,4 +55,3 @@ export function createDefaultResistances(): Record<DamageTypeId, ResistanceLevel
     physical: 0,
   };
 }
-

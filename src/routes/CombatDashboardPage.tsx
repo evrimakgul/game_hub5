@@ -191,7 +191,7 @@ export function CombatDashboardPage() {
             <p className="section-kicker">Combatant Selection</p>
             <h2>Combatants</h2>
             <label className="dm-field">
-              <span>Encounter Label</span>
+              <span>Combat Encounter Label</span>
               <input
                 value={encounterLabel}
                 onChange={(event) => setEncounterLabel(event.target.value)}
@@ -221,8 +221,8 @@ export function CombatDashboardPage() {
             <p className="section-kicker">Combat Encounter</p>
             <h2>Start Combat</h2>
             <p className="dm-summary-line">
-              Starting the encounter rolls initiative for the selected combatants and opens the
-              Combat Encounter Page.
+              Starting combat rolls initiative for the selected combatants and opens the Combat
+              Encounter.
             </p>
             <div className="dm-control-row">
               <button type="button" className="flow-primary" onClick={handleStartEncounter}>

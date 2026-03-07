@@ -15,8 +15,20 @@ This file tracks active reminders and implementation notes for the current branc
   - combat dashboard as the encounter staging page
 - The pseudo NPC quick-add path has been removed from the combat dashboard.
 - The new combat rebuild starts with encounter start, initiative ordering, and the first DM combat encounter page.
-- The current branch does not use Supabase at runtime.
-- Old Supabase schema and realtime reference documents have been removed from this branch.
-- Reminder for later: add movement info to the character sheet combat summary as `20 + 5`.
+- The combat encounter uses a floating roll-helper popover instead of a static helper panel.
+- Movement is shown in the character sheet combat summary as `20 + 5`.
   - `20` from standard-action conversion
   - `5` from move action
+- Named next implementation block: `Cast Power Mechanism`.
+- Authoritative source files are now:
+  - `references/originals/Basic_Rules5.txt`
+  - `references/originals/T1_Supernatural_Powers5.txt`
+- Power data normalization is now partially completed for runtime use:
+  - Awareness identification costs are explicitly free.
+  - Necrotic Touch damage and healing now scale from the acting power level instead of hard-coded flat bonuses.
+  - Shadow Manipulation damage now scales from `MAN + Shadow Control level`.
+  - Summon templates now use structured stat formulas, structured attack definitions, and numeric resistance levels.
+  - Resistance data is aligned with the character-sheet model (`-2` to `+2`) and the `cold` damage-type naming.
+- Combat rules now separate attack delivery from mitigation so future magical attacks can still deal physical damage and be reduced by DR.
+- The current branch does not use Supabase at runtime.
+- Old Supabase schema and realtime reference documents have been removed from this branch.

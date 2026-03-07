@@ -39,6 +39,7 @@ export type EncounterCombatSummaryField = {
   id: string;
   label: string;
   value: number | string;
+  selectableValue: number | null;
 };
 
 export type EncounterVisibleResistance = {

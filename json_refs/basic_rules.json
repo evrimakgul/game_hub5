@@ -1,7 +1,7 @@
 {
   "source": {
-    "path": "references/originals/Basic_Rules4.txt",
-    "filename": "Basic_Rules4.txt",
+    "path": "references/originals/Basic_Rules5.txt",
+    "filename": "Basic_Rules5.txt",
     "title": "BASIC RULES - AUTHORITATIVE DEFINITIONS"
   },
   "normalized_rules": {
@@ -55,17 +55,116 @@
     "stat_categories": [
       {
         "id": "Physical",
-        "children": ["STR", "DEX", "STAM"]
+        "children": [
+          "STR",
+          "DEX",
+          "STAM"
+        ]
       },
       {
         "id": "Social",
-        "children": ["CHA", "APP", "MAN"]
+        "children": [
+          "CHA",
+          "APP",
+          "MAN"
+        ]
       },
       {
         "id": "Mental",
-        "children": ["INT", "WITS", "PER"]
+        "children": [
+          "INT",
+          "WITS",
+          "PER"
+        ]
       }
-    ]
+    ],
+    "damage_types": [
+      {
+        "id": "fire",
+        "name": "Fire",
+        "family": "elemental"
+      },
+      {
+        "id": "cold",
+        "name": "Cold",
+        "family": "elemental"
+      },
+      {
+        "id": "acid",
+        "name": "Acid",
+        "family": "elemental"
+      },
+      {
+        "id": "lightning",
+        "name": "Lightning",
+        "family": "elemental"
+      },
+      {
+        "id": "shadow",
+        "name": "Shadow",
+        "family": "mystic"
+      },
+      {
+        "id": "radiant",
+        "name": "Radiant",
+        "family": "mystic"
+      },
+      {
+        "id": "necrotic",
+        "name": "Necrotic",
+        "family": "mystic"
+      },
+      {
+        "id": "sonic",
+        "name": "Sonic",
+        "family": "elemental"
+      },
+      {
+        "id": "mental",
+        "name": "Mental",
+        "family": "psychic"
+      },
+      {
+        "id": "divine",
+        "name": "Divine",
+        "family": "mystic"
+      },
+      {
+        "id": "physical",
+        "name": "Physical",
+        "family": "mundane"
+      }
+    ],
+    "elemental_damage_types": [
+      "fire",
+      "cold",
+      "acid",
+      "lightning",
+      "sonic"
+    ],
+    "resistance_levels": {
+      "0": {
+        "label": "Normal",
+        "damage_multiplier": 1
+      },
+      "1": {
+        "label": "Resist",
+        "damage_multiplier": 0.5
+      },
+      "2": {
+        "label": "Immune",
+        "damage_multiplier": 0
+      },
+      "-2": {
+        "label": "Fragile",
+        "damage_multiplier": 2
+      },
+      "-1": {
+        "label": "Vulnerable",
+        "damage_multiplier": 1.5
+      }
+    },
+    "default_resistance_level": 0
   },
   "preamble": [
     {
@@ -1325,14 +1424,14 @@
             },
             {
               "type": "bullet",
-              "text": "DR applies only to Physical damage.",
-              "raw": "- DR applies only to Physical damage.",
+              "text": "DR applies to Physical damage.",
+              "raw": "- DR applies to Physical damage.",
               "children": []
             },
             {
               "type": "bullet",
-              "text": "Soak applies only to Magical damage.",
-              "raw": "- Soak applies only to Magical damage.",
+              "text": "Soak applies to non-physical damage.",
+              "raw": "- Soak applies to non-physical damage.",
               "children": []
             },
             {
@@ -1342,7 +1441,137 @@
               "children": []
             }
           ],
-          "subsections": []
+          "subsections": [
+            {
+              "id": "4.1.1",
+              "number": "4.1.1",
+              "title": "Damage Type Set",
+              "slug": "damage_type_set",
+              "raw_heading": "4.1.1. Damage Type Set",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "The recognized combat damage types are Fire, Cold, Acid, Lightning, Shadow, Radiant, Necrotic, Sonic, Mental, Divine, and Physical.",
+                  "raw": "- The recognized combat damage types are Fire, Cold, Acid, Lightning, Shadow, Radiant, Necrotic, Sonic, Mental, Divine, and Physical.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Fire, Cold, Acid, Lightning, and Sonic are Elemental damage types.",
+                  "raw": "- Fire, Cold, Acid, Lightning, and Sonic are Elemental damage types.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "4.1.2",
+              "number": "4.1.2",
+              "title": "Resistance State Model",
+              "slug": "resistance_state_model",
+              "raw_heading": "4.1.2. Resistance State Model",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Resistance to each damage type is tracked separately using a resistance level from -2 to +2.",
+                  "raw": "- Resistance to each damage type is tracked separately using a resistance level from -2 to +2.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Resistance Level -2 = Fragile = x2 damage taken.",
+                  "raw": "- Resistance Level -2 = Fragile = x2 damage taken.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Resistance Level -1 = Vulnerable = x1.5 damage taken.",
+                  "raw": "- Resistance Level -1 = Vulnerable = x1.5 damage taken.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Resistance Level 0 = Normal = x1 damage taken.",
+                  "raw": "- Resistance Level 0 = Normal = x1 damage taken.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Resistance Level +1 = Resist = x0.5 damage taken.",
+                  "raw": "- Resistance Level +1 = Resist = x0.5 damage taken.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Resistance Level +2 = Immune = x0 damage taken.",
+                  "raw": "- Resistance Level +2 = Immune = x0 damage taken.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Unless explicitly stated otherwise, every combatant is Normal (0) to every damage type.",
+                  "raw": "- Unless explicitly stated otherwise, every combatant is Normal (0) to every damage type.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Effects that modify resistance change the tracked resistance level directly for the affected damage type.",
+                  "raw": "- Effects that modify resistance change the tracked resistance level directly for the affected damage type.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            },
+            {
+              "id": "4.1.3",
+              "number": "4.1.3",
+              "title": "Mitigation Channel",
+              "slug": "mitigation_channel",
+              "raw_heading": "4.1.3. Mitigation Channel",
+              "authority": "authoritative",
+              "authority_source": "inherited",
+              "qualifiers": [],
+              "entries": [
+                {
+                  "type": "bullet",
+                  "text": "Attack delivery and damage mitigation are resolved separately.",
+                  "raw": "- Attack delivery and damage mitigation are resolved separately.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Physical damage is reduced by DR.",
+                  "raw": "- Physical damage is reduced by DR.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "Non-physical damage is reduced by Soak, unless a rule explicitly states otherwise.",
+                  "raw": "- Non-physical damage is reduced by Soak, unless a rule explicitly states otherwise.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "A Magical attack may still deal Physical damage; if so, it is reduced by DR instead of Soak.",
+                  "raw": "- A Magical attack may still deal Physical damage; if so, it is reduced by DR instead of Soak.",
+                  "children": []
+                },
+                {
+                  "type": "bullet",
+                  "text": "If a rule defines a different mitigation channel for a damage instance, that rule overrides the default mitigation channel.",
+                  "raw": "- If a rule defines a different mitigation channel for a damage instance, that rule overrides the default mitigation channel.",
+                  "children": []
+                }
+              ],
+              "subsections": []
+            }
+          ]
         },
         {
           "id": "4.2",
@@ -1368,8 +1597,14 @@
             },
             {
               "type": "bullet",
-              "text": "Final Magical Damage Taken = max(0, Magical Damage - Soak).",
-              "raw": "- Final Magical Damage Taken = max(0, Magical Damage - Soak).",
+              "text": "Final Magical Damage Taken = max(0, Magical Damage - applicable mitigation).",
+              "raw": "- Final Magical Damage Taken = max(0, Magical Damage - applicable mitigation).",
+              "children": []
+            },
+            {
+              "type": "bullet",
+              "text": "Applicable mitigation is determined by the mitigation channel rules in 4.1.3.",
+              "raw": "- Applicable mitigation is determined by the mitigation channel rules in 4.1.3.",
               "children": []
             },
             {

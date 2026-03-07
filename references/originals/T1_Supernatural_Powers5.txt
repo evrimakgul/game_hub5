@@ -2,7 +2,7 @@
 
 
 Awareness: (Per)
-1. You add your awareness level to your alertness skill checks. You also can identify stats / skills of simple (non-supernatural, non-hunter humans, very weak mobs etc ...) NPC’s. You can identify common, uncommon, masterwork items. Identifying items costs no mana, yet identifying creatures costs 1 mana.
+1. You add your awareness level to your alertness skill checks. You also can identify stats / skills of simple (non-supernatural, non-hunter humans, very weak mobs etc ...) NPC’s. You can identify common, uncommon, masterwork items. Identifying items and creatures costs no mana.
 2. You increase your identify power (RNnters, stronger mobs etc..., ). You can also know their special or supernatural skills if there are any, and possible loot. You can now identify epic (or lesser) items.
 3. Techno infused invisibility devices do not work on you. You get the cantrip bonus.
    * Cantrip: You gain +1 inspiration / game session, yet they do not stack (Inspiration = reroll). If the person has an uninspired flaw, they need to get rid off from their uninspired status first and the cantrip speeds up that process.
@@ -76,7 +76,7 @@ Note: All summoned creatures appear next to you, you can not choose their summon
 Shadow Control (SC): (Man)
 1. You create a cloak of shadow (CoS) around you for 10 minute / 1 portal duration. CoS will give you intimidation, stealth skills (equal to your SC level) and +1 AC. Using this is a standard action. Mana cost: 2
 2. Shadow Walk: Allows you to dive in your shadow and appear near the shadow of a living target. Max range of this shadow walk is  equal to (25m x SC rank) Mana cost: 2. 
-This can be used both as a bonus or standard action.
+This is a bonus action.
 3. Your CoS AC bonus increases to +2.
 Shadow Manupulation: You manipulate a target’s own shadow to  attack them (and only that target). Attack will always be considered as success (no additional bonus to damage). The damage of this attack will be your (Man+SC). This is a shadow type damage (soakable with Stam). Range = 25 meters. This is a standard action. Manipulating shadow is also considered as an attack, and cancels your stealth / invisible or similar effects. Mana cost: 2. You can now use SC cantrip.
    * Cantrip: You can do cosmetic changes on your clothes / armor [They are just cosmetic and do not change their stats]. When your SC level reaches 5, you can make minor cosmetic appearance modifications on your body (hair color, eye color, skin color etc).

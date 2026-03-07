@@ -268,6 +268,7 @@ export function PlayerCharacterPage() {
     maxHp: calculateMaxHP(currentStats.STAM),
     maxMana: sheetState.currentMana + occultManaBonus,
     initiative: calculateInitiative(currentStats.DEX, currentStats.WITS),
+    movement: "20 + 5",
     armorClass: calculateArmorClass(currentStats.DEX, getCurrentSkillValue(sheetState.skills, "athletics"), 0),
     damageReduction: 0,
     soak: currentStats.STAM,
@@ -912,6 +913,10 @@ export function PlayerCharacterPage() {
               <div>
                 <span>Initiative</span>
                 <strong>{derived.initiative}</strong>
+              </div>
+              <div>
+                <span>Movement</span>
+                <strong>{derived.movement}</strong>
               </div>
               <div>
                 <span>AC</span>

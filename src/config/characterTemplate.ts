@@ -462,8 +462,15 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
 
   if (isRecord(record.resistances)) {
     for (const damageTypeId of Object.keys(resistances) as DamageTypeId[]) {
+      const persistedKey =
+        damageTypeId === "cold" &&
+        record.resistances[damageTypeId] === undefined &&
+        record.resistances.ice !== undefined
+          ? "ice"
+          : damageTypeId;
+
       resistances[damageTypeId] = hydrateResistanceLevel(
-        record.resistances[damageTypeId],
+        record.resistances[persistedKey],
         resistances[damageTypeId]
       );
     }

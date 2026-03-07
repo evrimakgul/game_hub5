@@ -1,10 +1,10 @@
 {
   "source": {
-    "path": "references/originals/T1_Supernatural_Powers4.txt",
-    "filename": "T1_Supernatural_Powers4.txt",
+    "path": "references/originals/T1_Supernatural_Powers5.txt",
+    "filename": "T1_Supernatural_Powers5.txt",
     "title": "T1 Supernatural Powers"
   },
-  "schema_version": 3,
+  "schema_version": 4,
   "coverage": {
     "included_tiers": [
       "t1"
@@ -30,13 +30,15 @@
           "mechanics": {
             "alertness_skill_bonus_equals_power_level": true,
             "item_identification_max_quality": "masterwork",
-            "creature_identification_scope": "simple_npcs"
+            "creature_identification_scope": "simple_npcs",
+            "item_identification_mana_cost": 0,
+            "creature_identification_mana_cost": 0
           },
           "adjudication": {
             "range": null,
             "duration": null
           },
-          "description": "You add your awareness level to your alertness skill checks. You also can identify stats / skills of simple NPCs. You can identify common, uncommon, masterwork items."
+          "description": "You add your awareness level to your alertness skill checks. You also can identify stats / skills of simple NPCs. You can identify common, uncommon, masterwork items. Identifying items and creatures costs no mana."
         },
         {
           "level": 2,
@@ -923,13 +925,22 @@
           },
           "stats": {
             "STR": {
-              "formula": "1 + ceil(APP / 2)"
+              "base": 1,
+              "base_stat": "APP",
+              "base_stat_divisor": 2,
+              "base_stat_round": "up"
             },
             "DEX": {
-              "formula": "1 + ceil(APP / 2)"
+              "base": 1,
+              "base_stat": "APP",
+              "base_stat_divisor": 2,
+              "base_stat_round": "up"
             },
             "STAM": {
-              "formula": "1 + ceil(APP / 2)"
+              "base": 1,
+              "base_stat": "APP",
+              "base_stat_divisor": 2,
+              "base_stat_round": "up"
             },
             "INT": 0,
             "PER": 0,
@@ -938,10 +949,17 @@
           "attacks": [
             {
               "name": "one_handed_melee",
-              "attack_formula": "DEX + melee_skill",
-              "damage_formula": "STR + 2",
-              "attack_bonus": 0,
-              "damage_bonus": 2
+              "attack_pool": {
+                "base_stat": "DEX",
+                "skill_source": "melee_skill"
+              },
+              "damage_value": {
+                "base_stat": "STR",
+                "flat_bonus": 2
+              },
+              "damage_types": [
+                "physical"
+              ]
             }
           ],
           "equipment_rules": {
@@ -971,13 +989,22 @@
           },
           "stats": {
             "STR": {
-              "formula": "2 + ceil(APP / 2)"
+              "base": 2,
+              "base_stat": "APP",
+              "base_stat_divisor": 2,
+              "base_stat_round": "up"
             },
             "DEX": {
-              "formula": "2 + ceil(APP / 2)"
+              "base": 2,
+              "base_stat": "APP",
+              "base_stat_divisor": 2,
+              "base_stat_round": "up"
             },
             "STAM": {
-              "formula": "2 + ceil(APP / 2)"
+              "base": 2,
+              "base_stat": "APP",
+              "base_stat_divisor": 2,
+              "base_stat_round": "up"
             },
             "INT": 0,
             "PER": 0,
@@ -986,16 +1013,19 @@
           "attacks": [
             {
               "name": "two_handed_sword",
-              "attack_formula": "DEX + melee_skill + 1",
-              "damage_formula": "STR + 7",
-              "attack_bonus": 1,
-              "damage_bonus": 7
+              "attack_pool": {
+                "base_stat": "DEX",
+                "skill_source": "melee_skill",
+                "flat_bonus": 1
+              },
+              "damage_value": {
+                "base_stat": "STR",
+                "flat_bonus": 7
+              },
+              "damage_types": [
+                "physical"
+              ]
             }
-          ],
-          "resistances": [
-            "shadow",
-            "cold",
-            "lightning"
           ],
           "equipment_rules": {
             "can_use_other_weapons": false,
@@ -1011,6 +1041,13 @@
             "appears_adjacent_to_caster": true,
             "summon_location_selectable": false,
             "breaks_stealth_on_summon": true
+          },
+          "defenses": {
+            "resistance_levels": {
+              "shadow": 1,
+              "lightning": 1,
+              "cold": 1
+            }
           }
         },
         "zombie": {
@@ -1024,13 +1061,13 @@
           },
           "stats": {
             "STR": {
-              "formula": "APP"
+              "base_stat": "APP"
             },
             "DEX": {
-              "formula": "APP"
+              "base_stat": "APP"
             },
             "STAM": {
-              "formula": "APP"
+              "base_stat": "APP"
             },
             "INT": 0,
             "PER": 0,
@@ -1039,17 +1076,20 @@
           "attacks": [
             {
               "name": "dual_brawl",
-              "attack_formula": "DEX + melee_skill + 2",
-              "damage_formula": "STR + 2",
+              "attack_pool": {
+                "base_stat": "DEX",
+                "skill_source": "melee_skill",
+                "flat_bonus": 2
+              },
+              "damage_value": {
+                "base_stat": "STR",
+                "flat_bonus": 2
+              },
               "attacks_per_action": 2,
-              "attack_bonus": 2,
-              "damage_bonus": 2
+              "damage_types": [
+                "physical"
+              ]
             }
-          ],
-          "resistances": [
-            "shadow",
-            "cold",
-            "lightning"
           ],
           "equipment_rules": {
             "can_use_other_weapons": false,
@@ -1065,6 +1105,13 @@
             "appears_adjacent_to_caster": true,
             "summon_location_selectable": false,
             "breaks_stealth_on_summon": true
+          },
+          "defenses": {
+            "resistance_levels": {
+              "shadow": 1,
+              "lightning": 1,
+              "cold": 1
+            }
           }
         }
       },
@@ -1136,18 +1183,22 @@
             "necrotic_touch": {
               "damage": {
                 "base_stat": "APP",
-                "flat_bonus": 4,
+                "power_level_multiplier": 1,
                 "damage_type": "necrotic",
                 "soak_stat": "STAM"
               },
               "living_damage_multiplier": 1.5,
-              "self_heal_flat_amount": 4,
-              "undead_heal_flat_amount": 4,
               "auto_hit": false,
               "invalid_targets": [
                 "shadow",
                 "incorporeal"
-              ]
+              ],
+              "self_heal": {
+                "power_level_multiplier": 1
+              },
+              "undead_heal": {
+                "power_level_multiplier": 1
+              }
             }
           },
           "adjudication": {
@@ -1184,18 +1235,22 @@
             "necrotic_touch": {
               "damage": {
                 "base_stat": "APP",
-                "flat_bonus": 3,
+                "power_level_multiplier": 1,
                 "damage_type": "necrotic",
                 "soak_stat": "STAM"
               },
               "living_damage_multiplier": 1.5,
-              "self_heal_flat_amount": 3,
-              "undead_heal_flat_amount": 3,
               "auto_hit": false,
               "invalid_targets": [
                 "shadow",
                 "incorporeal"
-              ]
+              ],
+              "self_heal": {
+                "power_level_multiplier": 1
+              },
+              "undead_heal": {
+                "power_level_multiplier": 1
+              }
             }
           },
           "adjudication": {
@@ -1232,19 +1287,22 @@
             "necrotic_touch": {
               "damage": {
                 "base_stat": "APP",
-                "flat_bonus": 10,
                 "power_level_multiplier": 2,
                 "damage_type": "necrotic",
                 "soak_stat": "STAM"
               },
               "living_damage_multiplier": 1.5,
-              "self_heal_flat_amount": 5,
-              "undead_heal_flat_amount": 5,
               "auto_hit": false,
               "invalid_targets": [
                 "shadow",
                 "incorporeal"
-              ]
+              ],
+              "self_heal": {
+                "power_level_multiplier": 1
+              },
+              "undead_heal": {
+                "power_level_multiplier": 1
+              }
             },
             "resurrection": {
               "enabled": true,
@@ -1301,20 +1359,30 @@
           },
           "stats": {
             "STR": {
-              "formula": "3 + MAN"
+              "base": 3,
+              "base_stat": "MAN"
             },
             "DEX": {
-              "formula": "3 + MAN"
+              "base": 3,
+              "base_stat": "MAN"
             },
             "STAM": {
-              "formula": "3 + MAN"
+              "base": 3,
+              "base_stat": "MAN"
             }
           },
           "attacks": [
             {
               "name": "two_handed_sword",
-              "attack_bonus": 2,
-              "damage_bonus": 2,
+              "attack_pool": {
+                "base_stat": "DEX",
+                "skill_source": "melee_skill",
+                "flat_bonus": 2
+              },
+              "damage_value": {
+                "base_stat": "STR",
+                "flat_bonus": 2
+              },
               "damage_types": [
                 "physical",
                 "shadow"
@@ -1322,16 +1390,12 @@
             }
           ],
           "defenses": {
-            "immunities": [
-              "shadow",
-              "cold"
-            ],
-            "resistances": [
-              "physical"
-            ],
-            "vulnerabilities": [
-              "radiant"
-            ]
+            "resistance_levels": {
+              "shadow": 2,
+              "physical": 1,
+              "radiant": -1,
+              "cold": 2
+            }
           },
           "buff_rules": {
             "can_receive_single_buffs": true,
@@ -1402,7 +1466,7 @@
               "auto_hit": true,
               "damage": {
                 "base_stat": "MAN",
-                "flat_bonus": 4,
+                "power_level_multiplier": 1,
                 "damage_type": "shadow",
                 "soak_stat": "STAM"
               },
@@ -1438,7 +1502,7 @@
               "auto_hit": true,
               "damage": {
                 "base_stat": "MAN",
-                "flat_bonus": 5,
+                "power_level_multiplier": 1,
                 "damage_type": "shadow",
                 "soak_stat": "STAM"
               },
@@ -1474,7 +1538,7 @@
               "auto_hit": true,
               "damage": {
                 "base_stat": "MAN",
-                "flat_bonus": 3,
+                "power_level_multiplier": 1,
                 "damage_type": "shadow",
                 "soak_stat": "STAM"
               },

@@ -224,10 +224,32 @@ Each character turn provides:
 - Soak applies only to Magical damage.
 - If any rule conflicts, this section overrides all others
 
+4.1.1. Damage Type Set
+- The recognized combat damage types are Fire, Cold, Acid, Lightning, Shadow, Radiant, Necrotic, Sonic, Mental, Divine, and Physical.
+- Fire, Cold, Acid, Lightning, and Sonic are Elemental damage types.
+
+4.1.2. Resistance State Model
+- Resistance to each damage type is tracked separately using a resistance level from -2 to +2.
+- Resistance Level -2 = Fragile = x2 damage taken.
+- Resistance Level -1 = Vulnerable = x1.5 damage taken.
+- Resistance Level 0 = Normal = x1 damage taken.
+- Resistance Level +1 = Resist = x0.5 damage taken.
+- Resistance Level +2 = Immune = x0 damage taken.
+- Unless explicitly stated otherwise, every combatant is Normal (0) to every damage type.
+- Effects that modify resistance change the tracked resistance level directly for the affected damage type.
+
+4.1.3. Mitigation Channel
+- Attack delivery and damage mitigation are resolved separately.
+- Physical damage is reduced by DR.
+- Non-physical damage is reduced by Soak, unless a rule explicitly states otherwise.
+- A Magical attack may still deal Physical damage; if so, it is reduced by DR instead of Soak.
+- If a rule defines a different mitigation channel for a damage instance, that rule overrides the default mitigation channel.
+
 4.2. Magical Attack Resolution
 - Magical attacks bypass Attack Roll and Dodge entirely.
 - Magical attacks deal a fixed damage value as defined by the effect.
-- Final Magical Damage Taken = max(0, Magical Damage - Soak).
+- Final Magical Damage Taken = max(0, Magical Damage - applicable mitigation).
+- Applicable mitigation is determined by the mitigation channel rules in 4.1.3.
 - No dice are rolled during magical damage resolution unless explicitly stated by the effect.
 
 4.3. Physical Attack Resolution
@@ -262,7 +284,8 @@ Each character turn provides:
 - DP + M
 - Roll the Total Damage Pool using the D10 Success System.
 - Final Damage Taken:
-- max(0, damage successes - defender DR)
+- max(0, damage successes - applicable mitigation)
+- Applicable mitigation is determined by the mitigation channel rules in 4.1.3.
 
 === 5. CHARACTER ATTRIBUTES (AUTHORITATIVE) ===
 - This section defines a character's core attributes and how each stat contributes to dice pools, defenses, and derived mechanics.
