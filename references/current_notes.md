@@ -20,6 +20,15 @@ This file tracks active reminders and implementation notes for the current branc
   - `20` from standard-action conversion
   - `5` from move action
 - Named next implementation block: `Cast Power Mechanism`.
+- First `Cast Power Mechanism` slice is now active on the DM combat encounter page.
+  - Supported active casts:
+    - `Body Reinforcement`
+    - `Light Support`
+    - `Shadow Control` cloak
+  - Active power effects are now stored on locally persisted character records.
+  - Character sheet and combat encounter both read the same post-effect runtime values.
+  - `currentMana` now defaults to derived max mana until the character spends mana for the first time.
+  - Encounter instances themselves are still not persisted locally yet.
 - Authoritative source files are now:
   - `references/originals/Basic_Rules5.txt`
   - `references/originals/T1_Supernatural_Powers5.txt`

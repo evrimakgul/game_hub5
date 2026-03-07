@@ -49,10 +49,18 @@ export type EncounterVisibleResistance = {
   multiplierLabel: string;
 };
 
+export type EncounterActivePowerEffect = {
+  id: string;
+  label: string;
+  summary: string;
+  source: string;
+};
+
 export type CharacterEncounterSnapshot = {
   combatSummary: EncounterCombatSummaryField[];
   stats: EncounterBreakdownField[];
   highlightedSkills: EncounterBreakdownField[];
   visibleResistances: EncounterVisibleResistance[];
   inspiration: number;
+  activePowerEffects: EncounterActivePowerEffect[];
 };

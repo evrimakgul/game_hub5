@@ -1,19 +1,16 @@
 import type {
   CharacterDraft,
-  SkillEntry,
-  StatEntry,
   StatId,
-  StatSource,
 } from "./characterTemplate.ts";
 import { DAMAGE_TYPES, RESISTANCE_LEVELS } from "./resistances.ts";
 import { resolveDicePool } from "./combat.ts";
+import { calculateInitiative } from "./stats.ts";
 import {
-  calculateArmorClass,
-  calculateInitiative,
-  calculateMaxHP,
-  calculateOccultManaBonus,
-  calculateRangedBonusDice,
-} from "./stats.ts";
+  buildCharacterDerivedValues,
+  getCurrentStatValue,
+  getSkillBreakdown,
+  getStatBreakdown,
+} from "./characterRuntime.ts";
 import type {
   CharacterEncounterSnapshot,
   CombatEncounterParticipantInput,
@@ -33,50 +30,6 @@ function rollInitiativePool(poolSize: number): number[] {
   return Array.from({ length: Math.max(0, poolSize) }, () => randomD10());
 }
 
-function buildSummary(base: number, gearSources: StatSource[], buffSources: StatSource[]): string {
-  const gearTotal = gearSources.reduce((total, source) => total + source.value, 0);
-  const buffTotal = buffSources.reduce((total, source) => total + source.value, 0);
-  return `Base ${base} + Gears ${gearTotal} + Buffs ${buffTotal}`;
-}
-
-function buildDetail(gearSources: StatSource[], buffSources: StatSource[]): string {
-  const gearText =
-    gearSources.length > 0
-      ? gearSources
-          .map((source) => `${source.label} ${source.value >= 0 ? "+" : ""}${source.value}`)
-          .join(", ")
-      : "none";
-  const buffText =
-    buffSources.length > 0
-      ? buffSources
-          .map((source) => `${source.label} ${source.value >= 0 ? "+" : ""}${source.value}`)
-          .join(", ")
-      : "none";
-
-  return `Gear: ${gearText} | Buffs: ${buffText}`;
-}
-
-export function getCurrentStatValue(
-  statState: Record<StatId, StatEntry>,
-  statId: StatId
-): number {
-  const stat = statState[statId];
-  const gearTotal = stat.gearSources.reduce((total, source) => total + source.value, 0);
-  const buffTotal = stat.buffSources.reduce((total, source) => total + source.value, 0);
-  return stat.base + gearTotal + buffTotal;
-}
-
-export function getCurrentSkillValue(skills: SkillEntry[], skillId: string): number {
-  const skill = skills.find((entry) => entry.id === skillId);
-  if (!skill) {
-    return 0;
-  }
-
-  const gearTotal = skill.gearSources.reduce((total, source) => total + source.value, 0);
-  const buffTotal = skill.buffSources.reduce((total, source) => total + source.value, 0);
-  return skill.base + gearTotal + buffTotal;
-}
-
 export function buildEncounterParticipantInput(
   characterId: string,
   ownerRole: "player" | "dm",
@@ -86,8 +39,8 @@ export function buildEncounterParticipantInput(
     characterId,
     ownerRole,
     displayName: sheet.name.trim() || "Unnamed Character",
-    dex: getCurrentStatValue(sheet.statState, "DEX"),
-    wits: getCurrentStatValue(sheet.statState, "WITS"),
+    dex: getCurrentStatValue(sheet, "DEX"),
+    wits: getCurrentStatValue(sheet, "WITS"),
   };
 }
 
@@ -162,112 +115,95 @@ export function createCombatEncounter(
 }
 
 export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): CharacterEncounterSnapshot {
-  const currentStats = Object.fromEntries(
-    STAT_IDS.map((statId) => [statId, getCurrentStatValue(sheet.statState, statId)])
-  ) as Record<StatId, number>;
-  const occultManaBonus = calculateOccultManaBonus(
-    getCurrentSkillValue(sheet.skills, "occultism"),
-    sheet.xpUsed
-  );
+  const derived = buildCharacterDerivedValues(sheet);
+  const currentStats = derived.currentStats;
 
   const combatSummary: EncounterCombatSummaryField[] = [
     {
       id: "hp",
       label: "HP",
-      value: `${sheet.currentHp} / ${calculateMaxHP(currentStats.STAM)}`,
+      value: `${sheet.currentHp} / ${derived.maxHp}`,
       selectableValue: null,
     },
     {
       id: "mana",
       label: "Mana",
-      value: `${sheet.currentMana} / ${sheet.currentMana + occultManaBonus}`,
+      value: `${derived.currentMana} / ${derived.maxMana}`,
       selectableValue: null,
     },
     {
       id: "initiative",
       label: "Initiative",
-      value: calculateInitiative(currentStats.DEX, currentStats.WITS),
-      selectableValue: calculateInitiative(currentStats.DEX, currentStats.WITS),
+      value: derived.initiative,
+      selectableValue: derived.initiative,
     },
     {
       id: "ac",
       label: "AC",
-      value: calculateArmorClass(
-        currentStats.DEX,
-        getCurrentSkillValue(sheet.skills, "athletics"),
-        0
-      ),
+      value: derived.armorClass,
       selectableValue: null,
     },
     {
       id: "dr",
       label: "DR",
-      value: 0,
+      value: derived.damageReduction,
       selectableValue: null,
     },
     {
       id: "soak",
       label: "Soak",
-      value: currentStats.STAM,
+      value: derived.soak,
       selectableValue: null,
     },
     {
       id: "melee_attack",
       label: "Melee Attack",
-      value: getCurrentSkillValue(sheet.skills, "melee") + currentStats.DEX,
-      selectableValue: getCurrentSkillValue(sheet.skills, "melee") + currentStats.DEX,
+      value: derived.meleeAttack,
+      selectableValue: derived.meleeAttack,
     },
     {
       id: "ranged_attack",
       label: "Ranged Attack",
-      value:
-        getCurrentSkillValue(sheet.skills, "ranged") +
-        currentStats.DEX +
-        calculateRangedBonusDice(currentStats.PER),
-      selectableValue:
-        getCurrentSkillValue(sheet.skills, "ranged") +
-        currentStats.DEX +
-        calculateRangedBonusDice(currentStats.PER),
+      value: derived.rangedAttack,
+      selectableValue: derived.rangedAttack,
     },
     {
       id: "melee_damage",
       label: "Melee Damage",
-      value: currentStats.STR,
-      selectableValue: currentStats.STR,
+      value: derived.meleeDamage,
+      selectableValue: derived.meleeDamage,
     },
     {
       id: "ranged_damage",
       label: "Ranged Damage",
-      value: "-",
+      value: derived.rangedDamage,
       selectableValue: null,
     },
     {
       id: "movement",
       label: "Movement",
-      value: "20 + 5",
-      selectableValue: 25,
+      value: derived.movement,
+      selectableValue: derived.movementSelectable,
     },
   ];
 
-  const stats: EncounterBreakdownField[] = STAT_IDS.map((statId) => {
-    const stat = sheet.statState[statId];
-    return {
-      id: statId,
-      label: statId,
-      value: currentStats[statId],
-      summary: buildSummary(stat.base, stat.gearSources, stat.buffSources),
-      detail: buildDetail(stat.gearSources, stat.buffSources),
-    };
-  });
+  const stats: EncounterBreakdownField[] = STAT_IDS.map((statId) => ({
+    id: statId,
+    label: statId,
+    value: currentStats[statId],
+    summary: getStatBreakdown(sheet, statId).summary,
+    detail: getStatBreakdown(sheet, statId).detail,
+  }));
 
   const highlightedSkills: EncounterBreakdownField[] = HIGHLIGHTED_SKILL_IDS.map((skillId) => {
+    const breakdown = getSkillBreakdown(sheet, skillId);
     const skill = sheet.skills.find((entry) => entry.id === skillId);
     return {
       id: skillId,
       label: skill?.label ?? skillId,
-      value: getCurrentSkillValue(sheet.skills, skillId),
-      summary: buildSummary(skill?.base ?? 0, skill?.gearSources ?? [], skill?.buffSources ?? []),
-      detail: buildDetail(skill?.gearSources ?? [], skill?.buffSources ?? []),
+      value: breakdown.value,
+      summary: breakdown.summary,
+      detail: breakdown.detail,
     };
   });
 
@@ -294,5 +230,11 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
     highlightedSkills,
     visibleResistances,
     inspiration: sheet.inspiration,
+    activePowerEffects: derived.activePowerEffects.map((effect) => ({
+      id: effect.id,
+      label: effect.label,
+      summary: effect.summary,
+      source: `${effect.casterName} -> ${effect.powerName}`,
+    })),
   };
 }

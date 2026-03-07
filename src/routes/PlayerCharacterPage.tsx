@@ -3,6 +3,12 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { resolveDicePool } from "../config/combat";
 import {
+  buildCharacterDerivedValues,
+  getCurrentSkillValue,
+  getSkillBreakdown,
+  getStatBreakdown,
+} from "../config/characterRuntime";
+import {
   DAMAGE_TYPES,
   RESISTANCE_LEVELS,
 } from "../config/resistances";
@@ -12,18 +18,8 @@ import {
   powerLibrary,
   statGroups,
   type CharacterDraft,
-  type SkillEntry,
-  type StatEntry,
   type StatId,
-  type StatSource,
 } from "../config/characterTemplate";
-import {
-  calculateArmorClass,
-  calculateInitiative,
-  calculateMaxHP,
-  calculateOccultManaBonus,
-  calculateRangedBonusDice,
-} from "../config/stats";
 import {
   getCrAndRankFromXpUsed,
   STAT_XP_BY_LEVEL,
@@ -58,43 +54,6 @@ type CustomRollModifier = {
   id: number;
   value: number;
 };
-
-function getCurrentStatValue(statState: Record<StatId, StatEntry>, statId: StatId): number {
-  const stat = statState[statId];
-  const gearTotal = stat.gearSources.reduce((total, source) => total + source.value, 0);
-  const buffTotal = stat.buffSources.reduce((total, source) => total + source.value, 0);
-  return stat.base + gearTotal + buffTotal;
-}
-
-function getCurrentSkillValue(skills: SkillEntry[], skillId: string): number {
-  const skill = skills.find((entry) => entry.id === skillId);
-  if (!skill) {
-    return 0;
-  }
-
-  const gearTotal = skill.gearSources.reduce((total, source) => total + source.value, 0);
-  const buffTotal = skill.buffSources.reduce((total, source) => total + source.value, 0);
-  return skill.base + gearTotal + buffTotal;
-}
-
-function getSummary(base: number, gearSources: StatSource[], buffSources: StatSource[]): string {
-  const gearTotal = gearSources.reduce((total, source) => total + source.value, 0);
-  const buffTotal = buffSources.reduce((total, source) => total + source.value, 0);
-  return `Base ${base} + Gears ${gearTotal} + Buffs ${buffTotal}`;
-}
-
-function getDetail(gearSources: StatSource[], buffSources: StatSource[]): string {
-  const gearText =
-    gearSources.length > 0
-      ? gearSources.map((source) => `${source.label} ${source.value >= 0 ? "+" : ""}${source.value}`).join(", ")
-      : "none";
-  const buffText =
-    buffSources.length > 0
-      ? buffSources.map((source) => `${source.label} ${source.value >= 0 ? "+" : ""}${source.value}`).join(", ")
-      : "none";
-
-  return `Gear: ${gearText} | Buffs: ${buffText}`;
-}
 
 function formatDateDayMonthYear(date: Date): string {
   const day = `${date.getDate()}`.padStart(2, "0");
@@ -247,37 +206,8 @@ export function PlayerCharacterPage() {
   const xpLeftOver = sheetState.xpEarned - sheetState.xpUsed;
   const progression = getCrAndRankFromXpUsed(sheetState.xpUsed);
 
-  const currentStats = {
-    STR: getCurrentStatValue(sheetState.statState, "STR"),
-    DEX: getCurrentStatValue(sheetState.statState, "DEX"),
-    STAM: getCurrentStatValue(sheetState.statState, "STAM"),
-    CHA: getCurrentStatValue(sheetState.statState, "CHA"),
-    APP: getCurrentStatValue(sheetState.statState, "APP"),
-    MAN: getCurrentStatValue(sheetState.statState, "MAN"),
-    INT: getCurrentStatValue(sheetState.statState, "INT"),
-    WITS: getCurrentStatValue(sheetState.statState, "WITS"),
-    PER: getCurrentStatValue(sheetState.statState, "PER"),
-  };
-
-  const occultManaBonus = calculateOccultManaBonus(
-    getCurrentSkillValue(sheetState.skills, "occultism"),
-    sheetState.xpUsed
-  );
-
-  const derived = {
-    maxHp: calculateMaxHP(currentStats.STAM),
-    maxMana: sheetState.currentMana + occultManaBonus,
-    initiative: calculateInitiative(currentStats.DEX, currentStats.WITS),
-    movement: "20 + 5",
-    armorClass: calculateArmorClass(currentStats.DEX, getCurrentSkillValue(sheetState.skills, "athletics"), 0),
-    damageReduction: 0,
-    soak: currentStats.STAM,
-    meleeAttack: getCurrentSkillValue(sheetState.skills, "melee") + currentStats.DEX,
-    rangedAttack:
-      getCurrentSkillValue(sheetState.skills, "ranged") + currentStats.DEX + calculateRangedBonusDice(currentStats.PER),
-    meleeDamage: currentStats.STR,
-    rangedDamage: "-",
-  };
+  const derived = buildCharacterDerivedValues(sheetState);
+  const currentStats = derived.currentStats;
 
   const rollTargets: RollTarget[] = [
     ...statGroups.flatMap((group) =>
@@ -289,11 +219,11 @@ export function PlayerCharacterPage() {
       }))
     ),
     ...sheetState.skills.map((skill) => ({
-      id: `skill:${skill.id}`,
-      label: skill.label,
-      value: getCurrentSkillValue(sheetState.skills, skill.id),
-      category: "skill" as const,
-    })),
+        id: `skill:${skill.id}`,
+        label: skill.label,
+        value: getCurrentSkillValue(sheetState, skill.id),
+        category: "skill" as const,
+      })),
   ];
 
   const statRollTargets = rollTargets.filter((target) => target.category === "stat");
@@ -907,7 +837,7 @@ export function PlayerCharacterPage() {
               <div>
                 <span>Mana</span>
                 <strong>
-                  {sheetState.currentMana} / {derived.maxMana}
+                  {derived.currentMana} / {derived.maxMana}
                 </strong>
               </div>
               <div>
@@ -947,6 +877,22 @@ export function PlayerCharacterPage() {
                 <strong>{derived.rangedDamage}</strong>
               </div>
             </div>
+            {derived.activePowerEffects.length > 0 ? (
+              <div className="active-effects-panel">
+                <p className="section-kicker">Active Effects</p>
+                <div className="active-effects-list">
+                  {derived.activePowerEffects.map((effect) => (
+                    <article key={effect.id} className="active-effect-card">
+                      <strong>{effect.label}</strong>
+                      <small>{effect.summary}</small>
+                      <small>
+                        {effect.casterName} {"->"} {effect.powerName}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </article>
 
           <article className="sheet-card stat-card">
@@ -961,7 +907,7 @@ export function PlayerCharacterPage() {
                   <div className="stat-list">
                     {group.ids.map((statId) => {
                       const stat = sheetState.statState[statId];
-                      const current = currentStats[statId];
+                      const breakdown = getStatBreakdown(sheetState, statId);
                       const incrementCost = getIncrementCost(STAT_XP_BY_LEVEL, stat.base);
                       const canIncrease = isEditMode && stat.base < STAT_XP_BY_LEVEL.length - 1 && xpLeftOver >= incrementCost;
                       const floorLevel = editSessionStatFloor?.[statId] ?? stat.base;
@@ -971,7 +917,7 @@ export function PlayerCharacterPage() {
                         <div key={statId} className="stat-row">
                           <div className="row-main">
                             <strong>{statId}</strong>
-                            <small>{getDetail(stat.gearSources, stat.buffSources)}</small>
+                            <small>{breakdown.detail}</small>
                           </div>
                           {isEditMode ? (
                             <div className="row-actions">
@@ -984,8 +930,8 @@ export function PlayerCharacterPage() {
                             </div>
                           ) : null}
                           <div className="row-side">
-                            <span>{getSummary(stat.base, stat.gearSources, stat.buffSources)}</span>
-                            <em>{current}</em>
+                            <span>{breakdown.summary}</span>
+                            <em>{breakdown.value}</em>
                           </div>
                         </div>
                       );
@@ -1001,7 +947,7 @@ export function PlayerCharacterPage() {
             <h2>Skills</h2>
             <div className="skill-table">
               {sheetState.skills.map((skill) => {
-                const current = getCurrentSkillValue(sheetState.skills, skill.id);
+                const breakdown = getSkillBreakdown(sheetState, skill.id);
                 const incrementCost = getIncrementCost(T1_SKILL_XP_BY_LEVEL, skill.base);
                 const canIncrease = isEditMode && skill.base < T1_SKILL_XP_BY_LEVEL.length - 1 && xpLeftOver >= incrementCost;
                 const canDecrease = isEditMode && skill.base > 0;
@@ -1010,7 +956,7 @@ export function PlayerCharacterPage() {
                   <div key={skill.id} className="skill-row">
                     <div className="row-main">
                       <strong>{skill.label}</strong>
-                      <small>{getDetail(skill.gearSources, skill.buffSources)}</small>
+                      <small>{breakdown.detail}</small>
                     </div>
                     {isEditMode ? (
                       <div className="row-actions">
@@ -1023,8 +969,8 @@ export function PlayerCharacterPage() {
                       </div>
                     ) : null}
                     <div className="row-side">
-                      <span>{getSummary(skill.base, skill.gearSources, skill.buffSources)}</span>
-                      <em>{current}</em>
+                      <span>{breakdown.summary}</span>
+                      <em>{breakdown.value}</em>
                     </div>
                   </div>
                 );

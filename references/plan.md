@@ -43,3 +43,22 @@ P.1 Keep `json_refs/powers.json` normalized for runtime work before implementing
     - Use `cold` as the damage-type name across rules, JSON, and UI.
 P.2 Keep attack delivery and mitigation separate in the rules model.
     - Magical attacks may still deal Physical damage and therefore be reduced by DR.
+
+## Phase 2 - Cast Power Mechanism (First Slice)
+2.1 Add shared runtime character-value helpers driven by active power effects.
+    - Character sheet and combat encounter must read from the same derived runtime values.
+2.2 Store active power effects locally on character records.
+    - Power activations must survive sheet refresh because characters are persisted locally.
+2.3 Add the first DM-side casting loop on the combat encounter page.
+    - Support `Body Reinforcement`, `Light Support`, and `Shadow Control` cloak effects first.
+    - Allow target selection and stat selection where required.
+    - Allow removing an applied effect from the target.
+2.4 Reflect active effects automatically in:
+    - stats
+    - highlighted skills
+    - combat summary values
+    - current mana after spending
+2.5 Keep this slice local-only and intentionally narrow.
+    - No summon casting yet.
+    - No player-side combat panel casting yet.
+    - No encounter persistence yet.

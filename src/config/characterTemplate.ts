@@ -4,6 +4,10 @@ import {
   type ResistanceLevel,
 } from "./resistances.ts";
 import { calculateMaxHP } from "./stats.ts";
+import type {
+  ActivePowerEffect,
+  ActivePowerEffectModifier,
+} from "../types/activePowerEffects";
 
 export type StatSource = {
   label: string;
@@ -59,10 +63,12 @@ export type CharacterDraft = {
   negativeKarma: number;
   currentHp: number;
   currentMana: number;
+  manaInitialized: boolean;
   resistances: Record<DamageTypeId, ResistanceLevel>;
   statState: Record<StatId, StatEntry>;
   skills: SkillEntry[];
   powers: PowerEntry[];
+  activePowerEffects: ActivePowerEffect[];
   equipment: Array<{ slot: string; item: string; effect: string }>;
   inventory: Array<{ name: string; category: string; note: string }>;
   effects: string[];
@@ -75,7 +81,7 @@ export type PowerTemplate = {
   levelBenefits: Record<number, string[]>;
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 1;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 2;
 
 const STAT_IDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
 
@@ -234,6 +240,7 @@ export class CharacterSheetTemplate {
       negativeKarma: 0,
       currentHp: calculateMaxHP(2),
       currentMana: 0,
+      manaInitialized: false,
       resistances: createDefaultResistances(),
       statState: {
         STR: BLANK_STAT_ENTRY(),
@@ -248,6 +255,7 @@ export class CharacterSheetTemplate {
       },
       skills: BLANK_SKILLS.map((skill) => ({ ...skill, gearSources: [], buffSources: [] })),
       powers: [],
+      activePowerEffects: [],
       equipment: [],
       inventory: [],
       effects: [],
@@ -449,6 +457,78 @@ function hydrateEffects(value: unknown): string[] {
   return value.filter((entry): entry is string => typeof entry === "string");
 }
 
+function hydrateActivePowerEffectModifier(value: unknown): ActivePowerEffectModifier | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    value.targetType !== "stat" &&
+    value.targetType !== "skill" &&
+    value.targetType !== "derived"
+  ) {
+    return null;
+  }
+
+  return {
+    targetType: value.targetType,
+    targetId: coerceString(value.targetId, ""),
+    value: Math.trunc(coerceNumber(value.value, 0)),
+    sourceLabel: coerceString(value.sourceLabel, "Unknown Power"),
+  };
+}
+
+function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const modifiers = Array.isArray(entry.modifiers)
+      ? entry.modifiers
+          .map((modifier) => hydrateActivePowerEffectModifier(modifier))
+          .filter((modifier): modifier is ActivePowerEffectModifier => modifier !== null)
+      : [];
+
+    const effectId = coerceString(entry.id, "");
+    const stackKey = coerceString(entry.stackKey, "");
+    const powerId = coerceString(entry.powerId, "");
+    const targetCharacterId = coerceString(entry.targetCharacterId, "");
+
+    if (!effectId || !stackKey || !powerId || !targetCharacterId) {
+      return [];
+    }
+
+    return [
+      {
+        id: effectId,
+        stackKey,
+        powerId,
+        powerName: coerceString(entry.powerName, powerId),
+        sourceLevel: Math.max(0, Math.trunc(coerceNumber(entry.sourceLevel, 0))),
+        casterCharacterId: coerceString(entry.casterCharacterId, ""),
+        casterName: coerceString(entry.casterName, "Unknown Caster"),
+        targetCharacterId,
+        label: coerceString(entry.label, powerId),
+        summary: coerceString(entry.summary, ""),
+        actionType: typeof entry.actionType === "string" ? entry.actionType : null,
+        manaCost:
+          entry.manaCost === null
+            ? null
+            : Math.max(0, Math.trunc(coerceNumber(entry.manaCost, 0))),
+        selectedStatId:
+          typeof entry.selectedStatId === "string" ? entry.selectedStatId : null,
+        modifiers,
+        appliedAt: coerceString(entry.appliedAt, new Date(0).toISOString()),
+      },
+    ];
+  });
+}
+
 export function hydrateCharacterDraft(value: unknown): CharacterDraft {
   const defaults = PLAYER_CHARACTER_TEMPLATE.createInstance();
   const record = isRecord(value) ? value : {};
@@ -494,10 +574,12 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     negativeKarma: Math.max(0, Math.trunc(coerceNumber(record.negativeKarma, defaults.negativeKarma))),
     currentHp: Math.max(0, Math.trunc(coerceNumber(record.currentHp, defaultHp))),
     currentMana: Math.max(0, Math.trunc(coerceNumber(record.currentMana, defaults.currentMana))),
+    manaInitialized: record.manaInitialized === true,
     resistances,
     statState,
     skills: hydrateSkills(record.skills),
     powers: hydratePowers(record.powers),
+    activePowerEffects: hydrateActivePowerEffects(record.activePowerEffects),
     equipment: hydrateEquipment(record.equipment),
     inventory: hydrateInventory(record.inventory),
     effects: hydrateEffects(record.effects),

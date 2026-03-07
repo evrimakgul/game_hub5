@@ -3,7 +3,21 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { resolveDicePool } from "../config/combat";
 import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
-import { useAppFlow } from "../state/appFlow";
+import {
+  applyActivePowerEffect,
+  buildActivePowerEffect,
+  getCastPowerAllowedStats,
+  getCastPowerTargetMode,
+  getSupportedCastablePowers,
+  removeActivePowerEffect,
+  spendPowerMana,
+} from "../config/powerEffects";
+import type { StatId } from "../config/characterTemplate";
+import { type CharacterRecord, useAppFlow } from "../state/appFlow";
+import type {
+  CharacterEncounterSnapshot,
+  CombatEncounterParticipant,
+} from "../types/combatEncounter";
 
 const ROLLER_EXCLUDED_SUMMARY_IDS = new Set(["hp", "mana", "ac", "dr", "soak"]);
 
@@ -25,6 +39,12 @@ type RollTarget = {
   label: string;
   value: number;
   category: "summary" | "stat" | "skill";
+};
+
+type EncounterParticipantView = {
+  participant: CombatEncounterParticipant;
+  character: CharacterRecord | null;
+  snapshot: CharacterEncounterSnapshot | null;
 };
 
 function formatEncounterTime(isoDateTime: string): string {
@@ -65,9 +85,236 @@ function D10Icon() {
   );
 }
 
+type CombatantPowerControlsProps = {
+  view: EncounterParticipantView;
+  encounterParticipants: EncounterParticipantView[];
+  updateCharacter: (
+    characterId: string,
+    updater:
+      | CharacterRecord["sheet"]
+      | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"])
+  ) => void;
+};
+
+function CombatantPowerControls({
+  view,
+  encounterParticipants,
+  updateCharacter,
+}: CombatantPowerControlsProps) {
+  const [selectedPowerId, setSelectedPowerId] = useState("");
+  const [selectedTargetId, setSelectedTargetId] = useState("");
+  const [selectedStatId, setSelectedStatId] = useState("");
+  const [castError, setCastError] = useState<string | null>(null);
+  const character = view.character;
+  const castablePowers = character ? getSupportedCastablePowers(character.sheet) : [];
+  const selectedPower =
+    castablePowers.find((power) => power.id === selectedPowerId) ?? castablePowers[0] ?? null;
+  const targetMode = selectedPower ? getCastPowerTargetMode(selectedPower) : "self";
+  const allowedStats = selectedPower ? getCastPowerAllowedStats(selectedPower) : [];
+  const targetOptions =
+    targetMode === "self"
+      ? encounterParticipants.filter(
+          ({ participant }) => participant.characterId === view.participant.characterId
+        )
+      : encounterParticipants.filter(({ character: candidateCharacter }) => candidateCharacter !== null);
+
+  useEffect(() => {
+    if (castablePowers.length === 0) {
+      setSelectedPowerId("");
+      return;
+    }
+
+    if (!selectedPowerId || !castablePowers.some((power) => power.id === selectedPowerId)) {
+      setSelectedPowerId(castablePowers[0].id);
+    }
+  }, [castablePowers, selectedPowerId]);
+
+  useEffect(() => {
+    if (!selectedPower) {
+      setSelectedTargetId("");
+      setSelectedStatId("");
+      return;
+    }
+
+    if (targetMode === "self") {
+      setSelectedTargetId(view.participant.characterId);
+    } else if (
+      !selectedTargetId ||
+      !targetOptions.some(({ participant }) => participant.characterId === selectedTargetId)
+    ) {
+      setSelectedTargetId(view.participant.characterId);
+    }
+
+    if (allowedStats.length === 0) {
+      setSelectedStatId("");
+    } else if (!allowedStats.includes(selectedStatId as typeof allowedStats[number])) {
+      setSelectedStatId(allowedStats[0]);
+    }
+  }, [
+    allowedStats,
+    selectedPower,
+    selectedStatId,
+    selectedTargetId,
+    targetMode,
+    targetOptions,
+    view.participant.characterId,
+  ]);
+
+  if (!character) {
+    return null;
+  }
+  const casterCharacter = character;
+
+  function handleCast(): void {
+    if (!selectedPower) {
+      setCastError("Select a supported power first.");
+      return;
+    }
+
+    const targetCharacter =
+      encounterParticipants.find(
+        ({ participant }) => participant.characterId === selectedTargetId
+      )?.character ?? null;
+
+    if (!targetCharacter) {
+      setCastError("Select a valid target before casting.");
+      return;
+    }
+
+    const builtEffect = buildActivePowerEffect({
+      casterCharacterId: casterCharacter.id,
+      casterName: casterCharacter.sheet.name.trim() || view.participant.displayName,
+      targetCharacterId: targetCharacter.id,
+      targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
+      power: selectedPower,
+      selectedStatId: selectedStatId ? (selectedStatId as StatId) : null,
+    });
+
+    if ("error" in builtEffect) {
+      setCastError(builtEffect.error);
+      return;
+    }
+
+    const spentMana = spendPowerMana(casterCharacter.sheet, builtEffect.manaCost);
+    if ("error" in spentMana) {
+      setCastError(spentMana.error);
+      return;
+    }
+
+    updateCharacter(casterCharacter.id, spentMana.sheet);
+    updateCharacter(targetCharacter.id, (currentSheet) =>
+      applyActivePowerEffect(currentSheet, builtEffect.effect)
+    );
+    setCastError(null);
+  }
+
+  return (
+    <div className="dm-stack">
+      <div>
+        <p className="section-kicker">Cast Power Mechanism</p>
+        <h3 className="dm-subheading">Active Power Effects</h3>
+        {castablePowers.length === 0 ? (
+          <p className="dm-summary-line">
+            This combatant has no supported castable powers in the first slice.
+          </p>
+        ) : (
+          <>
+            <div className="dm-power-form">
+              <label className="dm-field">
+                <span>Power</span>
+                <select
+                  value={selectedPower?.id ?? ""}
+                  onChange={(event) => setSelectedPowerId(event.target.value)}
+                >
+                  {castablePowers.map((power) => (
+                    <option key={power.id} value={power.id}>
+                      {power.name} Lv {power.level}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="dm-field">
+                <span>Target</span>
+                <select
+                  value={selectedTargetId}
+                  onChange={(event) => setSelectedTargetId(event.target.value)}
+                  disabled={targetMode === "self"}
+                >
+                  {targetOptions.map(({ participant }) => (
+                    <option key={participant.characterId} value={participant.characterId}>
+                      {participant.displayName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {allowedStats.length > 0 ? (
+                <label className="dm-field">
+                  <span>Stat</span>
+                  <select
+                    value={selectedStatId}
+                    onChange={(event) => setSelectedStatId(event.target.value)}
+                  >
+                    {allowedStats.map((statId) => (
+                      <option key={statId} value={statId}>
+                        {statId}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+
+            <div className="dm-control-row">
+              <button type="button" className="flow-primary" onClick={handleCast}>
+                Cast Selected Power
+              </button>
+            </div>
+
+            {castError ? <p className="dm-error">{castError}</p> : null}
+          </>
+        )}
+      </div>
+
+      <div>
+        <p className="section-kicker">Applied Effects</p>
+        {character.sheet.activePowerEffects.length === 0 ? (
+          <p className="dm-summary-line">No active power effects on this combatant.</p>
+        ) : (
+          <div className="dm-effect-list">
+            {character.sheet.activePowerEffects.map((effect) => (
+              <article key={effect.id} className="dm-effect-card">
+                <div>
+                  <strong>{effect.label}</strong>
+                  <small>{effect.summary}</small>
+                  <small>
+                    {effect.casterName} {"->"} {effect.powerName}
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  className="flow-secondary"
+                  onClick={() =>
+                    updateCharacter(character.id, (currentSheet) =>
+                      removeActivePowerEffect(currentSheet, effect.id)
+                    )
+                  }
+                >
+                  Remove
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function CombatEncounterPage() {
   const navigate = useNavigate();
-  const { roleChoice, activeCombatEncounter, characters } = useAppFlow();
+  const { roleChoice, activeCombatEncounter, characters, updateCharacter } = useAppFlow();
   const [isDiceOpen, setIsDiceOpen] = useState(false);
   const [dicePosition, setDicePosition] = useState({ x: 24, y: 24 });
   const [selectedCombatantId, setSelectedCombatantId] = useState("");
@@ -549,7 +796,10 @@ export function CombatEncounterPage() {
             <p className="section-kicker">Combatants Block</p>
             <h2>Initiative Order</h2>
             <div className="dm-accordion-list">
-              {encounterParticipants.map(({ participant, snapshot }, index) => (
+              {encounterParticipants.map((view, index) => {
+                const { participant, snapshot } = view;
+
+                return (
                 <details key={participant.characterId} className="dm-accordion">
                   <summary className="dm-accordion-summary">
                     <div>
@@ -581,6 +831,12 @@ export function CombatEncounterPage() {
                             Open Full Character Sheet
                           </button>
                         </div>
+
+                        <CombatantPowerControls
+                          view={view}
+                          encounterParticipants={encounterParticipants}
+                          updateCharacter={updateCharacter}
+                        />
 
                         <div className="dm-action-grid">
                           {snapshot.combatSummary.map((field) => (
@@ -650,7 +906,8 @@ export function CombatEncounterPage() {
                     )}
                   </div>
                 </details>
-              ))}
+                );
+              })}
             </div>
           </article>
         </section>
