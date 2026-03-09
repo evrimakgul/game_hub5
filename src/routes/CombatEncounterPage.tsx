@@ -7,17 +7,24 @@ import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
+  buildAuraSharedPowerEffect,
+  canSelectAuraTargets,
   getCastPowerAllowedStats,
+  getCastPowerModeOptions,
   getCastPowerTargetMode,
   getSupportedCastablePowers,
   removeActivePowerEffect,
+  removeAuraSharedEffectsBySource,
   spendPowerMana,
+  updateAuraSourceTargets,
 } from "../config/powerEffects";
 import { getRuntimePowerAbbreviation } from "../config/powerData.ts";
-import type { StatId } from "../config/characterTemplate";
+import type { PowerEntry, StatId } from "../config/characterTemplate";
 import { type CharacterRecord, useAppFlow } from "../state/appFlow";
+import type { ActivePowerEffect, ActivePowerShareMode } from "../types/activePowerEffects";
 import type {
   CharacterEncounterSnapshot,
+  CombatEncounterParty,
   CombatEncounterParticipant,
 } from "../types/combatEncounter";
 
@@ -47,6 +54,40 @@ type EncounterParticipantView = {
   participant: CombatEncounterParticipant;
   character: CharacterRecord | null;
   snapshot: CharacterEncounterSnapshot | null;
+};
+
+type CharacterSheetUpdater =
+  | CharacterRecord["sheet"]
+  | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"]);
+
+type PreparedCastRequest = {
+  casterCharacterId: string;
+  targetCharacterIds: string[];
+  manaCost: number;
+  effects: ActivePowerEffect[];
+};
+
+type PendingCastConfirmation = {
+  request: PreparedCastRequest;
+  warnings: string[];
+};
+
+type CastRequestPayload = {
+  casterCharacter: CharacterRecord;
+  casterDisplayName: string;
+  selectedPower: PowerEntry;
+  selectedTargetIds: string[];
+  fallbackTargetIds: string[];
+  selectedStatId: StatId | null;
+  castMode: ActivePowerShareMode;
+  encounterParticipants: EncounterParticipantView[];
+};
+
+type EncounterPartyMemberView = {
+  participant: CombatEncounterParticipant;
+  character: CharacterRecord;
+  currentHp: number;
+  maxHp: number;
 };
 
 function formatEncounterTime(isoDateTime: string): string {
@@ -89,12 +130,7 @@ function D10Icon() {
 
 type CombatantRuntimeAdjustmentsProps = {
   view: EncounterParticipantView;
-  updateCharacter: (
-    characterId: string,
-    updater:
-      | CharacterRecord["sheet"]
-      | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"])
-  ) => void;
+  updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
 
 function CombatantRuntimeAdjustments({
@@ -376,30 +412,23 @@ function CombatantRuntimeAdjustments({
 type CombatantPowerControlsProps = {
   view: EncounterParticipantView;
   encounterParticipants: EncounterParticipantView[];
-  updateCharacter: (
-    characterId: string,
-    updater:
-      | CharacterRecord["sheet"]
-      | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"])
-  ) => void;
+  requestCast: (payload: CastRequestPayload) => string | null;
+  updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
 
 function getReplacementWarnings(
   finalTargets: CharacterRecord[],
-  builtEffects: Array<ReturnType<typeof buildActivePowerEffect>>
+  builtEffects: ActivePowerEffect[]
 ): string[] {
   return finalTargets.flatMap((targetCharacter, index) => {
     const builtEffect = builtEffects[index];
-    if ("error" in builtEffect) {
-      return [];
-    }
 
     const existingEffect = (targetCharacter.sheet.activePowerEffects ?? []).find((effect) => {
       const sameStackKey =
-        typeof effect.stackKey === "string" && effect.stackKey === builtEffect.effect.stackKey;
+        typeof effect.stackKey === "string" && effect.stackKey === builtEffect.stackKey;
       const samePowerAndStat =
-        effect.powerId === builtEffect.effect.powerId &&
-        (effect.selectedStatId ?? null) === (builtEffect.effect.selectedStatId ?? null);
+        effect.powerId === builtEffect.powerId &&
+        (effect.selectedStatId ?? null) === (builtEffect.selectedStatId ?? null);
 
       return sameStackKey || samePowerAndStat;
     });
@@ -409,9 +438,7 @@ function getReplacementWarnings(
     }
 
     const targetName = targetCharacter.sheet.name.trim() || targetCharacter.id;
-    const statText = builtEffect.effect.selectedStatId
-      ? ` on ${builtEffect.effect.selectedStatId}`
-      : "";
+    const statText = builtEffect.selectedStatId ? ` on ${builtEffect.selectedStatId}` : "";
 
     return [
       `${targetName} already has ${existingEffect.label}${statText}. Recasting will replace it and still spend mana.`,
@@ -419,20 +446,81 @@ function getReplacementWarnings(
   });
 }
 
+function prepareCastRequest(
+  payload: CastRequestPayload
+): { error: string } | { request: PreparedCastRequest; warnings: string[] } {
+  const resolvedTargets = payload.selectedTargetIds
+    .map((targetId) =>
+      payload.encounterParticipants.find(({ participant }) => participant.characterId === targetId)
+        ?.character ?? null
+    )
+    .filter((targetCharacter): targetCharacter is CharacterRecord => targetCharacter !== null);
+  const fallbackTargets = payload.fallbackTargetIds
+    .map((targetId) =>
+      payload.encounterParticipants.find(({ participant }) => participant.characterId === targetId)
+        ?.character ?? null
+    )
+    .filter((targetCharacter): targetCharacter is CharacterRecord => targetCharacter !== null);
+  const finalTargets = resolvedTargets.length > 0 ? resolvedTargets : fallbackTargets;
+
+  if (finalTargets.length === 0) {
+    return { error: "Select at least one valid target before casting." };
+  }
+
+  const builtEffects = finalTargets.map((targetCharacter) =>
+    buildActivePowerEffect({
+      casterCharacterId: payload.casterCharacter.id,
+      casterName: payload.casterCharacter.sheet.name.trim() || payload.casterDisplayName,
+      targetCharacterId: targetCharacter.id,
+      targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
+      power: payload.selectedPower,
+      selectedStatId: payload.selectedStatId,
+      castMode: payload.castMode,
+    })
+  );
+  const buildError = builtEffects.find((effect) => "error" in effect);
+  if (buildError && "error" in buildError) {
+    return { error: buildError.error };
+  }
+
+  const effects = builtEffects.map((effect) => {
+    if ("error" in effect) {
+      throw new Error("Cast effect unexpectedly failed after validation.");
+    }
+
+    return effect.effect;
+  });
+
+  return {
+    request: {
+      casterCharacterId: payload.casterCharacter.id,
+      targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
+      manaCost: builtEffects[0] && !("error" in builtEffects[0]) ? builtEffects[0].manaCost : 0,
+      effects,
+    },
+    warnings: getReplacementWarnings(finalTargets, effects),
+  };
+}
+
 function CombatantPowerControls({
   view,
   encounterParticipants,
+  requestCast,
   updateCharacter,
 }: CombatantPowerControlsProps) {
   const [selectedPowerId, setSelectedPowerId] = useState("");
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [selectedStatId, setSelectedStatId] = useState("");
+  const [selectedCastMode, setSelectedCastMode] = useState<ActivePowerShareMode>("self");
   const [castError, setCastError] = useState<string | null>(null);
+  const [openAuraEffectId, setOpenAuraEffectId] = useState<string | null>(null);
   const character = view.character;
+  const auraPopoverRef = useRef<HTMLDivElement | null>(null);
   const castablePowers = character ? getSupportedCastablePowers(character.sheet) : [];
   const selectedPower =
     castablePowers.find((power) => power.id === selectedPowerId) ?? castablePowers[0] ?? null;
   const targetMode = selectedPower ? getCastPowerTargetMode(selectedPower) : "self";
+  const modeOptions = selectedPower ? getCastPowerModeOptions(selectedPower) : ["self"];
   const allowedStats = selectedPower ? getCastPowerAllowedStats(selectedPower) : [];
   const targetOptions =
     targetMode === "self"
@@ -450,9 +538,11 @@ function CombatantPowerControls({
         ? [targetOptions[0].participant.characterId]
         : [];
   const resolvedSingleTargetId = resolvedTargetIds[0] ?? "";
+  const resolvedCastMode = modeOptions.includes(selectedCastMode === "aura" ? "aura" : "self")
+    ? selectedCastMode
+    : modeOptions[0];
   const allowedStatsKey = allowedStats.join("|");
   const targetOptionIdsKey = targetOptions.map(({ participant }) => participant.characterId).join("|");
-  const resolvedTargetIdsKey = resolvedTargetIds.join("|");
 
   useEffect(() => {
     if (castablePowers.length === 0) {
@@ -464,6 +554,17 @@ function CombatantPowerControls({
       setSelectedPowerId(castablePowers[0].id);
     }
   }, [castablePowers, selectedPowerId]);
+
+  useEffect(() => {
+    if (!selectedPower) {
+      setSelectedCastMode("self");
+      return;
+    }
+
+    if (!modeOptions.includes(selectedCastMode === "aura" ? "aura" : "self")) {
+      setSelectedCastMode(modeOptions[0]);
+    }
+  }, [modeOptions, selectedCastMode, selectedPower]);
 
   useEffect(() => {
     if (!selectedPower) {
@@ -542,6 +643,33 @@ function CombatantPowerControls({
     return null;
   }
   const casterCharacter = character;
+  const shouldShowTargetField = selectedPower?.id === "body_reinforcement";
+  const shouldShowModeField = selectedPower?.id === "shadow_control" && modeOptions.length > 1;
+
+  useEffect(() => {
+    if (!openAuraEffectId) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent): void {
+      if (!auraPopoverRef.current?.contains(event.target as Node)) {
+        setOpenAuraEffectId(null);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setOpenAuraEffectId(null);
+      }
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [openAuraEffectId]);
 
   function toggleTarget(targetId: string): void {
     if (targetMode !== "multiple") {
@@ -562,85 +690,107 @@ function CombatantPowerControls({
       return;
     }
 
-    const resolvedTargets = selectedTargetIds
-      .map((targetId) =>
-        encounterParticipants.find(({ participant }) => participant.characterId === targetId)
-          ?.character ?? null
-      )
-      .filter((targetCharacter): targetCharacter is CharacterRecord => targetCharacter !== null);
-    const fallbackTargets = resolvedTargetIds
-      .map((targetId) =>
-        encounterParticipants.find(({ participant }) => participant.characterId === targetId)
-          ?.character ?? null
-      )
-      .filter((targetCharacter): targetCharacter is CharacterRecord => targetCharacter !== null);
-    const finalTargets = resolvedTargets.length > 0 ? resolvedTargets : fallbackTargets;
+    const error = requestCast({
+      casterCharacter,
+      casterDisplayName: view.participant.displayName,
+      selectedPower,
+      selectedTargetIds,
+      fallbackTargetIds: resolvedTargetIds,
+      selectedStatId: resolvedSelectedStatId || null,
+      castMode: resolvedCastMode,
+      encounterParticipants,
+    });
+    setCastError(error);
+  }
 
-    if (finalTargets.length === 0) {
-      setCastError("Select at least one valid target before casting.");
+  function handleRemoveEffect(effect: ActivePowerEffect): void {
+    if (effect.effectKind === "aura_source") {
+      getAuraSelectedTargetIds(effect)
+        .filter((targetId) => targetId !== effect.casterCharacterId)
+        .forEach((targetId) => {
+          updateCharacter(targetId, (currentSheet) =>
+            removeAuraSharedEffectsBySource(currentSheet, effect.id)
+          );
+        });
+      setOpenAuraEffectId((currentEffectId) => (currentEffectId === effect.id ? null : currentEffectId));
+      updateCharacter(character.id, (currentSheet) => removeActivePowerEffect(currentSheet, effect.id));
       return;
     }
 
-    const builtEffects = finalTargets.map((targetCharacter) =>
-      buildActivePowerEffect({
-        casterCharacterId: casterCharacter.id,
-        casterName: casterCharacter.sheet.name.trim() || view.participant.displayName,
-        targetCharacterId: targetCharacter.id,
-        targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
-        power: selectedPower,
-        selectedStatId: resolvedSelectedStatId || null,
-      })
+    if (effect.effectKind === "aura_shared" && effect.sourceEffectId) {
+      updateCharacter(effect.casterCharacterId, (currentSheet) => {
+        const sourceEffect = (currentSheet.activePowerEffects ?? []).find(
+          (candidate) => candidate.id === effect.sourceEffectId
+        );
+        if (!sourceEffect) {
+          return currentSheet;
+        }
+
+        return updateAuraSourceTargets(
+          currentSheet,
+          effect.sourceEffectId,
+          getAuraSelectedTargetIds(sourceEffect).filter((targetId) => targetId !== character.id)
+        );
+      });
+    }
+
+    updateCharacter(character.id, (currentSheet) => removeActivePowerEffect(currentSheet, effect.id));
+  }
+
+  function toggleAuraTarget(sourceEffect: ActivePowerEffect, targetId: string): void {
+    if (targetId === sourceEffect.casterCharacterId) {
+      return;
+    }
+
+    const currentTargetIds = getAuraSelectedTargetIds(sourceEffect);
+    const nextTargetIds = currentTargetIds.includes(targetId)
+      ? currentTargetIds.filter((entryId) => entryId !== targetId)
+      : [...currentTargetIds, targetId];
+
+    updateCharacter(sourceEffect.casterCharacterId, (currentSheet) =>
+      updateAuraSourceTargets(currentSheet, sourceEffect.id, nextTargetIds)
     );
 
-    const buildError = builtEffects.find((effect) => "error" in effect);
-    if (buildError && "error" in buildError) {
-      setCastError(buildError.error);
-      return;
-    }
-
-    const replacementWarnings = getReplacementWarnings(finalTargets, builtEffects);
-    if (replacementWarnings.length > 0) {
-      const confirmed = window.confirm(
-        `${replacementWarnings.join("\n")}\n\nProceed and replace the existing effect?`
+    if (currentTargetIds.includes(targetId)) {
+      updateCharacter(targetId, (currentSheet) =>
+        removeAuraSharedEffectsBySource(currentSheet, sourceEffect.id)
       );
-      if (!confirmed) {
-        setCastError(null);
-        return;
-      }
-    }
-
-    const manaCost =
-      builtEffects[0] && !("error" in builtEffects[0]) ? builtEffects[0].manaCost : 0;
-    const spentMana = spendPowerMana(casterCharacter.sheet, manaCost);
-    if ("error" in spentMana) {
-      setCastError(spentMana.error);
       return;
     }
 
-    if (finalTargets.length === 1 && finalTargets[0].id === casterCharacter.id) {
-      const builtEffect = builtEffects[0];
-      if (!builtEffect || "error" in builtEffect) {
-        setCastError("Cast effect could not be resolved.");
-        return;
-      }
-
-      updateCharacter(casterCharacter.id, applyActivePowerEffect(spentMana.sheet, builtEffect.effect));
-      setCastError(null);
+    const targetCharacter =
+      encounterParticipants.find(({ participant }) => participant.characterId === targetId)?.character ?? null;
+    if (!targetCharacter) {
       return;
     }
 
-    updateCharacter(casterCharacter.id, spentMana.sheet);
-    finalTargets.forEach((targetCharacter, index) => {
-      const builtEffect = builtEffects[index];
-      if ("error" in builtEffect) {
-        return;
-      }
+    const conflictingAura = (targetCharacter.sheet.activePowerEffects ?? []).find(
+      (candidate) =>
+        candidate.effectKind === "aura_shared" &&
+        candidate.stackKey === sourceEffect.stackKey &&
+        candidate.sourceEffectId !== sourceEffect.id
+    );
 
-      updateCharacter(targetCharacter.id, (currentSheet) =>
-        applyActivePowerEffect(currentSheet, builtEffect.effect)
-      );
-    });
-    setCastError(null);
+    if (conflictingAura?.sourceEffectId) {
+      updateCharacter(conflictingAura.casterCharacterId, (currentSheet) => {
+        const existingSourceEffect = (currentSheet.activePowerEffects ?? []).find(
+          (candidate) => candidate.id === conflictingAura.sourceEffectId
+        );
+        if (!existingSourceEffect) {
+          return currentSheet;
+        }
+
+        return updateAuraSourceTargets(
+          currentSheet,
+          conflictingAura.sourceEffectId,
+          getAuraSelectedTargetIds(existingSourceEffect).filter((entryId) => entryId !== targetId)
+        );
+      });
+    }
+
+    updateCharacter(targetId, (currentSheet) =>
+      applyActivePowerEffect(currentSheet, buildAuraSharedPowerEffect(sourceEffect, targetId))
+    );
   }
 
   return (
@@ -669,39 +819,56 @@ function CombatantPowerControls({
                 </select>
               </label>
 
-              <label className="dm-field">
-                <span>Target</span>
-                {targetMode === "multiple" ? (
-                  <div className="dm-target-multi-grid">
-                    {targetOptions.map(({ participant }) => {
-                      const isSelected = selectedTargetIds.includes(participant.characterId);
+              {shouldShowTargetField ? (
+                <label className="dm-field">
+                  <span>Target</span>
+                  {targetMode === "multiple" ? (
+                    <div className="dm-target-multi-grid">
+                      {targetOptions.map(({ participant }) => {
+                        const isSelected = selectedTargetIds.includes(participant.characterId);
 
-                      return (
-                        <button
-                          key={participant.characterId}
-                          type="button"
-                          className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
-                          onClick={() => toggleTarget(participant.characterId)}
-                        >
+                        return (
+                          <button
+                            key={participant.characterId}
+                            type="button"
+                            className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
+                            onClick={() => toggleTarget(participant.characterId)}
+                          >
+                            {participant.displayName}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <select
+                      value={resolvedSingleTargetId}
+                      onChange={(event) => setSelectedTargetIds([event.target.value])}
+                      disabled={targetMode === "self"}
+                    >
+                      {targetOptions.map(({ participant }) => (
+                        <option key={participant.characterId} value={participant.characterId}>
                           {participant.displayName}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </label>
+              ) : null}
+
+              {shouldShowModeField ? (
+                <label className="dm-field">
+                  <span>Mode</span>
                   <select
-                    value={resolvedSingleTargetId}
-                    onChange={(event) => setSelectedTargetIds([event.target.value])}
-                    disabled={targetMode === "self"}
+                    value={resolvedCastMode ?? "self"}
+                    onChange={(event) =>
+                      setSelectedCastMode(event.target.value === "aura" ? "aura" : "self")
+                    }
                   >
-                    {targetOptions.map(({ participant }) => (
-                      <option key={participant.characterId} value={participant.characterId}>
-                        {participant.displayName}
-                      </option>
-                    ))}
+                    <option value="self">Self</option>
+                    <option value="aura">Aura</option>
                   </select>
-                )}
-              </label>
+                </label>
+              ) : null}
 
               {allowedStats.length > 0 ? (
                 <label className="dm-field">
@@ -746,17 +913,58 @@ function CombatantPowerControls({
                     {effect.casterName} {"->"} {effect.powerName}
                   </small>
                 </div>
-                <button
-                  type="button"
-                  className="flow-secondary"
-                  onClick={() =>
-                    updateCharacter(character.id, (currentSheet) =>
-                      removeActivePowerEffect(currentSheet, effect.id)
-                    )
-                  }
-                >
-                  Remove
-                </button>
+                <div className="dm-effect-actions">
+                  {effect.effectKind === "aura_source" ? (
+                    <button
+                      type="button"
+                      className="flow-secondary"
+                      disabled={!canSelectAuraTargets(effect)}
+                      onClick={() =>
+                        canSelectAuraTargets(effect)
+                          ? setOpenAuraEffectId((currentEffectId) =>
+                              currentEffectId === effect.id ? null : effect.id
+                            )
+                          : null
+                      }
+                    >
+                      Select Affected Targets
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="flow-secondary"
+                    onClick={() => handleRemoveEffect(effect)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                {openAuraEffectId === effect.id && canSelectAuraTargets(effect) ? (
+                  <div ref={auraPopoverRef} className="dm-aura-popover">
+                    <p className="section-kicker">Affected Targets</p>
+                    <div className="dm-target-multi-grid">
+                      {encounterParticipants
+                        .filter(({ character: candidateCharacter }) => candidateCharacter !== null)
+                        .map(({ participant }) => {
+                          const isSelf = participant.characterId === effect.casterCharacterId;
+                          const isSelected = getAuraSelectedTargetIds(effect).includes(
+                            participant.characterId
+                          );
+
+                          return (
+                            <button
+                              key={participant.characterId}
+                              type="button"
+                              className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
+                              disabled={isSelf}
+                              onClick={() => toggleAuraTarget(effect, participant.characterId)}
+                            >
+                              {participant.displayName}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>
@@ -768,7 +976,16 @@ function CombatantPowerControls({
 
 export function CombatEncounterPage() {
   const navigate = useNavigate();
-  const { roleChoice, activeCombatEncounter, characters, updateCharacter } = useAppFlow();
+  const {
+    roleChoice,
+    activeCombatEncounter,
+    characters,
+    updateCharacter,
+    updateCombatEncounter,
+  } = useAppFlow();
+  const [pendingCastConfirmation, setPendingCastConfirmation] =
+    useState<PendingCastConfirmation | null>(null);
+  const [pendingCastError, setPendingCastError] = useState<string | null>(null);
   const [isDiceOpen, setIsDiceOpen] = useState(false);
   const [dicePosition, setDicePosition] = useState({ x: 24, y: 24 });
   const [selectedCombatantId, setSelectedCombatantId] = useState("");
@@ -820,6 +1037,112 @@ export function CombatEncounterPage() {
     );
   }
 
+  function moveEncounterParticipantToParty(
+    characterId: string,
+    partyId: string | null
+  ): void {
+    updateCombatEncounter((currentEncounter) => ({
+      ...currentEncounter,
+      participants: currentEncounter.participants.map((participant) =>
+        participant.characterId === characterId
+          ? {
+              ...participant,
+              partyId,
+            }
+          : participant
+      ),
+    }));
+  }
+
+  function executePreparedCast(request: PreparedCastRequest): string | null {
+    const casterCharacter = characters.find((entry) => entry.id === request.casterCharacterId);
+    if (!casterCharacter) {
+      return "The casting character no longer resolves to a saved character sheet.";
+    }
+
+    const spentMana = spendPowerMana(casterCharacter.sheet, request.manaCost);
+    if ("error" in spentMana) {
+      return spentMana.error;
+    }
+
+    const auraSourceEffects = request.effects.filter((effect) => effect.effectKind === "aura_source");
+    auraSourceEffects.forEach((sourceEffect) => {
+      (casterCharacter.sheet.activePowerEffects ?? [])
+        .filter(
+          (existingEffect) =>
+            existingEffect.effectKind === "aura_source" && existingEffect.stackKey === sourceEffect.stackKey
+        )
+        .forEach((existingEffect) => {
+          getAuraSelectedTargetIds(existingEffect)
+            .filter((targetId) => targetId !== casterCharacter.id)
+            .forEach((targetId) => {
+              updateCharacter(targetId, (currentSheet) =>
+                removeAuraSharedEffectsBySource(currentSheet, existingEffect.id)
+              );
+            });
+        });
+    });
+
+    const isSelfCast =
+      request.targetCharacterIds.length === 1 && request.targetCharacterIds[0] === casterCharacter.id;
+
+    if (isSelfCast) {
+      const selfEffect = request.effects[0];
+      if (!selfEffect) {
+        return "Cast effect could not be resolved.";
+      }
+
+      updateCharacter(casterCharacter.id, applyActivePowerEffect(spentMana.sheet, selfEffect));
+      return null;
+    }
+
+    updateCharacter(casterCharacter.id, spentMana.sheet);
+    request.effects.forEach((effect) => {
+      updateCharacter(effect.targetCharacterId, (currentSheet) =>
+        applyActivePowerEffect(currentSheet, effect)
+      );
+    });
+    return null;
+  }
+
+  function requestCast(payload: CastRequestPayload): string | null {
+    const prepared = prepareCastRequest(payload);
+    if ("error" in prepared) {
+      return prepared.error;
+    }
+
+    setPendingCastError(null);
+    if (prepared.warnings.length > 0) {
+      setPendingCastConfirmation({
+        request: prepared.request,
+        warnings: prepared.warnings,
+      });
+      return null;
+    }
+
+    return executePreparedCast(prepared.request);
+  }
+
+  function closePendingCastConfirmation(): void {
+    setPendingCastConfirmation(null);
+    setPendingCastError(null);
+  }
+
+  function confirmPendingCast(): void {
+    if (!pendingCastConfirmation) {
+      return;
+    }
+
+    const error = executePreparedCast(pendingCastConfirmation.request);
+    if (error) {
+      setPendingCastError(error);
+      return;
+    }
+
+    setPendingCastConfirmation(null);
+    setPendingCastError(null);
+  }
+
   const encounterParticipants = activeCombatEncounter
     ? activeCombatEncounter.participants.map((participant) => {
         const character = characters.find((entry) => entry.id === participant.characterId) ?? null;
@@ -832,6 +1155,8 @@ export function CombatEncounterPage() {
         };
       })
     : [];
+  const encounterParties = activeCombatEncounter?.parties ?? [];
+  const unassignedEncounterMembers = getEncounterPartyMembers(encounterParticipants, null);
 
   const selectedCombatant =
     encounterParticipants.find(({ participant }) => participant.characterId === selectedCombatantId) ??
@@ -897,6 +1222,24 @@ export function CombatEncounterPage() {
     setCustomRollInput("");
     setLastRoll(null);
   }, [selectedCombatantId]);
+
+  useEffect(() => {
+    if (!pendingCastConfirmation) {
+      return;
+    }
+
+    function handleEscape(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setPendingCastConfirmation(null);
+        setPendingCastError(null);
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [pendingCastConfirmation]);
 
   if (roleChoice !== "dm") {
     return <Navigate to="/role" replace />;
@@ -1247,6 +1590,143 @@ export function CombatEncounterPage() {
           </article>
 
           <article className="sheet-card dm-log-card">
+            <p className="section-kicker">Parties</p>
+            <h2>Encounter Parties</h2>
+            <div className="dm-party-grid">
+              {encounterParties.map((party) => {
+                const partyMembers = getEncounterPartyMembers(encounterParticipants, party.partyId);
+
+                return (
+                  <section key={party.partyId} className="dm-party-card">
+                    <div className="dm-party-card-head">
+                      <strong>{party.label}</strong>
+                      <small>
+                        {party.kind === "players"
+                          ? "Player Party"
+                          : party.kind === "npcs"
+                            ? "NPC Party"
+                            : "Custom Party"}
+                      </small>
+                    </div>
+                    <div className="dm-party-member-list">
+                      {partyMembers.length === 0 ? (
+                        <p className="empty-block-copy">No combatants assigned.</p>
+                      ) : (
+                        partyMembers.map((member) => {
+                          const hpPercent =
+                            member.maxHp > 0
+                              ? Math.max(0, Math.min(100, (member.currentHp / member.maxHp) * 100))
+                              : 0;
+
+                          return (
+                            <div key={member.participant.characterId} className="dm-party-member-card">
+                              <div className="dm-party-hp-row">
+                                <span>{member.participant.displayName}</span>
+                                <strong>
+                                  {member.currentHp} / {member.maxHp}
+                                </strong>
+                              </div>
+                              <div className="dm-party-hp-bar" aria-hidden="true">
+                                <div
+                                  className="dm-party-hp-fill"
+                                  style={{ width: `${hpPercent}%` }}
+                                />
+                              </div>
+                              <div className="dm-selection-controls">
+                                <select
+                                  value={member.participant.partyId ?? ""}
+                                  onChange={(event) =>
+                                    moveEncounterParticipantToParty(
+                                      member.participant.characterId,
+                                      event.target.value || null
+                                    )
+                                  }
+                                >
+                                  {encounterParties.map((destinationParty) => (
+                                    <option
+                                      key={destinationParty.partyId}
+                                      value={destinationParty.partyId}
+                                    >
+                                      {destinationParty.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    moveEncounterParticipantToParty(
+                                      member.participant.characterId,
+                                      null
+                                    )
+                                  }
+                                >
+                                  Remove from Party
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </section>
+                );
+              })}
+
+              {unassignedEncounterMembers.length > 0 ? (
+                <section className="dm-party-card">
+                  <div className="dm-party-card-head">
+                    <strong>Unassigned</strong>
+                    <small>Encounter Only</small>
+                  </div>
+                  <div className="dm-party-member-list">
+                    {unassignedEncounterMembers.map((member) => {
+                      const hpPercent =
+                        member.maxHp > 0
+                          ? Math.max(0, Math.min(100, (member.currentHp / member.maxHp) * 100))
+                          : 0;
+
+                      return (
+                        <div key={member.participant.characterId} className="dm-party-member-card">
+                          <div className="dm-party-hp-row">
+                            <span>{member.participant.displayName}</span>
+                            <strong>
+                              {member.currentHp} / {member.maxHp}
+                            </strong>
+                          </div>
+                          <div className="dm-party-hp-bar" aria-hidden="true">
+                            <div
+                              className="dm-party-hp-fill"
+                              style={{ width: `${hpPercent}%` }}
+                            />
+                          </div>
+                          <div className="dm-selection-controls">
+                            <select
+                              value=""
+                              onChange={(event) =>
+                                moveEncounterParticipantToParty(
+                                  member.participant.characterId,
+                                  event.target.value || null
+                                )
+                              }
+                            >
+                              <option value="">Choose party</option>
+                              {encounterParties.map((destinationParty) => (
+                                <option key={destinationParty.partyId} value={destinationParty.partyId}>
+                                  {destinationParty.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          </article>
+
+          <article className="sheet-card dm-log-card">
             <p className="section-kicker">Combatants Block</p>
             <h2>Initiative Order</h2>
             <div className="dm-accordion-list">
@@ -1300,6 +1780,7 @@ export function CombatEncounterPage() {
                           <CombatantPowerControls
                             view={view}
                             encounterParticipants={encounterParticipants}
+                            requestCast={requestCast}
                             updateCharacter={updateCharacter}
                           />
                         </div>
@@ -1377,6 +1858,69 @@ export function CombatEncounterPage() {
           </article>
         </section>
       </section>
+
+      {pendingCastConfirmation ? (
+        <div
+          className="dm-confirm-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closePendingCastConfirmation();
+            }
+          }}
+        >
+          <div
+            className="dm-confirm-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dm-confirm-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <p className="section-kicker">Warning</p>
+            <h2 id="dm-confirm-title">Replace Existing Effect?</h2>
+            <div className="dm-confirm-copy">
+              {pendingCastConfirmation.warnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+              <p>Proceed and replace the existing effect?</p>
+            </div>
+            {pendingCastError ? <p className="dm-error">{pendingCastError}</p> : null}
+            <div className="dm-confirm-actions">
+              <button type="button" className="flow-secondary" onClick={closePendingCastConfirmation}>
+                Cancel
+              </button>
+              <button type="button" className="flow-primary" onClick={confirmPendingCast}>
+                Confirm Cast
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
+}
+
+function getAuraSelectedTargetIds(effect: ActivePowerEffect): string[] {
+  const targetIds = effect.sharedTargetCharacterIds ?? [effect.casterCharacterId];
+  return Array.from(new Set([effect.casterCharacterId, ...targetIds]));
+}
+
+function getEncounterPartyMembers(
+  encounterParticipants: EncounterParticipantView[],
+  partyId: string | null
+): EncounterPartyMemberView[] {
+  return encounterParticipants.flatMap((view) => {
+    if (!view.character || view.participant.partyId !== partyId) {
+      return [];
+    }
+
+    const derived = buildCharacterDerivedValues(view.character.sheet);
+    return [
+      {
+        participant: view.participant,
+        character: view.character,
+        currentHp: view.character.sheet.currentHp,
+        maxHp: derived.maxHp,
+      },
+    ];
+  });
 }

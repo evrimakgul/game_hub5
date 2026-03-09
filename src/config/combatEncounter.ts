@@ -13,6 +13,7 @@ import {
 } from "./characterRuntime.ts";
 import type {
   CharacterEncounterSnapshot,
+  CombatEncounterParty,
   CombatEncounterParticipantInput,
   CombatEncounterState,
   EncounterBreakdownField,
@@ -33,7 +34,8 @@ function rollInitiativePool(poolSize: number): number[] {
 export function buildEncounterParticipantInput(
   characterId: string,
   ownerRole: "player" | "dm",
-  sheet: CharacterDraft
+  sheet: CharacterDraft,
+  partyId: string | null
 ): CombatEncounterParticipantInput {
   return {
     characterId,
@@ -41,16 +43,27 @@ export function buildEncounterParticipantInput(
     displayName: sheet.name.trim() || "Unnamed Character",
     dex: getCurrentStatValue(sheet, "DEX"),
     wits: getCurrentStatValue(sheet, "WITS"),
+    partyId,
   };
 }
 
 export function createCombatEncounter(
   label: string,
-  participants: CombatEncounterParticipantInput[]
+  participants: CombatEncounterParticipantInput[],
+  parties: CombatEncounterParty[]
 ): CombatEncounterState {
   if (participants.length === 0) {
     throw new RangeError("Add at least one combatant before starting the encounter.");
   }
+
+  const uniquePartyIds = new Set<string>();
+  parties.forEach((party) => {
+    if (uniquePartyIds.has(party.partyId)) {
+      throw new RangeError(`Duplicate party detected: ${party.partyId}`);
+    }
+
+    uniquePartyIds.add(party.partyId);
+  });
 
   const uniqueIds = new Set<string>();
   const resolvedParticipants = participants.map((participant) => {
@@ -59,6 +72,11 @@ export function createCombatEncounter(
     }
 
     uniqueIds.add(participant.characterId);
+    if (participant.partyId !== null && !uniquePartyIds.has(participant.partyId)) {
+      throw new RangeError(
+        `Combatant ${participant.displayName} was assigned to an unknown party.`
+      );
+    }
 
     const initiativePool = Math.max(0, calculateInitiative(participant.dex, participant.wits));
     const initiativeFaces =
@@ -83,6 +101,7 @@ export function createCombatEncounter(
       initiativeSuccesses,
       dex: participant.dex,
       wits: participant.wits,
+      partyId: participant.partyId,
     };
   });
 
@@ -109,6 +128,7 @@ export function createCombatEncounter(
   return {
     encounterId: `encounter-${Date.now()}`,
     label: label.trim() || "Combat Encounter",
+    parties: [...parties],
     participants: resolvedParticipants,
     createdAt: new Date().toISOString(),
   };

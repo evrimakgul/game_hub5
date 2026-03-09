@@ -559,12 +559,24 @@ function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
       {
         id: effectId,
         stackKey,
+        effectKind:
+          entry.effectKind === "aura_source" || entry.effectKind === "aura_shared"
+            ? entry.effectKind
+            : "direct",
         powerId,
         powerName: coerceString(entry.powerName, powerId),
         sourceLevel: Math.max(0, Math.trunc(coerceNumber(entry.sourceLevel, 0))),
         casterCharacterId: coerceString(entry.casterCharacterId, ""),
         casterName: coerceString(entry.casterName, "Unknown Caster"),
         targetCharacterId,
+        sourceEffectId:
+          typeof entry.sourceEffectId === "string" ? entry.sourceEffectId : null,
+        shareMode:
+          entry.shareMode === "self" || entry.shareMode === "aura" ? entry.shareMode : null,
+        sharedTargetCharacterIds: Array.isArray(entry.sharedTargetCharacterIds)
+          ? entry.sharedTargetCharacterIds
+              .filter((targetId): targetId is string => typeof targetId === "string")
+          : null,
         label: coerceString(entry.label, powerId),
         summary: coerceString(entry.summary, ""),
         actionType: typeof entry.actionType === "string" ? entry.actionType : null,

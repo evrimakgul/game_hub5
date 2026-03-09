@@ -1,4 +1,11 @@
 export type CombatEncounterOwnerRole = "player" | "dm";
+export type CombatEncounterPartyKind = "players" | "npcs" | "custom";
+
+export type CombatEncounterParty = {
+  partyId: string;
+  label: string;
+  kind: CombatEncounterPartyKind;
+};
 
 export type CombatEncounterParticipantInput = {
   characterId: string;
@@ -6,6 +13,7 @@ export type CombatEncounterParticipantInput = {
   displayName: string;
   dex: number;
   wits: number;
+  partyId: string | null;
   initiativeFaces?: number[];
 };
 
@@ -18,11 +26,13 @@ export type CombatEncounterParticipant = {
   initiativeSuccesses: number;
   dex: number;
   wits: number;
+  partyId: string | null;
 };
 
 export type CombatEncounterState = {
   encounterId: string;
   label: string;
+  parties: CombatEncounterParty[];
   participants: CombatEncounterParticipant[];
   createdAt: string;
 };

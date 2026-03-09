@@ -1,9 +1,15 @@
-import type { ActivePowerEffect, ActivePowerEffectModifier } from "../types/activePowerEffects";
+import type {
+  ActivePowerEffect,
+  ActivePowerEffectKind,
+  ActivePowerEffectModifier,
+  ActivePowerShareMode,
+} from "../types/activePowerEffects";
 import type { CharacterDraft, PowerEntry, StatId } from "./characterTemplate.ts";
 import { buildCharacterDerivedValues } from "./characterRuntime.ts";
 import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 
 export type CastPowerTargetMode = "self" | "single" | "multiple";
+export type CastPowerMode = "self" | "aura";
 
 export type CastPowerBuildRequest = {
   casterCharacterId: string;
@@ -12,6 +18,7 @@ export type CastPowerBuildRequest = {
   targetName: string;
   power: PowerEntry;
   selectedStatId?: StatId | null;
+  castMode?: CastPowerMode | null;
 };
 
 type CastPowerBuildSuccess = {
@@ -46,20 +53,30 @@ function createEffect(
   manaCost: number,
   actionType: string | null,
   stackKey: string,
+  effectKind: ActivePowerEffectKind,
   label: string,
   summary: string,
   selectedStatId: StatId | null,
-  modifiers: ActivePowerEffectModifier[]
+  modifiers: ActivePowerEffectModifier[],
+  options?: {
+    sourceEffectId?: string | null;
+    shareMode?: ActivePowerShareMode;
+    sharedTargetCharacterIds?: string[] | null;
+  }
 ): ActivePowerEffect {
   return {
     id: `power-effect-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     stackKey,
+    effectKind,
     powerId: request.power.id,
     powerName: request.power.name,
     sourceLevel: request.power.level,
     casterCharacterId: request.casterCharacterId,
     casterName: request.casterName,
     targetCharacterId: request.targetCharacterId,
+    sourceEffectId: options?.sourceEffectId ?? null,
+    shareMode: options?.shareMode ?? null,
+    sharedTargetCharacterIds: options?.sharedTargetCharacterIds ?? null,
     label,
     summary,
     actionType,
@@ -84,15 +101,11 @@ export function getSupportedCastablePowers(sheet: CharacterDraft): PowerEntry[] 
 
 export function getCastPowerTargetMode(power: PowerEntry): CastPowerTargetMode {
   if (power.id === "light_support") {
-    return "multiple";
-  }
-
-  if (power.id === "shadow_control" && power.level < 4) {
     return "self";
   }
 
-  if (power.id === "shadow_control" && power.level >= 4) {
-    return "multiple";
+  if (power.id === "shadow_control") {
+    return "self";
   }
 
   if (power.id === "body_reinforcement" && power.level === 1) {
@@ -114,6 +127,14 @@ export function getCastPowerAllowedStats(power: PowerEntry): StatId[] {
   }
 
   return allowedStats.filter(isStatId);
+}
+
+export function getCastPowerModeOptions(power: PowerEntry): CastPowerMode[] {
+  if (power.id === "shadow_control" && power.level >= 4) {
+    return ["self", "aura"];
+  }
+
+  return ["self"];
 }
 
 export function buildActivePowerEffect(
@@ -162,6 +183,7 @@ export function buildActivePowerEffect(
         manaCost,
         actionType,
         `body_reinforcement:${request.selectedStatId}`,
+        "direct",
         `${request.power.name} Lv ${request.power.level}`,
         joinSummary(summaryParts),
         request.selectedStatId,
@@ -217,11 +239,16 @@ export function buildActivePowerEffect(
         request,
         manaCost,
         actionType,
-        "light_support",
+        "light_support:aura",
+        "aura_source",
         `${request.power.name} Lv ${request.power.level}`,
         joinSummary(summaryParts),
         null,
-        modifiers
+        modifiers,
+        {
+          shareMode: "aura",
+          sharedTargetCharacterIds: [request.casterCharacterId],
+        }
       ),
       manaCost,
     };
@@ -240,9 +267,9 @@ export function buildActivePowerEffect(
     const intimidationBonus = asNumber(cloak.intimidation_skill_bonus);
     const armorClassBonus = asNumber(cloak.armor_class_bonus);
     const resolvedManaCost =
-      request.targetCharacterId === request.casterCharacterId
-        ? asNumber(manaCostVariants.self_only) || manaCost
-        : asNumber(manaCostVariants.shared_with_allies) || manaCost;
+      request.castMode === "aura"
+        ? asNumber(manaCostVariants.shared_with_allies) || manaCost
+        : asNumber(manaCostVariants.self_only) || manaCost;
     const modifiers: ActivePowerEffectModifier[] = [];
     const summaryParts: string[] = [];
 
@@ -281,11 +308,18 @@ export function buildActivePowerEffect(
         request,
         resolvedManaCost,
         actionType,
-        "shadow_control:cloak",
+        request.castMode === "aura"
+          ? "shadow_control:cloak:aura"
+          : "shadow_control:cloak:self",
+        "aura_source",
         `${request.power.name} Lv ${request.power.level}`,
         joinSummary(summaryParts),
         null,
-        modifiers
+        modifiers,
+        {
+          shareMode: request.castMode === "aura" ? "aura" : "self",
+          sharedTargetCharacterIds: [request.casterCharacterId],
+        }
       ),
       manaCost: resolvedManaCost,
     };
@@ -310,6 +344,56 @@ export function applyActivePowerEffect(
       ),
       effect,
     ],
+  };
+}
+
+export function buildAuraSharedPowerEffect(
+  sourceEffect: ActivePowerEffect,
+  targetCharacterId: string
+): ActivePowerEffect {
+  return {
+    ...sourceEffect,
+    id: `power-effect-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    effectKind: "aura_shared",
+    targetCharacterId,
+    sourceEffectId: sourceEffect.id,
+    sharedTargetCharacterIds: null,
+    manaCost: null,
+    appliedAt: new Date().toISOString(),
+  };
+}
+
+export function canSelectAuraTargets(effect: ActivePowerEffect): boolean {
+  return effect.effectKind === "aura_source" && effect.shareMode === "aura";
+}
+
+export function updateAuraSourceTargets(
+  sheet: CharacterDraft,
+  sourceEffectId: string,
+  targetCharacterIds: string[]
+): CharacterDraft {
+  return {
+    ...sheet,
+    activePowerEffects: (sheet.activePowerEffects ?? []).map((effect) =>
+      effect.id === sourceEffectId
+        ? {
+            ...effect,
+            sharedTargetCharacterIds: [...targetCharacterIds],
+          }
+        : effect
+    ),
+  };
+}
+
+export function removeAuraSharedEffectsBySource(
+  sheet: CharacterDraft,
+  sourceEffectId: string
+): CharacterDraft {
+  return {
+    ...sheet,
+    activePowerEffects: (sheet.activePowerEffects ?? []).filter(
+      (effect) => effect.sourceEffectId !== sourceEffectId
+    ),
   };
 }
 

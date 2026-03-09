@@ -51,6 +51,11 @@ type AppFlowContextValue = {
     updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
   ) => void;
   beginCombatEncounter: (encounter: CombatEncounterState) => void;
+  updateCombatEncounter: (
+    updater:
+      | CombatEncounterState
+      | ((current: CombatEncounterState) => CombatEncounterState)
+  ) => void;
   clearCombatEncounter: () => void;
 };
 
@@ -314,6 +319,20 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     setActiveCombatEncounter(encounter);
   }
 
+  function updateCombatEncounter(
+    updater:
+      | CombatEncounterState
+      | ((current: CombatEncounterState) => CombatEncounterState)
+  ): void {
+    setActiveCombatEncounter((currentEncounter) => {
+      if (!currentEncounter) {
+        return currentEncounter;
+      }
+
+      return typeof updater === "function" ? updater(currentEncounter) : updater;
+    });
+  }
+
   function clearCombatEncounter(): void {
     setActiveCombatEncounter(null);
   }
@@ -334,6 +353,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         deleteCharacter,
         updateCharacter,
         beginCombatEncounter,
+        updateCombatEncounter,
         clearCombatEncounter,
       }}
     >
