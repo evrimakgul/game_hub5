@@ -15,15 +15,15 @@ export function DmNpcCreatorPage() {
   }
 
   function handleCreateCharacter(): void {
-    createCharacter("dm");
+    const characterId = createCharacter("dm");
     setPendingDeleteId(null);
-    navigate("/dm/npc-character");
+    navigate(`/dm/npc-character?characterId=${encodeURIComponent(characterId)}`);
   }
 
   function handleOpenCharacter(characterId: string): void {
     selectCharacter(characterId);
     setPendingDeleteId(null);
-    navigate("/dm/npc-character");
+    navigate(`/dm/npc-character?characterId=${encodeURIComponent(characterId)}`);
   }
 
   function handleDeletePrompt(characterId: string): void {

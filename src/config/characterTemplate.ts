@@ -47,6 +47,19 @@ export type PowerEntry = {
   governingStat: string;
 };
 
+export type DmAuditEntry = {
+  id: string;
+  timestamp: string;
+  characterId: string;
+  targetOwnerRole: "player" | "dm";
+  editLayer: "runtime" | "sheet" | "admin_override";
+  fieldPath: string;
+  beforeValue: string;
+  afterValue: string;
+  reason: string;
+  sourceScreen: string;
+};
+
 export type CharacterDraft = {
   name: string;
   concept: string;
@@ -72,6 +85,7 @@ export type CharacterDraft = {
   equipment: Array<{ slot: string; item: string; effect: string }>;
   inventory: Array<{ name: string; category: string; note: string }>;
   effects: string[];
+  dmAuditLog: DmAuditEntry[];
 };
 
 export type PowerTemplate = {
@@ -259,6 +273,7 @@ export class CharacterSheetTemplate {
       equipment: [],
       inventory: [],
       effects: [],
+      dmAuditLog: [],
     };
   }
 }
@@ -457,6 +472,43 @@ function hydrateEffects(value: unknown): string[] {
   return value.filter((entry): entry is string => typeof entry === "string");
 }
 
+function hydrateDmAuditLog(value: unknown): DmAuditEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const id = coerceString(entry.id, "");
+    const characterId = coerceString(entry.characterId, "");
+    const targetOwnerRole = entry.targetOwnerRole === "dm" ? "dm" : "player";
+    const editLayer =
+      entry.editLayer === "runtime" || entry.editLayer === "admin_override" ? entry.editLayer : "sheet";
+
+    if (!id || !characterId) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        timestamp: coerceString(entry.timestamp, new Date(0).toISOString()),
+        characterId,
+        targetOwnerRole,
+        editLayer,
+        fieldPath: coerceString(entry.fieldPath, ""),
+        beforeValue: coerceString(entry.beforeValue, ""),
+        afterValue: coerceString(entry.afterValue, ""),
+        reason: coerceString(entry.reason, ""),
+        sourceScreen: coerceString(entry.sourceScreen, ""),
+      },
+    ];
+  });
+}
+
 function hydrateActivePowerEffectModifier(value: unknown): ActivePowerEffectModifier | null {
   if (!isRecord(value)) {
     return null;
@@ -583,5 +635,6 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     equipment: hydrateEquipment(record.equipment),
     inventory: hydrateInventory(record.inventory),
     effects: hydrateEffects(record.effects),
+    dmAuditLog: hydrateDmAuditLog(record.dmAuditLog),
   };
 }

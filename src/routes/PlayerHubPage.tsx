@@ -15,15 +15,15 @@ export function PlayerHubPage() {
   }
 
   function handleCreateCharacter(): void {
-    createCharacter("player");
+    const characterId = createCharacter("player");
     setPendingDeleteId(null);
-    navigate("/player/character");
+    navigate(`/player/character?characterId=${encodeURIComponent(characterId)}`);
   }
 
   function handleSelectCharacter(characterId: string): void {
     selectCharacter(characterId);
     setPendingDeleteId(null);
-    navigate("/player/character");
+    navigate(`/player/character?characterId=${encodeURIComponent(characterId)}`);
   }
 
   function handleDeletePrompt(characterId: string): void {

@@ -13,7 +13,7 @@ export function DmCharacterHubPage() {
 
   function handleOpenCharacter(characterId: string): void {
     selectCharacter(characterId);
-    navigate("/dm/character");
+    navigate(`/dm/character?characterId=${encodeURIComponent(characterId)}`);
   }
 
   return (

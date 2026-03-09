@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { resolveDicePool } from "../config/combat";
 import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
+import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
@@ -12,6 +13,7 @@ import {
   removeActivePowerEffect,
   spendPowerMana,
 } from "../config/powerEffects";
+import { getRuntimePowerAbbreviation } from "../config/powerData.ts";
 import type { StatId } from "../config/characterTemplate";
 import { type CharacterRecord, useAppFlow } from "../state/appFlow";
 import type {
@@ -85,6 +87,292 @@ function D10Icon() {
   );
 }
 
+type CombatantRuntimeAdjustmentsProps = {
+  view: EncounterParticipantView;
+  updateCharacter: (
+    characterId: string,
+    updater:
+      | CharacterRecord["sheet"]
+      | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"])
+  ) => void;
+};
+
+function CombatantRuntimeAdjustments({
+  view,
+  updateCharacter,
+}: CombatantRuntimeAdjustmentsProps) {
+  const character = view.character;
+  const derived = character ? buildCharacterDerivedValues(character.sheet) : null;
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const popoverPanelRef = useRef<HTMLDivElement | null>(null);
+  const [hpSet, setHpSet] = useState("");
+  const [manaSet, setManaSet] = useState("");
+  const [inspirationSet, setInspirationSet] = useState("");
+  const [reason, setReason] = useState("");
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [popoverPlacement, setPopoverPlacement] = useState<"below" | "above">("below");
+
+  if (!character) {
+    return null;
+  }
+
+  useEffect(() => {
+    if (!isPopoverOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent): void {
+      if (!popoverRef.current?.contains(event.target as Node)) {
+        setIsPopoverOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setIsPopoverOpen(false);
+      }
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isPopoverOpen]);
+
+  useEffect(() => {
+    if (!isPopoverOpen) {
+      return;
+    }
+
+    function updatePlacement(): void {
+      const anchor = popoverRef.current;
+      const panel = popoverPanelRef.current;
+      if (!anchor || !panel) {
+        return;
+      }
+
+      const anchorRect = anchor.getBoundingClientRect();
+      const panelHeight = panel.offsetHeight;
+      const spaceBelow = window.innerHeight - anchorRect.bottom;
+      const spaceAbove = anchorRect.top;
+
+      setPopoverPlacement(
+        spaceBelow < panelHeight + 16 && spaceAbove > spaceBelow ? "above" : "below"
+      );
+    }
+
+    const frameId = window.requestAnimationFrame(updatePlacement);
+    window.addEventListener("resize", updatePlacement);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", updatePlacement);
+    };
+  }, [isPopoverOpen]);
+
+  function appendDmAuditEntry(
+    sheet: CharacterRecord["sheet"],
+    fieldPath: string,
+    beforeValue: number,
+    afterValue: number
+  ): CharacterRecord["sheet"] {
+    const entry = {
+      id: `dm-edit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      timestamp: new Date().toISOString(),
+      characterId: character.id,
+      targetOwnerRole: view.participant.ownerRole,
+      editLayer: "runtime" as const,
+      fieldPath,
+      beforeValue: String(beforeValue),
+      afterValue: String(afterValue),
+      reason: reason.trim(),
+      sourceScreen: "dm-combat-encounter",
+    };
+
+    return {
+      ...sheet,
+      dmAuditLog: [...(sheet.dmAuditLog ?? []), entry],
+    };
+  }
+
+  function applyRuntimeValue(
+    field: "currentHp" | "currentMana" | "inspiration",
+    value: number
+  ): void {
+    updateCharacter(character.id, (currentSheet) => {
+      const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
+      const nextBaseValue = Math.max(0, Math.trunc(value));
+      const before =
+        field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field] ?? 0;
+      const maxValue =
+        field === "currentHp"
+          ? derivedSnapshot.maxHp
+          : field === "currentMana"
+            ? derivedSnapshot.maxMana
+            : null;
+      const nextValue = maxValue === null ? nextBaseValue : Math.min(nextBaseValue, maxValue);
+      if (before === nextValue) {
+        return currentSheet;
+      }
+
+      return appendDmAuditEntry(
+        {
+          ...currentSheet,
+          [field]: nextValue,
+          ...(field === "currentMana" ? { manaInitialized: true } : null),
+        },
+        field,
+        before,
+        nextValue
+      );
+    });
+  }
+
+  function adjustRuntimeValue(
+    field: "currentHp" | "currentMana" | "inspiration",
+    delta: number
+  ): void {
+    const currentValue =
+      field === "currentMana" ? derived?.currentMana ?? 0 : character.sheet[field];
+    applyRuntimeValue(field, currentValue + delta);
+  }
+
+  function handleSet(
+    field: "currentHp" | "currentMana" | "inspiration",
+    inputValue: string,
+    clear: () => void
+  ): void {
+    const parsed = Number.parseInt(inputValue.trim(), 10);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+
+    applyRuntimeValue(field, parsed);
+    clear();
+  }
+
+  function renderRuntimeStepper(
+    label: string,
+    field: "currentHp" | "currentMana" | "inspiration",
+    value: number
+  ) {
+    return (
+      <div className="dm-runtime-stepper-row">
+        <span>{label}</span>
+        <div className="dm-runtime-stepper">
+          <button type="button" onClick={() => adjustRuntimeValue(field, -1)}>
+            -
+          </button>
+          <strong>{value}</strong>
+          <button type="button" onClick={() => adjustRuntimeValue(field, 1)}>
+            +
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dm-combatant-tool-subsection">
+      <p className="section-kicker">Edit Character</p>
+      <div className="dm-runtime-popover-anchor" ref={popoverRef}>
+        <button
+          type="button"
+          className="flow-secondary"
+          onClick={() => setIsPopoverOpen((current) => !current)}
+        >
+          Edit Character
+        </button>
+        {isPopoverOpen ? (
+          <div
+            ref={popoverPanelRef}
+            className={`dm-runtime-popover ${
+              popoverPlacement === "above" ? "is-above" : "is-below"
+            }`}
+          >
+            <div className="dm-runtime-popover-head">
+              <div>
+                <p className="section-kicker">Runtime Adjustments</p>
+                <strong>{character.sheet.name.trim() || "Unnamed Character"}</strong>
+              </div>
+            </div>
+
+            <div className="dm-runtime-stepper-list">
+              {renderRuntimeStepper("HP", "currentHp", character.sheet.currentHp)}
+              {renderRuntimeStepper("Mana", "currentMana", derived?.currentMana ?? 0)}
+              {renderRuntimeStepper("Inspiration", "inspiration", character.sheet.inspiration)}
+            </div>
+            <div className="dm-runtime-set-grid">
+              <label>
+                <span>Set HP</span>
+                <input
+                  type="number"
+                  value={hpSet}
+                  onChange={(event) => setHpSet(event.target.value)}
+                  placeholder="HP"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => handleSet("currentHp", hpSet, () => setHpSet(""))}
+              >
+                Set
+              </button>
+            </div>
+            <div className="dm-runtime-set-grid">
+              <label>
+                <span>Set Mana</span>
+                <input
+                  type="number"
+                  value={manaSet}
+                  onChange={(event) => setManaSet(event.target.value)}
+                  placeholder="Mana"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => handleSet("currentMana", manaSet, () => setManaSet(""))}
+              >
+                Set
+              </button>
+            </div>
+            <div className="dm-runtime-set-grid">
+              <label>
+                <span>Set Inspiration</span>
+                <input
+                  type="number"
+                  value={inspirationSet}
+                  onChange={(event) => setInspirationSet(event.target.value)}
+                  placeholder="Inspiration"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  handleSet("inspiration", inspirationSet, () => setInspirationSet(""))
+                }
+              >
+                Set
+              </button>
+            </div>
+            <label className="dm-field">
+              <span>Reason (optional)</span>
+              <input
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="Why this change?"
+              />
+            </label>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 type CombatantPowerControlsProps = {
   view: EncounterParticipantView;
   encounterParticipants: EncounterParticipantView[];
@@ -96,13 +384,48 @@ type CombatantPowerControlsProps = {
   ) => void;
 };
 
+function getReplacementWarnings(
+  finalTargets: CharacterRecord[],
+  builtEffects: Array<ReturnType<typeof buildActivePowerEffect>>
+): string[] {
+  return finalTargets.flatMap((targetCharacter, index) => {
+    const builtEffect = builtEffects[index];
+    if ("error" in builtEffect) {
+      return [];
+    }
+
+    const existingEffect = (targetCharacter.sheet.activePowerEffects ?? []).find((effect) => {
+      const sameStackKey =
+        typeof effect.stackKey === "string" && effect.stackKey === builtEffect.effect.stackKey;
+      const samePowerAndStat =
+        effect.powerId === builtEffect.effect.powerId &&
+        (effect.selectedStatId ?? null) === (builtEffect.effect.selectedStatId ?? null);
+
+      return sameStackKey || samePowerAndStat;
+    });
+
+    if (!existingEffect) {
+      return [];
+    }
+
+    const targetName = targetCharacter.sheet.name.trim() || targetCharacter.id;
+    const statText = builtEffect.effect.selectedStatId
+      ? ` on ${builtEffect.effect.selectedStatId}`
+      : "";
+
+    return [
+      `${targetName} already has ${existingEffect.label}${statText}. Recasting will replace it and still spend mana.`,
+    ];
+  });
+}
+
 function CombatantPowerControls({
   view,
   encounterParticipants,
   updateCharacter,
 }: CombatantPowerControlsProps) {
   const [selectedPowerId, setSelectedPowerId] = useState("");
-  const [selectedTargetId, setSelectedTargetId] = useState("");
+  const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [selectedStatId, setSelectedStatId] = useState("");
   const [castError, setCastError] = useState<string | null>(null);
   const character = view.character;
@@ -117,6 +440,19 @@ function CombatantPowerControls({
           ({ participant }) => participant.characterId === view.participant.characterId
         )
       : encounterParticipants.filter(({ character: candidateCharacter }) => candidateCharacter !== null);
+  const singleTargetId = selectedTargetIds[0] ?? "";
+  const resolvedSelectedStatId =
+    allowedStats.includes(selectedStatId as StatId) ? (selectedStatId as StatId) : allowedStats[0] ?? "";
+  const resolvedTargetIds =
+    selectedTargetIds.length > 0
+      ? selectedTargetIds
+      : targetOptions[0]
+        ? [targetOptions[0].participant.characterId]
+        : [];
+  const resolvedSingleTargetId = resolvedTargetIds[0] ?? "";
+  const allowedStatsKey = allowedStats.join("|");
+  const targetOptionIdsKey = targetOptions.map(({ participant }) => participant.characterId).join("|");
+  const resolvedTargetIdsKey = resolvedTargetIds.join("|");
 
   useEffect(() => {
     if (castablePowers.length === 0) {
@@ -131,32 +467,74 @@ function CombatantPowerControls({
 
   useEffect(() => {
     if (!selectedPower) {
-      setSelectedTargetId("");
-      setSelectedStatId("");
+      if (selectedTargetIds.length > 0) {
+        setSelectedTargetIds([]);
+      }
+
+      if (selectedStatId !== "") {
+        setSelectedStatId("");
+      }
+
       return;
     }
 
     if (targetMode === "self") {
-      setSelectedTargetId(view.participant.characterId);
-    } else if (
-      !selectedTargetId ||
-      !targetOptions.some(({ participant }) => participant.characterId === selectedTargetId)
-    ) {
-      setSelectedTargetId(view.participant.characterId);
+      if (
+        selectedTargetIds.length !== 1 ||
+        selectedTargetIds[0] !== view.participant.characterId
+      ) {
+        setSelectedTargetIds([view.participant.characterId]);
+      }
+    } else if (targetMode === "single") {
+      if (
+        !singleTargetId ||
+        !targetOptions.some(({ participant }) => participant.characterId === singleTargetId)
+      ) {
+        const fallbackTargetId =
+          targetOptions[0]?.participant.characterId ?? view.participant.characterId;
+
+        if (
+          selectedTargetIds.length !== 1 ||
+          selectedTargetIds[0] !== fallbackTargetId
+        ) {
+          setSelectedTargetIds([fallbackTargetId]);
+        }
+      }
+    } else {
+      const validTargetIds = selectedTargetIds.filter((targetId) =>
+        targetOptions.some(({ participant }) => participant.characterId === targetId)
+      );
+
+      if (validTargetIds.length === 0) {
+        const fallbackTargetId =
+          targetOptions[0]?.participant.characterId ?? view.participant.characterId;
+
+        if (
+          selectedTargetIds.length !== 1 ||
+          selectedTargetIds[0] !== fallbackTargetId
+        ) {
+          setSelectedTargetIds([fallbackTargetId]);
+        }
+      } else if (validTargetIds.length !== selectedTargetIds.length) {
+        setSelectedTargetIds(validTargetIds);
+      }
     }
 
     if (allowedStats.length === 0) {
-      setSelectedStatId("");
+      if (selectedStatId !== "") {
+        setSelectedStatId("");
+      }
     } else if (!allowedStats.includes(selectedStatId as typeof allowedStats[number])) {
       setSelectedStatId(allowedStats[0]);
     }
   }, [
-    allowedStats,
+    allowedStatsKey,
     selectedPower,
     selectedStatId,
-    selectedTargetId,
+    selectedTargetIds,
+    singleTargetId,
     targetMode,
-    targetOptions,
+    targetOptionIdsKey,
     view.participant.characterId,
   ]);
 
@@ -165,52 +543,109 @@ function CombatantPowerControls({
   }
   const casterCharacter = character;
 
+  function toggleTarget(targetId: string): void {
+    if (targetMode !== "multiple") {
+      setSelectedTargetIds([targetId]);
+      return;
+    }
+
+    setSelectedTargetIds((currentIds) =>
+      currentIds.includes(targetId)
+        ? currentIds.filter((currentId) => currentId !== targetId)
+        : [...currentIds, targetId]
+    );
+  }
+
   function handleCast(): void {
     if (!selectedPower) {
       setCastError("Select a supported power first.");
       return;
     }
 
-    const targetCharacter =
-      encounterParticipants.find(
-        ({ participant }) => participant.characterId === selectedTargetId
-      )?.character ?? null;
+    const resolvedTargets = selectedTargetIds
+      .map((targetId) =>
+        encounterParticipants.find(({ participant }) => participant.characterId === targetId)
+          ?.character ?? null
+      )
+      .filter((targetCharacter): targetCharacter is CharacterRecord => targetCharacter !== null);
+    const fallbackTargets = resolvedTargetIds
+      .map((targetId) =>
+        encounterParticipants.find(({ participant }) => participant.characterId === targetId)
+          ?.character ?? null
+      )
+      .filter((targetCharacter): targetCharacter is CharacterRecord => targetCharacter !== null);
+    const finalTargets = resolvedTargets.length > 0 ? resolvedTargets : fallbackTargets;
 
-    if (!targetCharacter) {
-      setCastError("Select a valid target before casting.");
+    if (finalTargets.length === 0) {
+      setCastError("Select at least one valid target before casting.");
       return;
     }
 
-    const builtEffect = buildActivePowerEffect({
-      casterCharacterId: casterCharacter.id,
-      casterName: casterCharacter.sheet.name.trim() || view.participant.displayName,
-      targetCharacterId: targetCharacter.id,
-      targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
-      power: selectedPower,
-      selectedStatId: selectedStatId ? (selectedStatId as StatId) : null,
-    });
+    const builtEffects = finalTargets.map((targetCharacter) =>
+      buildActivePowerEffect({
+        casterCharacterId: casterCharacter.id,
+        casterName: casterCharacter.sheet.name.trim() || view.participant.displayName,
+        targetCharacterId: targetCharacter.id,
+        targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
+        power: selectedPower,
+        selectedStatId: resolvedSelectedStatId || null,
+      })
+    );
 
-    if ("error" in builtEffect) {
-      setCastError(builtEffect.error);
+    const buildError = builtEffects.find((effect) => "error" in effect);
+    if (buildError && "error" in buildError) {
+      setCastError(buildError.error);
       return;
     }
 
-    const spentMana = spendPowerMana(casterCharacter.sheet, builtEffect.manaCost);
+    const replacementWarnings = getReplacementWarnings(finalTargets, builtEffects);
+    if (replacementWarnings.length > 0) {
+      const confirmed = window.confirm(
+        `${replacementWarnings.join("\n")}\n\nProceed and replace the existing effect?`
+      );
+      if (!confirmed) {
+        setCastError(null);
+        return;
+      }
+    }
+
+    const manaCost =
+      builtEffects[0] && !("error" in builtEffects[0]) ? builtEffects[0].manaCost : 0;
+    const spentMana = spendPowerMana(casterCharacter.sheet, manaCost);
     if ("error" in spentMana) {
       setCastError(spentMana.error);
       return;
     }
 
+    if (finalTargets.length === 1 && finalTargets[0].id === casterCharacter.id) {
+      const builtEffect = builtEffects[0];
+      if (!builtEffect || "error" in builtEffect) {
+        setCastError("Cast effect could not be resolved.");
+        return;
+      }
+
+      updateCharacter(casterCharacter.id, applyActivePowerEffect(spentMana.sheet, builtEffect.effect));
+      setCastError(null);
+      return;
+    }
+
     updateCharacter(casterCharacter.id, spentMana.sheet);
-    updateCharacter(targetCharacter.id, (currentSheet) =>
-      applyActivePowerEffect(currentSheet, builtEffect.effect)
-    );
+    finalTargets.forEach((targetCharacter, index) => {
+      const builtEffect = builtEffects[index];
+      if ("error" in builtEffect) {
+        return;
+      }
+
+      updateCharacter(targetCharacter.id, (currentSheet) =>
+        applyActivePowerEffect(currentSheet, builtEffect.effect)
+      );
+    });
     setCastError(null);
   }
 
   return (
-    <div className="dm-stack">
-      <div>
+    <>
+      <div className="dm-combatant-tool-section">
         <p className="section-kicker">Cast Power Mechanism</p>
         <h3 className="dm-subheading">Active Power Effects</h3>
         {castablePowers.length === 0 ? (
@@ -228,7 +663,7 @@ function CombatantPowerControls({
                 >
                   {castablePowers.map((power) => (
                     <option key={power.id} value={power.id}>
-                      {power.name} Lv {power.level}
+                      {getRuntimePowerAbbreviation(power.id) ?? power.name} Lv {power.level}
                     </option>
                   ))}
                 </select>
@@ -236,24 +671,43 @@ function CombatantPowerControls({
 
               <label className="dm-field">
                 <span>Target</span>
-                <select
-                  value={selectedTargetId}
-                  onChange={(event) => setSelectedTargetId(event.target.value)}
-                  disabled={targetMode === "self"}
-                >
-                  {targetOptions.map(({ participant }) => (
-                    <option key={participant.characterId} value={participant.characterId}>
-                      {participant.displayName}
-                    </option>
-                  ))}
-                </select>
+                {targetMode === "multiple" ? (
+                  <div className="dm-target-multi-grid">
+                    {targetOptions.map(({ participant }) => {
+                      const isSelected = selectedTargetIds.includes(participant.characterId);
+
+                      return (
+                        <button
+                          key={participant.characterId}
+                          type="button"
+                          className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
+                          onClick={() => toggleTarget(participant.characterId)}
+                        >
+                          {participant.displayName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <select
+                    value={resolvedSingleTargetId}
+                    onChange={(event) => setSelectedTargetIds([event.target.value])}
+                    disabled={targetMode === "self"}
+                  >
+                    {targetOptions.map(({ participant }) => (
+                      <option key={participant.characterId} value={participant.characterId}>
+                        {participant.displayName}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </label>
 
               {allowedStats.length > 0 ? (
                 <label className="dm-field">
                   <span>Stat</span>
                   <select
-                    value={selectedStatId}
+                    value={resolvedSelectedStatId}
                     onChange={(event) => setSelectedStatId(event.target.value)}
                   >
                     {allowedStats.map((statId) => (
@@ -277,7 +731,7 @@ function CombatantPowerControls({
         )}
       </div>
 
-      <div>
+      <div className="dm-combatant-tool-section">
         <p className="section-kicker">Applied Effects</p>
         {character.sheet.activePowerEffects.length === 0 ? (
           <p className="dm-summary-line">No active power effects on this combatant.</p>
@@ -308,7 +762,7 @@ function CombatantPowerControls({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -817,43 +1271,84 @@ export function CombatEncounterPage() {
                   <div className="dm-accordion-body">
                     {snapshot ? (
                       <>
-                        <div className="dm-control-row">
-                          <button
-                            type="button"
-                            className="flow-secondary"
-                            onClick={() =>
-                              openCharacterSheet(
-                                participant.characterId,
-                                participant.ownerRole
-                              )
-                            }
-                          >
-                            Open Full Character Sheet
-                          </button>
-                        </div>
-
-                        <CombatantPowerControls
-                          view={view}
-                          encounterParticipants={encounterParticipants}
-                          updateCharacter={updateCharacter}
-                        />
-
-                        <div className="dm-action-grid">
-                          {snapshot.combatSummary.map((field) => (
-                            <div key={field.id}>
-                              <span>{field.label}</span>
-                              <strong>{field.value}</strong>
+                        <div className="dm-combatant-tools">
+                          <div className="dm-combatant-tool-section dm-combatant-tool-stack">
+                            <div className="dm-combatant-tool-subsection">
+                              <p className="section-kicker">Character Sheet</p>
+                              <div className="dm-entry-actions">
+                                <button
+                                  type="button"
+                                  className="flow-secondary"
+                                  onClick={() =>
+                                    openCharacterSheet(
+                                      participant.characterId,
+                                      participant.ownerRole
+                                    )
+                                  }
+                                >
+                                  Open Full Character Sheet
+                                </button>
+                              </div>
                             </div>
-                          ))}
-                          <div>
-                            <span>Inspiration</span>
-                            <strong>{snapshot.inspiration}</strong>
+
+                            <CombatantRuntimeAdjustments
+                              view={view}
+                              updateCharacter={updateCharacter}
+                            />
                           </div>
+
+                          <CombatantPowerControls
+                            view={view}
+                            encounterParticipants={encounterParticipants}
+                            updateCharacter={updateCharacter}
+                          />
                         </div>
 
-                        {snapshot.visibleResistances.length > 0 ? (
-                          <div className="dm-stack">
-                            <div>
+                        <div className="dm-combatant-values">
+                          <div className="dm-combatant-section">
+                            <p className="section-kicker">Combat Summary</p>
+                            <div className="dm-action-grid">
+                              {snapshot.combatSummary.map((field) => (
+                                <div key={field.id}>
+                                  <span>{field.label}</span>
+                                  <strong>{field.value}</strong>
+                                </div>
+                              ))}
+                              <div>
+                                <span>Inspiration</span>
+                                <strong>{snapshot.inspiration}</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="dm-combatant-side-stack">
+                            <div className="dm-combatant-section">
+                              <p className="section-kicker">Stats</p>
+                              <div className="dm-detail-grid dm-detail-grid-compact">
+                                {snapshot.stats.map((field) => (
+                                  <article key={field.id} className="dm-detail-card dm-detail-card-compact">
+                                    <span>{field.label}</span>
+                                    <strong>{field.value}</strong>
+                                  </article>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="dm-combatant-section">
+                              <p className="section-kicker">Highlighted Skills</p>
+                              <div className="dm-detail-grid-small dm-detail-grid-compact">
+                                {snapshot.highlightedSkills.map((field) => (
+                                  <article key={field.id} className="dm-detail-card dm-detail-card-compact">
+                                    <span>{field.label}</span>
+                                    <strong>{field.value}</strong>
+                                  </article>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {snapshot.visibleResistances.length > 0 ? (
+                            <div className="dm-combatant-section dm-combatant-section-full">
                               <p className="section-kicker">Resistances</p>
                               <div className="dm-pill-list">
                                 {snapshot.visibleResistances.map((resistance) => (
@@ -866,37 +1361,7 @@ export function CombatEncounterPage() {
                                 ))}
                               </div>
                             </div>
-                          </div>
-                        ) : null}
-
-                        <div className="dm-stack">
-                            <div>
-                              <p className="section-kicker">Stats</p>
-                            <div className="dm-detail-grid dm-detail-grid-compact">
-                              {snapshot.stats.map((field) => (
-                                <article key={field.id} className="dm-detail-card dm-detail-card-compact">
-                                  <span>{field.label}</span>
-                                  <strong>{field.value}</strong>
-                                  <small className="dm-detail-summary">{field.summary}</small>
-                                  <small className="dm-detail-detail">{field.detail}</small>
-                                </article>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <p className="section-kicker">Highlighted Skills</p>
-                            <div className="dm-detail-grid-small dm-detail-grid-compact">
-                              {snapshot.highlightedSkills.map((field) => (
-                                <article key={field.id} className="dm-detail-card dm-detail-card-compact">
-                                  <span>{field.label}</span>
-                                  <strong>{field.value}</strong>
-                                  <small className="dm-detail-summary">{field.summary}</small>
-                                  <small className="dm-detail-detail">{field.detail}</small>
-                                </article>
-                              ))}
-                            </div>
-                          </div>
+                          ) : null}
                         </div>
                       </>
                     ) : (

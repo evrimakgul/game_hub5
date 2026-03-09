@@ -22,6 +22,7 @@ type RuntimePowerLevelDefinition = {
 type RuntimePowerDefinition = {
   id: string;
   name: string;
+  abbreviation?: string;
   governing_stat: string;
   levels?: RuntimePowerLevelDefinition[];
   cantrip?: RuntimePowerCantripDefinition;
@@ -36,6 +37,10 @@ const runtimePowerDefinitions = runtimePowerData.powers ?? [];
 
 export function getRuntimePowerDefinition(powerId: string): RuntimePowerDefinition | undefined {
   return runtimePowerDefinitions.find((power) => power.id === powerId);
+}
+
+export function getRuntimePowerAbbreviation(powerId: string): string | undefined {
+  return getRuntimePowerDefinition(powerId)?.abbreviation;
 }
 
 export function getRuntimePowerLevelDefinition(

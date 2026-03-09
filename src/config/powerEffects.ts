@@ -3,7 +3,7 @@ import type { CharacterDraft, PowerEntry, StatId } from "./characterTemplate.ts"
 import { buildCharacterDerivedValues } from "./characterRuntime.ts";
 import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 
-export type CastPowerTargetMode = "self" | "combatant";
+export type CastPowerTargetMode = "self" | "single" | "multiple";
 
 export type CastPowerBuildRequest = {
   casterCharacterId: string;
@@ -83,15 +83,23 @@ export function getSupportedCastablePowers(sheet: CharacterDraft): PowerEntry[] 
 }
 
 export function getCastPowerTargetMode(power: PowerEntry): CastPowerTargetMode {
+  if (power.id === "light_support") {
+    return "multiple";
+  }
+
   if (power.id === "shadow_control" && power.level < 4) {
     return "self";
+  }
+
+  if (power.id === "shadow_control" && power.level >= 4) {
+    return "multiple";
   }
 
   if (power.id === "body_reinforcement" && power.level === 1) {
     return "self";
   }
 
-  return "combatant";
+  return "single";
 }
 
 export function getCastPowerAllowedStats(power: PowerEntry): StatId[] {

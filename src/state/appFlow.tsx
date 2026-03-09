@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -159,6 +160,7 @@ function readPersistedCharacters(): {
 
 export function AppFlowProvider({ children }: PropsWithChildren) {
   const persistedCharacters = useMemo(readPersistedCharacters, []);
+  const skipNextPersistRef = useRef(false);
   const [authChoice, setAuthChoice] = useState<AuthChoice>(null);
   const [roleChoice, setRoleChoice] = useState<RoleChoice>(null);
   const [characters, setCharacters] = useState<CharacterRecord[]>(persistedCharacters.characters);
@@ -182,6 +184,11 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
       return;
     }
 
@@ -210,9 +217,25 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       }
 
       const nextState = readPersistedCharacters();
+      skipNextPersistRef.current = true;
       setCharacters(nextState.characters);
-      setActivePlayerCharacterId(nextState.activePlayerCharacterId);
-      setActiveDmCharacterId(nextState.activeDmCharacterId);
+      setActivePlayerCharacterId((currentActiveCharacterId) =>
+        currentActiveCharacterId &&
+        nextState.characters.some(
+          (character) =>
+            character.id === currentActiveCharacterId && character.ownerRole === "player"
+        )
+          ? currentActiveCharacterId
+          : null
+      );
+      setActiveDmCharacterId((currentActiveCharacterId) =>
+        currentActiveCharacterId &&
+        nextState.characters.some(
+          (character) => character.id === currentActiveCharacterId && character.ownerRole === "dm"
+        )
+          ? currentActiveCharacterId
+          : null
+      );
     }
 
     window.addEventListener("storage", handleStorage);

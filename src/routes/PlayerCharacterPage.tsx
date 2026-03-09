@@ -55,6 +55,13 @@ type CustomRollModifier = {
   value: number;
 };
 
+type RuntimeEditableField =
+  | "currentHp"
+  | "currentMana"
+  | "inspiration"
+  | "positiveKarma"
+  | "negativeKarma";
+
 function formatDateDayMonthYear(date: Date): string {
   const day = `${date.getDate()}`.padStart(2, "0");
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -113,6 +120,11 @@ export function PlayerCharacterPage() {
   const location = useLocation();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [dmEditMode, setDmEditMode] = useState(false);
+  const [adminOverrideMode, setAdminOverrideMode] = useState(false);
+  const [dmEditReason, setDmEditReason] = useState("");
+  const [adminOverrideReason, setAdminOverrideReason] = useState("");
+  const [adminOverrideError, setAdminOverrideError] = useState<string | null>(null);
   const [editSessionStatFloor, setEditSessionStatFloor] = useState<Record<StatId, number> | null>(
     null
   );
@@ -133,6 +145,7 @@ export function PlayerCharacterPage() {
   });
   const isDmReadOnlyView = location.pathname.startsWith("/dm/character");
   const isDmEditableView = location.pathname.startsWith("/dm/npc-character");
+  const isDmView = isDmReadOnlyView || isDmEditableView;
   const characterIdFromQuery = new URLSearchParams(location.search).get("characterId");
   const queriedCharacter =
     characterIdFromQuery
@@ -173,7 +186,11 @@ export function PlayerCharacterPage() {
   function setSheetState(
     updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
   ): void {
-    if (isReadOnlyView || !activeCharacter) {
+    if (!activeCharacter) {
+      return;
+    }
+
+    if (isReadOnlyView && !dmEditMode && !adminOverrideMode && !isDmEditableView) {
       return;
     }
 
@@ -187,9 +204,21 @@ export function PlayerCharacterPage() {
 
     setSessionNotes(activeSheet.effects.join("\n"));
     setHistoryEntries([]);
+  }, [activeCharacter?.id]);
+
+  useEffect(() => {
+    if (!activeCharacter) {
+      return;
+    }
+
     setIsEditMode(false);
+    setDmEditMode(isDmEditableView);
+    setAdminOverrideMode(false);
+    setDmEditReason("");
+    setAdminOverrideReason("");
+    setAdminOverrideError(null);
     setEditSessionStatFloor(null);
-  }, [activeCharacter?.id, activeSheet?.effects]);
+  }, [activeCharacter?.id, isDmEditableView, isDmReadOnlyView]);
 
   if (!activeCharacter || !activeSheet) {
     return (
@@ -201,6 +230,8 @@ export function PlayerCharacterPage() {
   }
 
   const sheetState = activeSheet;
+  const isSheetEditMode = isEditMode || dmEditMode;
+  const isDmRuntimeEditMode = isDmView && dmEditMode;
 
   const actualDate = formatDateDayMonthYear(new Date());
   const xpLeftOver = sheetState.xpEarned - sheetState.xpUsed;
@@ -427,6 +458,305 @@ export function PlayerCharacterPage() {
     }));
   }
 
+  function adjustStatOverride(statId: StatId, direction: 1 | -1): void {
+    const reason = requireAdminReason();
+    if (!reason) {
+      return;
+    }
+
+    const stat = sheetState.statState[statId];
+    const nextLevel = stat.base + direction;
+    if (nextLevel < 0 || nextLevel >= STAT_XP_BY_LEVEL.length) {
+      return;
+    }
+
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          statState: {
+            ...currentSheet.statState,
+            [statId]: {
+              ...currentSheet.statState[statId],
+              base: nextLevel,
+            },
+          },
+        },
+        createDmAuditEntry(
+          "admin_override",
+          `statState.${statId}.base`,
+          currentSheet.statState[statId].base,
+          nextLevel,
+          reason,
+          "dm-character-sheet"
+        )
+      )
+    );
+  }
+
+  function adjustSkillOverride(skillId: string, direction: 1 | -1): void {
+    const reason = requireAdminReason();
+    if (!reason) {
+      return;
+    }
+
+    const currentSkill = sheetState.skills.find((skill) => skill.id === skillId);
+    if (!currentSkill) {
+      return;
+    }
+
+    const nextLevel = currentSkill.base + direction;
+    if (nextLevel < 0 || nextLevel >= T1_SKILL_XP_BY_LEVEL.length) {
+      return;
+    }
+
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          skills: currentSheet.skills.map((skill) =>
+            skill.id === skillId
+              ? {
+                  ...skill,
+                  base: nextLevel,
+                }
+              : skill
+          ),
+        },
+        createDmAuditEntry(
+          "admin_override",
+          `skills.${skillId}.base`,
+          currentSkill.base,
+          nextLevel,
+          reason,
+          "dm-character-sheet"
+        )
+      )
+    );
+  }
+
+  function adjustPowerOverride(powerId: string, direction: 1 | -1): void {
+    const reason = requireAdminReason();
+    if (!reason) {
+      return;
+    }
+
+    const currentPower = sheetState.powers.find((power) => power.id === powerId);
+    if (!currentPower) {
+      return;
+    }
+
+    const nextLevel = currentPower.level + direction;
+    if (nextLevel < 0 || nextLevel >= T1_POWER_XP_BY_LEVEL.length) {
+      return;
+    }
+
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          powers:
+            nextLevel === 0
+              ? currentSheet.powers.filter((power) => power.id !== powerId)
+              : currentSheet.powers.map((power) =>
+                  power.id === powerId
+                    ? {
+                        ...power,
+                        level: nextLevel,
+                      }
+                    : power
+                ),
+        },
+        createDmAuditEntry(
+          "admin_override",
+          `powers.${powerId}.level`,
+          currentPower.level,
+          nextLevel,
+          reason,
+          "dm-character-sheet"
+        )
+      )
+    );
+  }
+
+  function handleAddPowerOverride(): void {
+    const reason = requireAdminReason();
+    if (!reason) {
+      return;
+    }
+
+    if (!pendingPowerId) {
+      return;
+    }
+
+    const template = getPowerTemplate(pendingPowerId);
+    if (!template) {
+      return;
+    }
+
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          powers: [
+            ...currentSheet.powers,
+            {
+              id: template.id,
+              name: template.name,
+              level: 1,
+              governingStat: template.governingStat,
+            },
+          ],
+        },
+        createDmAuditEntry(
+          "admin_override",
+          `powers.${template.id}.level`,
+          0,
+          1,
+          reason,
+          "dm-character-sheet"
+        )
+      )
+    );
+    setPendingPowerId("");
+  }
+
+  function updateInventoryEntry(
+    index: number,
+    field: "name" | "category" | "note",
+    value: string
+  ): void {
+    setSheetState((currentSheet) => {
+      const nextInventory = currentSheet.inventory.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry
+      );
+
+      return appendDmAuditEntry(
+        {
+          ...currentSheet,
+          inventory: nextInventory,
+        },
+        createDmAuditEntry(
+          "sheet",
+          `inventory[${index}].${field}`,
+          currentSheet.inventory[index]?.[field] ?? "",
+          value,
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
+  }
+
+  function addInventoryEntry(): void {
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          inventory: [
+            ...currentSheet.inventory,
+            { name: "", category: "", note: "" },
+          ],
+        },
+        createDmAuditEntry(
+          "sheet",
+          "inventory",
+          currentSheet.inventory.length,
+          currentSheet.inventory.length + 1,
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      )
+    );
+  }
+
+  function removeInventoryEntry(index: number): void {
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          inventory: currentSheet.inventory.filter((_, entryIndex) => entryIndex !== index),
+        },
+        createDmAuditEntry(
+          "sheet",
+          `inventory[${index}]`,
+          currentSheet.inventory[index]?.name ?? "",
+          "",
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      )
+    );
+  }
+
+  function updateEquipmentEntry(
+    index: number,
+    field: "slot" | "item" | "effect",
+    value: string
+  ): void {
+    setSheetState((currentSheet) => {
+      const nextEquipment = currentSheet.equipment.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry
+      );
+
+      return appendDmAuditEntry(
+        {
+          ...currentSheet,
+          equipment: nextEquipment,
+        },
+        createDmAuditEntry(
+          "sheet",
+          `equipment[${index}].${field}`,
+          currentSheet.equipment[index]?.[field] ?? "",
+          value,
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
+  }
+
+  function addEquipmentEntry(): void {
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          equipment: [
+            ...currentSheet.equipment,
+            { slot: "", item: "", effect: "" },
+          ],
+        },
+        createDmAuditEntry(
+          "sheet",
+          "equipment",
+          currentSheet.equipment.length,
+          currentSheet.equipment.length + 1,
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      )
+    );
+  }
+
+  function removeEquipmentEntry(index: number): void {
+    setSheetState((currentSheet) =>
+      appendDmAuditEntry(
+        {
+          ...currentSheet,
+          equipment: currentSheet.equipment.filter((_, entryIndex) => entryIndex !== index),
+        },
+        createDmAuditEntry(
+          "sheet",
+          `equipment[${index}]`,
+          currentSheet.equipment[index]?.slot ?? "",
+          "",
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      )
+    );
+  }
+
   function handleAddPower(): void {
     if (!pendingPowerId) {
       return;
@@ -454,14 +784,137 @@ export function PlayerCharacterPage() {
     setPendingPowerId("");
   }
 
+  function createDmAuditEntry(
+    editLayer: "runtime" | "sheet" | "admin_override",
+    fieldPath: string,
+    beforeValue: unknown,
+    afterValue: unknown,
+    reason: string,
+    sourceScreen: string
+  ) {
+    if (!activeCharacter) {
+      return null;
+    }
+
+    return {
+      id: `dm-edit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      timestamp: new Date().toISOString(),
+      characterId: activeCharacter.id,
+      targetOwnerRole: activeCharacter.ownerRole,
+      editLayer,
+      fieldPath,
+      beforeValue: String(beforeValue ?? ""),
+      afterValue: String(afterValue ?? ""),
+      reason,
+      sourceScreen,
+    };
+  }
+
+  function requireAdminReason(): string | null {
+    const reason = adminOverrideReason.trim();
+    if (!reason) {
+      setAdminOverrideError("Admin override requires a reason.");
+      return null;
+    }
+
+    setAdminOverrideError(null);
+    return reason;
+  }
+
+  function appendDmAuditEntry(
+    sheet: CharacterDraft,
+    entry: ReturnType<typeof createDmAuditEntry>
+  ): CharacterDraft {
+    if (!entry) {
+      return sheet;
+    }
+
+    return {
+      ...sheet,
+      dmAuditLog: [...(sheet.dmAuditLog ?? []), entry],
+    };
+  }
+
+  function updateRuntimeField(field: RuntimeEditableField, rawValue: number): void {
+    if (!isDmView) {
+      return;
+    }
+
+    setSheetState((currentSheet) => {
+      const nextBaseValue = Math.max(0, Math.trunc(rawValue));
+      const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
+      const currentValue =
+        field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field];
+      const maxValue =
+        field === "currentHp"
+          ? derivedSnapshot.maxHp
+          : field === "currentMana"
+            ? derivedSnapshot.maxMana
+            : null;
+      const nextValue = maxValue === null ? nextBaseValue : Math.min(nextBaseValue, maxValue);
+
+      if (nextValue === currentValue) {
+        return currentSheet;
+      }
+
+      return appendDmAuditEntry(
+        {
+          ...currentSheet,
+          [field]: nextValue,
+          ...(field === "currentMana" ? { manaInitialized: true } : null),
+        },
+        createDmAuditEntry(
+          "runtime",
+          field,
+          currentValue,
+          nextValue,
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
+  }
+
+  function handleRuntimeInput(field: RuntimeEditableField, value: string): void {
+    if (value.trim() === "") {
+      return;
+    }
+
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+
+    updateRuntimeField(field, parsed);
+  }
+
   function updateSheetField<K extends keyof CharacterDraft>(
     field: K,
     value: CharacterDraft[K]
   ): void {
-    setSheetState((currentSheet) => ({
-      ...currentSheet,
-      [field]: value,
-    }));
+    setSheetState((currentSheet) => {
+      const shouldLog = isDmView && (dmEditMode || adminOverrideMode || isDmEditableView);
+      const nextSheet = {
+        ...currentSheet,
+        [field]: value,
+      };
+
+      if (!shouldLog) {
+        return nextSheet;
+      }
+
+      return appendDmAuditEntry(
+        nextSheet,
+        createDmAuditEntry(
+          adminOverrideMode ? "admin_override" : "sheet",
+          String(field),
+          currentSheet[field],
+          value,
+          adminOverrideMode ? adminOverrideReason.trim() : dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
   }
 
   function handleToggleEditMode(): void {
@@ -487,6 +940,26 @@ export function PlayerCharacterPage() {
       PER: sheetState.statState.PER.base,
     });
     setIsEditMode(true);
+  }
+
+  function handleToggleDmEditMode(): void {
+    if (!isDmView) {
+      return;
+    }
+
+    setAdminOverrideMode(false);
+    setAdminOverrideError(null);
+    setDmEditMode((current) => !current);
+  }
+
+  function handleToggleAdminOverrideMode(): void {
+    if (!isDmView) {
+      return;
+    }
+
+    setDmEditMode(false);
+    setAdminOverrideMode((current) => !current);
+    setAdminOverrideError(null);
   }
 
   return (
@@ -662,7 +1135,7 @@ export function PlayerCharacterPage() {
         <header className="sheet-header">
           <div className="sheet-header-copy">
             <p className="sheet-kicker">Convergence Character Sheet Draft</p>
-            {isEditMode ? (
+            {isSheetEditMode ? (
               <div className="identity-edit-stack">
                 <input
                   className="sheet-name-input"
@@ -706,7 +1179,7 @@ export function PlayerCharacterPage() {
             </div>
             <div>
               <span>Age</span>
-              {isEditMode ? (
+              {isSheetEditMode ? (
                 <input
                   className="badge-input"
                   type="number"
@@ -751,8 +1224,40 @@ export function PlayerCharacterPage() {
           </div>
           <div className="edit-card">
             <span>Edit Sheet</span>
-            {isReadOnlyView ? (
-              <strong className="edit-mode-indicator">DM View</strong>
+            {isDmView ? (
+              <div className="dm-edit-controls">
+                <div className="dm-edit-toggle-row">
+                  <button type="button" onClick={handleToggleDmEditMode}>
+                    {dmEditMode ? "DM Edit: On" : "DM Edit: Off"}
+                  </button>
+                  <button type="button" onClick={handleToggleAdminOverrideMode}>
+                    {adminOverrideMode ? "Override: On" : "Override: Off"}
+                  </button>
+                </div>
+                <div className="dm-edit-reasons">
+                  {dmEditMode ? (
+                    <input
+                      className="sheet-meta-input"
+                      value={dmEditReason}
+                      onChange={(event) => setDmEditReason(event.target.value)}
+                      placeholder="DM reason (optional)"
+                    />
+                  ) : null}
+                  {adminOverrideMode ? (
+                    <>
+                      <input
+                        className="sheet-meta-input"
+                        value={adminOverrideReason}
+                        onChange={(event) => setAdminOverrideReason(event.target.value)}
+                        placeholder="Admin reason (required)"
+                      />
+                      {adminOverrideError ? (
+                        <strong className="edit-mode-indicator">{adminOverrideError}</strong>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              </div>
             ) : (
               <button type="button" className="edit-trigger" onClick={handleToggleEditMode}>
                 {isEditMode ? "Lock" : "Edit"}
@@ -765,7 +1270,7 @@ export function PlayerCharacterPage() {
           <article className="sheet-card biography-card">
             <p className="section-kicker">Identity</p>
             <h2>Biography</h2>
-            {isEditMode ? (
+            {isSheetEditMode ? (
               <div className="bio-edit-stack">
                 <textarea
                   className="bio-edit-input"
@@ -794,13 +1299,42 @@ export function PlayerCharacterPage() {
             <div className="resource-strip">
               <div>
                 <span>Inspiration</span>
-                <strong>{sheetState.inspiration}</strong>
+                {isDmRuntimeEditMode ? (
+                  <input
+                    className="sheet-runtime-input"
+                    type="number"
+                    min="0"
+                    value={sheetState.inspiration}
+                    onChange={(event) => handleRuntimeInput("inspiration", event.target.value)}
+                  />
+                ) : (
+                  <strong>{sheetState.inspiration}</strong>
+                )}
               </div>
               <div>
                 <span>Karma</span>
-                <strong>
-                  -{sheetState.negativeKarma} / +{sheetState.positiveKarma}
-                </strong>
+                {isDmRuntimeEditMode ? (
+                  <div className="runtime-split-inputs">
+                    <input
+                      className="sheet-runtime-input"
+                      type="number"
+                      min="0"
+                      value={sheetState.negativeKarma}
+                      onChange={(event) => handleRuntimeInput("negativeKarma", event.target.value)}
+                    />
+                    <input
+                      className="sheet-runtime-input"
+                      type="number"
+                      min="0"
+                      value={sheetState.positiveKarma}
+                      onChange={(event) => handleRuntimeInput("positiveKarma", event.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <strong>
+                    -{sheetState.negativeKarma} / +{sheetState.positiveKarma}
+                  </strong>
+                )}
               </div>
             </div>
           </article>
@@ -830,15 +1364,37 @@ export function PlayerCharacterPage() {
             <div className="combat-grid">
               <div>
                 <span>HP</span>
-                <strong>
-                  {sheetState.currentHp} / {derived.maxHp}
-                </strong>
+                {isDmRuntimeEditMode ? (
+                  <input
+                    className="sheet-runtime-input"
+                    type="number"
+                    min="0"
+                    max={derived.maxHp}
+                    value={sheetState.currentHp}
+                    onChange={(event) => handleRuntimeInput("currentHp", event.target.value)}
+                  />
+                ) : (
+                  <strong>
+                    {sheetState.currentHp} / {derived.maxHp}
+                  </strong>
+                )}
               </div>
               <div>
                 <span>Mana</span>
-                <strong>
-                  {derived.currentMana} / {derived.maxMana}
-                </strong>
+                {isDmRuntimeEditMode ? (
+                  <input
+                    className="sheet-runtime-input"
+                    type="number"
+                    min="0"
+                    max={derived.maxMana}
+                    value={derived.currentMana}
+                    onChange={(event) => handleRuntimeInput("currentMana", event.target.value)}
+                  />
+                ) : (
+                  <strong>
+                    {derived.currentMana} / {derived.maxMana}
+                  </strong>
+                )}
               </div>
               <div>
                 <span>Initiative</span>
@@ -909,9 +1465,15 @@ export function PlayerCharacterPage() {
                       const stat = sheetState.statState[statId];
                       const breakdown = getStatBreakdown(sheetState, statId);
                       const incrementCost = getIncrementCost(STAT_XP_BY_LEVEL, stat.base);
-                      const canIncrease = isEditMode && stat.base < STAT_XP_BY_LEVEL.length - 1 && xpLeftOver >= incrementCost;
+                      const canIncrease = adminOverrideMode
+                        ? stat.base < STAT_XP_BY_LEVEL.length - 1
+                        : isEditMode &&
+                          stat.base < STAT_XP_BY_LEVEL.length - 1 &&
+                          xpLeftOver >= incrementCost;
                       const floorLevel = editSessionStatFloor?.[statId] ?? stat.base;
-                      const canDecrease = isEditMode && stat.base > floorLevel;
+                      const canDecrease = adminOverrideMode
+                        ? stat.base > 0
+                        : isEditMode && stat.base > floorLevel;
 
                       return (
                         <div key={statId} className="stat-row">
@@ -919,12 +1481,28 @@ export function PlayerCharacterPage() {
                             <strong>{statId}</strong>
                             <small>{breakdown.detail}</small>
                           </div>
-                          {isEditMode ? (
+                          {isEditMode || adminOverrideMode ? (
                             <div className="row-actions">
-                              <button type="button" onClick={() => adjustStat(statId, -1)} disabled={!canDecrease}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  adminOverrideMode
+                                    ? adjustStatOverride(statId, -1)
+                                    : adjustStat(statId, -1)
+                                }
+                                disabled={!canDecrease}
+                              >
                                 -
                               </button>
-                              <button type="button" onClick={() => adjustStat(statId, 1)} disabled={!canIncrease}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  adminOverrideMode
+                                    ? adjustStatOverride(statId, 1)
+                                    : adjustStat(statId, 1)
+                                }
+                                disabled={!canIncrease}
+                              >
                                 +
                               </button>
                             </div>
@@ -949,8 +1527,14 @@ export function PlayerCharacterPage() {
               {sheetState.skills.map((skill) => {
                 const breakdown = getSkillBreakdown(sheetState, skill.id);
                 const incrementCost = getIncrementCost(T1_SKILL_XP_BY_LEVEL, skill.base);
-                const canIncrease = isEditMode && skill.base < T1_SKILL_XP_BY_LEVEL.length - 1 && xpLeftOver >= incrementCost;
-                const canDecrease = isEditMode && skill.base > 0;
+                const canIncrease = adminOverrideMode
+                  ? skill.base < T1_SKILL_XP_BY_LEVEL.length - 1
+                  : isEditMode &&
+                    skill.base < T1_SKILL_XP_BY_LEVEL.length - 1 &&
+                    xpLeftOver >= incrementCost;
+                const canDecrease = adminOverrideMode
+                  ? skill.base > 0
+                  : isEditMode && skill.base > 0;
 
                 return (
                   <div key={skill.id} className="skill-row">
@@ -958,12 +1542,28 @@ export function PlayerCharacterPage() {
                       <strong>{skill.label}</strong>
                       <small>{breakdown.detail}</small>
                     </div>
-                    {isEditMode ? (
+                    {isEditMode || adminOverrideMode ? (
                       <div className="row-actions">
-                        <button type="button" onClick={() => adjustSkill(skill.id, -1)} disabled={!canDecrease}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            adminOverrideMode
+                              ? adjustSkillOverride(skill.id, -1)
+                              : adjustSkill(skill.id, -1)
+                          }
+                          disabled={!canDecrease}
+                        >
                           -
                         </button>
-                        <button type="button" onClick={() => adjustSkill(skill.id, 1)} disabled={!canIncrease}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            adminOverrideMode
+                              ? adjustSkillOverride(skill.id, 1)
+                              : adjustSkill(skill.id, 1)
+                          }
+                          disabled={!canIncrease}
+                        >
                           +
                         </button>
                       </div>
@@ -981,7 +1581,7 @@ export function PlayerCharacterPage() {
           <article className="sheet-card power-card">
             <p className="section-kicker">T1 Powers</p>
             <h2>Known Powers</h2>
-            {isEditMode ? (
+            {isEditMode || adminOverrideMode ? (
               <div className="power-add-row">
                 <select value={pendingPowerId} onChange={(event) => setPendingPowerId(event.target.value)}>
                   <option value="">Add Level 1 Power</option>
@@ -991,7 +1591,14 @@ export function PlayerCharacterPage() {
                     </option>
                   ))}
                 </select>
-                <button type="button" onClick={handleAddPower} disabled={!pendingPowerId || xpLeftOver < getIncrementCost(T1_POWER_XP_BY_LEVEL, 0)}>
+                <button
+                  type="button"
+                  onClick={adminOverrideMode ? handleAddPowerOverride : handleAddPower}
+                  disabled={
+                    !pendingPowerId ||
+                    (!adminOverrideMode && xpLeftOver < getIncrementCost(T1_POWER_XP_BY_LEVEL, 0))
+                  }
+                >
                   Add
                 </button>
               </div>
@@ -1001,8 +1608,14 @@ export function PlayerCharacterPage() {
                 <p className="empty-block-copy">No powers learned yet.</p>
               ) : sheetState.powers.map((power) => {
                 const incrementCost = getIncrementCost(T1_POWER_XP_BY_LEVEL, power.level);
-                const canIncrease = isEditMode && power.level < T1_POWER_XP_BY_LEVEL.length - 1 && xpLeftOver >= incrementCost;
-                const canDecrease = isEditMode && power.level > 0;
+                const canIncrease = adminOverrideMode
+                  ? power.level < T1_POWER_XP_BY_LEVEL.length - 1
+                  : isEditMode &&
+                    power.level < T1_POWER_XP_BY_LEVEL.length - 1 &&
+                    xpLeftOver >= incrementCost;
+                const canDecrease = adminOverrideMode
+                  ? power.level > 0
+                  : isEditMode && power.level > 0;
 
                 return (
                   <div key={power.id} className="power-row">
@@ -1016,12 +1629,28 @@ export function PlayerCharacterPage() {
                         ))}
                       </ul>
                     </div>
-                    {isEditMode ? (
+                    {isEditMode || adminOverrideMode ? (
                       <div className="row-actions">
-                        <button type="button" onClick={() => adjustPower(power.id, -1)} disabled={!canDecrease}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            adminOverrideMode
+                              ? adjustPowerOverride(power.id, -1)
+                              : adjustPower(power.id, -1)
+                          }
+                          disabled={!canDecrease}
+                        >
                           -
                         </button>
-                        <button type="button" onClick={() => adjustPower(power.id, 1)} disabled={!canIncrease}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            adminOverrideMode
+                              ? adjustPowerOverride(power.id, 1)
+                              : adjustPower(power.id, 1)
+                          }
+                          disabled={!canIncrease}
+                        >
                           +
                         </button>
                       </div>
@@ -1040,7 +1669,42 @@ export function PlayerCharacterPage() {
             <p className="section-kicker">Equipment</p>
             <h2>Loadout</h2>
             <div className="equipment-list">
-              {sheetState.equipment.length === 0 ? (
+              {isSheetEditMode ? (
+                <>
+                  {sheetState.equipment.map((entry, index) => (
+                    <div key={`${entry.slot}-${index}`} className="equipment-row">
+                      <div className="row-main">
+                        <input
+                          className="sheet-meta-input"
+                          value={entry.slot}
+                          onChange={(event) => updateEquipmentEntry(index, "slot", event.target.value)}
+                          placeholder="Slot"
+                        />
+                        <input
+                          className="sheet-meta-input"
+                          value={entry.item}
+                          onChange={(event) => updateEquipmentEntry(index, "item", event.target.value)}
+                          placeholder="Item"
+                        />
+                        <input
+                          className="sheet-meta-input"
+                          value={entry.effect}
+                          onChange={(event) => updateEquipmentEntry(index, "effect", event.target.value)}
+                          placeholder="Effect"
+                        />
+                      </div>
+                      <div className="row-actions">
+                        <button type="button" onClick={() => removeEquipmentEntry(index)}>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button type="button" className="flow-secondary" onClick={addEquipmentEntry}>
+                    Add Equipment
+                  </button>
+                </>
+              ) : sheetState.equipment.length === 0 ? (
                 <p className="empty-block-copy">No loadout equipped.</p>
               ) : (
                 sheetState.equipment.map((entry) => (
@@ -1061,10 +1725,59 @@ export function PlayerCharacterPage() {
             <h2>Inventory</h2>
             <div className="inventory-header">
               <span>Money</span>
-              <strong>{sheetState.money}</strong>
+              {isSheetEditMode ? (
+                <input
+                  className="badge-input"
+                  type="number"
+                  value={sheetState.money}
+                  onChange={(event) =>
+                    updateSheetField(
+                      "money",
+                      event.target.value === "" ? 0 : Number.parseInt(event.target.value, 10)
+                    )
+                  }
+                />
+              ) : (
+                <strong>{sheetState.money}</strong>
+              )}
             </div>
             <div className="inventory-list">
-              {sheetState.inventory.length === 0 ? (
+              {isSheetEditMode ? (
+                <>
+                  {sheetState.inventory.map((entry, index) => (
+                    <div key={`${entry.name}-${index}`} className="inventory-row">
+                      <div className="row-main">
+                        <input
+                          className="sheet-meta-input"
+                          value={entry.name}
+                          onChange={(event) => updateInventoryEntry(index, "name", event.target.value)}
+                          placeholder="Item name"
+                        />
+                        <input
+                          className="sheet-meta-input"
+                          value={entry.category}
+                          onChange={(event) => updateInventoryEntry(index, "category", event.target.value)}
+                          placeholder="Category"
+                        />
+                        <input
+                          className="sheet-meta-input"
+                          value={entry.note}
+                          onChange={(event) => updateInventoryEntry(index, "note", event.target.value)}
+                          placeholder="Notes"
+                        />
+                      </div>
+                      <div className="row-actions">
+                        <button type="button" onClick={() => removeInventoryEntry(index)}>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button type="button" className="flow-secondary" onClick={addInventoryEntry}>
+                    Add Item
+                  </button>
+                </>
+              ) : sheetState.inventory.length === 0 ? (
                 <p className="empty-block-copy">No items in inventory.</p>
               ) : (
                 sheetState.inventory.map((entry) => (
