@@ -3,18 +3,22 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { resolveDicePool } from "../config/combat";
 import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
+import { applyHealingToSheet } from "../config/combatResolution";
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
   buildAuraSharedPowerEffect,
+  buildHealingCastResolution,
   canSelectAuraTargets,
   doesActivePowerEffectConflict,
+  getCastPowerTargetLimit,
   isAuraSharedEffect,
   isAuraSourceEffect,
   getCastPowerAllowedStats,
   getCastPowerModeOptions,
   getCastPowerTargetMode,
+  getHealingPowerTotal,
   getSupportedCastablePowers,
   removeActivePowerEffect,
   removeAuraSharedEffectsBySource,
@@ -69,6 +73,10 @@ type PreparedCastRequest = {
   targetCharacterIds: string[];
   manaCost: number;
   effects: ActivePowerEffect[];
+  healingApplications: Array<{
+    targetCharacterId: string;
+    amount: number;
+  }>;
 };
 
 type PendingCastConfirmation = {
@@ -82,6 +90,7 @@ type CastRequestPayload = {
   selectedPower: PowerEntry;
   selectedTargetIds: string[];
   fallbackTargetIds: string[];
+  healingAllocations: Record<string, number>;
   selectedStatId: StatId | null;
   castMode: ActivePowerShareMode;
   encounterParticipants: EncounterParticipantView[];
@@ -465,6 +474,31 @@ function prepareCastRequest(
     return { error: "Select at least one valid target before casting." };
   }
 
+  if (payload.selectedPower.id === "healing") {
+    const healingResolution = buildHealingCastResolution({
+      casterSheet: payload.casterCharacter.sheet,
+      power: payload.selectedPower,
+      targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
+      allocations: payload.healingAllocations,
+    });
+    if ("error" in healingResolution) {
+      return { error: healingResolution.error };
+    }
+
+    return {
+      request: {
+        casterCharacterId: payload.casterCharacter.id,
+        targetCharacterIds: healingResolution.applications.map(
+          (application) => application.targetCharacterId
+        ),
+        manaCost: healingResolution.manaCost,
+        effects: [],
+        healingApplications: healingResolution.applications,
+      },
+      warnings: [],
+    };
+  }
+
   const builtEffects = finalTargets.map((targetCharacter) =>
     buildActivePowerEffect({
       casterCharacterId: payload.casterCharacter.id,
@@ -495,6 +529,7 @@ function prepareCastRequest(
       targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
       manaCost: builtEffects[0] && !("error" in builtEffects[0]) ? builtEffects[0].manaCost : 0,
       effects,
+      healingApplications: [],
     },
     warnings: getReplacementWarnings(finalTargets, effects),
   };
@@ -508,6 +543,7 @@ function CombatantPowerControls({
 }: CombatantPowerControlsProps) {
   const [selectedPowerId, setSelectedPowerId] = useState("");
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
+  const [healingAllocations, setHealingAllocations] = useState<Record<string, string>>({});
   const [selectedStatId, setSelectedStatId] = useState("");
   const [selectedCastMode, setSelectedCastMode] = useState<ActivePowerShareMode>("self");
   const [castError, setCastError] = useState<string | null>(null);
@@ -518,6 +554,7 @@ function CombatantPowerControls({
   const selectedPower =
     castablePowers.find((power) => power.id === selectedPowerId) ?? castablePowers[0] ?? null;
   const targetMode = selectedPower ? getCastPowerTargetMode(selectedPower) : "self";
+  const targetLimit = selectedPower ? getCastPowerTargetLimit(selectedPower) : 1;
   const modeOptions = selectedPower ? getCastPowerModeOptions(selectedPower) : ["self"];
   const allowedStats = selectedPower ? getCastPowerAllowedStats(selectedPower) : [];
   const targetOptions =
@@ -525,7 +562,13 @@ function CombatantPowerControls({
       ? encounterParticipants.filter(
           ({ participant }) => participant.characterId === view.participant.characterId
         )
-      : encounterParticipants.filter(({ character: candidateCharacter }) => candidateCharacter !== null);
+      : encounterParticipants.filter(
+          ({ participant, character: candidateCharacter }) =>
+            candidateCharacter !== null &&
+            (selectedPower?.id !== "healing" ||
+              view.participant.partyId === null ||
+              participant.partyId === view.participant.partyId)
+        );
   const singleTargetId = selectedTargetIds[0] ?? "";
   const resolvedSelectedStatId =
     allowedStats.includes(selectedStatId as StatId) ? (selectedStatId as StatId) : allowedStats[0] ?? "";
@@ -536,11 +579,28 @@ function CombatantPowerControls({
         ? [targetOptions[0].participant.characterId]
         : [];
   const resolvedSingleTargetId = resolvedTargetIds[0] ?? "";
+  const healingTotal = selectedPower && character ? getHealingPowerTotal(character.sheet, selectedPower) : null;
+  const resolvedHealingAllocations = Object.fromEntries(
+    Object.entries(healingAllocations).map(([targetId, value]) => [
+      targetId,
+      Math.max(0, Math.trunc(Number.parseInt(value, 10) || 0)),
+    ])
+  );
+  const allocatedHealingTotal = resolvedTargetIds.reduce(
+    (sum, targetId) => sum + (resolvedHealingAllocations[targetId] ?? 0),
+    0
+  );
   const resolvedCastMode = modeOptions.includes(selectedCastMode === "aura" ? "aura" : "self")
     ? selectedCastMode
     : modeOptions[0];
   const allowedStatsKey = allowedStats.join("|");
   const targetOptionIdsKey = targetOptions.map(({ participant }) => participant.characterId).join("|");
+  const resolvedTargetIdsKey = resolvedTargetIds.join("|");
+  const shouldShowHealingAllocationEditor =
+    selectedPower?.id === "healing" &&
+    targetMode === "multiple" &&
+    healingTotal !== null &&
+    resolvedTargetIds.length > 0;
 
   useEffect(() => {
     if (castablePowers.length === 0) {
@@ -568,6 +628,10 @@ function CombatantPowerControls({
     if (!selectedPower) {
       if (selectedTargetIds.length > 0) {
         setSelectedTargetIds([]);
+      }
+
+      if (Object.keys(healingAllocations).length > 0) {
+        setHealingAllocations({});
       }
 
       if (selectedStatId !== "") {
@@ -614,8 +678,14 @@ function CombatantPowerControls({
         ) {
           setSelectedTargetIds([fallbackTargetId]);
         }
-      } else if (validTargetIds.length !== selectedTargetIds.length) {
-        setSelectedTargetIds(validTargetIds);
+      } else {
+        const cappedTargetIds = validTargetIds.slice(0, targetLimit);
+        if (
+          cappedTargetIds.length !== selectedTargetIds.length ||
+          cappedTargetIds.some((targetId, index) => targetId !== selectedTargetIds[index])
+        ) {
+          setSelectedTargetIds(cappedTargetIds);
+        }
       }
     }
 
@@ -632,16 +702,52 @@ function CombatantPowerControls({
     selectedStatId,
     selectedTargetIds,
     singleTargetId,
+    targetLimit,
     targetMode,
     targetOptionIdsKey,
     view.participant.characterId,
+  ]);
+
+  useEffect(() => {
+    if (
+      selectedPower?.id !== "healing" ||
+      targetMode !== "multiple" ||
+      healingTotal === null ||
+      resolvedTargetIds.length === 0
+    ) {
+      if (Object.keys(healingAllocations).length > 0) {
+        setHealingAllocations({});
+      }
+      return;
+    }
+
+    const nextAllocations = buildDefaultHealingAllocations(healingTotal, resolvedTargetIds);
+    setHealingAllocations((current) => {
+      const currentKeys = Object.keys(current);
+      const nextKeys = Object.keys(nextAllocations);
+
+      if (
+        currentKeys.length === nextKeys.length &&
+        nextKeys.every((key) => current[key] === nextAllocations[key])
+      ) {
+        return current;
+      }
+
+      return nextAllocations;
+    });
+  }, [
+    healingTotal,
+    resolvedTargetIdsKey,
+    selectedPower?.id,
+    selectedPower?.level,
+    targetMode,
   ]);
 
   if (!character) {
     return null;
   }
   const casterCharacter = character;
-  const shouldShowTargetField = selectedPower?.id === "body_reinforcement";
+  const shouldShowTargetField = targetMode !== "self";
   const shouldShowModeField = selectedPower?.id === "shadow_control" && modeOptions.length > 1;
 
   useEffect(() => {
@@ -678,8 +784,17 @@ function CombatantPowerControls({
     setSelectedTargetIds((currentIds) =>
       currentIds.includes(targetId)
         ? currentIds.filter((currentId) => currentId !== targetId)
-        : [...currentIds, targetId]
+        : currentIds.length >= targetLimit
+          ? currentIds
+          : [...currentIds, targetId]
     );
+  }
+
+  function updateHealingAllocation(targetId: string, value: string): void {
+    setHealingAllocations((current) => ({
+      ...current,
+      [targetId]: value,
+    }));
   }
 
   function handleCast(): void {
@@ -694,6 +809,7 @@ function CombatantPowerControls({
       selectedPower,
       selectedTargetIds,
       fallbackTargetIds: resolvedTargetIds,
+      healingAllocations: resolvedHealingAllocations,
       selectedStatId: resolvedSelectedStatId || null,
       castMode: resolvedCastMode,
       encounterParticipants,
@@ -896,24 +1012,29 @@ function CombatantPowerControls({
 
               {shouldShowTargetField ? (
                 <label className="dm-field">
-                  <span>Target</span>
+                  <span>{targetMode === "multiple" ? "Targets" : "Target"}</span>
                   {targetMode === "multiple" ? (
-                    <div className="dm-target-multi-grid">
-                      {targetOptions.map(({ participant }) => {
-                        const isSelected = selectedTargetIds.includes(participant.characterId);
+                    <>
+                      <div className="dm-target-multi-grid">
+                        {targetOptions.map(({ participant }) => {
+                          const isSelected = selectedTargetIds.includes(participant.characterId);
 
-                        return (
-                          <button
-                            key={participant.characterId}
-                            type="button"
-                            className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
-                            onClick={() => toggleTarget(participant.characterId)}
-                          >
-                            {participant.displayName}
-                          </button>
-                        );
-                      })}
-                    </div>
+                          return (
+                            <button
+                              key={participant.characterId}
+                              type="button"
+                              className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
+                              onClick={() => toggleTarget(participant.characterId)}
+                            >
+                              {participant.displayName}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <small className="dm-field-hint">
+                        Up to {targetLimit} target{targetLimit === 1 ? "" : "s"}.
+                      </small>
+                    </>
                   ) : (
                     <select
                       value={resolvedSingleTargetId}
@@ -961,6 +1082,52 @@ function CombatantPowerControls({
                 </label>
               ) : null}
             </div>
+
+            {selectedPower?.id === "healing" && healingTotal !== null ? (
+              <div className="dm-healing-panel">
+                <div className="dm-summary-box">
+                  <strong>Heal Pool</strong>
+                  <span>{healingTotal}</span>
+                </div>
+                <div className="dm-summary-box">
+                  <strong>Target Limit</strong>
+                  <span>{targetLimit}</span>
+                </div>
+                {shouldShowHealingAllocationEditor ? (
+                  <div className="dm-summary-box">
+                    <strong>Allocated</strong>
+                    <span>
+                      {allocatedHealingTotal} / {healingTotal}
+                    </span>
+                  </div>
+                ) : null}
+
+                {shouldShowHealingAllocationEditor ? (
+                  <div className="dm-healing-allocation-grid">
+                    {resolvedTargetIds.map((targetId) => {
+                      const targetLabel =
+                        targetOptions.find(({ participant }) => participant.characterId === targetId)
+                          ?.participant.displayName ?? targetId;
+
+                      return (
+                        <label key={targetId} className="dm-field">
+                          <span>{targetLabel}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max={healingTotal}
+                            value={healingAllocations[targetId] ?? "0"}
+                            onChange={(event) =>
+                              updateHealingAllocation(targetId, event.target.value)
+                            }
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="dm-control-row">
               <button type="button" className="flow-primary" onClick={handleCast}>
@@ -1161,6 +1328,30 @@ export function CombatEncounterPage() {
     const spentMana = spendPowerMana(casterCharacter.sheet, request.manaCost);
     if ("error" in spentMana) {
       return spentMana.error;
+    }
+
+    if (request.healingApplications.length > 0) {
+      const selfHealingApplication = request.healingApplications.find(
+        (application) => application.targetCharacterId === casterCharacter.id
+      );
+
+      if (selfHealingApplication) {
+        updateCharacter(casterCharacter.id, () =>
+          applyHealingToSheet(spentMana.sheet, selfHealingApplication.amount).sheet
+        );
+      } else {
+        updateCharacter(casterCharacter.id, spentMana.sheet);
+      }
+
+      request.healingApplications
+        .filter((application) => application.targetCharacterId !== casterCharacter.id)
+        .forEach((application) => {
+          updateCharacter(application.targetCharacterId, (currentSheet) =>
+            applyHealingToSheet(currentSheet, application.amount).sheet
+          );
+        });
+
+      return null;
     }
 
     const auraSourceEffects = request.effects.filter((effect) => isAuraSourceEffect(effect));
@@ -2001,6 +2192,26 @@ export function CombatEncounterPage() {
 function getAuraSelectedTargetIds(effect: ActivePowerEffect): string[] {
   const targetIds = effect.sharedTargetCharacterIds ?? [effect.casterCharacterId];
   return Array.from(new Set([effect.casterCharacterId, ...targetIds]));
+}
+
+function buildDefaultHealingAllocations(
+  totalAmount: number,
+  targetIds: string[]
+): Record<string, string> {
+  if (targetIds.length === 0) {
+    return {};
+  }
+
+  const normalizedTotal = Math.max(0, Math.trunc(totalAmount));
+  const baseAmount = Math.floor(normalizedTotal / targetIds.length);
+  const remainder = normalizedTotal % targetIds.length;
+
+  return Object.fromEntries(
+    targetIds.map((targetId, index) => [
+      targetId,
+      String(baseAmount + (index < remainder ? 1 : 0)),
+    ])
+  );
 }
 
 function getEncounterPartyMembers(

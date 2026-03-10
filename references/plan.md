@@ -62,3 +62,35 @@ P.2 Keep attack delivery and mitigation separate in the rules model.
     - No summon casting yet.
     - No player-side combat panel casting yet.
     - No encounter persistence yet.
+
+## Current State on This Branch
+- Phase 1 is implemented locally.
+- Phase 2 first-slice casting is implemented for `Body Reinforcement`, `Light Support`, and `Shadow Control` cloak.
+- Combat dashboard staging now includes party assignment and bulk-add actions.
+- Combat encounter now includes party views and aura-source target sharing for `LS` and `SC`.
+- DM runtime editing and aura target controls are implemented locally on the combat encounter page.
+
+## Phase 3 - Direct Damage and Healing
+3.1 Add local combat-side HP resolution helpers.
+    - Damage and healing must update persisted character runtime values.
+    - The same runtime values must be reflected on character sheets and combat encounter cards.
+    - Keep damage delivery separate from mitigation.
+3.2 Add the first healing implementation.
+    - Start with `Healing`.
+    - Support combat-side HP healing, including level 2 split-heal allocation.
+    - Defer status removal, limb regrowth, and overheal to later rule slices.
+3.3 Add the first direct damage implementations.
+    - Start with `Shadow Manipulation`.
+    - Then add `Necrotic Touch`.
+    - Then add `Elementalist` damage options.
+3.4 Keep this slice local-only and DM-side only.
+    - No summon casting yet.
+    - No player-side combat panel yet.
+    - No encounter persistence or realtime sync yet.
+
+## Future Spec - DM Editing
+D.1 Use `references/dm_editing_spec.md` as the implementation spec for DM-side character edits.
+    - Split DM edits into `Runtime Adjustments`, `Sheet Administration`, and `Admin Override`.
+    - Keep combat-side edits focused on runtime values.
+    - Keep progression-sensitive permanent edits behind reason + confirmation.
+    - Add a DM audit log when implemented.

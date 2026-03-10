@@ -552,6 +552,13 @@ select {
   gap: 6px;
 }
 
+.dm-field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: #745745;
+}
+
 .dm-target-chip {
   padding: 8px 10px;
   border: 1px solid rgba(84, 57, 37, 0.16);
@@ -636,6 +643,18 @@ select {
 .dm-summary-box span {
   margin-top: 6px;
   color: #2b190f;
+}
+
+.dm-healing-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.dm-healing-allocation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
 }
 
 .dm-target-button {

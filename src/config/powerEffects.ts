@@ -5,11 +5,15 @@ import type {
   ActivePowerShareMode,
 } from "../types/activePowerEffects";
 import type { CharacterDraft, PowerEntry, StatId } from "./characterTemplate.ts";
-import { buildCharacterDerivedValues } from "./characterRuntime.ts";
+import { buildCharacterDerivedValues, getCurrentStatValue } from "./characterRuntime.ts";
 import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 
 export type CastPowerTargetMode = "self" | "single" | "multiple";
 export type CastPowerMode = "self" | "aura";
+export type HealingCastApplication = {
+  targetCharacterId: string;
+  amount: number;
+};
 
 const LIGHT_SUPPORT_STACK_KEYS = new Set(["light_support", "light_support:aura"]);
 const SHADOW_CLOAK_STACK_KEYS = new Set([
@@ -183,7 +187,7 @@ function createEffect(
 }
 
 export function getSupportedCastablePowerIds(): string[] {
-  return ["body_reinforcement", "light_support", "shadow_control"];
+  return ["body_reinforcement", "healing", "light_support", "shadow_control"];
 }
 
 export function isSupportedCastablePower(powerId: string): boolean {
@@ -195,6 +199,10 @@ export function getSupportedCastablePowers(sheet: CharacterDraft): PowerEntry[] 
 }
 
 export function getCastPowerTargetMode(power: PowerEntry): CastPowerTargetMode {
+  if (power.id === "healing") {
+    return getCastPowerTargetLimit(power) > 1 ? "multiple" : "single";
+  }
+
   if (power.id === "light_support") {
     return "self";
   }
@@ -208,6 +216,20 @@ export function getCastPowerTargetMode(power: PowerEntry): CastPowerTargetMode {
   }
 
   return "single";
+}
+
+export function getCastPowerTargetLimit(power: PowerEntry): number {
+  if (power.id === "healing") {
+    const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
+    const healing =
+      runtimeLevel?.mechanics?.healing && typeof runtimeLevel.mechanics.healing === "object"
+        ? (runtimeLevel.mechanics.healing as Record<string, unknown>)
+        : null;
+    const maxTargets = healing ? asNumber(healing.max_targets) : 0;
+    return Math.max(1, maxTargets || 1);
+  }
+
+  return 1;
 }
 
 export function getCastPowerAllowedStats(power: PowerEntry): StatId[] {
@@ -230,6 +252,116 @@ export function getCastPowerModeOptions(power: PowerEntry): CastPowerMode[] {
   }
 
   return ["self"];
+}
+
+export function getHealingPowerTotal(sheet: CharacterDraft, power: PowerEntry): number | null {
+  if (power.id !== "healing") {
+    return null;
+  }
+
+  const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
+  if (!runtimeLevel) {
+    return null;
+  }
+
+  const healing =
+    runtimeLevel.mechanics?.healing && typeof runtimeLevel.mechanics.healing === "object"
+      ? (runtimeLevel.mechanics.healing as Record<string, unknown>)
+      : null;
+  if (!healing) {
+    return null;
+  }
+
+  const baseStat = isStatId(healing.base_stat) ? healing.base_stat : "INT";
+  return Math.max(0, getCurrentStatValue(sheet, baseStat) + asNumber(healing.flat_bonus));
+}
+
+function splitEvenly(totalAmount: number, targetCount: number): number[] {
+  if (targetCount <= 0) {
+    return [];
+  }
+
+  const normalizedTotal = Math.max(0, Math.trunc(totalAmount));
+  const baseAmount = Math.floor(normalizedTotal / targetCount);
+  const remainder = normalizedTotal % targetCount;
+
+  return Array.from({ length: targetCount }, (_, index) =>
+    baseAmount + (index < remainder ? 1 : 0)
+  );
+}
+
+export function buildHealingCastResolution(request: {
+  casterSheet: CharacterDraft;
+  power: PowerEntry;
+  targetCharacterIds: string[];
+  allocations?: Record<string, number>;
+}): { error: string } | { manaCost: number; applications: HealingCastApplication[]; totalAmount: number } {
+  if (request.power.id !== "healing") {
+    return { error: `${request.power.name} is not a healing power.` };
+  }
+
+  const runtimeLevel = getRuntimePowerLevelDefinition(request.power.id, request.power.level);
+  if (!runtimeLevel) {
+    return { error: `Power data for ${request.power.name} Lv ${request.power.level} is missing.` };
+  }
+
+  const totalAmount = getHealingPowerTotal(request.casterSheet, request.power);
+  if (totalAmount === null) {
+    return { error: `Healing data for ${request.power.name} Lv ${request.power.level} is missing.` };
+  }
+
+  const manaCost = asNumber(runtimeLevel.mana_cost);
+  const uniqueTargetIds = Array.from(new Set(request.targetCharacterIds));
+  const targetLimit = getCastPowerTargetLimit(request.power);
+
+  if (uniqueTargetIds.length === 0) {
+    return { error: "Select at least one valid healing target." };
+  }
+
+  if (uniqueTargetIds.length > targetLimit) {
+    return { error: `Healing can affect at most ${targetLimit} target(s) at this level.` };
+  }
+
+  if (targetLimit === 1) {
+    return {
+      manaCost,
+      totalAmount,
+      applications: [
+        {
+          targetCharacterId: uniqueTargetIds[0],
+          amount: totalAmount,
+        },
+      ],
+    };
+  }
+
+  const fallbackDistribution = splitEvenly(totalAmount, uniqueTargetIds.length);
+  const normalizedAllocations = uniqueTargetIds.map((targetId, index) => {
+    const rawValue = request.allocations?.[targetId];
+    const amount = Number.isFinite(rawValue) ? Math.max(0, Math.trunc(rawValue ?? 0)) : fallbackDistribution[index];
+    return {
+      targetCharacterId: targetId,
+      amount,
+    };
+  });
+  const allocatedTotal = normalizedAllocations.reduce((sum, entry) => sum + entry.amount, 0);
+
+  if (allocatedTotal > totalAmount) {
+    return {
+      error: `Healing allocation exceeds the available heal pool (${allocatedTotal} / ${totalAmount}).`,
+    };
+  }
+
+  const positiveAllocations = normalizedAllocations.filter((entry) => entry.amount > 0);
+  if (positiveAllocations.length === 0) {
+    return { error: "Allocate at least 1 healing to one selected target." };
+  }
+
+  return {
+    manaCost,
+    totalAmount,
+    applications: positiveAllocations,
+  };
 }
 
 export function buildActivePowerEffect(
