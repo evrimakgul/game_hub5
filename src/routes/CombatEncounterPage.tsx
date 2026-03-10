@@ -9,12 +9,16 @@ import {
   buildActivePowerEffect,
   buildAuraSharedPowerEffect,
   canSelectAuraTargets,
+  doesActivePowerEffectConflict,
+  isAuraSharedEffect,
+  isAuraSourceEffect,
   getCastPowerAllowedStats,
   getCastPowerModeOptions,
   getCastPowerTargetMode,
   getSupportedCastablePowers,
   removeActivePowerEffect,
   removeAuraSharedEffectsBySource,
+  removeAuraSharedEffectsForTarget,
   spendPowerMana,
   updateAuraSourceTargets,
 } from "../config/powerEffects";
@@ -423,15 +427,9 @@ function getReplacementWarnings(
   return finalTargets.flatMap((targetCharacter, index) => {
     const builtEffect = builtEffects[index];
 
-    const existingEffect = (targetCharacter.sheet.activePowerEffects ?? []).find((effect) => {
-      const sameStackKey =
-        typeof effect.stackKey === "string" && effect.stackKey === builtEffect.stackKey;
-      const samePowerAndStat =
-        effect.powerId === builtEffect.powerId &&
-        (effect.selectedStatId ?? null) === (builtEffect.selectedStatId ?? null);
-
-      return sameStackKey || samePowerAndStat;
-    });
+    const existingEffect = (targetCharacter.sheet.activePowerEffects ?? []).find(
+      (effect) => doesActivePowerEffectConflict(effect, builtEffect)
+    );
 
     if (!existingEffect) {
       return [];
@@ -704,12 +702,12 @@ function CombatantPowerControls({
   }
 
   function handleRemoveEffect(effect: ActivePowerEffect): void {
-    if (effect.effectKind === "aura_source") {
+    if (isAuraSourceEffect(effect)) {
       getAuraSelectedTargetIds(effect)
         .filter((targetId) => targetId !== effect.casterCharacterId)
         .forEach((targetId) => {
           updateCharacter(targetId, (currentSheet) =>
-            removeAuraSharedEffectsBySource(currentSheet, effect.id)
+            removeAuraSharedEffectsForTarget(currentSheet, effect, targetId)
           );
         });
       setOpenAuraEffectId((currentEffectId) => (currentEffectId === effect.id ? null : currentEffectId));
@@ -717,7 +715,7 @@ function CombatantPowerControls({
       return;
     }
 
-    if (effect.effectKind === "aura_shared" && effect.sourceEffectId) {
+    if (isAuraSharedEffect(effect) && effect.sourceEffectId) {
       updateCharacter(effect.casterCharacterId, (currentSheet) => {
         const sourceEffect = (currentSheet.activePowerEffects ?? []).find(
           (candidate) => candidate.id === effect.sourceEffectId
@@ -738,58 +736,135 @@ function CombatantPowerControls({
   }
 
   function toggleAuraTarget(sourceEffect: ActivePowerEffect, targetId: string): void {
-    if (targetId === sourceEffect.casterCharacterId) {
-      return;
-    }
-
-    const currentTargetIds = getAuraSelectedTargetIds(sourceEffect);
-    const nextTargetIds = currentTargetIds.includes(targetId)
-      ? currentTargetIds.filter((entryId) => entryId !== targetId)
-      : [...currentTargetIds, targetId];
-
-    updateCharacter(sourceEffect.casterCharacterId, (currentSheet) =>
-      updateAuraSourceTargets(currentSheet, sourceEffect.id, nextTargetIds)
-    );
-
-    if (currentTargetIds.includes(targetId)) {
-      updateCharacter(targetId, (currentSheet) =>
-        removeAuraSharedEffectsBySource(currentSheet, sourceEffect.id)
-      );
-      return;
-    }
-
+    const latestSourceEffect =
+      (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
+      sourceEffect;
     const targetCharacter =
       encounterParticipants.find(({ participant }) => participant.characterId === targetId)?.character ?? null;
+
     if (!targetCharacter) {
       return;
     }
 
-    const conflictingAura = (targetCharacter.sheet.activePowerEffects ?? []).find(
-      (candidate) =>
-        candidate.effectKind === "aura_shared" &&
-        candidate.stackKey === sourceEffect.stackKey &&
-        candidate.sourceEffectId !== sourceEffect.id
+    const isCurrentlyAffected = isTargetAffectedByAuraSource(latestSourceEffect, targetCharacter);
+    const nextTargetIds = isCurrentlyAffected
+      ? getAuraSelectedTargetIds(latestSourceEffect).filter((entryId) => entryId !== targetId)
+      : [...getAuraSelectedTargetIds(latestSourceEffect), targetId];
+
+    applyAuraTargets(latestSourceEffect, nextTargetIds);
+  }
+
+  function applyAuraTargets(sourceEffect: ActivePowerEffect, rawTargetIds: string[]): void {
+    const latestSourceEffect =
+      (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
+      sourceEffect;
+    const nextTargetIds = Array.from(
+      new Set(
+        [latestSourceEffect.casterCharacterId, ...rawTargetIds].filter(
+          (targetId) =>
+            targetId === latestSourceEffect.casterCharacterId ||
+            encounterParticipants.some(
+              ({ character: candidateCharacter, participant }) =>
+                participant.characterId === targetId && candidateCharacter !== null
+            )
+        )
+      )
+    );
+    const currentTargetIds = encounterParticipants.flatMap(({ participant, character: targetCharacter }) => {
+      if (!targetCharacter || !isTargetAffectedByAuraSource(latestSourceEffect, targetCharacter)) {
+        return [];
+      }
+
+      return [participant.characterId];
+    });
+    const targetIdsToRemove = currentTargetIds.filter(
+      (targetId) =>
+        targetId !== latestSourceEffect.casterCharacterId && !nextTargetIds.includes(targetId)
+    );
+    const targetIdsToAdd = nextTargetIds.filter(
+      (targetId) =>
+        targetId !== latestSourceEffect.casterCharacterId && !currentTargetIds.includes(targetId)
     );
 
-    if (conflictingAura?.sourceEffectId) {
-      updateCharacter(conflictingAura.casterCharacterId, (currentSheet) => {
-        const existingSourceEffect = (currentSheet.activePowerEffects ?? []).find(
-          (candidate) => candidate.id === conflictingAura.sourceEffectId
-        );
-        if (!existingSourceEffect) {
-          return currentSheet;
-        }
+    updateCharacter(latestSourceEffect.casterCharacterId, (currentSheet) =>
+      updateAuraSourceTargets(currentSheet, latestSourceEffect.id, nextTargetIds)
+    );
 
-        return updateAuraSourceTargets(
-          currentSheet,
-          conflictingAura.sourceEffectId,
-          getAuraSelectedTargetIds(existingSourceEffect).filter((entryId) => entryId !== targetId)
-        );
-      });
-    }
+    targetIdsToRemove.forEach((targetId) => {
+      updateCharacter(targetId, (currentSheet) =>
+        removeAuraSharedEffectsForTarget(currentSheet, latestSourceEffect, targetId)
+      );
+    });
 
-    updateCharacter(targetId, (currentSheet) =>
-      applyActivePowerEffect(currentSheet, buildAuraSharedPowerEffect(sourceEffect, targetId))
+    targetIdsToAdd.forEach((targetId) => {
+      const targetCharacter =
+        encounterParticipants.find(({ participant }) => participant.characterId === targetId)?.character ?? null;
+      if (!targetCharacter) {
+        return;
+      }
+
+      const nextSharedEffect = buildAuraSharedPowerEffect(latestSourceEffect, targetId);
+      const conflictingAura = (targetCharacter.sheet.activePowerEffects ?? []).find(
+        (candidate) =>
+          isAuraSharedEffect(candidate) &&
+          candidate.sourceEffectId !== latestSourceEffect.id &&
+          doesActivePowerEffectConflict(candidate, nextSharedEffect)
+      );
+
+      if (conflictingAura?.sourceEffectId) {
+        updateCharacter(conflictingAura.casterCharacterId, (currentSheet) => {
+          const existingSourceEffect = (currentSheet.activePowerEffects ?? []).find(
+            (candidate) => candidate.id === conflictingAura.sourceEffectId
+          );
+          if (!existingSourceEffect) {
+            return currentSheet;
+          }
+
+          return updateAuraSourceTargets(
+            currentSheet,
+            conflictingAura.sourceEffectId,
+            getAuraSelectedTargetIds(existingSourceEffect).filter((entryId) => entryId !== targetId)
+          );
+        });
+      }
+
+      updateCharacter(targetId, (currentSheet) =>
+        applyActivePowerEffect(currentSheet, nextSharedEffect)
+      );
+    });
+  }
+
+  function applyAuraToAllAllies(sourceEffect: ActivePowerEffect): void {
+    const casterPartyId = encounterParticipants.find(
+      ({ participant }) => participant.characterId === sourceEffect.casterCharacterId
+    )?.participant.partyId;
+    const alliedTargetIds = encounterParticipants
+      .filter(
+        ({ participant, character: targetCharacter }) =>
+          targetCharacter !== null &&
+          participant.partyId !== null &&
+          participant.partyId === casterPartyId
+      )
+      .map(({ participant }) => participant.characterId);
+    const latestSourceEffect =
+      (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
+      sourceEffect;
+    const alliedNonSelfTargetIds = alliedTargetIds.filter(
+      (targetId) => targetId !== latestSourceEffect.casterCharacterId
+    );
+    const everyAllyIsAffected = alliedNonSelfTargetIds.every((targetId) => {
+      const targetCharacter =
+        encounterParticipants.find(({ participant }) => participant.characterId === targetId)?.character ??
+        null;
+
+      return targetCharacter
+        ? isTargetAffectedByAuraSource(latestSourceEffect, targetCharacter)
+        : false;
+    });
+
+    applyAuraTargets(
+      latestSourceEffect,
+      everyAllyIsAffected ? [latestSourceEffect.casterCharacterId] : alliedTargetIds
     );
   }
 
@@ -913,22 +988,27 @@ function CombatantPowerControls({
                     {effect.casterName} {"->"} {effect.powerName}
                   </small>
                 </div>
-                <div className="dm-effect-actions">
-                  {effect.effectKind === "aura_source" ? (
-                    <button
-                      type="button"
-                      className="flow-secondary"
-                      disabled={!canSelectAuraTargets(effect)}
-                      onClick={() =>
-                        canSelectAuraTargets(effect)
-                          ? setOpenAuraEffectId((currentEffectId) =>
-                              currentEffectId === effect.id ? null : effect.id
-                            )
-                          : null
-                      }
-                    >
-                      Select Affected Targets
-                    </button>
+                <div
+                  className="dm-effect-actions"
+                  ref={openAuraEffectId === effect.id ? auraPopoverRef : null}
+                >
+                  {isAuraSourceEffect(effect) ? (
+                    <>
+                      <button
+                        type="button"
+                        className="flow-secondary"
+                        disabled={!canSelectAuraTargets(effect)}
+                        onClick={() =>
+                          canSelectAuraTargets(effect)
+                            ? setOpenAuraEffectId((currentEffectId) =>
+                                currentEffectId === effect.id ? null : effect.id
+                              )
+                            : null
+                        }
+                      >
+                        Affected Targets
+                      </button>
+                    </>
                   ) : null}
                   <button
                     type="button"
@@ -937,34 +1017,52 @@ function CombatantPowerControls({
                   >
                     Remove
                   </button>
-                </div>
-                {openAuraEffectId === effect.id && canSelectAuraTargets(effect) ? (
-                  <div ref={auraPopoverRef} className="dm-aura-popover">
-                    <p className="section-kicker">Affected Targets</p>
-                    <div className="dm-target-multi-grid">
-                      {encounterParticipants
-                        .filter(({ character: candidateCharacter }) => candidateCharacter !== null)
-                        .map(({ participant }) => {
-                          const isSelf = participant.characterId === effect.casterCharacterId;
-                          const isSelected = getAuraSelectedTargetIds(effect).includes(
-                            participant.characterId
-                          );
+                  {openAuraEffectId === effect.id && canSelectAuraTargets(effect) ? (
+                    <div className="dm-aura-popover">
+                      <div className="dm-aura-popover-head">
+                        <p className="section-kicker">Affected Targets</p>
+                        <button
+                          type="button"
+                          className="flow-secondary"
+                          onClick={() => applyAuraToAllAllies(effect)}
+                        >
+                          All Allies
+                        </button>
+                      </div>
+                      <div className="dm-target-multi-grid">
+                        {encounterParticipants
+                          .filter(({ character: candidateCharacter }) => candidateCharacter !== null)
+                          .map(({ participant }) => {
+                            const isSelf = participant.characterId === effect.casterCharacterId;
+                            const targetCharacter =
+                              encounterParticipants.find(
+                                ({ character: candidateCharacter, participant: candidateParticipant }) =>
+                                  candidateParticipant.characterId === participant.characterId &&
+                                  candidateCharacter !== null
+                              )?.character ?? null;
+                            const isSelected =
+                              isSelf ||
+                              (targetCharacter
+                                ? isTargetAffectedByAuraSource(effect, targetCharacter)
+                                : false);
 
-                          return (
-                            <button
-                              key={participant.characterId}
-                              type="button"
+                            return (
+                              <button
+                                key={participant.characterId}
+                                type="button"
                               className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
+                              aria-pressed={isSelf ? undefined : isSelected}
                               disabled={isSelf}
                               onClick={() => toggleAuraTarget(effect, participant.characterId)}
                             >
-                              {participant.displayName}
+                              {isSelf ? "Self" : participant.displayName}
                             </button>
                           );
                         })}
+                      </div>
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>
@@ -1065,22 +1163,23 @@ export function CombatEncounterPage() {
       return spentMana.error;
     }
 
-    const auraSourceEffects = request.effects.filter((effect) => effect.effectKind === "aura_source");
+    const auraSourceEffects = request.effects.filter((effect) => isAuraSourceEffect(effect));
     auraSourceEffects.forEach((sourceEffect) => {
       (casterCharacter.sheet.activePowerEffects ?? [])
         .filter(
           (existingEffect) =>
-            existingEffect.effectKind === "aura_source" && existingEffect.stackKey === sourceEffect.stackKey
+            isAuraSourceEffect(existingEffect) &&
+            doesActivePowerEffectConflict(existingEffect, sourceEffect)
         )
-        .forEach((existingEffect) => {
-          getAuraSelectedTargetIds(existingEffect)
-            .filter((targetId) => targetId !== casterCharacter.id)
-            .forEach((targetId) => {
-              updateCharacter(targetId, (currentSheet) =>
-                removeAuraSharedEffectsBySource(currentSheet, existingEffect.id)
-              );
+            .forEach((existingEffect) => {
+              getAuraSelectedTargetIds(existingEffect)
+                .filter((targetId) => targetId !== casterCharacter.id)
+                .forEach((targetId) => {
+                  updateCharacter(targetId, (currentSheet) =>
+                    removeAuraSharedEffectsForTarget(currentSheet, existingEffect, targetId)
+                  );
+                });
             });
-        });
     });
 
     const isSelfCast =
@@ -1923,4 +2022,21 @@ function getEncounterPartyMembers(
       },
     ];
   });
+}
+
+function isTargetAffectedByAuraSource(
+  sourceEffect: ActivePowerEffect,
+  targetCharacter: CharacterRecord
+): boolean {
+  if (targetCharacter.id === sourceEffect.casterCharacterId) {
+    return true;
+  }
+
+  const comparisonEffect = buildAuraSharedPowerEffect(sourceEffect, targetCharacter.id);
+  return (targetCharacter.sheet.activePowerEffects ?? []).some(
+    (effect) =>
+      isAuraSharedEffect(effect) &&
+      (effect.sourceEffectId === sourceEffect.id ||
+        doesActivePowerEffectConflict(effect, comparisonEffect))
+  );
 }

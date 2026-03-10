@@ -11,6 +11,101 @@ import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 export type CastPowerTargetMode = "self" | "single" | "multiple";
 export type CastPowerMode = "self" | "aura";
 
+const LIGHT_SUPPORT_STACK_KEYS = new Set(["light_support", "light_support:aura"]);
+const SHADOW_CLOAK_STACK_KEYS = new Set([
+  "shadow_control:cloak",
+  "shadow_control:cloak:self",
+  "shadow_control:cloak:aura",
+]);
+
+function isLegacyAuraSelfEffect(effect: ActivePowerEffect): boolean {
+  return (
+    effect.effectKind === "direct" &&
+    effect.targetCharacterId === effect.casterCharacterId &&
+    (effect.powerId === "light_support" || effect.powerId === "shadow_control")
+  );
+}
+
+function isLegacyAuraSharedEffect(effect: ActivePowerEffect): boolean {
+  return (
+    effect.effectKind === "direct" &&
+    effect.targetCharacterId !== effect.casterCharacterId &&
+    (effect.powerId === "light_support" || effect.powerId === "shadow_control")
+  );
+}
+
+function getNormalizedAuraStackKey(effect: ActivePowerEffect): string {
+  if (effect.powerId === "light_support" && LIGHT_SUPPORT_STACK_KEYS.has(effect.stackKey)) {
+    return "light_support";
+  }
+
+  if (effect.powerId === "shadow_control" && SHADOW_CLOAK_STACK_KEYS.has(effect.stackKey)) {
+    return "shadow_control:cloak";
+  }
+
+  return effect.stackKey;
+}
+
+function inferShadowControlShareMode(effect: ActivePowerEffect): ActivePowerShareMode {
+  const runtimeLevel = getRuntimePowerLevelDefinition("shadow_control", effect.sourceLevel);
+  const mechanics = runtimeLevel?.mechanics ?? {};
+  const manaCostVariants =
+    mechanics.mana_cost_variants && typeof mechanics.mana_cost_variants === "object"
+      ? (mechanics.mana_cost_variants as Record<string, unknown>)
+      : {};
+  const selfOnlyManaCost =
+    typeof manaCostVariants.self_only === "number" ? manaCostVariants.self_only : null;
+  const sharedManaCost =
+    typeof manaCostVariants.shared_with_allies === "number"
+      ? manaCostVariants.shared_with_allies
+      : null;
+  const hasSharedTargets = (effect.sharedTargetCharacterIds ?? []).some(
+    (targetId) => targetId !== effect.casterCharacterId
+  );
+
+  if (hasSharedTargets) {
+    return "aura";
+  }
+
+  if (
+    effect.manaCost !== null &&
+    sharedManaCost !== null &&
+    selfOnlyManaCost !== sharedManaCost &&
+    effect.manaCost === sharedManaCost
+  ) {
+    return "aura";
+  }
+
+  return "self";
+}
+
+export function isAuraSourceEffect(effect: ActivePowerEffect): boolean {
+  return effect.effectKind === "aura_source" || isLegacyAuraSelfEffect(effect);
+}
+
+export function isAuraSharedEffect(effect: ActivePowerEffect): boolean {
+  return effect.effectKind === "aura_shared" || isLegacyAuraSharedEffect(effect);
+}
+
+export function getAuraShareMode(effect: ActivePowerEffect): ActivePowerShareMode {
+  if (
+    effect.powerId !== "shadow_control" &&
+    (effect.shareMode === "self" || effect.shareMode === "aura")
+  ) {
+    return effect.shareMode;
+  }
+
+  if (effect.powerId === "light_support" && isAuraSourceEffect(effect)) {
+    return "aura";
+  }
+
+  if (effect.powerId === "shadow_control" && isAuraSourceEffect(effect)) {
+    return inferShadowControlShareMode(effect);
+  }
+
+  return null;
+}
+
 export type CastPowerBuildRequest = {
   casterCharacterId: string;
   casterName: string;
@@ -239,7 +334,7 @@ export function buildActivePowerEffect(
         request,
         manaCost,
         actionType,
-        "light_support:aura",
+        "light_support",
         "aura_source",
         `${request.power.name} Lv ${request.power.level}`,
         joinSummary(summaryParts),
@@ -308,9 +403,7 @@ export function buildActivePowerEffect(
         request,
         resolvedManaCost,
         actionType,
-        request.castMode === "aura"
-          ? "shadow_control:cloak:aura"
-          : "shadow_control:cloak:self",
+        "shadow_control:cloak",
         "aura_source",
         `${request.power.name} Lv ${request.power.level}`,
         joinSummary(summaryParts),
@@ -328,6 +421,39 @@ export function buildActivePowerEffect(
   return { error: `${request.power.name} is not supported by the first cast slice yet.` };
 }
 
+export function doesActivePowerEffectConflict(
+  existingEffect: ActivePowerEffect,
+  incomingEffect: ActivePowerEffect
+): boolean {
+  if (existingEffect.targetCharacterId !== incomingEffect.targetCharacterId) {
+    return false;
+  }
+
+  if (getNormalizedAuraStackKey(existingEffect) === getNormalizedAuraStackKey(incomingEffect)) {
+    return true;
+  }
+
+  if (
+    existingEffect.powerId === "light_support" &&
+    incomingEffect.powerId === "light_support" &&
+    LIGHT_SUPPORT_STACK_KEYS.has(existingEffect.stackKey) &&
+    LIGHT_SUPPORT_STACK_KEYS.has(incomingEffect.stackKey)
+  ) {
+    return true;
+  }
+
+  if (
+    existingEffect.powerId === "shadow_control" &&
+    incomingEffect.powerId === "shadow_control" &&
+    SHADOW_CLOAK_STACK_KEYS.has(existingEffect.stackKey) &&
+    SHADOW_CLOAK_STACK_KEYS.has(incomingEffect.stackKey)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 export function applyActivePowerEffect(
   sheet: CharacterDraft,
   effect: ActivePowerEffect
@@ -336,11 +462,7 @@ export function applyActivePowerEffect(
     ...sheet,
     activePowerEffects: [
       ...(sheet.activePowerEffects ?? []).filter(
-        (existingEffect) =>
-          !(
-            existingEffect.targetCharacterId === effect.targetCharacterId &&
-            existingEffect.stackKey === effect.stackKey
-          )
+        (existingEffect) => !doesActivePowerEffectConflict(existingEffect, effect)
       ),
       effect,
     ],
@@ -355,6 +477,7 @@ export function buildAuraSharedPowerEffect(
     ...sourceEffect,
     id: `power-effect-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     effectKind: "aura_shared",
+    stackKey: getNormalizedAuraStackKey(sourceEffect),
     targetCharacterId,
     sourceEffectId: sourceEffect.id,
     sharedTargetCharacterIds: null,
@@ -364,7 +487,7 @@ export function buildAuraSharedPowerEffect(
 }
 
 export function canSelectAuraTargets(effect: ActivePowerEffect): boolean {
-  return effect.effectKind === "aura_source" && effect.shareMode === "aura";
+  return isAuraSourceEffect(effect) && getAuraShareMode(effect) === "aura";
 }
 
 export function updateAuraSourceTargets(
@@ -378,6 +501,9 @@ export function updateAuraSourceTargets(
       effect.id === sourceEffectId
         ? {
             ...effect,
+            effectKind: "aura_source",
+            stackKey: getNormalizedAuraStackKey(effect),
+            shareMode: getAuraShareMode(effect),
             sharedTargetCharacterIds: [...targetCharacterIds],
           }
         : effect
@@ -394,6 +520,33 @@ export function removeAuraSharedEffectsBySource(
     activePowerEffects: (sheet.activePowerEffects ?? []).filter(
       (effect) => effect.sourceEffectId !== sourceEffectId
     ),
+  };
+}
+
+export function removeAuraSharedEffectsForTarget(
+  sheet: CharacterDraft,
+  sourceEffect: ActivePowerEffect,
+  targetCharacterId: string
+): CharacterDraft {
+  const comparisonEffect = buildAuraSharedPowerEffect(sourceEffect, targetCharacterId);
+
+  return {
+    ...sheet,
+    activePowerEffects: (sheet.activePowerEffects ?? []).filter((effect) => {
+      if (effect.targetCharacterId !== targetCharacterId) {
+        return true;
+      }
+
+      if (effect.sourceEffectId === sourceEffect.id) {
+        return false;
+      }
+
+      if (!isAuraSharedEffect(effect)) {
+        return true;
+      }
+
+      return !doesActivePowerEffectConflict(effect, comparisonEffect);
+    }),
   };
 }
 

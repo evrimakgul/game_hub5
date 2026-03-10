@@ -3,6 +3,7 @@ import {
   type DamageTypeId,
   type ResistanceLevel,
 } from "./resistances.ts";
+import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 import { calculateMaxHP } from "./stats.ts";
 import type {
   ActivePowerEffect,
@@ -547,43 +548,101 @@ function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
       : [];
 
     const effectId = coerceString(entry.id, "");
-    const stackKey = coerceString(entry.stackKey, "");
     const powerId = coerceString(entry.powerId, "");
     const targetCharacterId = coerceString(entry.targetCharacterId, "");
+    const casterCharacterId = coerceString(entry.casterCharacterId, "");
+    const persistedStackKey = coerceString(entry.stackKey, "");
+    const normalizedStackKey =
+      powerId === "light_support" &&
+      (persistedStackKey === "light_support" || persistedStackKey === "light_support:aura")
+        ? "light_support"
+        : powerId === "shadow_control" &&
+            (persistedStackKey === "shadow_control:cloak" ||
+              persistedStackKey === "shadow_control:cloak:self" ||
+              persistedStackKey === "shadow_control:cloak:aura")
+          ? "shadow_control:cloak"
+          : persistedStackKey;
+    const sourceLevel = Math.max(0, Math.trunc(coerceNumber(entry.sourceLevel, 0)));
+    const inferredEffectKind =
+      entry.effectKind === "aura_source" || entry.effectKind === "aura_shared"
+        ? entry.effectKind
+        : powerId === "light_support" && targetCharacterId === casterCharacterId
+          ? "aura_source"
+          : powerId === "light_support" && targetCharacterId !== casterCharacterId
+            ? "aura_shared"
+          : powerId === "shadow_control" && targetCharacterId === casterCharacterId
+            ? "aura_source"
+            : powerId === "shadow_control" && targetCharacterId !== casterCharacterId
+              ? "aura_shared"
+            : "direct";
+    const persistedManaCost =
+      entry.manaCost === null ? null : Math.max(0, Math.trunc(coerceNumber(entry.manaCost, 0)));
+    const persistedSharedTargetCharacterIds = Array.isArray(entry.sharedTargetCharacterIds)
+      ? entry.sharedTargetCharacterIds.filter((targetId): targetId is string => typeof targetId === "string")
+      : null;
+    const inferredShareMode =
+      powerId === "shadow_control" && inferredEffectKind === "aura_source"
+        ? (() => {
+            const runtimeLevel = getRuntimePowerLevelDefinition("shadow_control", sourceLevel);
+            const mechanics = runtimeLevel?.mechanics ?? {};
+            const manaCostVariants =
+              mechanics.mana_cost_variants && typeof mechanics.mana_cost_variants === "object"
+                ? (mechanics.mana_cost_variants as Record<string, unknown>)
+                : {};
+            const selfOnlyManaCost =
+              typeof manaCostVariants.self_only === "number" ? manaCostVariants.self_only : null;
+            const sharedManaCost =
+              typeof manaCostVariants.shared_with_allies === "number"
+                ? manaCostVariants.shared_with_allies
+                : null;
+            const hasSharedTargets = (persistedSharedTargetCharacterIds ?? []).some(
+              (targetId) => targetId !== casterCharacterId
+            );
 
-    if (!effectId || !stackKey || !powerId || !targetCharacterId) {
+            if (entry.shareMode === "aura" || hasSharedTargets) {
+              return "aura";
+            }
+
+            if (
+              persistedManaCost !== null &&
+              sharedManaCost !== null &&
+              selfOnlyManaCost !== sharedManaCost &&
+              persistedManaCost === sharedManaCost
+            ) {
+              return "aura";
+            }
+
+            return "self";
+          })()
+        : entry.shareMode === "self" || entry.shareMode === "aura"
+          ? entry.shareMode
+        : powerId === "light_support" && inferredEffectKind === "aura_source"
+          ? "aura"
+        : null;
+
+    if (!effectId || !normalizedStackKey || !powerId || !targetCharacterId) {
       return [];
     }
 
     return [
       {
         id: effectId,
-        stackKey,
-        effectKind:
-          entry.effectKind === "aura_source" || entry.effectKind === "aura_shared"
-            ? entry.effectKind
-            : "direct",
+        stackKey: normalizedStackKey,
+        effectKind: inferredEffectKind,
         powerId,
         powerName: coerceString(entry.powerName, powerId),
-        sourceLevel: Math.max(0, Math.trunc(coerceNumber(entry.sourceLevel, 0))),
-        casterCharacterId: coerceString(entry.casterCharacterId, ""),
+        sourceLevel,
+        casterCharacterId,
         casterName: coerceString(entry.casterName, "Unknown Caster"),
         targetCharacterId,
         sourceEffectId:
           typeof entry.sourceEffectId === "string" ? entry.sourceEffectId : null,
-        shareMode:
-          entry.shareMode === "self" || entry.shareMode === "aura" ? entry.shareMode : null,
-        sharedTargetCharacterIds: Array.isArray(entry.sharedTargetCharacterIds)
-          ? entry.sharedTargetCharacterIds
-              .filter((targetId): targetId is string => typeof targetId === "string")
-          : null,
+        shareMode: inferredShareMode,
+        sharedTargetCharacterIds: persistedSharedTargetCharacterIds,
         label: coerceString(entry.label, powerId),
         summary: coerceString(entry.summary, ""),
         actionType: typeof entry.actionType === "string" ? entry.actionType : null,
-        manaCost:
-          entry.manaCost === null
-            ? null
-            : Math.max(0, Math.trunc(coerceNumber(entry.manaCost, 0))),
+        manaCost: persistedManaCost,
         selectedStatId:
           typeof entry.selectedStatId === "string" ? entry.selectedStatId : null,
         modifiers,
