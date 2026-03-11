@@ -3,22 +3,24 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { resolveDicePool } from "../config/combat";
 import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
-import { applyHealingToSheet } from "../config/combatResolution";
+import { applyDamageToSheet, applyHealingToSheet } from "../config/combatResolution";
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
+  buildDirectDamageCastResolution,
   buildAuraSharedPowerEffect,
   buildHealingCastResolution,
   canSelectAuraTargets,
   doesActivePowerEffectConflict,
+  getCastPowerAllowedStats,
+  getCastPowerModeOptionsForVariant,
   getCastPowerTargetLimit,
+  getCastPowerTargetModeForVariant,
+  getCastPowerVariantOptions,
+  getHealingPowerTotal,
   isAuraSharedEffect,
   isAuraSourceEffect,
-  getCastPowerAllowedStats,
-  getCastPowerModeOptions,
-  getCastPowerTargetMode,
-  getHealingPowerTotal,
   getSupportedCastablePowers,
   removeActivePowerEffect,
   removeAuraSharedEffectsBySource,
@@ -30,6 +32,11 @@ import { getRuntimePowerAbbreviation } from "../config/powerData.ts";
 import type { PowerEntry, StatId } from "../config/characterTemplate";
 import { type CharacterRecord, useAppFlow } from "../state/appFlow";
 import type { ActivePowerEffect, ActivePowerShareMode } from "../types/activePowerEffects";
+import type {
+  CastPowerVariantId,
+  DamageMitigationChannel,
+} from "../config/powerEffects";
+import type { DamageTypeId } from "../config/resistances.ts";
 import type {
   CharacterEncounterSnapshot,
   CombatEncounterParty,
@@ -77,6 +84,14 @@ type PreparedCastRequest = {
     targetCharacterId: string;
     amount: number;
   }>;
+  damageApplications: Array<{
+    targetCharacterId: string;
+    rawAmount: number;
+    damageType: DamageTypeId;
+    mitigationChannel: DamageMitigationChannel;
+    sourceLabel: string;
+    sourceSummary: string;
+  }>;
 };
 
 type PendingCastConfirmation = {
@@ -88,6 +103,7 @@ type CastRequestPayload = {
   casterCharacter: CharacterRecord;
   casterDisplayName: string;
   selectedPower: PowerEntry;
+  selectedVariantId: CastPowerVariantId;
   selectedTargetIds: string[];
   fallbackTargetIds: string[];
   healingAllocations: Record<string, number>;
@@ -494,6 +510,36 @@ function prepareCastRequest(
         manaCost: healingResolution.manaCost,
         effects: [],
         healingApplications: healingResolution.applications,
+        damageApplications: [],
+      },
+      warnings: [],
+    };
+  }
+
+  if (
+    payload.selectedPower.id === "shadow_control" &&
+    payload.selectedVariantId === "shadow_manipulation"
+  ) {
+    const damageResolution = buildDirectDamageCastResolution({
+      casterSheet: payload.casterCharacter.sheet,
+      power: payload.selectedPower,
+      variantId: payload.selectedVariantId,
+      targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
+    });
+    if ("error" in damageResolution) {
+      return { error: damageResolution.error };
+    }
+
+    return {
+      request: {
+        casterCharacterId: payload.casterCharacter.id,
+        targetCharacterIds: damageResolution.applications.map(
+          (application) => application.targetCharacterId
+        ),
+        manaCost: damageResolution.manaCost,
+        effects: [],
+        healingApplications: [],
+        damageApplications: damageResolution.applications,
       },
       warnings: [],
     };
@@ -506,6 +552,7 @@ function prepareCastRequest(
       targetCharacterId: targetCharacter.id,
       targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
       power: payload.selectedPower,
+      variantId: payload.selectedVariantId,
       selectedStatId: payload.selectedStatId,
       castMode: payload.castMode,
     })
@@ -530,6 +577,7 @@ function prepareCastRequest(
       manaCost: builtEffects[0] && !("error" in builtEffects[0]) ? builtEffects[0].manaCost : 0,
       effects,
       healingApplications: [],
+      damageApplications: [],
     },
     warnings: getReplacementWarnings(finalTargets, effects),
   };
@@ -542,6 +590,7 @@ function CombatantPowerControls({
   updateCharacter,
 }: CombatantPowerControlsProps) {
   const [selectedPowerId, setSelectedPowerId] = useState("");
+  const [selectedVariantId, setSelectedVariantId] = useState<CastPowerVariantId>("default");
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [healingAllocations, setHealingAllocations] = useState<Record<string, string>>({});
   const [selectedStatId, setSelectedStatId] = useState("");
@@ -553,9 +602,18 @@ function CombatantPowerControls({
   const castablePowers = character ? getSupportedCastablePowers(character.sheet) : [];
   const selectedPower =
     castablePowers.find((power) => power.id === selectedPowerId) ?? castablePowers[0] ?? null;
-  const targetMode = selectedPower ? getCastPowerTargetMode(selectedPower) : "self";
+  const variantOptions = selectedPower ? getCastPowerVariantOptions(selectedPower) : [];
+  const resolvedVariantId =
+    variantOptions.find((option) => option.id === selectedVariantId)?.id ??
+    variantOptions[0]?.id ??
+    "default";
+  const targetMode = selectedPower
+    ? getCastPowerTargetModeForVariant(selectedPower, resolvedVariantId)
+    : "self";
   const targetLimit = selectedPower ? getCastPowerTargetLimit(selectedPower) : 1;
-  const modeOptions = selectedPower ? getCastPowerModeOptions(selectedPower) : ["self"];
+  const modeOptions = selectedPower
+    ? getCastPowerModeOptionsForVariant(selectedPower, resolvedVariantId)
+    : ["self"];
   const allowedStats = selectedPower ? getCastPowerAllowedStats(selectedPower) : [];
   const targetOptions =
     targetMode === "self"
@@ -612,6 +670,19 @@ function CombatantPowerControls({
       setSelectedPowerId(castablePowers[0].id);
     }
   }, [castablePowers, selectedPowerId]);
+
+  useEffect(() => {
+    if (variantOptions.length === 0) {
+      if (selectedVariantId !== "default") {
+        setSelectedVariantId("default");
+      }
+      return;
+    }
+
+    if (!variantOptions.some((option) => option.id === selectedVariantId)) {
+      setSelectedVariantId(variantOptions[0].id);
+    }
+  }, [selectedVariantId, variantOptions]);
 
   useEffect(() => {
     if (!selectedPower) {
@@ -747,6 +818,7 @@ function CombatantPowerControls({
     return null;
   }
   const casterCharacter = character;
+  const shouldShowVariantField = variantOptions.length > 1;
   const shouldShowTargetField = targetMode !== "self";
   const shouldShowModeField = selectedPower?.id === "shadow_control" && modeOptions.length > 1;
 
@@ -807,6 +879,7 @@ function CombatantPowerControls({
       casterCharacter,
       casterDisplayName: view.participant.displayName,
       selectedPower,
+      selectedVariantId: resolvedVariantId,
       selectedTargetIds,
       fallbackTargetIds: resolvedTargetIds,
       healingAllocations: resolvedHealingAllocations,
@@ -1009,6 +1082,24 @@ function CombatantPowerControls({
                   ))}
                 </select>
               </label>
+
+              {shouldShowVariantField ? (
+                <label className="dm-field">
+                  <span>Action</span>
+                  <select
+                    value={resolvedVariantId}
+                    onChange={(event) =>
+                      setSelectedVariantId(event.target.value as CastPowerVariantId)
+                    }
+                  >
+                    {variantOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
 
               {shouldShowTargetField ? (
                 <label className="dm-field">
@@ -1350,6 +1441,21 @@ export function CombatEncounterPage() {
             applyHealingToSheet(currentSheet, application.amount).sheet
           );
         });
+
+      return null;
+    }
+
+    if (request.damageApplications.length > 0) {
+      updateCharacter(casterCharacter.id, spentMana.sheet);
+      request.damageApplications.forEach((application) => {
+        updateCharacter(application.targetCharacterId, (currentSheet) =>
+          applyDamageToSheet(currentSheet, {
+            rawAmount: application.rawAmount,
+            damageType: application.damageType,
+            mitigationChannel: application.mitigationChannel,
+          }).sheet
+        );
+      });
 
       return null;
     }

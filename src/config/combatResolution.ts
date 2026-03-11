@@ -1,5 +1,7 @@
 import type { CharacterDraft } from "./characterTemplate.ts";
 import { buildCharacterDerivedValues } from "./characterRuntime.ts";
+import { RESISTANCE_LEVELS, type DamageTypeId } from "./resistances.ts";
+import type { DamageMitigationChannel } from "./powerEffects.ts";
 
 export function applyHealingToSheet(
   sheet: CharacterDraft,
@@ -16,5 +18,42 @@ export function applyHealingToSheet(
       currentHp: nextHp,
     },
     appliedAmount,
+  };
+}
+
+export function applyDamageToSheet(
+  sheet: CharacterDraft,
+  options: {
+    rawAmount: number;
+    damageType: DamageTypeId;
+    mitigationChannel: DamageMitigationChannel;
+  }
+): {
+  sheet: CharacterDraft;
+  appliedDamage: number;
+  mitigatedAmount: number;
+  resistedAmount: number;
+} {
+  const resolvedAmount = Math.max(0, Math.trunc(options.rawAmount));
+  const derived = buildCharacterDerivedValues(sheet);
+  const mitigationValue =
+    options.mitigationChannel === "dr" ? derived.damageReduction : derived.soak;
+  const mitigatedAmount = Math.max(0, resolvedAmount - mitigationValue);
+  const resistanceLevel = sheet.resistances[options.damageType] ?? 0;
+  const resistanceRule = RESISTANCE_LEVELS[resistanceLevel];
+  const resistedAmount = Math.max(
+    0,
+    Math.ceil(mitigatedAmount * resistanceRule.damageMultiplier)
+  );
+  const nextHp = Math.max(0, sheet.currentHp - resistedAmount);
+
+  return {
+    sheet: {
+      ...sheet,
+      currentHp: nextHp,
+    },
+    appliedDamage: Math.max(0, sheet.currentHp - nextHp),
+    mitigatedAmount,
+    resistedAmount,
   };
 }

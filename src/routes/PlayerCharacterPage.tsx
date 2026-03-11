@@ -62,6 +62,20 @@ type RuntimeEditableField =
   | "positiveKarma"
   | "negativeKarma";
 
+function buildEditSessionStatFloor(sheet: CharacterDraft): Record<StatId, number> {
+  return {
+    STR: sheet.statState.STR.base,
+    DEX: sheet.statState.DEX.base,
+    STAM: sheet.statState.STAM.base,
+    CHA: sheet.statState.CHA.base,
+    APP: sheet.statState.APP.base,
+    MAN: sheet.statState.MAN.base,
+    INT: sheet.statState.INT.base,
+    WITS: sheet.statState.WITS.base,
+    PER: sheet.statState.PER.base,
+  };
+}
+
 function formatDateDayMonthYear(date: Date): string {
   const day = `${date.getDate()}`.padStart(2, "0");
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -217,7 +231,9 @@ export function PlayerCharacterPage() {
     setDmEditReason("");
     setAdminOverrideReason("");
     setAdminOverrideError(null);
-    setEditSessionStatFloor(null);
+    setEditSessionStatFloor(
+      isDmEditableView ? buildEditSessionStatFloor(activeCharacter.sheet) : null
+    );
   }, [activeCharacter?.id, isDmEditableView, isDmReadOnlyView]);
 
   if (!activeCharacter || !activeSheet) {
@@ -232,6 +248,7 @@ export function PlayerCharacterPage() {
   const sheetState = activeSheet;
   const isSheetEditMode = isEditMode || dmEditMode;
   const isDmRuntimeEditMode = isDmView && dmEditMode;
+  const isProgressionEditMode = isEditMode || (isDmEditableView && dmEditMode);
 
   const actualDate = formatDateDayMonthYear(new Date());
   const xpLeftOver = sheetState.xpEarned - sheetState.xpUsed;
@@ -928,17 +945,7 @@ export function PlayerCharacterPage() {
       return;
     }
 
-    setEditSessionStatFloor({
-      STR: sheetState.statState.STR.base,
-      DEX: sheetState.statState.DEX.base,
-      STAM: sheetState.statState.STAM.base,
-      CHA: sheetState.statState.CHA.base,
-      APP: sheetState.statState.APP.base,
-      MAN: sheetState.statState.MAN.base,
-      INT: sheetState.statState.INT.base,
-      WITS: sheetState.statState.WITS.base,
-      PER: sheetState.statState.PER.base,
-    });
+    setEditSessionStatFloor(buildEditSessionStatFloor(sheetState));
     setIsEditMode(true);
   }
 
@@ -949,7 +956,11 @@ export function PlayerCharacterPage() {
 
     setAdminOverrideMode(false);
     setAdminOverrideError(null);
-    setDmEditMode((current) => !current);
+    setDmEditMode((current) => {
+      const next = !current;
+      setEditSessionStatFloor(next ? buildEditSessionStatFloor(sheetState) : null);
+      return next;
+    });
   }
 
   function handleToggleAdminOverrideMode(): void {
@@ -1467,13 +1478,13 @@ export function PlayerCharacterPage() {
                       const incrementCost = getIncrementCost(STAT_XP_BY_LEVEL, stat.base);
                       const canIncrease = adminOverrideMode
                         ? stat.base < STAT_XP_BY_LEVEL.length - 1
-                        : isEditMode &&
+                        : isProgressionEditMode &&
                           stat.base < STAT_XP_BY_LEVEL.length - 1 &&
                           xpLeftOver >= incrementCost;
                       const floorLevel = editSessionStatFloor?.[statId] ?? stat.base;
                       const canDecrease = adminOverrideMode
                         ? stat.base > 0
-                        : isEditMode && stat.base > floorLevel;
+                        : isProgressionEditMode && stat.base > floorLevel;
 
                       return (
                         <div key={statId} className="stat-row">
@@ -1481,7 +1492,7 @@ export function PlayerCharacterPage() {
                             <strong>{statId}</strong>
                             <small>{breakdown.detail}</small>
                           </div>
-                          {isEditMode || adminOverrideMode ? (
+                          {isProgressionEditMode || adminOverrideMode ? (
                             <div className="row-actions">
                               <button
                                 type="button"
@@ -1529,12 +1540,12 @@ export function PlayerCharacterPage() {
                 const incrementCost = getIncrementCost(T1_SKILL_XP_BY_LEVEL, skill.base);
                 const canIncrease = adminOverrideMode
                   ? skill.base < T1_SKILL_XP_BY_LEVEL.length - 1
-                  : isEditMode &&
+                  : isProgressionEditMode &&
                     skill.base < T1_SKILL_XP_BY_LEVEL.length - 1 &&
                     xpLeftOver >= incrementCost;
                 const canDecrease = adminOverrideMode
                   ? skill.base > 0
-                  : isEditMode && skill.base > 0;
+                  : isProgressionEditMode && skill.base > 0;
 
                 return (
                   <div key={skill.id} className="skill-row">
@@ -1542,7 +1553,7 @@ export function PlayerCharacterPage() {
                       <strong>{skill.label}</strong>
                       <small>{breakdown.detail}</small>
                     </div>
-                    {isEditMode || adminOverrideMode ? (
+                    {isProgressionEditMode || adminOverrideMode ? (
                       <div className="row-actions">
                         <button
                           type="button"
@@ -1581,7 +1592,7 @@ export function PlayerCharacterPage() {
           <article className="sheet-card power-card">
             <p className="section-kicker">T1 Powers</p>
             <h2>Known Powers</h2>
-            {isEditMode || adminOverrideMode ? (
+            {isProgressionEditMode || adminOverrideMode ? (
               <div className="power-add-row">
                 <select value={pendingPowerId} onChange={(event) => setPendingPowerId(event.target.value)}>
                   <option value="">Add Level 1 Power</option>
@@ -1610,12 +1621,12 @@ export function PlayerCharacterPage() {
                 const incrementCost = getIncrementCost(T1_POWER_XP_BY_LEVEL, power.level);
                 const canIncrease = adminOverrideMode
                   ? power.level < T1_POWER_XP_BY_LEVEL.length - 1
-                  : isEditMode &&
+                  : isProgressionEditMode &&
                     power.level < T1_POWER_XP_BY_LEVEL.length - 1 &&
                     xpLeftOver >= incrementCost;
                 const canDecrease = adminOverrideMode
                   ? power.level > 0
-                  : isEditMode && power.level > 0;
+                  : isProgressionEditMode && power.level > 0;
 
                 return (
                   <div key={power.id} className="power-row">
@@ -1629,7 +1640,7 @@ export function PlayerCharacterPage() {
                         ))}
                       </ul>
                     </div>
-                    {isEditMode || adminOverrideMode ? (
+                    {isProgressionEditMode || adminOverrideMode ? (
                       <div className="row-actions">
                         <button
                           type="button"

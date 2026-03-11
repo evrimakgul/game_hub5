@@ -4,15 +4,30 @@ import type {
   ActivePowerEffectModifier,
   ActivePowerShareMode,
 } from "../types/activePowerEffects";
+import type { DamageTypeId } from "./resistances.ts";
 import type { CharacterDraft, PowerEntry, StatId } from "./characterTemplate.ts";
 import { buildCharacterDerivedValues, getCurrentStatValue } from "./characterRuntime.ts";
 import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 
 export type CastPowerTargetMode = "self" | "single" | "multiple";
 export type CastPowerMode = "self" | "aura";
+export type DamageMitigationChannel = "dr" | "soak";
+export type CastPowerVariantId = "default" | "shadow_cloak" | "shadow_manipulation";
+export type CastPowerVariantOption = {
+  id: CastPowerVariantId;
+  label: string;
+};
 export type HealingCastApplication = {
   targetCharacterId: string;
   amount: number;
+};
+export type DirectDamageCastApplication = {
+  targetCharacterId: string;
+  rawAmount: number;
+  damageType: DamageTypeId;
+  mitigationChannel: DamageMitigationChannel;
+  sourceLabel: string;
+  sourceSummary: string;
 };
 
 const LIGHT_SUPPORT_STACK_KEYS = new Set(["light_support", "light_support:aura"]);
@@ -116,6 +131,7 @@ export type CastPowerBuildRequest = {
   targetCharacterId: string;
   targetName: string;
   power: PowerEntry;
+  variantId?: CastPowerVariantId;
   selectedStatId?: StatId | null;
   castMode?: CastPowerMode | null;
 };
@@ -199,6 +215,13 @@ export function getSupportedCastablePowers(sheet: CharacterDraft): PowerEntry[] 
 }
 
 export function getCastPowerTargetMode(power: PowerEntry): CastPowerTargetMode {
+  return getCastPowerTargetModeForVariant(power, "default");
+}
+
+export function getCastPowerTargetModeForVariant(
+  power: PowerEntry,
+  variantId: CastPowerVariantId
+): CastPowerTargetMode {
   if (power.id === "healing") {
     return getCastPowerTargetLimit(power) > 1 ? "multiple" : "single";
   }
@@ -208,6 +231,10 @@ export function getCastPowerTargetMode(power: PowerEntry): CastPowerTargetMode {
   }
 
   if (power.id === "shadow_control") {
+    if (variantId === "shadow_manipulation") {
+      return "single";
+    }
+
     return "self";
   }
 
@@ -247,11 +274,33 @@ export function getCastPowerAllowedStats(power: PowerEntry): StatId[] {
 }
 
 export function getCastPowerModeOptions(power: PowerEntry): CastPowerMode[] {
+  return getCastPowerModeOptionsForVariant(power, "default");
+}
+
+export function getCastPowerModeOptionsForVariant(
+  power: PowerEntry,
+  variantId: CastPowerVariantId
+): CastPowerMode[] {
   if (power.id === "shadow_control" && power.level >= 4) {
+    if (variantId === "shadow_manipulation") {
+      return ["self"];
+    }
+
     return ["self", "aura"];
   }
 
   return ["self"];
+}
+
+export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantOption[] {
+  if (power.id === "shadow_control" && power.level >= 3) {
+    return [
+      { id: "shadow_cloak", label: "Cloak of Shadow" },
+      { id: "shadow_manipulation", label: "Shadow Manipulation" },
+    ];
+  }
+
+  return [{ id: "default", label: power.name }];
 }
 
 export function getHealingPowerTotal(sheet: CharacterDraft, power: PowerEntry): number | null {
@@ -361,6 +410,64 @@ export function buildHealingCastResolution(request: {
     manaCost,
     totalAmount,
     applications: positiveAllocations,
+  };
+}
+
+export function buildDirectDamageCastResolution(request: {
+  casterSheet: CharacterDraft;
+  power: PowerEntry;
+  variantId: CastPowerVariantId;
+  targetCharacterIds: string[];
+}):
+  | { error: string }
+  | { manaCost: number; applications: DirectDamageCastApplication[] } {
+  if (request.power.id === "shadow_control" && request.variantId === "shadow_manipulation") {
+    const runtimeLevel = getRuntimePowerLevelDefinition(request.power.id, request.power.level);
+    const shadowManipulation =
+      runtimeLevel?.mechanics?.shadow_manipulation &&
+      typeof runtimeLevel.mechanics.shadow_manipulation === "object"
+        ? (runtimeLevel.mechanics.shadow_manipulation as Record<string, unknown>)
+        : null;
+    const damage =
+      shadowManipulation?.damage && typeof shadowManipulation.damage === "object"
+        ? (shadowManipulation.damage as Record<string, unknown>)
+        : null;
+
+    if (!runtimeLevel || !shadowManipulation || !damage) {
+      return {
+        error: `Power data for ${request.power.name} Lv ${request.power.level} is missing shadow manipulation damage data.`,
+      };
+    }
+
+    const uniqueTargetIds = Array.from(new Set(request.targetCharacterIds));
+    if (uniqueTargetIds.length !== 1) {
+      return { error: "Shadow Manipulation requires exactly one target." };
+    }
+
+    const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "MAN";
+    const rawAmount =
+      getCurrentStatValue(request.casterSheet, baseStat) +
+      request.power.level * asNumber(damage.power_level_multiplier);
+    const damageType = typeof damage.damage_type === "string" ? (damage.damage_type as DamageTypeId) : "shadow";
+    const mitigationChannel: DamageMitigationChannel = damageType === "physical" ? "dr" : "soak";
+
+    return {
+      manaCost: asNumber(runtimeLevel.mana_cost),
+      applications: [
+        {
+          targetCharacterId: uniqueTargetIds[0],
+          rawAmount,
+          damageType,
+          mitigationChannel,
+          sourceLabel: `${request.power.name} Lv ${request.power.level}`,
+          sourceSummary: `Shadow Manipulation (${rawAmount} ${damageType})`,
+        },
+      ],
+    };
+  }
+
+  return {
+    error: `${request.power.name} does not have a supported direct-damage variant in this slice yet.`,
   };
 }
 
