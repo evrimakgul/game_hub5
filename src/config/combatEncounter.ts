@@ -35,7 +35,7 @@ export function buildEncounterParticipantInput(
   characterId: string,
   ownerRole: "player" | "dm",
   sheet: CharacterDraft,
-  partyId: string | null
+  partyId: string | null = null
 ): CombatEncounterParticipantInput {
   return {
     characterId,
@@ -50,7 +50,7 @@ export function buildEncounterParticipantInput(
 export function createCombatEncounter(
   label: string,
   participants: CombatEncounterParticipantInput[],
-  parties: CombatEncounterParty[]
+  parties: CombatEncounterParty[] = []
 ): CombatEncounterState {
   if (participants.length === 0) {
     throw new RangeError("Add at least one combatant before starting the encounter.");
@@ -72,7 +72,8 @@ export function createCombatEncounter(
     }
 
     uniqueIds.add(participant.characterId);
-    if (participant.partyId !== null && !uniquePartyIds.has(participant.partyId)) {
+    const participantPartyId = participant.partyId ?? null;
+    if (participantPartyId !== null && !uniquePartyIds.has(participantPartyId)) {
       throw new RangeError(
         `Combatant ${participant.displayName} was assigned to an unknown party.`
       );
@@ -101,7 +102,7 @@ export function createCombatEncounter(
       initiativeSuccesses,
       dex: participant.dex,
       wits: participant.wits,
-      partyId: participant.partyId,
+      partyId: participantPartyId,
     };
   });
 
@@ -142,7 +143,10 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
     {
       id: "hp",
       label: "HP",
-      value: `${sheet.currentHp} / ${derived.maxHp}`,
+      value:
+        derived.temporaryHp > 0
+          ? `${sheet.currentHp} / ${derived.maxHp} (+${derived.temporaryHp} temp)`
+          : `${sheet.currentHp} / ${derived.maxHp}`,
       selectableValue: null,
     },
     {
@@ -249,7 +253,12 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
     stats,
     highlightedSkills,
     visibleResistances,
-    inspiration: sheet.inspiration,
+    inspiration: derived.totalInspiration,
+    inspirationDetail:
+      derived.temporaryInspiration > 0
+        ? `Base ${derived.permanentInspiration} + Temp ${derived.temporaryInspiration}`
+        : `Base ${derived.permanentInspiration}`,
+    statusTags: (sheet.statusTags ?? []).map((tag) => tag.label),
     activePowerEffects: derived.activePowerEffects.map((effect) => ({
       id: effect.id,
       label: effect.label,

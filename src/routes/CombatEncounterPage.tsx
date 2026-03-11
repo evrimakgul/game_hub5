@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { resolveDicePool } from "../config/combat";
 import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
 import { applyDamageToSheet, applyHealingToSheet } from "../config/combatResolution";
-import { buildCharacterDerivedValues } from "../config/characterRuntime";
+import { buildCharacterDerivedValues, getCurrentSkillValue } from "../config/characterRuntime";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
@@ -29,10 +29,12 @@ import {
   updateAuraSourceTargets,
 } from "../config/powerEffects";
 import { getRuntimePowerAbbreviation, getRuntimePowerLevelDefinition } from "../config/powerData.ts";
-import type { PowerEntry, StatId } from "../config/characterTemplate";
+import type { GameHistoryEntry, PowerEntry, StatId } from "../config/characterTemplate";
+import { getCrAndRankFromXpUsed } from "../config/xpTables";
 import { type CharacterRecord, useAppFlow } from "../state/appFlow";
 import type { ActivePowerEffect, ActivePowerShareMode } from "../types/activePowerEffects";
 import type {
+  CastPowerMode,
   CastPowerVariantId,
   DamageMitigationChannel,
 } from "../config/powerEffects";
@@ -80,6 +82,10 @@ type PreparedCastRequest = {
   targetCharacterIds: string[];
   manaCost: number;
   effects: ActivePowerEffect[];
+  historyEntries: Array<{
+    characterId: string;
+    entry: GameHistoryEntry;
+  }>;
   healingApplications: Array<{
     targetCharacterId: string;
     amount: number;
@@ -111,7 +117,7 @@ type CastRequestPayload = {
   fallbackTargetIds: string[];
   healingAllocations: Record<string, number>;
   selectedStatId: StatId | null;
-  castMode: ActivePowerShareMode;
+  castMode: CastPowerMode;
   encounterParticipants: EncounterParticipantView[];
 };
 
@@ -180,10 +186,6 @@ function CombatantRuntimeAdjustments({
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [popoverPlacement, setPopoverPlacement] = useState<"below" | "above">("below");
 
-  if (!character) {
-    return null;
-  }
-
   useEffect(() => {
     if (!isPopoverOpen) {
       return;
@@ -241,6 +243,12 @@ function CombatantRuntimeAdjustments({
     };
   }, [isPopoverOpen]);
 
+  if (!character) {
+    return null;
+  }
+  const runtimeCharacter = character;
+  const runtimeDerived = derived;
+
   function appendDmAuditEntry(
     sheet: CharacterRecord["sheet"],
     fieldPath: string,
@@ -250,7 +258,7 @@ function CombatantRuntimeAdjustments({
     const entry = {
       id: `dm-edit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       timestamp: new Date().toISOString(),
-      characterId: character.id,
+      characterId: runtimeCharacter.id,
       targetOwnerRole: view.participant.ownerRole,
       editLayer: "runtime" as const,
       fieldPath,
@@ -270,14 +278,15 @@ function CombatantRuntimeAdjustments({
     field: "currentHp" | "currentMana" | "inspiration",
     value: number
   ): void {
-    updateCharacter(character.id, (currentSheet) => {
+    updateCharacter(runtimeCharacter.id, (currentSheet) => {
       const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
-      const nextBaseValue = Math.max(0, Math.trunc(value));
+      const nextBaseValue =
+        field === "currentHp" ? Math.trunc(value) : Math.max(0, Math.trunc(value));
       const before =
         field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field] ?? 0;
       const maxValue =
         field === "currentHp"
-          ? derivedSnapshot.maxHp
+          ? null
           : field === "currentMana"
             ? derivedSnapshot.maxMana
             : null;
@@ -304,7 +313,7 @@ function CombatantRuntimeAdjustments({
     delta: number
   ): void {
     const currentValue =
-      field === "currentMana" ? derived?.currentMana ?? 0 : character.sheet[field];
+      field === "currentMana" ? runtimeDerived?.currentMana ?? 0 : runtimeCharacter.sheet[field];
     applyRuntimeValue(field, currentValue + delta);
   }
 
@@ -493,6 +502,53 @@ function prepareCastRequest(
     return { error: "Select at least one valid target before casting." };
   }
 
+  if (
+    payload.selectedPower.id === "awareness" &&
+    payload.selectedVariantId === "assess_character"
+  ) {
+    const targetCharacter = finalTargets[0];
+    if (!targetCharacter) {
+      return { error: "Select one target for Assess Character." };
+    }
+
+    const awarenessLevel = payload.selectedPower.level;
+    const casterPerception =
+      buildCharacterDerivedValues(payload.casterCharacter.sheet).currentStats.PER;
+    const crCaps = [0, 6, 9, 12, 15, 18];
+    const allowedCr = Math.min(casterPerception + awarenessLevel, crCaps[awarenessLevel] ?? 18);
+    const targetCr = getCrAndRankFromXpUsed(targetCharacter.sheet.xpUsed).cr;
+
+    if (targetCr > allowedCr) {
+      return {
+        error: `Assess Character limit is CR ${allowedCr}, but ${targetCharacter.sheet.name.trim() || targetCharacter.id} is CR ${targetCr}.`,
+      };
+    }
+
+    const now = new Date();
+
+    return {
+      request: {
+        casterCharacterId: payload.casterCharacter.id,
+        targetCharacterIds: [targetCharacter.id],
+        manaCost: 0,
+        effects: [],
+        historyEntries: [
+          {
+            characterId: payload.casterCharacter.id,
+            entry: buildAssessCharacterHistoryEntry(
+              payload.casterCharacter.sheet,
+              targetCharacter,
+              `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`
+            ),
+          },
+        ],
+        healingApplications: [],
+        damageApplications: [],
+      },
+      warnings: [],
+    };
+  }
+
   if (payload.selectedPower.id === "healing") {
     const healingResolution = buildHealingCastResolution({
       casterSheet: payload.casterCharacter.sheet,
@@ -512,6 +568,7 @@ function prepareCastRequest(
         ),
         manaCost: healingResolution.manaCost,
         effects: [],
+        historyEntries: [],
         healingApplications: healingResolution.applications,
         damageApplications: [],
       },
@@ -541,6 +598,7 @@ function prepareCastRequest(
         ),
         manaCost: damageResolution.manaCost,
         effects: [],
+        historyEntries: [],
         healingApplications: [],
         damageApplications: damageResolution.applications,
       },
@@ -576,6 +634,7 @@ function prepareCastRequest(
               ? necroticTouch.mana_cost
               : (runtimeLevel?.mana_cost ?? 0),
           effects: [],
+          historyEntries: [],
           healingApplications: [],
           damageApplications: [],
         },
@@ -601,6 +660,7 @@ function prepareCastRequest(
         ),
         manaCost: damageResolution.manaCost,
         effects: [],
+        historyEntries: [],
         healingApplications: [
           {
             targetCharacterId: payload.casterCharacter.id,
@@ -644,6 +704,7 @@ function prepareCastRequest(
       targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
       manaCost: builtEffects[0] && !("error" in builtEffects[0]) ? builtEffects[0].manaCost : 0,
       effects,
+      historyEntries: [],
       healingApplications: [],
       damageApplications: [],
     },
@@ -663,7 +724,7 @@ function CombatantPowerControls({
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [healingAllocations, setHealingAllocations] = useState<Record<string, string>>({});
   const [selectedStatId, setSelectedStatId] = useState("");
-  const [selectedCastMode, setSelectedCastMode] = useState<ActivePowerShareMode>("self");
+  const [selectedCastMode, setSelectedCastMode] = useState<CastPowerMode>("self");
   const [castError, setCastError] = useState<string | null>(null);
   const [openAuraEffectId, setOpenAuraEffectId] = useState<string | null>(null);
   const character = view.character;
@@ -682,7 +743,7 @@ function CombatantPowerControls({
   const targetLimit = selectedPower ? getCastPowerTargetLimit(selectedPower) : 1;
   const modeOptions = selectedPower
     ? getCastPowerModeOptionsForVariant(selectedPower, resolvedVariantId)
-    : ["self"];
+    : (["self"] satisfies CastPowerMode[]);
   const allowedStats = selectedPower ? getCastPowerAllowedStats(selectedPower) : [];
   const targetOptions =
     targetMode === "self"
@@ -717,7 +778,7 @@ function CombatantPowerControls({
     (sum, targetId) => sum + (resolvedHealingAllocations[targetId] ?? 0),
     0
   );
-  const resolvedCastMode = modeOptions.includes(selectedCastMode === "aura" ? "aura" : "self")
+  const resolvedCastMode: CastPowerMode = modeOptions.includes(selectedCastMode)
     ? selectedCastMode
     : modeOptions[0];
   const allowedStatsKey = allowedStats.join("|");
@@ -764,7 +825,7 @@ function CombatantPowerControls({
       return;
     }
 
-    if (!modeOptions.includes(selectedCastMode === "aura" ? "aura" : "self")) {
+    if (!modeOptions.includes(selectedCastMode)) {
       setSelectedCastMode(modeOptions[0]);
     }
   }, [modeOptions, selectedCastMode, selectedPower]);
@@ -975,7 +1036,9 @@ function CombatantPowerControls({
           );
         });
       setOpenAuraEffectId((currentEffectId) => (currentEffectId === effect.id ? null : currentEffectId));
-      updateCharacter(character.id, (currentSheet) => removeActivePowerEffect(currentSheet, effect.id));
+      updateCharacter(casterCharacter.id, (currentSheet) =>
+        removeActivePowerEffect(currentSheet, effect.id)
+      );
       return;
     }
 
@@ -988,20 +1051,27 @@ function CombatantPowerControls({
           return currentSheet;
         }
 
+        const sourceEffectId = effect.sourceEffectId;
+        if (!sourceEffectId) {
+          return currentSheet;
+        }
+
         return updateAuraSourceTargets(
           currentSheet,
-          effect.sourceEffectId,
-          getAuraSelectedTargetIds(sourceEffect).filter((targetId) => targetId !== character.id)
+          sourceEffectId,
+          getAuraSelectedTargetIds(sourceEffect).filter((targetId) => targetId !== casterCharacter.id)
         );
       });
     }
 
-    updateCharacter(character.id, (currentSheet) => removeActivePowerEffect(currentSheet, effect.id));
+    updateCharacter(casterCharacter.id, (currentSheet) =>
+      removeActivePowerEffect(currentSheet, effect.id)
+    );
   }
 
   function toggleAuraTarget(sourceEffect: ActivePowerEffect, targetId: string): void {
     const latestSourceEffect =
-      (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
+      (casterCharacter.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
       sourceEffect;
     const targetCharacter =
       encounterParticipants.find(({ participant }) => participant.characterId === targetId)?.character ?? null;
@@ -1020,7 +1090,7 @@ function CombatantPowerControls({
 
   function applyAuraTargets(sourceEffect: ActivePowerEffect, rawTargetIds: string[]): void {
     const latestSourceEffect =
-      (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
+      (casterCharacter.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
       sourceEffect;
     const nextTargetIds = Array.from(
       new Set(
@@ -1084,9 +1154,14 @@ function CombatantPowerControls({
             return currentSheet;
           }
 
+          const conflictingSourceEffectId = conflictingAura.sourceEffectId;
+          if (!conflictingSourceEffectId) {
+            return currentSheet;
+          }
+
           return updateAuraSourceTargets(
             currentSheet,
-            conflictingAura.sourceEffectId,
+            conflictingSourceEffectId,
             getAuraSelectedTargetIds(existingSourceEffect).filter((entryId) => entryId !== targetId)
           );
         });
@@ -1111,7 +1186,7 @@ function CombatantPowerControls({
       )
       .map(({ participant }) => participant.characterId);
     const latestSourceEffect =
-      (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
+      (casterCharacter.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ??
       sourceEffect;
     const alliedNonSelfTargetIds = alliedTargetIds.filter(
       (targetId) => targetId !== latestSourceEffect.casterCharacterId
@@ -1205,7 +1280,6 @@ function CombatantPowerControls({
                     <select
                       value={resolvedSingleTargetId}
                       onChange={(event) => setSelectedTargetIds([event.target.value])}
-                      disabled={targetMode === "self"}
                     >
                       {targetOptions.map(({ participant }) => (
                         <option key={participant.characterId} value={participant.characterId}>
@@ -1510,6 +1584,37 @@ export function CombatEncounterPage() {
     const spentMana = spendPowerMana(casterCharacter.sheet, request.manaCost);
     if ("error" in spentMana) {
       return spentMana.error;
+    }
+
+    if (request.historyEntries.length > 0) {
+      const historyEntriesByCharacterId = new Map(
+        request.historyEntries.map((item) => [item.characterId, item.entry] as const)
+      );
+
+      updateCharacter(casterCharacter.id, (currentSheet) => {
+        const nextHistoryEntry = historyEntriesByCharacterId.get(casterCharacter.id);
+        if (!nextHistoryEntry) {
+          return spentMana.sheet;
+        }
+
+        return {
+          ...spentMana.sheet,
+          gameHistory: [nextHistoryEntry, ...(spentMana.sheet.gameHistory ?? [])],
+        };
+      });
+
+      request.historyEntries
+        .filter((item) => item.characterId !== casterCharacter.id)
+        .forEach((item) => {
+          updateCharacter(item.characterId, (currentSheet) => ({
+            ...currentSheet,
+            gameHistory: [item.entry, ...(currentSheet.gameHistory ?? [])],
+          }));
+        });
+
+      if (request.healingApplications.length === 0 && request.damageApplications.length === 0 && request.effects.length === 0) {
+        return null;
+      }
     }
 
     if (request.healingApplications.length > 0 || request.damageApplications.length > 0) {
@@ -1877,6 +1982,7 @@ export function CombatEncounterPage() {
                 <div>
                   <span>Inspiration</span>
                   <strong>{selectedSnapshot.inspiration}</strong>
+                  <small>{selectedSnapshot.inspirationDetail}</small>
                 </div>
               </div>
 
@@ -2118,6 +2224,9 @@ export function CombatEncounterPage() {
                                   {member.currentHp} / {member.maxHp}
                                 </strong>
                               </div>
+                              {member.character.sheet.statusTags.length > 0 ? (
+                                <small>{member.character.sheet.statusTags.map((tag) => tag.label).join(" | ")}</small>
+                              ) : null}
                               <div className="dm-party-hp-bar" aria-hidden="true">
                                 <div
                                   className="dm-party-hp-fill"
@@ -2185,6 +2294,9 @@ export function CombatEncounterPage() {
                               {member.currentHp} / {member.maxHp}
                             </strong>
                           </div>
+                          {member.character.sheet.statusTags.length > 0 ? (
+                            <small>{member.character.sheet.statusTags.map((tag) => tag.label).join(" | ")}</small>
+                          ) : null}
                           <div className="dm-party-hp-bar" aria-hidden="true">
                             <div
                               className="dm-party-hp-fill"
@@ -2237,6 +2349,9 @@ export function CombatEncounterPage() {
                         {participant.initiativeFaces.join(", ")} | Successes{" "}
                         {participant.initiativeSuccesses}
                       </small>
+                      {view.character && view.character.sheet.statusTags.length > 0 ? (
+                        <small>{view.character.sheet.statusTags.map((tag) => tag.label).join(" | ")}</small>
+                      ) : null}
                     </div>
                   </summary>
 
@@ -2290,6 +2405,7 @@ export function CombatEncounterPage() {
                               <div>
                                 <span>Inspiration</span>
                                 <strong>{snapshot.inspiration}</strong>
+                                <small>{snapshot.inspirationDetail}</small>
                               </div>
                             </div>
                           </div>
@@ -2330,6 +2446,19 @@ export function CombatEncounterPage() {
                                     <span>
                                       {resistance.levelLabel} {resistance.multiplierLabel}
                                     </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {snapshot.statusTags.length > 0 ? (
+                            <div className="dm-combatant-section dm-combatant-section-full">
+                              <p className="section-kicker">Status Tags</p>
+                              <div className="dm-pill-list">
+                                {snapshot.statusTags.map((tag) => (
+                                  <div key={tag} className="dm-pill">
+                                    <strong>{tag}</strong>
                                   </div>
                                 ))}
                               </div>
@@ -2414,6 +2543,63 @@ function buildDefaultHealingAllocations(
       String(baseAmount + (index < remainder ? 1 : 0)),
     ])
   );
+}
+
+function buildAssessCharacterHistoryEntry(
+  casterSheet: CharacterRecord["sheet"],
+  targetCharacter: CharacterRecord,
+  actualDateTime: string
+): GameHistoryEntry {
+  const targetDerived = buildCharacterDerivedValues(targetCharacter.sheet);
+  const targetSnapshot = buildCharacterEncounterSnapshot(targetCharacter.sheet);
+  const awarenessLevel =
+    casterSheet.powers.find((power) => power.id === "awareness")?.level ?? 0;
+  const targetProgression = getCrAndRankFromXpUsed(targetCharacter.sheet.xpUsed);
+
+  return {
+    id: `history-intel-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    type: "intel_snapshot",
+    actualDateTime,
+    gameDateTime: casterSheet.gameDateTime,
+    sourcePower: `Assess Character Lv ${awarenessLevel}`,
+    targetCharacterId: targetCharacter.id,
+    targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
+    summary: `CR ${targetProgression.cr}, Rank ${targetProgression.rank}`,
+    snapshot: {
+      rank: targetProgression.rank,
+      cr: targetProgression.cr,
+      age: targetCharacter.sheet.age,
+      karma: `-${targetCharacter.sheet.negativeKarma} / +${targetCharacter.sheet.positiveKarma}`,
+      biographyPrimary: targetCharacter.sheet.biographyPrimary,
+      resistances: targetSnapshot.visibleResistances.map(
+        (resistance) =>
+          `${resistance.label}: ${resistance.levelLabel} ${resistance.multiplierLabel}`
+      ),
+      combatSummary: targetSnapshot.combatSummary.map((field) => ({
+        label: field.label,
+        value: field.value,
+      })),
+      stats: targetSnapshot.stats.map((field) => ({
+        label: field.label,
+        value: field.value,
+      })),
+      skills: targetCharacter.sheet.skills.map((skill) => ({
+        label: skill.label,
+        value: getCurrentSkillValue(targetCharacter.sheet, skill.id),
+      })),
+      powers:
+        awarenessLevel >= 2
+          ? targetCharacter.sheet.powers.map(
+              (power) => `${power.name} Lv ${power.level}`
+            )
+          : [],
+      specials: awarenessLevel >= 2 ? targetCharacter.sheet.statusTags.map((tag) => tag.label) : [],
+      notes: [
+        `HP ${targetCharacter.sheet.currentHp} / ${targetDerived.maxHp}`,
+        `Inspiration ${targetDerived.totalInspiration}`,
+      ],
+    },
+  };
 }
 
 function getEncounterPartyMembers(

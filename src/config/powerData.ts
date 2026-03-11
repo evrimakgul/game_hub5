@@ -24,6 +24,7 @@ type RuntimePowerDefinition = {
   name: string;
   abbreviation?: string;
   governing_stat: string;
+  passives?: Record<string, unknown>;
   levels?: RuntimePowerLevelDefinition[];
   cantrip?: RuntimePowerCantripDefinition;
 };

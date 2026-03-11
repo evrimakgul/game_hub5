@@ -1,3 +1,5 @@
+import { runCharacterRuntimeTests } from "./characterRuntime.test.ts";
+import { runCombatResolutionTests } from "./combatResolution.test.ts";
 import { runCombatEncounterTests } from "./combatEncounter.test.ts";
 import { runPowerEffectsTests } from "./powerEffects.test.ts";
 import { runStatsTests } from "./stats.test.ts";
@@ -6,6 +8,8 @@ import { runXpTablesTests } from "./xpTables.test.ts";
 async function main(): Promise<void> {
   await runXpTablesTests();
   await runStatsTests();
+  await runCharacterRuntimeTests();
+  await runCombatResolutionTests();
   await runCombatEncounterTests();
   await runPowerEffectsTests();
   console.log("ALL TESTS PASSED");

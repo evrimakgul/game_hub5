@@ -13,7 +13,7 @@ export type CombatEncounterParticipantInput = {
   displayName: string;
   dex: number;
   wits: number;
-  partyId: string | null;
+  partyId?: string | null;
   initiativeFaces?: number[];
 };
 
@@ -72,5 +72,7 @@ export type CharacterEncounterSnapshot = {
   highlightedSkills: EncounterBreakdownField[];
   visibleResistances: EncounterVisibleResistance[];
   inspiration: number;
+  inspirationDetail: string;
+  statusTags: string[];
   activePowerEffects: EncounterActivePowerEffect[];
 };

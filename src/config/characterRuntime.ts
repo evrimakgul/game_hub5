@@ -32,6 +32,10 @@ export type CharacterDerivedValues = {
   passiveManaBonus: number;
   occultManaBonus: number;
   maxHp: number;
+  temporaryHp: number;
+  permanentInspiration: number;
+  temporaryInspiration: number;
+  totalInspiration: number;
   initiative: number;
   movement: string;
   movementSelectable: number;
@@ -85,6 +89,20 @@ function getPowerEffectSources(
   );
 }
 
+function getAwarenessAlertnessPassiveSource(sheet: CharacterDraft): StatSource[] {
+  const awarenessPower = sheet.powers.find((power) => power.id === "awareness");
+  if (!awarenessPower || awarenessPower.level <= 0) {
+    return [];
+  }
+
+  return [
+    {
+      label: "Awareness",
+      value: awarenessPower.level,
+    },
+  ];
+}
+
 export function getStatBreakdown(sheet: CharacterDraft, statId: StatId): CharacterBreakdown {
   const stat = sheet.statState[statId];
   const buffSources = [...stat.buffSources, ...getPowerEffectSources(sheet, "stat", statId)];
@@ -109,6 +127,7 @@ export function getSkillBreakdown(sheet: CharacterDraft, skillId: string): Chara
   const buffSources = [
     ...(skill?.buffSources ?? []),
     ...getPowerEffectSources(sheet, "skill", skillId),
+    ...(skillId === "alertness" ? getAwarenessAlertnessPassiveSource(sheet) : []),
   ];
   const base = skill?.base ?? 0;
 
@@ -197,6 +216,7 @@ export function buildCharacterDerivedValues(sheet: CharacterDraft): CharacterDer
     calculateRangedBonusDice(currentStats.PER) +
     attackDiceBonus +
     getDerivedModifierTotal(sheet, "ranged_attack");
+  const temporaryInspiration = sheet.temporaryInspiration;
 
   return {
     currentStats,
@@ -206,6 +226,10 @@ export function buildCharacterDerivedValues(sheet: CharacterDraft): CharacterDer
     passiveManaBonus,
     occultManaBonus,
     maxHp: calculateMaxHP(currentStats.STAM),
+    temporaryHp: Math.max(0, sheet.temporaryHp),
+    permanentInspiration: sheet.inspiration,
+    temporaryInspiration,
+    totalInspiration: sheet.inspiration + temporaryInspiration,
     initiative: calculateInitiative(currentStats.DEX, currentStats.WITS),
     movement: "20 + 5",
     movementSelectable: 25,

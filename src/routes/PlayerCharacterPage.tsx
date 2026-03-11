@@ -18,6 +18,7 @@ import {
   powerLibrary,
   statGroups,
   type CharacterDraft,
+  type GameHistoryEntry,
   type StatId,
 } from "../config/characterTemplate";
 import {
@@ -27,13 +28,6 @@ import {
   T1_SKILL_XP_BY_LEVEL,
 } from "../config/xpTables";
 import { useAppFlow } from "../state/appFlow";
-
-type HistoryEntry = {
-  id: number;
-  actualDateTime: string;
-  gameDateTime: string;
-  note: string;
-};
 
 type RollTarget = {
   id: string;
@@ -89,6 +83,10 @@ function formatTimeHoursMinutes(date: Date): string {
   return `${hours}:${minutes}`;
 }
 
+function getHistoryEntryKey(entry: GameHistoryEntry): string {
+  return entry.id;
+}
+
 function getIncrementCost(table: number[], currentLevel: number): number {
   if (currentLevel >= table.length - 1) {
     return 0;
@@ -132,7 +130,6 @@ export function PlayerCharacterPage() {
   const { characters, activePlayerCharacter, activeDmCharacter, updateCharacter } = useAppFlow();
   const navigate = useNavigate();
   const location = useLocation();
-  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [dmEditMode, setDmEditMode] = useState(false);
   const [adminOverrideMode, setAdminOverrideMode] = useState(false);
@@ -217,7 +214,6 @@ export function PlayerCharacterPage() {
     }
 
     setSessionNotes(activeSheet.effects.join("\n"));
-    setHistoryEntries([]);
   }, [activeCharacter?.id]);
 
   useEffect(() => {
@@ -294,16 +290,18 @@ export function PlayerCharacterPage() {
     }
 
     const now = new Date();
+    const entry = {
+      id: `history-note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      type: "note" as const,
+      actualDateTime: `${formatDateDayMonthYear(now)} - ${formatTimeHoursMinutes(now)}`,
+      gameDateTime: sheetState.gameDateTime,
+      note,
+    };
 
-    setHistoryEntries((entries) => [
-      {
-        id: entries.length + 1,
-        actualDateTime: `${formatDateDayMonthYear(now)} - ${formatTimeHoursMinutes(now)}`,
-        gameDateTime: sheetState.gameDateTime,
-        note,
-      },
-      ...entries,
-    ]);
+    setSheetState((currentSheet) => ({
+      ...currentSheet,
+      gameHistory: [entry, ...(currentSheet.gameHistory ?? [])],
+    }));
     setSessionNotes("");
   }
 
@@ -672,7 +670,16 @@ export function PlayerCharacterPage() {
           ...currentSheet,
           inventory: [
             ...currentSheet.inventory,
-            { name: "", category: "", note: "" },
+            {
+              name: "",
+              category: "",
+              note: "",
+              qualityTier: null,
+              hiddenSpec: null,
+              revealedSpec: null,
+              identified: false,
+              identifiedAtAwarenessLevel: null,
+            },
           ],
         },
         createDmAuditEntry(
@@ -740,7 +747,16 @@ export function PlayerCharacterPage() {
           ...currentSheet,
           equipment: [
             ...currentSheet.equipment,
-            { slot: "", item: "", effect: "" },
+            {
+              slot: "",
+              item: "",
+              effect: "",
+              qualityTier: null,
+              hiddenSpec: null,
+              revealedSpec: null,
+              identified: false,
+              identifiedAtAwarenessLevel: null,
+            },
           ],
         },
         createDmAuditEntry(
@@ -858,13 +874,16 @@ export function PlayerCharacterPage() {
     }
 
     setSheetState((currentSheet) => {
-      const nextBaseValue = Math.max(0, Math.trunc(rawValue));
+      const nextBaseValue =
+        field === "currentHp"
+          ? Math.trunc(rawValue)
+          : Math.max(0, Math.trunc(rawValue));
       const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
       const currentValue =
         field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field];
       const maxValue =
         field === "currentHp"
-          ? derivedSnapshot.maxHp
+          ? null
           : field === "currentMana"
             ? derivedSnapshot.maxMana
             : null;
@@ -1319,7 +1338,15 @@ export function PlayerCharacterPage() {
                     onChange={(event) => handleRuntimeInput("inspiration", event.target.value)}
                   />
                 ) : (
-                  <strong>{sheetState.inspiration}</strong>
+                  <>
+                    <strong>{derived.totalInspiration}</strong>
+                    <small>
+                      Base {derived.permanentInspiration}
+                      {derived.temporaryInspiration > 0
+                        ? ` + Temp ${derived.temporaryInspiration}`
+                        : ""}
+                    </small>
+                  </>
                 )}
               </div>
               <div>
@@ -1379,15 +1406,16 @@ export function PlayerCharacterPage() {
                   <input
                     className="sheet-runtime-input"
                     type="number"
-                    min="0"
-                    max={derived.maxHp}
                     value={sheetState.currentHp}
                     onChange={(event) => handleRuntimeInput("currentHp", event.target.value)}
                   />
                 ) : (
-                  <strong>
-                    {sheetState.currentHp} / {derived.maxHp}
-                  </strong>
+                  <>
+                    <strong>
+                      {sheetState.currentHp} / {derived.maxHp}
+                    </strong>
+                    {derived.temporaryHp > 0 ? <small>Temp HP +{derived.temporaryHp}</small> : null}
+                  </>
                 )}
               </div>
               <div>
@@ -1823,16 +1851,25 @@ export function PlayerCharacterPage() {
           <article className="sheet-card history-card">
             <p className="section-kicker">Session Log</p>
             <h2>Game History</h2>
-            {historyEntries.length === 0 ? (
+            {sheetState.gameHistory.length === 0 ? (
               <p className="history-empty">No submitted game history yet.</p>
             ) : (
               <div className="history-list">
-                {historyEntries.map((entry) => (
-                  <section key={entry.id} className="history-entry">
+                {sheetState.gameHistory.map((entry) => (
+                  <section key={getHistoryEntryKey(entry)} className="history-entry">
                     <strong>
                       {entry.actualDateTime} / {entry.gameDateTime}
                     </strong>
-                    <p>{entry.note}</p>
+                    {entry.type === "note" ? (
+                      <p>{entry.note}</p>
+                    ) : (
+                      <>
+                        <p>
+                          {entry.sourcePower}: {entry.targetName}
+                        </p>
+                        <p>{entry.summary}</p>
+                      </>
+                    )}
                   </section>
                 ))}
               </div>

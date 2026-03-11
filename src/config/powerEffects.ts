@@ -14,6 +14,7 @@ export type CastPowerMode = "self" | "aura";
 export type DamageMitigationChannel = "dr" | "soak";
 export type CastPowerVariantId =
   | "default"
+  | "assess_character"
   | "shadow_cloak"
   | "shadow_manipulation"
   | "necrotic_touch";
@@ -145,6 +146,18 @@ type CastPowerBuildSuccess = {
   manaCost: number;
 };
 
+function resolveAuraCastMode(request: CastPowerBuildRequest): CastPowerMode {
+  if (request.castMode === "aura") {
+    return "aura";
+  }
+
+  if (request.targetCharacterId !== request.casterCharacterId) {
+    return "aura";
+  }
+
+  return "self";
+}
+
 function isStatId(value: unknown): value is StatId {
   return (
     value === "STR" ||
@@ -207,7 +220,14 @@ function createEffect(
 }
 
 export function getSupportedCastablePowerIds(): string[] {
-  return ["body_reinforcement", "healing", "light_support", "necromancy", "shadow_control"];
+  return [
+    "awareness",
+    "body_reinforcement",
+    "healing",
+    "light_support",
+    "necromancy",
+    "shadow_control",
+  ];
 }
 
 export function isSupportedCastablePower(powerId: string): boolean {
@@ -238,6 +258,10 @@ export function getCastPowerTargetModeForVariant(
 ): CastPowerTargetMode {
   if (power.id === "healing") {
     return getCastPowerTargetLimit(power) > 1 ? "multiple" : "single";
+  }
+
+  if (power.id === "awareness" && variantId === "assess_character") {
+    return "single";
   }
 
   if (power.id === "necromancy" && variantId === "necrotic_touch") {
@@ -311,6 +335,10 @@ export function getCastPowerModeOptionsForVariant(
 }
 
 export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantOption[] {
+  if (power.id === "awareness") {
+    return [{ id: "assess_character", label: "Assess Character" }];
+  }
+
   if (power.id === "necromancy" && power.level >= 3) {
     return [{ id: "necrotic_touch", label: "Necrotic Touch" }];
   }
@@ -642,20 +670,26 @@ export function buildActivePowerEffect(
       });
     }
 
+    const resolvedShareMode = resolveAuraCastMode(request);
+    const effectKind =
+      resolvedShareMode === "aura" && request.targetCharacterId !== request.casterCharacterId
+        ? "aura_shared"
+        : "aura_source";
+
     return {
       effect: createEffect(
         request,
         manaCost,
         actionType,
         "light_support",
-        "aura_source",
+        effectKind,
         `${request.power.name} Lv ${request.power.level}`,
         joinSummary(summaryParts),
         null,
         modifiers,
         {
           shareMode: "aura",
-          sharedTargetCharacterIds: [request.casterCharacterId],
+          sharedTargetCharacterIds: effectKind === "aura_source" ? [request.casterCharacterId] : null,
         }
       ),
       manaCost,
@@ -674,10 +708,15 @@ export function buildActivePowerEffect(
     const stealthBonus = asNumber(cloak.stealth_skill_bonus);
     const intimidationBonus = asNumber(cloak.intimidation_skill_bonus);
     const armorClassBonus = asNumber(cloak.armor_class_bonus);
+    const resolvedShareMode = resolveAuraCastMode(request);
     const resolvedManaCost =
-      request.castMode === "aura"
+      resolvedShareMode === "aura"
         ? asNumber(manaCostVariants.shared_with_allies) || manaCost
         : asNumber(manaCostVariants.self_only) || manaCost;
+    const effectKind =
+      resolvedShareMode === "aura" && request.targetCharacterId !== request.casterCharacterId
+        ? "aura_shared"
+        : "aura_source";
     const modifiers: ActivePowerEffectModifier[] = [];
     const summaryParts: string[] = [];
 
@@ -717,14 +756,14 @@ export function buildActivePowerEffect(
         resolvedManaCost,
         actionType,
         "shadow_control:cloak",
-        "aura_source",
+        effectKind,
         `${request.power.name} Lv ${request.power.level}`,
         joinSummary(summaryParts),
         null,
         modifiers,
         {
-          shareMode: request.castMode === "aura" ? "aura" : "self",
-          sharedTargetCharacterIds: [request.casterCharacterId],
+          shareMode: resolvedShareMode,
+          sharedTargetCharacterIds: effectKind === "aura_source" ? [request.casterCharacterId] : null,
         }
       ),
       manaCost: resolvedManaCost,

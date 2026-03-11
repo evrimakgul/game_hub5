@@ -13,6 +13,7 @@ import {
   PLAYER_CHARACTER_TEMPLATE,
   type CharacterDraft,
   hydrateCharacterDraft,
+  normalizeCharacterDraft,
 } from "../config/characterTemplate";
 import type { CombatEncounterState } from "../types/combatEncounter";
 
@@ -309,7 +310,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
 
         return {
           ...character,
-          sheet: nextSheet,
+          sheet: normalizeCharacterDraft(nextSheet),
         };
       })
     );

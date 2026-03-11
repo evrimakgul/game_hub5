@@ -4,7 +4,7 @@
     "filename": "T1_Supernatural_Powers5.txt",
     "title": "T1 Supernatural Powers"
   },
-  "schema_version": 4,
+  "schema_version": 5,
   "coverage": {
     "included_tiers": [
       "t1"
@@ -21,106 +21,186 @@
     {
       "id": "awareness",
       "name": "Awareness",
+      "abbreviation": "AW",
       "governing_stat": "PER",
+      "passives": {
+        "alerted_self": {
+          "enabled": true,
+          "skill_id": "alertness",
+          "bonus_equals_power_level": true,
+          "duration": "passive"
+        },
+        "awakened_insight": {
+          "enabled": true,
+          "temporary_inspiration_per_session": 1,
+          "stacks": false,
+          "blocked_by_status": "uninspired",
+          "duration": "passive"
+        }
+      },
       "levels": [
         {
           "level": 1,
           "action_type": "bonus",
           "mana_cost": 0,
           "mechanics": {
-            "alertness_skill_bonus_equals_power_level": true,
-            "item_identification_max_quality": "masterwork",
-            "creature_identification_scope": "simple_npcs",
-            "item_identification_mana_cost": 0,
-            "creature_identification_mana_cost": 0
+            "assess_character": {
+              "enabled": true,
+              "identified_fields": [
+                "stats",
+                "skills"
+              ],
+              "cr_limit_formula": {
+                "base_stat": "PER",
+                "flat_bonus": 1
+              },
+              "cr_cap": 6
+            },
+            "artifact_appraisal": {
+              "enabled": true,
+              "max_quality": "masterwork"
+            }
           },
           "adjudication": {
-            "range": null,
-            "duration": null
+            "range": "line_of_sight",
+            "item_range": "touch",
+            "duration": "instant"
           },
-          "description": "You add your awareness level to your alertness skill checks. You also can identify stats / skills of simple NPCs. You can identify common, uncommon, masterwork items. Identifying items and creatures costs no mana."
+          "description": "Alerted Self remains passive. Assess Character reveals stats and skills up to CR Limit = PER + 1, capped at 6. Artifact Appraisal identifies common, uncommon, and masterwork items."
         },
         {
           "level": 2,
           "action_type": "bonus",
           "mana_cost": 0,
           "mechanics": {
-            "alertness_skill_bonus_equals_power_level": true,
-            "item_identification_max_quality": "epic",
-            "creature_identification_scope": "stronger_targets_with_special_skills_and_loot"
+            "assess_character": {
+              "enabled": true,
+              "identified_fields": [
+                "stats",
+                "skills",
+                "powers",
+                "specials"
+              ],
+              "cr_limit_formula": {
+                "base_stat": "PER",
+                "flat_bonus": 2
+              },
+              "cr_cap": 9
+            },
+            "artifact_appraisal": {
+              "enabled": true,
+              "max_quality": "rare"
+            }
           },
           "adjudication": {
-            "range": null,
-            "duration": null
+            "range": "line_of_sight",
+            "item_range": "touch",
+            "duration": "instant"
           },
-          "description": "You increase your identify power against stronger targets. You can also know their special or supernatural skills if there are any, and possible loot. You can now identify epic or lesser items."
+          "description": "Assess Character now reveals powers and specials up to CR Limit = PER + 2, capped at 9. Artifact Appraisal identifies rare or lesser items."
         },
         {
           "level": 3,
           "action_type": "bonus",
           "mana_cost": 0,
           "mechanics": {
-            "alertness_skill_bonus_equals_power_level": true,
-            "item_identification_max_quality": "epic",
-            "creature_identification_scope": "stronger_targets_with_special_skills_and_loot",
-            "ignores_techno_infused_invisibility_devices": true
+            "assess_character": {
+              "enabled": true,
+              "identified_fields": [
+                "stats",
+                "skills",
+                "powers",
+                "specials"
+              ],
+              "cr_limit_formula": {
+                "base_stat": "PER",
+                "flat_bonus": 3
+              },
+              "cr_cap": 12,
+              "ignores_techno_infused_invisibility_devices": true
+            },
+            "artifact_appraisal": {
+              "enabled": true,
+              "max_quality": "epic"
+            }
           },
           "adjudication": {
-            "range": null,
-            "duration": null
+            "range": "line_of_sight",
+            "item_range": "touch",
+            "duration": "instant"
           },
-          "description": "Techno infused invisibility devices do not work on you."
+          "description": "Assess Character reaches CR Limit = PER + 3, capped at 12, and ignores techno-infused invisibility devices. Artifact Appraisal identifies epic or lesser items."
         },
         {
           "level": 4,
           "action_type": "bonus",
           "mana_cost": 0,
           "mechanics": {
-            "alertness_skill_bonus_equals_power_level": true,
-            "item_identification_max_quality": "legendary",
-            "creature_identification_scope": "rank_c_and_b_hunters_and_stronger_targets",
-            "ignores_techno_infused_invisibility_devices": true
+            "assess_character": {
+              "enabled": true,
+              "identified_fields": [
+                "stats",
+                "skills",
+                "powers",
+                "specials"
+              ],
+              "cr_limit_formula": {
+                "base_stat": "PER",
+                "flat_bonus": 4
+              },
+              "cr_cap": 15,
+              "ignores_techno_infused_invisibility_devices": true
+            },
+            "artifact_appraisal": {
+              "enabled": true,
+              "max_quality": "legendary"
+            }
           },
           "adjudication": {
-            "range": null,
-            "duration": null
+            "range": "line_of_sight",
+            "item_range": "touch",
+            "duration": "instant"
           },
-          "description": "You increase your identify power further and can identify legendary or lesser items."
+          "description": "Assess Character reaches CR Limit = PER + 4, capped at 15. Artifact Appraisal identifies legendary or lesser items."
         },
         {
           "level": 5,
           "action_type": "bonus",
           "mana_cost": 0,
           "mechanics": {
-            "alertness_skill_bonus_equals_power_level": true,
-            "item_identification_max_quality": "all",
-            "creature_identification_scope": "all_except_supreme_beings",
-            "ignores_techno_infused_invisibility_devices": true
+            "assess_character": {
+              "enabled": true,
+              "identified_fields": [
+                "stats",
+                "skills",
+                "powers",
+                "specials"
+              ],
+              "cr_limit_formula": {
+                "base_stat": "PER",
+                "flat_bonus": 5
+              },
+              "cr_cap": 18,
+              "ignores_techno_infused_invisibility_devices": true,
+              "share_results_with_party": true
+            },
+            "artifact_appraisal": {
+              "enabled": true,
+              "max_quality": "mythical"
+            }
           },
           "adjudication": {
-            "range": null,
-            "duration": null
+            "range": "line_of_sight",
+            "item_range": "touch",
+            "duration": "instant"
           },
-          "description": "You can now identify all living, not-living, non-living NPCs except for supreme beings."
+          "description": "Assess Character reaches CR Limit = PER + 5, capped at 18, and results may be shared with party members. Artifact Appraisal identifies demonic, celestial, mythical, or lesser items."
         }
       ],
-      "cantrip": {
-        "introduced_at_level": 3,
-        "levels": [
-          {
-            "power_level": 3,
-            "mechanics": {
-              "inspiration_per_session": 1,
-              "stacks": false
-            },
-            "description": "You gain +1 inspiration per game session, and it does not stack."
-          }
-        ],
-        "description": "If the person has an uninspired flaw, they need to get rid of their uninspired status first and the cantrip speeds up that process."
-      },
       "notes": [
-        "All identifications are bonus action.",
-        "Informing other players or NPCs in your party costs your standard or move action."
+        "Alerted Self and Awakened Insight are passive.",
+        "Assess Character is bonus action, 0 mana, line of sight, and instant.",
+        "Artifact Appraisal is bonus action, no mana, touch, and instant."
       ]
     },
     {

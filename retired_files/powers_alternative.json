@@ -1,0 +1,2011 @@
+{
+  "source": {
+    "path": "references/originals/T1 Supernatural Powers_v1.0.txt",
+    "filename": "T1 Supernatural Powers_v1.0.txt",
+    "title": "T1 Supernatural Powers"
+  },
+  "schema_version": 2,
+  "global_rules": {
+    "power_types": [
+      "passive",
+      "active"
+    ],
+    "active_level_requires": [
+      "castable active levels must define action, mana_cost, range, and exactly one temporal mode"
+    ],
+    "passive_level_requires": [
+      "duration: passive"
+    ],
+    "temporal_definition_required": true,
+    "normalization_rules": [
+      "Parent abilities may be non-castable containers that define shared rules or level progression for child abilities.",
+      "Integrated child features may inherit activation from a parent active ability instead of repeating action, mana cost, and range.",
+      "Unavailable levels are represented explicitly with available=false."
+    ]
+  },
+  "powers": [
+    {
+      "id": "awareness",
+      "name": "Awareness",
+      "governing_stat": "PER",
+      "abilities": [
+        {
+          "id": "alerted_self",
+          "abbreviation": "AS",
+          "type": "passive",
+          "summary": "Add awareness level to alertness skill.",
+          "levels": [
+            {
+              "level": 1,
+              "timing": "passive",
+              "mechanics": {
+                "alertness_bonus": 1
+              }
+            },
+            {
+              "level": 2,
+              "timing": "passive",
+              "mechanics": {
+                "alertness_bonus": 2
+              }
+            },
+            {
+              "level": 3,
+              "timing": "passive",
+              "mechanics": {
+                "alertness_bonus": 3
+              }
+            },
+            {
+              "level": 4,
+              "timing": "passive",
+              "mechanics": {
+                "alertness_bonus": 4
+              }
+            },
+            {
+              "level": 5,
+              "timing": "passive",
+              "mechanics": {
+                "alertness_bonus": 5
+              }
+            }
+          ]
+        },
+        {
+          "id": "awakened_insight",
+          "abbreviation": "AI",
+          "type": "passive",
+          "summary": "Gain temporary inspiration each session.",
+          "levels": [
+            {
+              "level": 1,
+              "timing": "passive",
+              "mechanics": {
+                "temporary_inspiration_per_session": 1,
+                "stacks": false,
+                "helps_remove_uninspired": true
+              }
+            },
+            {
+              "level": 2,
+              "timing": "passive",
+              "mechanics": {
+                "temporary_inspiration_per_session": 1,
+                "stacks": false,
+                "helps_remove_uninspired": true
+              }
+            },
+            {
+              "level": 3,
+              "timing": "passive",
+              "mechanics": {
+                "temporary_inspiration_per_session": 1,
+                "stacks": false,
+                "helps_remove_uninspired": true
+              }
+            },
+            {
+              "level": 4,
+              "timing": "passive",
+              "mechanics": {
+                "temporary_inspiration_per_session": 1,
+                "stacks": false,
+                "helps_remove_uninspired": true
+              }
+            },
+            {
+              "level": 5,
+              "timing": "passive",
+              "mechanics": {
+                "temporary_inspiration_per_session": 1,
+                "stacks": false,
+                "helps_remove_uninspired": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "assess_character",
+          "abbreviation": "AC",
+          "type": "active",
+          "summary": "Identify characters subject to CR limits.",
+          "levels": [
+            {
+              "level": 1,
+              "action": "bonus",
+              "mana_cost": 1,
+              "range": "line_of_sight",
+              "timing": "instant",
+              "mechanics": {
+                "identify_stats": true,
+                "identify_skills": true,
+                "cr_limit_formula": "PER + 1"
+              }
+            },
+            {
+              "level": 2,
+              "action": "bonus",
+              "mana_cost": 1,
+              "range": "line_of_sight",
+              "timing": "instant",
+              "mechanics": {
+                "identify_stats": true,
+                "identify_skills": true,
+                "identify_powers": true,
+                "identify_specials": true,
+                "cr_limit_formula": "PER + 2"
+              }
+            },
+            {
+              "level": 3,
+              "action": "bonus",
+              "mana_cost": 1,
+              "range": "line_of_sight",
+              "timing": "instant",
+              "mechanics": {
+                "identify_stats": true,
+                "identify_skills": true,
+                "identify_powers": true,
+                "identify_specials": true,
+                "cr_limit_formula": "PER + 3",
+                "ignores_techno_infused_invisibility_devices": true
+              }
+            },
+            {
+              "level": 4,
+              "action": "bonus",
+              "mana_cost": 1,
+              "range": "line_of_sight",
+              "timing": "instant",
+              "mechanics": {
+                "identify_stats": true,
+                "identify_skills": true,
+                "identify_powers": true,
+                "identify_specials": true,
+                "cr_limit_formula": "PER + 4",
+                "ignores_techno_infused_invisibility_devices": true
+              }
+            },
+            {
+              "level": 5,
+              "action": "bonus_or_standard",
+              "mana_cost": 1,
+              "range": "line_of_sight",
+              "timing": "instant",
+              "mechanics": {
+                "identify_stats": true,
+                "identify_skills": true,
+                "identify_powers": true,
+                "identify_specials": true,
+                "identify_all_npcs_except_supreme_beings": true,
+                "cr_limit_formula": "PER + 5",
+                "ignores_techno_infused_invisibility_devices": true,
+                "can_inform_party_of_results": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "artifact_appraisal",
+          "abbreviation": "AA",
+          "type": "active",
+          "summary": "Identify items by quality.",
+          "levels": [
+            {
+              "level": 1,
+              "action": "bonus",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "max_item_quality": "masterwork"
+              }
+            },
+            {
+              "level": 2,
+              "action": "bonus",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "max_item_quality": "rare"
+              }
+            },
+            {
+              "level": 3,
+              "action": "bonus",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "max_item_quality": "epic"
+              }
+            },
+            {
+              "level": 4,
+              "action": "bonus",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "max_item_quality": "legendary"
+              }
+            },
+            {
+              "level": 5,
+              "action": "bonus",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "max_item_quality": "mythical"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "body_reinforcement",
+      "name": "Body Reinforcement",
+      "abbreviation": "BR",
+      "governing_stat": "STAM",
+      "abilities": [
+        {
+          "id": "brute_defiance",
+          "abbreviation": "BD",
+          "type": "passive",
+          "summary": "Automatically stand after incapacitation once per day.",
+          "levels": [
+            {
+              "level": 1,
+              "timing": "passive",
+              "mechanics": {
+                "trigger": "incapacitated_hp_between_0_and_negative_5",
+                "restore_hp": 1,
+                "delay_turns": 1,
+                "uses_per_day": 1
+              }
+            },
+            {
+              "level": 2,
+              "timing": "passive",
+              "mechanics": {
+                "trigger": "incapacitated_hp_between_0_and_negative_5",
+                "restore_hp": 2,
+                "delay_turns": 1,
+                "uses_per_day": 1
+              }
+            },
+            {
+              "level": 3,
+              "timing": "passive",
+              "mechanics": {
+                "trigger": "incapacitated_hp_between_0_and_negative_5",
+                "restore_hp": 4,
+                "delay_turns": 1,
+                "uses_per_day": 1
+              }
+            },
+            {
+              "level": 4,
+              "timing": "passive",
+              "mechanics": {
+                "trigger": "incapacitated_hp_between_0_and_negative_5",
+                "restore_hp": 8,
+                "delay_turns": 1,
+                "uses_per_day": 1
+              }
+            },
+            {
+              "level": 5,
+              "timing": "passive",
+              "mechanics": {
+                "trigger": "incapacitated_hp_between_0_and_negative_5",
+                "restore_hp": 16,
+                "delay_turns": 1,
+                "uses_per_day": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "boost_physique",
+          "abbreviation": "BP",
+          "type": "active",
+          "summary": "Increase physical stats and later add DR.",
+          "levels": [
+            {
+              "level": 1,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "self",
+              "timing": "30 minutes",
+              "mechanics": {
+                "allowed_stats": [
+                  "STR",
+                  "DEX",
+                  "STAM"
+                ],
+                "stat_bonus": 1,
+                "max_bonus_applications_per_stat": 1
+              }
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "self_or_touch",
+              "timing": "1 hour",
+              "mechanics": {
+                "allowed_stats": [
+                  "STR",
+                  "DEX",
+                  "STAM"
+                ],
+                "stat_bonus": 1,
+                "max_bonus_applications_per_stat": 1
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "self_or_touch",
+              "timing": "2 hours",
+              "mechanics": {
+                "allowed_stats": [
+                  "STR",
+                  "DEX",
+                  "STAM"
+                ],
+                "stat_bonus": 2,
+                "max_bonus_applications_per_stat": 1
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "self_or_touch",
+              "timing": "4 hours",
+              "mechanics": {
+                "allowed_stats": [
+                  "STR",
+                  "DEX",
+                  "STAM"
+                ],
+                "stat_bonus": 2,
+                "max_bonus_applications_per_stat": 1,
+                "damage_reduction_bonus": 1
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 4,
+              "range": "self_or_touch",
+              "timing": "8 hours",
+              "mechanics": {
+                "allowed_stats": [
+                  "STR",
+                  "DEX",
+                  "STAM"
+                ],
+                "stat_bonus": 3,
+                "max_bonus_applications_per_stat": 1,
+                "damage_reduction_bonus": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crowd_control",
+      "name": "Crowd Control",
+      "abbreviation": "CC",
+      "governing_stat": "CHA",
+      "abilities": [
+        {
+          "id": "crowd_management",
+          "abbreviation": "CM",
+          "type": "passive",
+          "summary": "Add CC level to Social skill.",
+          "levels": [
+            {
+              "level": 1,
+              "timing": "passive",
+              "mechanics": {
+                "social_bonus": 1
+              }
+            },
+            {
+              "level": 2,
+              "timing": "passive",
+              "mechanics": {
+                "social_bonus": 2
+              }
+            },
+            {
+              "level": 3,
+              "timing": "passive",
+              "mechanics": {
+                "social_bonus": 3
+              }
+            },
+            {
+              "level": 4,
+              "timing": "passive",
+              "mechanics": {
+                "social_bonus": 4
+              }
+            },
+            {
+              "level": 5,
+              "timing": "passive",
+              "mechanics": {
+                "social_bonus": 5
+              }
+            }
+          ]
+        },
+        {
+          "id": "compulsion_guard",
+          "abbreviation": "CG",
+          "type": "passive",
+          "summary": "Add Social skill level while defending against control effects.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "available": false
+            },
+            {
+              "level": 4,
+              "available": false
+            },
+            {
+              "level": 5,
+              "available": true,
+              "timing": "passive",
+              "mechanics": {
+                "control_defense_bonus_source": "social_skill_level"
+              }
+            }
+          ]
+        },
+        {
+          "id": "control_entity",
+          "abbreviation": "CE",
+          "type": "active",
+          "summary": "Control or paralyze targets through contested rolls.",
+          "notes": [
+            "If control fails, or ends while the target is still alive, the target knows you did something and you may become first on its aggro list."
+          ],
+          "levels": [
+            {
+              "level": 1,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "concentration",
+              "mechanics": {
+                "target_count": 1,
+                "dice_pool": "CHA + INT",
+                "save_pool": "CHA + WITS",
+                "paralyzes_target": true,
+                "breaks_on_damage_from_any_source": true,
+                "control_immunity_after_break": "1 day",
+                "upkeep_action": "bonus_or_move",
+                "upkeep_mana_cost_per_turn": 1
+              }
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "concentration_with_bonus_or_move_maintenance",
+              "mechanics": {
+                "target_count": 1,
+                "dice_pool": "CHA + INT",
+                "save_pool": "CHA + WITS",
+                "can_compel_simple_non_self_harm_acts": true,
+                "breaks_on_damage_from_caster": true,
+                "breaks_on_damage_from_others": false,
+                "upkeep_mana_cost_per_turn": 1
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "concentration_with_bonus_or_move_maintenance",
+              "mechanics": {
+                "target_count": 2,
+                "dice_pool": "CHA + INT",
+                "save_pool": "CHA + WITS",
+                "can_compel_simple_non_self_harm_acts": true,
+                "breaks_on_damage_from_any_source": false,
+                "upkeep_mana_cost_per_turn": 1
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "concentration_with_bonus_or_move_maintenance",
+              "mechanics": {
+                "target_count": 2,
+                "dice_pool": "CHA + INT + CC",
+                "save_pool": "CHA + WITS",
+                "can_compel_simple_non_self_harm_acts": true,
+                "breaks_on_damage_from_any_source": false,
+                "upkeep_mana_cost_per_turn": 1
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "concentration_with_bonus_or_move_maintenance",
+              "mechanics": {
+                "target_count": 3,
+                "dice_pool": "CHA + INT + CC",
+                "save_pool": "CHA + WITS",
+                "can_compel_self_harm": true,
+                "allowed_target_types": [
+                  "living",
+                  "non_living_except_occult_summons"
+                ],
+                "breaks_on_damage_from_any_source": false,
+                "upkeep_mana_cost_per_turn": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "elementalist",
+      "name": "Elementalist",
+      "governing_stat": "INT",
+      "abilities": [
+        {
+          "id": "elemental_bolt",
+          "abbreviation": "EB",
+          "type": "active",
+          "summary": "Direct elemental or necrotic magical attack.",
+          "notes": [
+            "Vulnerable creatures take 1.5x damage, round up."
+          ],
+          "levels": [
+            {
+              "level": 1,
+              "action": "standard",
+              "mana_cost": 1,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT + 1",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ],
+                "element_lock": "until_long_rest"
+              }
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 1,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT + 2",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ],
+                "element_lock": "until_long_rest"
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 1,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT + 3",
+                "allowed_damage_types": [
+                  "fire",
+                  "cold",
+                  "lightning",
+                  "acid"
+                ],
+                "can_switch_element_at_will": true
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 1,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT + 4",
+                "allowed_damage_types": [
+                  "fire",
+                  "cold",
+                  "lightning",
+                  "acid"
+                ],
+                "can_switch_element_at_will": true
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost_variants": {
+                "elemental": 1,
+                "necrotic": 2
+              },
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT + 5",
+                "allowed_damage_types": [
+                  "fire",
+                  "cold",
+                  "lightning",
+                  "acid",
+                  "necrotic"
+                ],
+                "living_targets_vulnerable_to_necrotic": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "elemental_cantrip",
+          "abbreviation": "EC",
+          "type": "active",
+          "summary": "Zero-mana elemental magical attack.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ]
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ]
+              }
+            },
+            {
+              "level": 4,
+              "action": "bonus",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT + 1",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ],
+                "blocked_if_previous_attack_this_turn": true
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "INT + 1",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ],
+                "target_count": 3,
+                "split_damage_formula": "ceil((INT + 1) / target_count)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "elemental_split",
+          "abbreviation": "ES",
+          "type": "active",
+          "summary": "Split magical damage among multiple targets.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 1,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "target_count": 2,
+                "damage_formula_per_target": "ceil((INT + 2) / 2)",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ]
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": "1+",
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "target_count": 3,
+                "damage_formula_per_target": "ceil((INT + 3) / 2)",
+                "bonus_damage_per_extra_mana": 2,
+                "max_total_damage_formula": "INT + 3",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ]
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": "1+",
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "target_count": 4,
+                "damage_formula_per_target": "ceil((INT + 4) / 2)",
+                "bonus_damage_per_extra_mana": 2,
+                "max_total_damage_formula": "INT + 4",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning"
+                ]
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": "1+",
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "target_count": 5,
+                "damage_formula_per_target": "ceil((INT + 5) / 2)",
+                "bonus_damage_per_extra_mana_variants": {
+                  "elemental": 2,
+                  "necrotic": 4
+                },
+                "max_total_damage_formula": "INT + 5",
+                "allowed_damage_types": [
+                  "fire",
+                  "ice",
+                  "acid",
+                  "lightning",
+                  "necrotic"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "healing",
+      "name": "Healing",
+      "governing_stat": "INT",
+      "abilities": [
+        {
+          "id": "heal_living",
+          "abbreviation": "HL",
+          "type": "active",
+          "summary": "Heal living targets and remove bleeding.",
+          "levels": [
+            {
+              "level": 1,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "INT + 1",
+                "target_count": 1,
+                "removes_bleeding": true
+              }
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "INT + 2",
+                "target_count": 4,
+                "can_split_healing": true,
+                "removes_bleeding": true
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "INT + 3",
+                "target_count": 4,
+                "can_split_healing": true,
+                "removes_bleeding": true
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "INT + 4",
+                "target_count": 4,
+                "can_split_healing": true,
+                "removes_bleeding": true,
+                "can_regrow_limbs": true
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "INT + 5",
+                "target_count": 4,
+                "can_split_healing": true,
+                "removes_bleeding": true,
+                "can_regrow_limbs": true,
+                "overheal_uses_per_character_per_day": 1,
+                "overheal_cap_formula": "target.STAM"
+              }
+            }
+          ]
+        },
+        {
+          "id": "holy_purge",
+          "abbreviation": "HP",
+          "type": "active",
+          "summary": "Cure poison, disease, and curse.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "removes_statuses": [
+                  "poison",
+                  "disease",
+                  "curse"
+                ]
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "removes_statuses": [
+                  "poison",
+                  "disease",
+                  "curse"
+                ]
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "removes_statuses": [
+                  "poison",
+                  "disease",
+                  "curse"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "healing_touch",
+          "abbreviation": "HT",
+          "type": "active",
+          "summary": "Mend wounds and stop bleeding.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "ceil(HL / 2)",
+                "stops_bleeding": true,
+                "max_uses_per_target_per_day": 2
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "ceil(HL / 2)",
+                "stops_bleeding": true,
+                "max_uses_per_target_per_day": 2
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "heal_formula": "ceil(HL / 2)",
+                "stops_bleeding": true,
+                "max_uses_per_target_per_day": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light_support",
+      "name": "Light Support",
+      "abbreviation": "LS",
+      "governing_stat": "APP",
+      "abilities": [
+        {
+          "id": "let_there_be_light",
+          "abbreviation": "LTBL",
+          "type": "active",
+          "summary": "Create a light aura that grants hit, DR, and later soak bonuses.",
+          "levels": [
+            {
+              "level": 1,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "50m_radius",
+              "timing": "30 minutes",
+              "mechanics": {
+                "attack_dice_bonus": 2,
+                "damage_reduction_bonus": 1,
+                "soak_bonus": 0,
+                "provides_vision_in_darkness": true
+              }
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "50m_radius",
+              "timing": "1 hour",
+              "mechanics": {
+                "attack_dice_bonus": 2,
+                "damage_reduction_bonus": 1,
+                "soak_bonus": 0,
+                "provides_vision_in_darkness": true,
+                "hostiles_cannot_see_summoned_light": true
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "50m_radius",
+              "timing": "2 hours",
+              "mechanics": {
+                "attack_dice_bonus": 3,
+                "damage_reduction_bonus": 1,
+                "soak_bonus": 1,
+                "provides_vision_in_darkness": true,
+                "hostiles_cannot_see_summoned_light": true
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "100m_radius",
+              "timing": "4 hours",
+              "mechanics": {
+                "attack_dice_bonus": 3,
+                "damage_reduction_bonus": 2,
+                "soak_bonus": 1,
+                "provides_vision_in_darkness": true,
+                "hostiles_cannot_see_summoned_light": true
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "100m_radius",
+              "timing": "8 hours",
+              "mechanics": {
+                "attack_dice_bonus": 4,
+                "damage_reduction_bonus": 2,
+                "soak_bonus": 2,
+                "provides_vision_in_darkness": true,
+                "hostiles_cannot_see_summoned_light": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "lunar_bless",
+          "abbreviation": "LB",
+          "type": "passive",
+          "summary": "Gain mana bonus and provide night vision.",
+          "levels": [
+            {
+              "level": 1,
+              "timing": "passive",
+              "mechanics": {
+                "mana_bonus": 1,
+                "night_vision_targets": "self"
+              }
+            },
+            {
+              "level": 2,
+              "timing": "passive",
+              "mechanics": {
+                "mana_bonus": 2,
+                "night_vision_targets": "self_plus_1"
+              }
+            },
+            {
+              "level": 3,
+              "timing": "passive",
+              "mechanics": {
+                "mana_bonus": 3,
+                "night_vision_targets": "self_plus_3"
+              }
+            },
+            {
+              "level": 4,
+              "timing": "passive",
+              "mechanics": {
+                "mana_bonus": 4,
+                "night_vision_targets": "self_plus_3"
+              }
+            },
+            {
+              "level": 5,
+              "timing": "passive",
+              "mechanics": {
+                "mana_bonus": 5,
+                "night_vision_targets": "self_plus_4"
+              }
+            }
+          ]
+        },
+        {
+          "id": "lessen_darkness",
+          "abbreviation": "LD",
+          "type": "active",
+          "summary": "While LTBL is active, reduce darkness-based resistance levels by one.",
+          "notes": [
+            "This is not a separately castable action. It is an integrated level 5 feature of Let There Be Light."
+          ],
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "available": false
+            },
+            {
+              "level": 4,
+              "available": false
+            },
+            {
+              "level": 5,
+              "castable": false,
+              "activation_model": "integrated_with_parent",
+              "parent_ability_id": "let_there_be_light",
+              "parent_level": 5,
+              "timing": "while_LTBL_is_active",
+              "mechanics": {
+                "resistance_level_delta": -1,
+                "affects_damage_categories": [
+                  "physical",
+                  "elemental"
+                ],
+                "rl2_becomes_rl1": true,
+                "rl1_becomes_rl0": true,
+                "rl0_becomes_rl_negative_1": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "luminous_restoration",
+          "abbreviation": "LR",
+          "type": "active",
+          "summary": "Restore mana to a friendly target, including self.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "restore_mana_formula": "APP"
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "restore_mana_formula": "APP * 2"
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 0,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "restore_mana_formula": "APP * 3"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "necromancy",
+      "name": "Necromancy",
+      "abbreviation": "N",
+      "governing_stat": "APP",
+      "variables": {
+        "NL": "Necromancy Level"
+      },
+      "abilities": [
+        {
+          "id": "non_living_warriors",
+          "abbreviation": "NW",
+          "type": "active",
+          "castable": false,
+          "role": "parent_container",
+          "summary": "Parent summoning power for skeletons, skeleton kings, and zombies.",
+          "shared_rules": {
+            "max_active_per_subtype": 1,
+            "summons_appear_next_to_caster": true,
+            "summon_location_selectable": false,
+            "summons_break_stealth": true,
+            "necrotic_damage_adds_as_temporary_hp": true,
+            "mental_and_social_stats": {
+              "CHA": 0,
+              "MAN": 0,
+              "APP": 0,
+              "INT": 0,
+              "PER": 0,
+              "WITS": 0
+            },
+            "resistance_levels": {
+              "mental": 2,
+              "shadow": 2,
+              "stamina": 2,
+              "fire": 1,
+              "cold": 1,
+              "acid": -1
+            },
+            "initiative": "uses_caster_initiative_and_acts_in_caster_turn"
+          },
+          "child_level_progression": [
+            {
+              "level": 1,
+              "action": "standard",
+              "range": "2.5m",
+              "timing": "15 minutes"
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "range": "2.5m",
+              "timing": "30 minutes"
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "range": "2.5m",
+              "timing": "1 hour"
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "range": "2.5m",
+              "timing": "2 hours"
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "range": "2.5m",
+              "timing": "4 hours"
+            }
+          ]
+        },
+        {
+          "id": "non_living_skeleton",
+          "abbreviation": "NS",
+          "type": "active",
+          "summary": "Create one skeleton with sword, shield, body armor, and helmet.",
+          "shared_mechanics": {
+            "melee_formula": "2 + ceil(NL / 2)",
+            "str_formula": "ceil(NL / 2) + ceil(APP / 2)",
+            "dex_formula": "ceil(NL / 2) + ceil(APP / 2)",
+            "stam_formula": "ceil(NL / 2) + ceil(APP / 2)",
+            "attack_formula": "DEX + 3",
+            "damage_formula": "STR + 2",
+            "armor_class_formula": "DEX",
+            "natural_damage_reduction_formula": "ceil(NL / 2) + 1",
+            "soak_formula": "STAM",
+            "hp_formula": "2 + 2 * STAM",
+            "can_receive_single_buffs": false,
+            "can_receive_group_buffs": false,
+            "can_receive_normal_healing": false
+          },
+          "levels": [
+            {
+              "level": 1,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "2.5m",
+              "timing": "15 minutes"
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "2.5m",
+              "timing": "30 minutes"
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "2.5m",
+              "timing": "1 hour"
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "2.5m",
+              "timing": "2 hours"
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "2.5m",
+              "timing": "4 hours"
+            }
+          ]
+        },
+        {
+          "id": "non_living_skeleton_king",
+          "abbreviation": "NSK",
+          "type": "active",
+          "summary": "Create one skeleton king with a two-handed sword.",
+          "shared_mechanics": {
+            "melee_formula": "3 + ceil(NL / 2)",
+            "str_formula": "ceil((3 * NL) / 2) + ceil(APP / 2)",
+            "dex_formula": "ceil((3 * NL) / 2) + ceil(APP / 2)",
+            "stam_formula": "ceil((3 * NL) / 2) + ceil(APP / 2)",
+            "attack_formula": "DEX + 2 * NL",
+            "damage_formula": "STR + NL",
+            "armor_class_formula": "DEX",
+            "natural_damage_reduction_formula": "NL + ceil(APP / 2)",
+            "soak_formula": "STAM",
+            "hp_formula": "6 + 3 * STAM",
+            "can_receive_single_buffs": false,
+            "can_receive_group_buffs": false,
+            "can_receive_normal_healing": false
+          },
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "available": false
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 4,
+              "range": "2.5m",
+              "timing": "2 hours"
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 4,
+              "range": "2.5m",
+              "timing": "4 hours"
+            }
+          ]
+        },
+        {
+          "id": "non_living_zombie",
+          "abbreviation": "NZ",
+          "type": "active",
+          "summary": "Create one zombie that spreads disease.",
+          "shared_mechanics": {
+            "melee_formula": "3 + ceil(NL / 2)",
+            "dex_formula": "NL + ceil(APP / 2)",
+            "str_formula": "NL + APP",
+            "stam_formula": "NL + APP",
+            "attack_formula": "DEX + NL",
+            "damage_formula": "STR + NL",
+            "stam_loss_per_turn_formula": "NL - 2",
+            "armor_class_formula": "DEX",
+            "natural_damage_reduction_formula": "NL + 3",
+            "soak_formula": "STAM",
+            "hp_formula": "6 + 4 * STAM",
+            "inflicts_disease_on_successful_damage": true,
+            "can_receive_single_buffs": true,
+            "can_receive_group_buffs": true,
+            "can_receive_normal_healing": true
+          },
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "2.5m",
+              "timing": "30 minutes"
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "2.5m",
+              "timing": "1 hour"
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "2.5m",
+              "timing": "2 hours"
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "2.5m",
+              "timing": "4 hours"
+            }
+          ]
+        },
+        {
+          "id": "necrotic_touch",
+          "abbreviation": "NT",
+          "type": "active",
+          "summary": "Ranged necrotic touch attack.",
+          "notes": [
+            "Damage is soakable with Stamina.",
+            "Living targets take 1.5x damage, round up.",
+            "You heal yourself by NL even if damage dealt is 0.",
+            "No effect on shadow or incorporeal creatures."
+          ],
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "APP + NL",
+                "damage_type": "necrotic",
+                "soak_stat": "STAM",
+                "living_damage_multiplier": 1.5,
+                "self_heal_formula": "NL"
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "APP + NL",
+                "damage_type": "necrotic",
+                "soak_stat": "STAM",
+                "living_damage_multiplier": 1.5,
+                "self_heal_formula": "NL"
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 3,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "APP + (2 * NL)",
+                "damage_type": "necrotic",
+                "soak_stat": "STAM",
+                "living_damage_multiplier": 1.5,
+                "self_heal_formula": "NL"
+              }
+            }
+          ]
+        },
+        {
+          "id": "necromancers_bless",
+          "abbreviation": "NB",
+          "type": "active",
+          "summary": "Resurrect a recently fallen living being.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "available": false
+            },
+            {
+              "level": 4,
+              "available": false
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 6,
+              "range": "touch",
+              "timing": "instant",
+              "mechanics": {
+                "resurrection_window": "1 hour",
+                "target_type": "recently_fallen_living_being"
+              }
+            }
+          ]
+        },
+        {
+          "id": "necromancers_deception",
+          "abbreviation": "ND",
+          "type": "passive",
+          "summary": "Manipulate undead aggro and gain melee bonuses.",
+          "levels": [
+            {
+              "level": 1,
+              "timing": "passive",
+              "mechanics": {
+                "melee_bonus": 1
+              }
+            },
+            {
+              "level": 2,
+              "timing": "passive",
+              "mechanics": {
+                "hostile_undead_aggro_priority": "last"
+              }
+            },
+            {
+              "level": 3,
+              "timing": "passive",
+              "mechanics": {
+                "melee_bonus": 2
+              }
+            },
+            {
+              "level": 4,
+              "timing": "passive",
+              "mechanics": {
+                "hostile_undead_aggression_rule": "do_not_attack_unless_you_attack_first"
+              }
+            },
+            {
+              "level": 5,
+              "timing": "passive",
+              "mechanics": {
+                "melee_bonus": 3
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shadow_control",
+      "name": "Shadow Control",
+      "abbreviation": "SC",
+      "governing_stat": "MAN",
+      "variables": {
+        "SCL": "Shadow Control Level"
+      },
+      "abilities": [
+        {
+          "id": "smoldering_shadow",
+          "abbreviation": "SS",
+          "type": "active",
+          "summary": "Create darkness around yourself or an aura around allies.",
+          "notes": [
+            "Creating or sustaining SS does not count as an attack.",
+            "At level 4 and above, you choose which allies are affected by the aura option."
+          ],
+          "levels": [
+            {
+              "level": 1,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "self",
+              "timing": "15 minutes",
+              "mechanics": {
+                "stealth_bonus": 1,
+                "armor_class_bonus": 1
+              }
+            },
+            {
+              "level": 2,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "self",
+              "timing": "30 minutes",
+              "mechanics": {
+                "stealth_bonus": 2,
+                "armor_class_bonus": 1
+              }
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "self",
+              "timing": "1 hour",
+              "mechanics": {
+                "stealth_bonus": 3,
+                "armor_class_bonus": 2
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost_variants": {
+                "self": 2,
+                "aura": 4
+              },
+              "range": "self_or_25m",
+              "timing": "2 hours",
+              "mechanics": {
+                "stealth_bonus": 4,
+                "armor_class_bonus": 2
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost_variants": {
+                "self": 2,
+                "aura": 4
+              },
+              "range": "self_or_25m",
+              "timing": "4 hours",
+              "mechanics": {
+                "stealth_bonus": 5,
+                "armor_class_bonus": 3
+              }
+            }
+          ]
+        },
+        {
+          "id": "shadow_walk",
+          "abbreviation": "SW",
+          "type": "active",
+          "summary": "Travel between shadows.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "action": "bonus",
+              "mana_cost": 2,
+              "range": "50m",
+              "timing": "instant"
+            },
+            {
+              "level": 3,
+              "action": "bonus",
+              "mana_cost": 2,
+              "range": "75m",
+              "timing": "instant"
+            },
+            {
+              "level": 4,
+              "action": "bonus",
+              "mana_cost": 2,
+              "range": "100m",
+              "timing": "instant"
+            },
+            {
+              "level": 5,
+              "action": "bonus",
+              "mana_cost": 2,
+              "range": "125m",
+              "timing": "instant"
+            }
+          ]
+        },
+        {
+          "id": "shadow_walk_and_attack",
+          "abbreviation": "SWaA",
+          "type": "active",
+          "summary": "Ambush after shadow walking.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "action": "bonus_plus_standard",
+              "mana_cost": 2,
+              "range": "50m",
+              "timing": "instant",
+              "mechanics": {
+                "target_is_surprised": true,
+                "target_loses_ac_for_attack": true
+              }
+            },
+            {
+              "level": 3,
+              "action": "bonus_plus_standard",
+              "mana_cost": 2,
+              "range": "75m",
+              "timing": "instant",
+              "mechanics": {
+                "target_is_surprised": true,
+                "target_loses_ac_for_attack": true
+              }
+            },
+            {
+              "level": 4,
+              "action": "bonus_plus_standard",
+              "mana_cost": 2,
+              "range": "100m",
+              "timing": "instant",
+              "mechanics": {
+                "target_is_surprised": true,
+                "target_loses_ac_for_attack": true
+              }
+            },
+            {
+              "level": 5,
+              "action": "bonus_plus_standard",
+              "mana_cost": 2,
+              "range": "125m",
+              "timing": "instant",
+              "mechanics": {
+                "target_is_surprised": true,
+                "target_loses_ac_for_attack": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "shadow_manipulation",
+          "abbreviation": "SM",
+          "type": "active",
+          "summary": "Attack a target via its own shadow.",
+          "notes": [
+            "Always hits but receives no marginal hit bonus.",
+            "Counts as an attack and breaks stealth-like effects."
+          ],
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "MAN + SCL",
+                "damage_type": "shadow",
+                "soak_stat": "STAM",
+                "auto_hit": true
+              }
+            },
+            {
+              "level": 4,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "MAN + SCL",
+                "damage_type": "shadow",
+                "soak_stat": "STAM",
+                "auto_hit": true
+              }
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 2,
+              "range": "25m",
+              "timing": "instant",
+              "mechanics": {
+                "damage_formula": "MAN + SCL",
+                "damage_type": "shadow",
+                "soak_stat": "STAM",
+                "auto_hit": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "sleek_visage",
+          "abbreviation": "SV",
+          "type": "passive",
+          "summary": "Cosmetic alterations only.",
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "timing": "passive",
+              "mechanics": {
+                "cosmetic_changes_to_outfit_and_armor": true
+              }
+            },
+            {
+              "level": 4,
+              "timing": "passive",
+              "mechanics": {
+                "cosmetic_changes_to_outfit_and_armor": true
+              }
+            },
+            {
+              "level": 5,
+              "timing": "passive",
+              "mechanics": {
+                "cosmetic_changes_to_outfit_and_armor": true,
+                "minor_body_cosmetic_changes": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "shadow_fighter",
+          "abbreviation": "SF",
+          "type": "active",
+          "summary": "Create one semi-shadow fighter.",
+          "shared_mechanics": {
+            "weapon": "two_handed_sword_only",
+            "attack_bonus": 2,
+            "damage_bonus": 2,
+            "melee": 5,
+            "str_formula": "SCL + MAN",
+            "dex_formula": "SCL + MAN",
+            "stam_formula": "SCL + MAN",
+            "can_receive_group_buffs": true,
+            "can_receive_single_buffs": true,
+            "can_receive_healing": false,
+            "natural_damage_reduction": 6,
+            "resistance_levels": {
+              "shadow": 2,
+              "cold": 2,
+              "physical": 1,
+              "radiant": -1
+            },
+            "damage_types": [
+              "physical",
+              "shadow"
+            ],
+            "max_active": 1,
+            "summoning_counts_as_attack": true,
+            "summon_breaks_stealth": true,
+            "summon_range_constraint": "near_caster_only_2.5m"
+          },
+          "levels": [
+            {
+              "level": 1,
+              "available": false
+            },
+            {
+              "level": 2,
+              "available": false
+            },
+            {
+              "level": 3,
+              "available": false
+            },
+            {
+              "level": 4,
+              "available": false
+            },
+            {
+              "level": 5,
+              "action": "standard",
+              "mana_cost": 4,
+              "range": "2.5m",
+              "timing": "until_destroyed"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

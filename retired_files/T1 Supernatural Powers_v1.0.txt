@@ -1,0 +1,890 @@
+T1 Supernatural Powers
+
+GLOBAL RULE
+- Every power is explicitly categorized as one of:
+  - Passive
+  - Active
+- Passive powers are always in effect and do not require activation.
+- Active powers require activation.
+- For every Active power level, the following fields are mandatory:
+  - Action
+  - Mana Cost
+  - Range
+- In addition, every Active power level MUST explicitly specify exactly one of:
+  - Duration
+  - Concentration
+  - Instant
+- Passive power levels MUST explicitly state:
+  - Duration: Passive
+- No power effect may be left temporally undefined.
+
+
+1. Awareness: (Per)
+
+1.1. Alerted Self (AS) - Passive: You add your awareness level to your alertness skill. 
+Duration: Passive
+
+1.2. Awakened Insight (AI) - Passive: You gain +1 temporary inspiration per game session; it does not stack (Inspiration = reroll). If the person has an uninspired flaw, they must first lose uninspired status. Temporary inspiration from this bonus can speed up that process.
+Duration: Passive
+
+1.3. Assess Character (AC) - Active: You can identify stats/powers/skills/specials of all characters (players, hunters, non-player characters [NPCs], creatures, mobs, etc.). There is a CR limit applies to your identify power and your CR limit scales up with your power.
+
+Level 1: You can identify stats and skills of characters.
+CR Limit = Per + 1
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 2: AC gets stronger. You can now identify powers and specials of characters, as well.
+CR Limit = Per + 2
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 3: AC gets stronger. Techno-infused invisibility devices do not work on you. 
+CR Limit = Per + 3
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 4: AC gets stronger.
+CR Limit = Per + 4
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 5: AC gets stronger. You can now identify all living, not-living, and non-living NPCs (except supreme beings: CR 33+).
+Note: You can inform other players/NPCs in your party about AC results.
+CR Limit = Per + 5
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+1.4. Artifact Appraisal (AA) - Active: You can use this power to identify items.
+
+Level 1: You can identify common, uncommon, and masterwork quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 2: You can identify rare or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 3: You can identify epic or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 4: You can identify legendary or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 5: You can identify demonic, celestial, mythical, or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+2. Body Reinforcement (BR): (Stam)
+
+2.1. Brute Defiance (BD) - Passive: If you become incapacitated (HP <= 0, up to -5), you automatically stand up after one turn. Usable only 1 time/day.
+Duration: Passive
+
+Level 1. HP restored: 1 HP
+
+Level 2. HP restored: 2 HP
+
+Level 3. HP restored: 4 HP
+
+Level 4. HP restored: 8 HP
+
+Level 5. HP restored: 16 HP
+
+2.2. Boost Physique (BP) - Active: You can use this power to boost your physique.
+
+Level 1. Increase one physical stat by 1 (Str, Dex, Stam). One physical stat can be increased only once, but multiple physical stats can be increased with additional casting.
+Action: Standard
+Mana Cost: 2
+Range: Self
+Duration: 30 Minutes
+
+Level 2. You can now use PB on other people by touching them. 
+Action: Standard
+Mana Cost: 2
+Range: Self, Touch
+Duration: 1 Hour
+
+Level 3. Increase a physical stat by 2 (Str, Dex, Stam) by expending more mana.
+Action: Standard
+Mana Cost: 3
+Range: Self, Touch
+Duration: 2 Hours
+
+Level 4. Targets under this effect also gain physical protection (1 DR) (stacks with armor, protection items, and bonuses from other supernatural powers).
+Action: Standard
+Mana Cost: 3
+Range: Self, Touch
+Duration: 4 Hours
+
+Level 5. Increase a physical stat by 3 (Str, Dex, Stam) by using 4 mana instead of 3 or 2. Physical protection bonus increases to 2 DR. Effect lasts 8 Hours.
+Action: Standard
+Mana Cost: 4
+Range: Self, Touch
+Duration: 8 Hours
+
+3. Crowd Control (CC): (Cha)
+
+3.1. Crowd Management (CM) - Passive: You add your Crowd Control (CC) level to your Social skill.
+
+Level 1.
+Effect: Social +1
+Duration: Passive
+
+Level 2.
+Effect: Social +2
+Duration: Passive
+
+Level 3.
+Effect: Social +3
+Duration: Passive
+
+Level 4.
+Effect: Social +4
+Duration: Passive
+
+Level 5.
+Effect: Social +5
+Duration: Passive
+
+3.2. Compulsion Guard (CG) - Passive: Add Social skill level to dice pool while defending against control effects.
+
+Level 1. Unavailable at this level
+Duration: Passive
+
+Level 2. Unavailable at this level
+Duration: Passive
+
+Level 3. Unavailable at this level
+Duration: Passive
+
+Level 4. Unavailable at this level
+Duration: Passive
+
+Level 5. Activated
+Duration: Passive
+
+
+3.3. Control Entity (CE) - Active: If you fail to control a creature (or after control ends, if still alive), they know you did something to them and you might be first on their aggro list.
+
+Level 1. You can paralyze one living target if their (Cha + Wits) x d10 success is less than your (Cha + Int) x d10 success. If they take damage from anything, the spell breaks and they cannot be controlled for 1 day. Maintain with concentration.
+Target: 1
+Action: Standard
+Dice Pool: Cha + Int
+Save: Cha + Wits
+Mana Cost: 0
+Upkeep: Bonus or Move + 1 Mana per turn
+Range: 25m
+Duration: Concentration
+
+Level 2. Controlled target can be compelled to do simple acts (not self-harm). Dealing damage to the controlled target does not break the spell unless the source of the damage is you.
+Target: 1
+Action: Standard
+Dice Pool: Cha + Int
+Save: Cha + Wits
+Mana Cost: 1/turn
+Range: 25m
+Duration: Bonus or Move
+
+Level 3. You can control 2 living targets at once if in range. You still cannot order self-harm. Dealing damage to the controlled target does not break the spell.
+Target: 2
+Action: Standard
+Dice Pool: Cha + Int
+Save: Cha + Wits
+Mana Cost: 1/turn
+Range: 25m
+Duration: Bonus or Move
+
+Level 4. As Level 3. Add CC level to your dice pool.
+Target: 2
+Action: Standard
+Dice Pool: Cha + Int + CC 
+Save: Cha + Wits
+Mana Cost: 1/turn
+Range: 25m
+Duration: Bonus or Move
+
+Level 5. You can control 3 targets at once. You CAN now order self-harm. Can be used against non-living targets (except those summoned by another occult skill).
+Target: 3
+Action: Standard
+Dice Pool: Cha + Int + CC 
+Save: Cha + Wits
+Mana Cost: 1/turn
+Range: 25m
+Duration: Bonus or Move
+
+4. Elementalist: (Int)
+
+4.1. Elemental Bolt (EB)- Active: You can use your power to harm targets with your selected elements. Vulnerable creatures to a specific damage type will take 1.5x damage (round up).
+
+Level 1. Choose one element (fire, ice, acid, lightning) and keep using it. 
+Damage = Int + 1.
+Action: Standard
+Mana Cost: 1
+Range: 25m
+Duration: Instant
+
+Level 2. Your EB is stronger. Choose one element and keep it until long rest.
+Damage = Int + 2.
+Action: Standard
+Mana Cost: 1
+Range: 25m
+Duration: Instant
+
+Level 3. You can change elemental type (fire, cold, lightning, acid) at will.
+Damage = Int + 3.
+Action: Standard
+Mana Cost: 1
+Range: 25m
+Duration: Instant
+
+Level 4.
+Damage = Int + 4.
+Action: Standard
+Mana Cost: 1
+Range: 25m
+Duration: Instant
+
+Level 5. You can use necrotic damage type, but its mana cost is higher. All living creatures are vulnerable (1.5x, round up) to necrotic.
+Damage = Int + 5
+Action: Standard
+Mana Cost (elemental): 1
+Mana Cost (necrotic): 2
+Range: 25m
+Duration: Instant
+
+4.2. Elemental Cantrip (EC) - Active
+
+GLOBAL
+- Damage Type: Elemental only (fire, ice, acid, lightning)
+- Necrotic is not allowed.
+- EC is a magical attack.
+- EC never inherits rules from EB; all effects are explicit below.
+
+Level 1.
+Locked: true
+
+Level 2.
+Effect: Choose one element (fire, ice, acid, lightning). Deal magical damage equal to Int.
+Action: Standard
+Mana Cost: 0
+Range: 25m
+Instant: true
+
+Level 3.
+Effect: Choose one element (fire, ice, acid, lightning). Deal magical damage equal to Int.
+Action: Standard
+Mana Cost: 0
+Range: 25m
+Instant: true
+
+Level 4.
+Effect: Choose one element (fire, ice, acid, lightning). Deal magical damage equal to Int + 1. EC cannot be cast if another magical or physical attack was made earlier in the same turn.
+Action: Bonus
+Mana Cost: 0
+Range: 25m
+Instant: true
+
+Level 5.
+Effect: Choose one element (fire, ice, acid, lightning). Deal magical damage equal to Int + 1. Divide total damage evenly among up to 3 targets in range (round up).
+Action: Standard
+Mana Cost: 0
+Range: 25m
+Instant: true
+
+
+4.3. Elemental Split (ES) - Active
+
+GLOBAL
+- Damage Type: Elemental or Necrotic (if EB allows).
+- Damage is magical.
+- ES does not inherit EB rules; all effects are explicit below.
+
+Level 1.
+Locked: true
+
+Level 2.
+Effect: Choose one element (fire, ice, acid, lightning). Deal magical damage equal to ceil((Int + 2) / 2) to each of 2 targets.
+Action: Standard
+Mana Cost: 1
+Range: 25m
+Instant: true
+Target: 2
+
+Level 3.
+Effect: Choose one element (fire, ice, acid, lightning). Deal magical damage equal to ceil((Int + 3) / 2) to each of 3 targets. You may spend additional mana to increase damage by +2 per mana, not exceeding Int + 3.
+Action: Standard
+Mana Cost: 1+
+Range: 25m
+Instant: true
+Target: 3
+
+Level 4.
+Effect: Choose one element (fire, ice, acid, lightning). Deal magical damage equal to ceil((Int + 4) / 2) to each of 4 targets. You may spend additional mana to increase damage by +2 per mana, not exceeding Int + 4.
+Action: Standard
+Mana Cost: 1+
+Range: 25m
+Instant: true
+Target: 4
+
+Level 5.
+Effect: Choose one element (fire, ice, acid, lightning, necrotic). Deal magical damage equal to ceil((Int + 5) / 2) to each of 5 targets. Bonus damage: +2 per mana (elemental) or +4 per mana (necrotic), not exceeding Int + 5.
+Action: Standard
+Mana Cost: 1+
+Range: 25m
+Instant: true
+Target: 5
+
+5. Healing: (Int)
+
+5.1. Heal Living (HL) - Active: Heal living targets and remove bleeding. Touch required.
+
+Level 1.
+Heal = Int + 1
+Target = 1
+Action: Standard
+Mana Cost: 2
+Range: Touch
+Duration: Instant
+
+Level 2. Touch not required. You can spread your healing among multiple targets in range by dividing your total healing amount to the number of targets.
+Heal = Int + 2
+Target = 4
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+Level 3.
+Heal = Int + 3.
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+Level 4. Can regrow missing limbs.
+Heal = Int + 4.
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+Level 5. Once per character/day, healing can exceed max health up to target's Stamina.
+Heal = Int + 5.
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+5.2. Holy Purge (HP) - Active: Cure poison/disease/curse. 
+
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3. Touch required.
+Action: Standard
+Mana Cost: 2
+Range: Touch
+Duration: Instant
+
+Level 4. Touch no longer required.
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+Level 5. 
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+
+5.3. Healing Touch (HT) - Active: Mend wounds and stop bleeding. A target cannot be mended this way more than twice/day.
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3. Heal: HL / 2 (Round up)
+Duration: Instant
+
+Level 4. Heal: HL / 2 (Round up)
+Duration: Instant
+
+Level 5. Heal: HL / 2 (Round up)
+Duration: Instant
+
+6. Light Support (LS): (App)
+
+6.1. Let There Be Light (LTBL) - Active (Aura): Create a light source on yourself. It provides vision in darkness. This power creates an aura effect that must be activated.
+Level 1. Provides bonuses to Neutral/friendly/allied targets in range.
+LTBL Bonus:+2 hit (+2d10), +1 DR.
+Action: Standard
+Mana Cost: 2
+Range: 50m Radius
+Duration: 30 Minutes
+
+Level 2. Hostile targets cannot see your summoned light any more and cannot detect you because of it. Your light source bonus grows.
+LTBL Bonus:+2 hit (+2d10), +1 DR
+Action: Standard
+Mana Cost: 2
+Range: 50m Radius
+Duration: 1 Hour
+
+Level 3.
+LTBL Bonus:+3 hit, +1 DR, +1 Soak
+Action: Standard
+Mana Cost: 2
+Range: 50m Radius
+Duration: 2 Hours
+
+Level 4. Its range widens. Once per long rest, or once in each portal, 
+LTBL Bonus:+3 hit, +2 DR, +1 Soak
+Action: Standard
+Mana Cost: 2
+Range: 100m Radius
+Duration: 4 Hours
+
+Level 5.
+LTBL Bonus:+4 hit, +2 DR, +2 Soak
+Action: Standard
+Mana Cost: 2
+Range: 100m Radius
+Duration: 8 Hours
+
+
+6.2. Lunar Bless (LB) - Passive: Gain +1 mana bonus per level and provide night vision.
+Duration: Passive
+
+Level 1. Mana Bonus: +1
+Night Vision: Self
+
+Level 2. Mana Bonus: +2
+Night Vision: Self + 1
+
+Level 3. Mana Bonus: +3
+Night Vision: Self + 3
+
+Level 4. Mana Bonus: +4
+Night Vision: Self + 3
+
+Level 5. Mana Bonus: +5
+Night Vision: Self + 4
+
+
+6.3. Lessen Darkness (LD) - Active: Activates with the 5th Level of LTBL. Darkness-based and evil creatures in range of LTBL lose one Resistance Level (RL). If they are immune (RL2) to physical/elemental attacks, they become resistant (RL1) to those attacks; if they are resistant (RL1), they lose their resistance (RL0); if they do not have any resistance (RL0), they become vulnerable (RL-1): RL2 -> RL1, RL1 -> RL0, RL0 -> RL-1.
+
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3. Unavailable at this level
+
+Level 4. Unavailable at this level
+
+Level 5. Activated. Works with LTBL and acquires all other specifics from LTBL.
+Constraint: This effect is active only while LTBL is active.
+
+
+6.4. Luminous Restoration (LR) - Active: Restore lost mana of a friendly target (self included).
+
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3. 
+Restored Mana: App
+Action: Standard
+Mana Cost: None
+Range: 25m
+Duration: Instant
+
+Level 4. 
+Restored Mana: App x 2
+Action: Standard
+Mana Cost: None
+Range: 25m
+Duration: Instant
+
+Level 5. 
+Restored Mana: App x 3
+Action: Standard
+Mana Cost: None
+Range: 25m
+Duration: Instant
+
+7. Necromancy (N): (App)
+
+NL = Necromancy Level
+
+7.1. Non-Living Warriors (NW) - Active: NW is the parent power to children: NS, NSK, NZ. Create undead fighters to support your cause. As your level in N increases, they get stronger. Following rules applies to all children of NW.
+- Constraint: At any moment, you can have at most 1 active fighter from each subtype (NS, NSK, NZ).
+- Summoned warriors appear next to you. You cannot choose the summoning location. All summons cancel stealth/invisible/similar effects.
+- Necrotic damages add on to their current health as if they received temporary hit points. 
+- Mental and Social Stats: Cha/Man/App/Int/Per/Wits = 0
+- Resistance: Mental (RL2), Shadow (RL2), Stam (RL2), Fire (RL1), Cold (RL1), Acid (RL-1)
+- Initiative: Uses your initiative, acts in your turn
+Level 1. 
+Action: Standard
+Range: 2.5m
+Duration: 15 Minutes
+
+Level 2. 
+Action: Standard
+Range: 2.5m
+Duration: 30 Minutes
+
+Level 3. 
+Action: Standard
+Range: 2.5m
+Duration: 1 Hour
+
+Level 4. 
+Action: Standard
+Range: 2.5m
+Duration: 2 Hours
+
+Level 5. 
+Action: Standard
+Range: 2.5m
+Duration: 4 Hours
+
+7.1.1. Non-Living Skeleton (NS) - Active: Create 1 Necrotic Skeleton carrying a 1-handed sword and a shield, wearing a body armor and a helmet. Your skeleton cannot benefit from single/group buffs or normal healing.
+- Melee: 2 + ceil(NL / 2)
+- Str/Dex/Stam: ceil(NL / 2) + ceil(App / 2)
+- Attack: Dex + 3
+- Damage: Str + 2
+- AC: Dex
+- Natural DR: ceil(NL / 2) + 1
+- Soak: Stam
+- HP: 2 + 2 x Stam
+Level 1. 
+Mana Cost: 2
+
+Level 2. 
+Mana Cost: 2
+
+Level 3. 
+Mana Cost: 2
+
+Level 4. 
+Mana Cost: 2
+
+Level 5. 
+Mana Cost: 2
+
+7.1.2. Non-Living Skeleton King (NSK) - Active: Create 1 Non-Living Skeleton King carrying a 2-handed sword, wearing a body armor, a fur cloak and a crown. Your skeleton cannot benefit from single/group buffs or normal healing.
+- Melee: 3 + ceil(NL / 2)
+- Str/Dex/Stam: ceil(3 x NL / 2) + ceil(App / 2)
+- Attack: Dex + 2 x NL
+- Damage: Str + NL
+- AC: Dex
+- Natural DR: NL + ceil(App / 2)
+- Soak: Stam
+- HP: 6 + 3 x Stam
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3. Unavailable at this level
+
+Level 4. 
+Mana Cost: 4
+
+Level 5. 
+Mana Cost: 4
+
+7.1.3. Non-Living Zombie (NZ) - Active:Create 1 Non-Living Zombie wrapped in bandages. They do brawl attacks and their attacks carry disease. After successfully damaging an opponent, the opponent gets infected and loses Stam each turn until cured. Your zombie CAN benefit from single/group buffs or normal healing. 
+- Melee: 3 + ceil(NL / 2)
+- Dex: NL + ceil(App / 2)
+- Str/Stam: NL + App
+- Attack: Dex + NL
+- Damage: Str + NL
+- Stam Loss: NL - 2
+- AC: Dex
+- Natural DR: NL + 3
+- Soak: Stam
+- HP: 6 + 4 x Stam
+Level 1. Unavailable at this level
+
+Level 2. 
+Mana Cost: 3
+
+Level 3. 
+Mana Cost: 3
+
+Level 4. 
+Mana Cost: 3
+
+Level 5. 
+Mana Cost: 3
+
+7.2. Necrotic Touch (NT) - Active: Ranged touch attack.
+- Damage Type: Necrotic
+- Damage is soakable with Stamina.
+- Living targets take 1.5x damage (round up).
+- Healing Return: You heal yourself by N even if the damage dealt is 0.
+- No effect on shadow/incorporeal creatures.
+
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3.
+Damage: App + NL
+Action: Standard
+Mana Cost: 3
+Range: 25m
+Duration: Instant
+
+Level 4.
+Damage: App + NL
+Action: Standard
+Mana Cost: 3
+Range: 25m
+Duration: Instant
+
+Level 5.
+Damage: App + (2 x NL)
+Action: Standard
+Mana Cost: 3
+Range: 25m
+Duration: Instant
+
+7.3. Necromancer's Bless (NB) - Active: Resurrect a recently fallen living being.
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3. Unavailable at this level
+
+Level 4. Unavailable at this level
+
+Level 5. Resurrect a living being fallen within last 1 Hour.
+Action: Standard
+Mana Cost: 6
+Range: Touch
+
+7.4. Necromancer's Deception (ND) - Passive: Undead aggro manipulation and melee bonus.
+
+Level 1.
+Effect: Melee +1
+Duration: Passive
+
+Level 2.
+Effect: You are last on hostile undead aggro list
+Duration: Passive
+
+Level 3.
+Effect: Melee +2
+Duration: Passive
+
+Level 4.
+Effect: Hostile undead do not attack you unless you attack first
+Duration: Passive
+
+Level 5.
+Effect: Melee +3
+Duration: Passive
+
+8. Shadow Control (SC): (Man)
+
+SCL = Shadow Control Level
+
+8.1. Smoldering Shadow (SS) - Active: Create darkness around yourself that absorbs light.
+- Grants bonuses to Stealth and AC.
+- Note: Creating or sustaining SS does not count as an attack.
+- Note: If SS is created as an aura (Level 4+ option), you choose which allies are affected.
+
+Level 1.
+Bonus: Stealth +1, AC +1
+Action: Standard
+Mana Cost: 2
+Range: Self
+Duration: 15 Minutes
+
+Level 2. 
+Bonus: Stealth +2, AC +1
+Action: Standard
+Mana Cost: 2
+Range: Self
+Duration: 30 Minutes
+
+Level 3.
+Bonus: Stealth +3, AC +2
+Action: Standard
+Mana Cost: 2
+Range: Self
+Duration: 1 Hour
+
+Level 4.
+Bonus: Stealth +4, AC +2
+Action: Standard
+Mana Cost (Self): 2
+Mana Cost (Aura): 4
+Range: Self or 25m
+Duration: 2 Hours
+
+Level 5.
+Bonus: Stealth +5, AC +3
+Action: Standard
+Mana Cost (Self): 2
+Mana Cost (Aura): 4
+Range: Self or 25m
+Duration: 4 Hours  
+
+8.2. Shadow Walk (SW) - Active: Dive into your shadow and appear near another living target's shadow. It's range increases with as SC levels up (25m x SCL).
+Level 1: Unavailable at this level
+
+Level 2.
+Action: Bonus
+Mana Cost: 2
+Range: 50m
+Duration: Instant
+
+Level 3.
+Action: Bonus
+Mana Cost: 2
+Range: 75m
+Duration: Instant
+
+Level 4.
+Action: Bonus
+Mana Cost: 2
+Range: 100m
+Duration: Instant
+
+Level 5.
+Action: Bonus
+Mana Cost: 2
+Range: 125m
+Duration: Instant
+
+8.3. Shadow Walk and Attack (SWaA) - Active: Ambush using Shadow Walk, then attack. It's range increases with as SC levels up (25m x SCL).
+- Effect: Target is surprised and loses AC for that attack only.
+
+Level 1. Unavailable at this level
+
+Level 2.
+Action: Bonus + Standard
+Mana Cost: 2
+Range: 50m
+Duration: Instant
+
+Level 3.
+Action: Bonus + Standard
+Mana Cost: 2
+Range: 75m
+Duration: Instant
+
+Level 4.
+Action: Bonus + Standard
+Mana Cost: 2
+Range: 100m
+Duration: Instant
+
+Level 5.
+Action: Bonus + Standard
+Mana Cost: 2
+Range: 125m
+Duration: Instant
+
+8.4. Shadow Manipulation (SM) - Active: Manipulate a target's own shadow to attack them.
+- Attack: Always successful, but no marginal hit bonus.
+- Damage Type: Shadow (soakable with Stamina).
+- Counts as attack and cancels stealth/invisible/similar effects.
+
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3.
+Damage: Man + SCL
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+Level 4.
+Damage: Man + SCL
+Action: Standard
+Mana Cost: 2
+Range: 25m
+Duration: Instant
+
+Level 5.
+Damage: Man + SCL
+Action: Standard
+Mana Cost: 2
+Range: 25m 
+Duration: Instant
+
+8.5. Sleek Visage (SV) - Passive: Cosmetic alterations only; no mechanical effects.
+
+Level 1. Unavailable at this level
+Duration: Passive
+
+Level 2. Unavailable at this level
+Duration: Passive
+
+Level 3.
+Effect: Cosmetic changes to outfit and armor
+Duration: Passive
+
+Level 4.
+Effect: Same as Level 3
+Duration: Passive
+
+Level 5.
+Effect: Minor cosmetic body changes (hair, eye, skin color, etc.)
+Duration: Passive
+
+8.6. Shadow Fighter (SF) - Active: Create one semi-shadow fighter.
+- Weapon: Two-handed sword only (+2 hit, +2 damage). Cannot use other items or weapons.
+- Melee: 5
+- Str/Dex/Stam: SCL + Man
+- Buffs: Can receive group/single buffs
+- Healing: Cannot be healed
+- Natural DR: 6
+- Resistance: Shadow (RL2), cold (RL2), Physical (RL1)
+- Vulnerability: Radiant (RL-1)
+- Damage Type: Switchable physical/shadow
+- Constraint: Max 1 active SF
+- Summoning SF counts as an attack and cancels stealth/invisible/similar effects.
+- Summons near you only (2.5m).
+
+Level 1. Unavailable at this level
+
+Level 2. Unavailable at this level
+
+Level 3. Unavailable at this level
+
+Level 4. Unavailable at this level
+
+Level 5.
+Action: Standard
+Mana Cost: 4
+Range: 2.5m
+Duration: Until destroyed

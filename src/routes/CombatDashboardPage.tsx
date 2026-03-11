@@ -178,7 +178,7 @@ export function CombatDashboardPage() {
     }
   }
 
-  function renderCharacterSelectionRow(character: CharacterRecord): JSX.Element {
+  function renderCharacterSelectionRow(character: CharacterRecord) {
     const selectedPartyId = getPendingAssignment(character.id);
     const isAssigned = (stagedAssignments[character.id] ?? null) !== null;
 

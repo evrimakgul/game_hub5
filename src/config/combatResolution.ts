@@ -45,14 +45,17 @@ export function applyDamageToSheet(
     0,
     Math.ceil(mitigatedAmount * resistanceRule.damageMultiplier)
   );
-  const nextHp = Math.max(0, sheet.currentHp - resistedAmount);
+  const absorbedByTemporaryHp = Math.min(sheet.temporaryHp, resistedAmount);
+  const hpDamage = resistedAmount - absorbedByTemporaryHp;
+  const nextHp = sheet.currentHp - hpDamage;
 
   return {
     sheet: {
       ...sheet,
+      temporaryHp: sheet.temporaryHp - absorbedByTemporaryHp,
       currentHp: nextHp,
     },
-    appliedDamage: Math.max(0, sheet.currentHp - nextHp),
+    appliedDamage: Math.max(0, hpDamage),
     mitigatedAmount,
     resistedAmount,
   };

@@ -2,13 +2,86 @@
 
 
 Awareness: (Per)
-1. You add your awareness level to your alertness skill checks. You also can identify stats / skills of simple (non-supernatural, non-hunter humans, very weak mobs etc ...) NPC’s. You can identify common, uncommon, masterwork items. Identifying items and creatures costs no mana.
-2. You increase your identify power (RNnters, stronger mobs etc..., ). You can also know their special or supernatural skills if there are any, and possible loot. You can now identify epic (or lesser) items.
-3. Techno infused invisibility devices do not work on you. You get the cantrip bonus.
-   * Cantrip: You gain +1 inspiration / game session, yet they do not stack (Inspiration = reroll). If the person has an uninspired flaw, they need to get rid off from their uninspired status first and the cantrip speeds up that process.
-4. You increase your identify power (Rank C, B rank hunters, stronger mobs etc...). Can identify legendary (or lesser) items.
-5. You can now identify all living, not-living, non-living NPC’s (except for supreme beings).
-Note: All identifications are bonus action. Informing other players / NPCs in your party will cost to your standard or move action.
+1.1. Alerted Self (AS) - Passive: You add your awareness level to your alertness skill.
+Duration: Passive
+
+1.2. Awakened Insight (AI) - Passive: You gain +1 temporary inspiration per game session; it does not stack (Inspiration = reroll). If the person has an uninspired flaw, they must first lose uninspired status. Temporary inspiration from this bonus can speed up that process.
+Duration: Passive
+
+1.3. Assess Character (AC) - Active: You can identify stats/powers/skills/specials of all characters (players, hunters, NPCs, creatures, mobs, etc.). There is a CR limit applies to your identify power and your CR limit scales up with your power, however, there is a cap (`CR Cap`) to CR Limit that it cannot exceed.
+
+Level 1: You can identify stats and skills of characters.
+CR Limit = Per + 1
+CR Cap = 6
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 2: AC gets stronger. You can now identify powers and specials of characters, as well.
+CR Limit = Per + 2
+CR Cap = 9
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 3: AC gets stronger. Techno-infused invisibility devices do not work on you.
+CR Limit = Per + 3
+CR Cap = 12
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 4: AC gets stronger.
+CR Limit = Per + 4
+CR Cap = 15
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+Level 5: AC gets stronger.
+Note: You can inform other players / NPCs in your party about AC results.
+CR Limit = Per + 5
+CR Cap = 18
+Action: Bonus
+Mana Cost: 0
+Range: Line of Sight
+Duration: Instant
+
+1.4. Artifact Appraisal (AA) - Active: You can use this power to identify items.
+
+Level 1: You can identify common, uncommon, and masterwork quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 2: You can identify rare or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 3: You can identify epic or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 4: You can identify legendary or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
+
+Level 5: You can identify demonic, celestial, mythical, or lesser quality items.
+Action: Bonus
+Mana Cost: None
+Range: Touch
+Duration: Instant
 
 
 Body Reinforcement (BR): (Stam)

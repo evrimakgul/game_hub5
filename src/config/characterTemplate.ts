@@ -48,6 +48,73 @@ export type PowerEntry = {
   governingStat: string;
 };
 
+export type EncounterStatusTag = {
+  id: string;
+  label: string;
+};
+
+export type InventoryEntry = {
+  name: string;
+  category: string;
+  note: string;
+  qualityTier: string | null;
+  hiddenSpec: string | null;
+  revealedSpec: string | null;
+  identified: boolean;
+  identifiedAtAwarenessLevel: number | null;
+};
+
+export type EquipmentEntry = {
+  slot: string;
+  item: string;
+  effect: string;
+  qualityTier: string | null;
+  hiddenSpec: string | null;
+  revealedSpec: string | null;
+  identified: boolean;
+  identifiedAtAwarenessLevel: number | null;
+};
+
+export type GameHistoryNoteEntry = {
+  id: string;
+  type: "note";
+  actualDateTime: string;
+  gameDateTime: string;
+  note: string;
+};
+
+export type IntelSnapshotField = {
+  label: string;
+  value: string | number;
+};
+
+export type GameHistoryIntelSnapshotEntry = {
+  id: string;
+  type: "intel_snapshot";
+  actualDateTime: string;
+  gameDateTime: string;
+  sourcePower: string;
+  targetCharacterId: string | null;
+  targetName: string;
+  summary: string;
+  snapshot: {
+    rank: string;
+    cr: number;
+    age: number | null;
+    karma: string;
+    biographyPrimary: string;
+    resistances: string[];
+    combatSummary: IntelSnapshotField[];
+    stats: IntelSnapshotField[];
+    skills: IntelSnapshotField[];
+    powers: string[];
+    specials: string[];
+    notes: string[];
+  };
+};
+
+export type GameHistoryEntry = GameHistoryNoteEntry | GameHistoryIntelSnapshotEntry;
+
 export type DmAuditEntry = {
   id: string;
   timestamp: string;
@@ -73,9 +140,12 @@ export type CharacterDraft = {
   xpUsed: number;
   money: number;
   inspiration: number;
+  temporaryInspiration: number;
+  awarenessInsightGranted: boolean;
   positiveKarma: number;
   negativeKarma: number;
   currentHp: number;
+  temporaryHp: number;
   currentMana: number;
   manaInitialized: boolean;
   resistances: Record<DamageTypeId, ResistanceLevel>;
@@ -83,8 +153,10 @@ export type CharacterDraft = {
   skills: SkillEntry[];
   powers: PowerEntry[];
   activePowerEffects: ActivePowerEffect[];
-  equipment: Array<{ slot: string; item: string; effect: string }>;
-  inventory: Array<{ name: string; category: string; note: string }>;
+  equipment: EquipmentEntry[];
+  inventory: InventoryEntry[];
+  gameHistory: GameHistoryEntry[];
+  statusTags: EncounterStatusTag[];
   effects: string[];
   dmAuditLog: DmAuditEntry[];
 };
@@ -96,7 +168,7 @@ export type PowerTemplate = {
   levelBenefits: Record<number, string[]>;
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 2;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 4;
 
 const STAT_IDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
 
@@ -140,15 +212,28 @@ export const powerLibrary: PowerTemplate[] = [
     name: "Awareness",
     governingStat: "PER",
     levelBenefits: {
-      1: ["Alertness bonus: +1", "Identify simple NPC stats and common to masterwork items"],
-      2: ["Alertness bonus: +2", "Identify stronger targets, special skills, loot, and epic or lesser items"],
-      3: [
-        "Alertness bonus: +3",
-        "Ignore techno-infused invisibility devices",
-        "Cantrip: +1 Inspiration per session",
+      1: [
+        "AS: alertness gains Awareness level",
+        "AI: +1 temporary inspiration per session",
+        "AC: stats/skills up to CR min(PER + 1, 6)",
+        "AA: common to masterwork items",
       ],
-      4: ["Alertness bonus: +4", "Identify legendary or lesser items"],
-      5: ["Alertness bonus: +5", "Identify nearly all targets except supreme beings"],
+      2: [
+        "AC: also reveals powers and specials up to CR min(PER + 2, 9)",
+        "AA: rare or lesser items",
+      ],
+      3: [
+        "AC: ignore techno-infused invisibility up to CR min(PER + 3, 12)",
+        "AA: epic or lesser items",
+      ],
+      4: [
+        "AC: CR min(PER + 4, 15)",
+        "AA: legendary or lesser items",
+      ],
+      5: [
+        "AC: CR min(PER + 5, 18), may share results with party",
+        "AA: demonic, celestial, mythical, or lesser items",
+      ],
     },
   },
   {
@@ -251,9 +336,12 @@ export class CharacterSheetTemplate {
       xpUsed: 0,
       money: 0,
       inspiration: 0,
+      temporaryInspiration: 0,
+      awarenessInsightGranted: false,
       positiveKarma: 0,
       negativeKarma: 0,
       currentHp: calculateMaxHP(2),
+      temporaryHp: 0,
       currentMana: 0,
       manaInitialized: false,
       resistances: createDefaultResistances(),
@@ -273,6 +361,8 @@ export class CharacterSheetTemplate {
       activePowerEffects: [],
       equipment: [],
       inventory: [],
+      gameHistory: [],
+      statusTags: [],
       effects: [],
       dmAuditLog: [],
     };
@@ -280,6 +370,28 @@ export class CharacterSheetTemplate {
 }
 
 export const PLAYER_CHARACTER_TEMPLATE = new CharacterSheetTemplate();
+
+export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
+  const hasAwareness = sheet.powers.some((power) => power.id === "awareness" && power.level > 0);
+
+  if (hasAwareness && !sheet.awarenessInsightGranted) {
+    return {
+      ...sheet,
+      temporaryInspiration: sheet.temporaryInspiration + 1,
+      awarenessInsightGranted: true,
+    };
+  }
+
+  if (!hasAwareness && sheet.awarenessInsightGranted) {
+    return {
+      ...sheet,
+      temporaryInspiration: Math.max(0, sheet.temporaryInspiration - 1),
+      awarenessInsightGranted: false,
+    };
+  }
+
+  return sheet;
+}
 
 export function getPowerTemplate(powerId: string): PowerTemplate | undefined {
   return powerLibrary.find((power) => power.id === powerId);
@@ -421,9 +533,7 @@ function hydratePowers(value: unknown): PowerEntry[] {
   });
 }
 
-function hydrateEquipment(
-  value: unknown
-): Array<{ slot: string; item: string; effect: string }> {
+function hydrateEquipment(value: unknown): EquipmentEntry[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -438,14 +548,21 @@ function hydrateEquipment(
         slot: coerceString(entry.slot, "Unknown Slot"),
         item: coerceString(entry.item, ""),
         effect: coerceString(entry.effect, ""),
+        qualityTier: typeof entry.qualityTier === "string" ? entry.qualityTier : null,
+        hiddenSpec: typeof entry.hiddenSpec === "string" ? entry.hiddenSpec : null,
+        revealedSpec: typeof entry.revealedSpec === "string" ? entry.revealedSpec : null,
+        identified: entry.identified === true,
+        identifiedAtAwarenessLevel:
+          typeof entry.identifiedAtAwarenessLevel === "number" &&
+          Number.isFinite(entry.identifiedAtAwarenessLevel)
+            ? Math.max(0, Math.trunc(entry.identifiedAtAwarenessLevel))
+            : null,
       },
     ];
   });
 }
 
-function hydrateInventory(
-  value: unknown
-): Array<{ name: string; category: string; note: string }> {
+function hydrateInventory(value: unknown): InventoryEntry[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -460,8 +577,130 @@ function hydrateInventory(
         name: coerceString(entry.name, "Unnamed Item"),
         category: coerceString(entry.category, ""),
         note: coerceString(entry.note, ""),
+        qualityTier: typeof entry.qualityTier === "string" ? entry.qualityTier : null,
+        hiddenSpec: typeof entry.hiddenSpec === "string" ? entry.hiddenSpec : null,
+        revealedSpec: typeof entry.revealedSpec === "string" ? entry.revealedSpec : null,
+        identified: entry.identified === true,
+        identifiedAtAwarenessLevel:
+          typeof entry.identifiedAtAwarenessLevel === "number" &&
+          Number.isFinite(entry.identifiedAtAwarenessLevel)
+            ? Math.max(0, Math.trunc(entry.identifiedAtAwarenessLevel))
+            : null,
       },
     ];
+  });
+}
+
+function hydrateIntelSnapshotFields(value: unknown): IntelSnapshotField[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const label = coerceString(entry.label, "");
+    const rawValue = entry.value;
+    const valueText =
+      typeof rawValue === "number" && Number.isFinite(rawValue)
+        ? rawValue
+        : coerceString(rawValue, "");
+
+    if (!label) {
+      return [];
+    }
+
+    return [{ label, value: valueText }];
+  });
+}
+
+function hydrateGameHistory(value: unknown): GameHistoryEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.reduce<GameHistoryEntry[]>((entries, entry) => {
+    if (!isRecord(entry)) {
+      return entries;
+    }
+
+    const id = coerceString(entry.id, "");
+    const type = entry.type === "intel_snapshot" ? "intel_snapshot" : "note";
+    const actualDateTime = coerceString(entry.actualDateTime, "");
+    const gameDateTime = coerceString(entry.gameDateTime, "");
+
+    if (!id || !actualDateTime || !gameDateTime) {
+      return entries;
+    }
+
+    if (type === "intel_snapshot") {
+      const snapshot = isRecord(entry.snapshot) ? entry.snapshot : {};
+      entries.push({
+        id,
+        type,
+        actualDateTime,
+        gameDateTime,
+        sourcePower: coerceString(entry.sourcePower, "Assess Character"),
+        targetCharacterId:
+          typeof entry.targetCharacterId === "string" ? entry.targetCharacterId : null,
+        targetName: coerceString(entry.targetName, "Unknown Target"),
+        summary: coerceString(entry.summary, ""),
+        snapshot: {
+          rank: coerceString(snapshot.rank, ""),
+          cr: Math.max(0, Math.trunc(coerceNumber(snapshot.cr, 0))),
+          age: coerceNullableNumber(snapshot.age, null),
+          karma: coerceString(snapshot.karma, ""),
+          biographyPrimary: coerceString(snapshot.biographyPrimary, ""),
+          resistances: Array.isArray(snapshot.resistances)
+            ? snapshot.resistances.filter((item): item is string => typeof item === "string")
+            : [],
+          combatSummary: hydrateIntelSnapshotFields(snapshot.combatSummary),
+          stats: hydrateIntelSnapshotFields(snapshot.stats),
+          skills: hydrateIntelSnapshotFields(snapshot.skills),
+          powers: Array.isArray(snapshot.powers)
+            ? snapshot.powers.filter((item): item is string => typeof item === "string")
+            : [],
+          specials: Array.isArray(snapshot.specials)
+            ? snapshot.specials.filter((item): item is string => typeof item === "string")
+            : [],
+          notes: Array.isArray(snapshot.notes)
+            ? snapshot.notes.filter((item): item is string => typeof item === "string")
+            : [],
+        },
+      });
+      return entries;
+    }
+
+    entries.push({
+      id,
+      type,
+      actualDateTime,
+      gameDateTime,
+      note: coerceString(entry.note, ""),
+    });
+    return entries;
+  }, []);
+}
+
+function hydrateStatusTags(value: unknown): EncounterStatusTag[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const id = coerceString(entry.id, "");
+    const label = coerceString(entry.label, "");
+    if (!id || !label) {
+      return [];
+    }
+
+    return [{ id, label }];
   });
 }
 
@@ -681,7 +920,7 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
 
   const defaultHp = calculateMaxHP(statState.STAM.base);
 
-  return {
+  return normalizeCharacterDraft({
     name: coerceString(record.name, defaults.name),
     concept: coerceString(record.concept, defaults.concept),
     faction: coerceString(record.faction, defaults.faction),
@@ -693,9 +932,15 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     xpUsed: Math.max(0, Math.trunc(coerceNumber(record.xpUsed, defaults.xpUsed))),
     money: Math.max(0, Math.trunc(coerceNumber(record.money, defaults.money))),
     inspiration: Math.max(0, Math.trunc(coerceNumber(record.inspiration, defaults.inspiration))),
+    temporaryInspiration: Math.max(
+      0,
+      Math.trunc(coerceNumber(record.temporaryInspiration, defaults.temporaryInspiration))
+    ),
+    awarenessInsightGranted: record.awarenessInsightGranted === true,
     positiveKarma: Math.max(0, Math.trunc(coerceNumber(record.positiveKarma, defaults.positiveKarma))),
     negativeKarma: Math.max(0, Math.trunc(coerceNumber(record.negativeKarma, defaults.negativeKarma))),
-    currentHp: Math.max(0, Math.trunc(coerceNumber(record.currentHp, defaultHp))),
+    currentHp: Math.trunc(coerceNumber(record.currentHp, defaultHp)),
+    temporaryHp: Math.max(0, Math.trunc(coerceNumber(record.temporaryHp, defaults.temporaryHp))),
     currentMana: Math.max(0, Math.trunc(coerceNumber(record.currentMana, defaults.currentMana))),
     manaInitialized: record.manaInitialized === true,
     resistances,
@@ -705,7 +950,9 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     activePowerEffects: hydrateActivePowerEffects(record.activePowerEffects),
     equipment: hydrateEquipment(record.equipment),
     inventory: hydrateInventory(record.inventory),
+    gameHistory: hydrateGameHistory(record.gameHistory),
+    statusTags: hydrateStatusTags(record.statusTags),
     effects: hydrateEffects(record.effects),
     dmAuditLog: hydrateDmAuditLog(record.dmAuditLog),
-  };
+  });
 }
