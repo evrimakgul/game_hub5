@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
+import { D10Icon } from "../components/shared/D10Icon";
 import { resolveDicePool } from "../config/combat";
 import {
   buildCharacterDerivedValues,
@@ -19,7 +20,6 @@ import {
   statGroups,
   type CharacterDraft,
   type GameHistoryEntry,
-  type StatId,
 } from "../config/characterTemplate";
 import {
   getCrAndRankFromXpUsed,
@@ -27,7 +27,15 @@ import {
   T1_POWER_XP_BY_LEVEL,
   T1_SKILL_XP_BY_LEVEL,
 } from "../config/xpTables";
+import { formatDateDayMonthYear } from "../lib/dateTime";
+import {
+  appendDmAuditEntry as appendDmAuditEntryToSheet,
+  createDmAuditEntry as createDmAuditLogEntry,
+} from "../lib/dmAudit";
+import { rollD10Faces } from "../lib/dice";
+import { buildGameHistoryNoteEntry, prependGameHistoryEntry } from "../lib/historyEntries";
 import { useAppFlow } from "../state/appFlow";
+import type { StatId } from "../types/character";
 
 type RollTarget = {
   id: string;
@@ -56,6 +64,8 @@ type RuntimeEditableField =
   | "positiveKarma"
   | "negativeKarma";
 
+export type PlayerCharacterPageViewMode = "player" | "dm-readonly" | "dm-editable";
+
 function buildEditSessionStatFloor(sheet: CharacterDraft): Record<StatId, number> {
   return {
     STR: sheet.statState.STR.base,
@@ -68,19 +78,6 @@ function buildEditSessionStatFloor(sheet: CharacterDraft): Record<StatId, number
     WITS: sheet.statState.WITS.base,
     PER: sheet.statState.PER.base,
   };
-}
-
-function formatDateDayMonthYear(date: Date): string {
-  const day = `${date.getDate()}`.padStart(2, "0");
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
-}
-
-function formatTimeHoursMinutes(date: Date): string {
-  const hours = `${date.getHours()}`.padStart(2, "0");
-  const minutes = `${date.getMinutes()}`.padStart(2, "0");
-  return `${hours}:${minutes}`;
 }
 
 function getHistoryEntryKey(entry: GameHistoryEntry): string {
@@ -103,30 +100,11 @@ function getDecrementRefund(table: number[], currentLevel: number): number {
   return table[currentLevel] - table[currentLevel - 1];
 }
 
-function D10Icon() {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true" className="d10-icon">
-      <path
-        d="M32 4 52 18 58 40 44 58 20 58 6 40 12 18Z"
-        fill="currentColor"
-        opacity="0.16"
-      />
-      <path
-        d="M32 4 52 18 58 40 44 58 20 58 6 40 12 18Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinejoin="round"
-      />
-      <path d="M12 18h40M6 40h52M20 58l12-54 12 54" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
-      <text x="32" y="38" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">
-        10
-      </text>
-    </svg>
-  );
-}
-
-export function PlayerCharacterPage() {
+export function PlayerCharacterPage({
+  viewMode,
+}: {
+  viewMode: PlayerCharacterPageViewMode;
+}) {
   const { characters, activePlayerCharacter, activeDmCharacter, updateCharacter } = useAppFlow();
   const navigate = useNavigate();
   const location = useLocation();
@@ -154,9 +132,9 @@ export function PlayerCharacterPage() {
     offsetX: 0,
     offsetY: 0,
   });
-  const isDmReadOnlyView = location.pathname.startsWith("/dm/character");
-  const isDmEditableView = location.pathname.startsWith("/dm/npc-character");
-  const isDmView = isDmReadOnlyView || isDmEditableView;
+  const isDmReadOnlyView = viewMode === "dm-readonly";
+  const isDmEditableView = viewMode === "dm-editable";
+  const isDmView = viewMode !== "player";
   const characterIdFromQuery = new URLSearchParams(location.search).get("characterId");
   const queriedCharacter =
     characterIdFromQuery
@@ -289,18 +267,11 @@ export function PlayerCharacterPage() {
       return;
     }
 
-    const now = new Date();
-    const entry = {
-      id: `history-note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-      type: "note" as const,
-      actualDateTime: `${formatDateDayMonthYear(now)} - ${formatTimeHoursMinutes(now)}`,
-      gameDateTime: sheetState.gameDateTime,
-      note,
-    };
+    const entry = buildGameHistoryNoteEntry(note, sheetState.gameDateTime, new Date());
 
     setSheetState((currentSheet) => ({
       ...currentSheet,
-      gameHistory: [entry, ...(currentSheet.gameHistory ?? [])],
+      gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], entry),
     }));
     setSessionNotes("");
   }
@@ -362,7 +333,7 @@ export function PlayerCharacterPage() {
       return;
     }
 
-    const faces = Array.from({ length: selectedRollPool }, () => Math.floor(Math.random() * 10) + 1);
+    const faces = rollD10Faces(selectedRollPool);
     const resolution = resolveDicePool(faces, selectedRollPool);
 
     setLastRoll({
@@ -829,18 +800,16 @@ export function PlayerCharacterPage() {
       return null;
     }
 
-    return {
-      id: `dm-edit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-      timestamp: new Date().toISOString(),
+    return createDmAuditLogEntry({
       characterId: activeCharacter.id,
       targetOwnerRole: activeCharacter.ownerRole,
       editLayer,
       fieldPath,
-      beforeValue: String(beforeValue ?? ""),
-      afterValue: String(afterValue ?? ""),
+      beforeValue,
+      afterValue,
       reason,
       sourceScreen,
-    };
+    });
   }
 
   function requireAdminReason(): string | null {
@@ -858,14 +827,7 @@ export function PlayerCharacterPage() {
     sheet: CharacterDraft,
     entry: ReturnType<typeof createDmAuditEntry>
   ): CharacterDraft {
-    if (!entry) {
-      return sheet;
-    }
-
-    return {
-      ...sheet,
-      dmAuditLog: [...(sheet.dmAuditLog ?? []), entry],
-    };
+    return appendDmAuditEntryToSheet(sheet, entry);
   }
 
   function updateRuntimeField(field: RuntimeEditableField, rawValue: number): void {

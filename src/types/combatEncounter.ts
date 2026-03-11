@@ -1,4 +1,6 @@
-export type CombatEncounterOwnerRole = "player" | "dm";
+import type { CharacterOwnerRole } from "./character";
+
+export type CombatEncounterOwnerRole = CharacterOwnerRole;
 export type CombatEncounterPartyKind = "players" | "npcs" | "custom";
 
 export type CombatEncounterParty = {

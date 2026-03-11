@@ -17,12 +17,12 @@ export default function App() {
       <Route path="/" element={<LoginPage />} />
       <Route path="/role" element={<RoleSelectPage />} />
       <Route path="/player" element={<PlayerHubPage />} />
-      <Route path="/player/character" element={<PlayerCharacterPage />} />
+      <Route path="/player/character" element={<PlayerCharacterPage viewMode="player" />} />
       <Route path="/dm" element={<DmPage />} />
       <Route path="/dm/characters" element={<DmCharacterHubPage />} />
-      <Route path="/dm/character" element={<PlayerCharacterPage />} />
+      <Route path="/dm/character" element={<PlayerCharacterPage viewMode="dm-readonly" />} />
       <Route path="/dm/npc-creator" element={<DmNpcCreatorPage />} />
-      <Route path="/dm/npc-character" element={<PlayerCharacterPage />} />
+      <Route path="/dm/npc-character" element={<PlayerCharacterPage viewMode="dm-editable" />} />
       <Route path="/dm/combat" element={<CombatDashboardPage />} />
       <Route path="/dm/combat/encounter" element={<CombatEncounterPage />} />
       <Route path="*" element={<NotFoundPage />} />

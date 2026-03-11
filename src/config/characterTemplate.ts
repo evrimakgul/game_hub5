@@ -9,6 +9,9 @@ import type {
   ActivePowerEffect,
   ActivePowerEffectModifier,
 } from "../types/activePowerEffects";
+import { STAT_IDS, isStatId, type CharacterOwnerRole, type StatId } from "../types/character.ts";
+
+export type { StatId } from "../types/character.ts";
 
 export type StatSource = {
   label: string;
@@ -30,22 +33,11 @@ export type SkillEntry = {
   buffSources: StatSource[];
 };
 
-export type StatId =
-  | "STR"
-  | "DEX"
-  | "STAM"
-  | "CHA"
-  | "APP"
-  | "MAN"
-  | "INT"
-  | "WITS"
-  | "PER";
-
 export type PowerEntry = {
   id: string;
   name: string;
   level: number;
-  governingStat: string;
+  governingStat: StatId;
 };
 
 export type EncounterStatusTag = {
@@ -119,7 +111,7 @@ export type DmAuditEntry = {
   id: string;
   timestamp: string;
   characterId: string;
-  targetOwnerRole: "player" | "dm";
+  targetOwnerRole: CharacterOwnerRole;
   editLayer: "runtime" | "sheet" | "admin_override";
   fieldPath: string;
   beforeValue: string;
@@ -164,13 +156,11 @@ export type CharacterDraft = {
 export type PowerTemplate = {
   id: string;
   name: string;
-  governingStat: string;
+  governingStat: StatId;
   levelBenefits: Record<number, string[]>;
 };
 
 export const CHARACTER_DRAFT_SCHEMA_VERSION = 4;
-
-const STAT_IDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
 
 const BLANK_STAT_ENTRY = (): StatEntry => ({
   base: 2,
@@ -527,7 +517,9 @@ function hydratePowers(value: unknown): PowerEntry[] {
         id: powerId,
         name: template?.name ?? coerceString(entry.name, powerId),
         level: Math.max(0, Math.trunc(coerceNumber(entry.level, 0))),
-        governingStat: template?.governingStat ?? coerceString(entry.governingStat, ""),
+        governingStat:
+          template?.governingStat ??
+          (isStatId(entry.governingStat) ? entry.governingStat : "PER"),
       },
     ];
   });
@@ -882,8 +874,7 @@ function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
         summary: coerceString(entry.summary, ""),
         actionType: typeof entry.actionType === "string" ? entry.actionType : null,
         manaCost: persistedManaCost,
-        selectedStatId:
-          typeof entry.selectedStatId === "string" ? entry.selectedStatId : null,
+        selectedStatId: isStatId(entry.selectedStatId) ? entry.selectedStatId : null,
         modifiers,
         appliedAt: coerceString(entry.appliedAt, new Date(0).toISOString()),
       },

@@ -1,3 +1,5 @@
+import type { StatId } from "./character";
+
 export type ActivePowerModifierTargetType = "stat" | "skill" | "derived";
 export type ActivePowerEffectKind = "direct" | "aura_source" | "aura_shared";
 export type ActivePowerShareMode = "self" | "aura" | null;
@@ -26,7 +28,7 @@ export type ActivePowerEffect = {
   summary: string;
   actionType: string | null;
   manaCost: number | null;
-  selectedStatId: string | null;
+  selectedStatId: StatId | null;
   modifiers: ActivePowerEffectModifier[];
   appliedAt: string;
 };

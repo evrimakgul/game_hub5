@@ -4,8 +4,10 @@ import type {
   ActivePowerEffectModifier,
   ActivePowerShareMode,
 } from "../types/activePowerEffects";
+import { createTimestampedId, getIsoTimestamp } from "../lib/ids.ts";
+import { isStatId, type StatId } from "../types/character.ts";
 import type { DamageTypeId } from "./resistances.ts";
-import type { CharacterDraft, PowerEntry, StatId } from "./characterTemplate.ts";
+import type { CharacterDraft, PowerEntry } from "./characterTemplate.ts";
 import { buildCharacterDerivedValues, getCurrentStatValue } from "./characterRuntime.ts";
 import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 
@@ -158,20 +160,6 @@ function resolveAuraCastMode(request: CastPowerBuildRequest): CastPowerMode {
   return "self";
 }
 
-function isStatId(value: unknown): value is StatId {
-  return (
-    value === "STR" ||
-    value === "DEX" ||
-    value === "STAM" ||
-    value === "CHA" ||
-    value === "APP" ||
-    value === "MAN" ||
-    value === "INT" ||
-    value === "WITS" ||
-    value === "PER"
-  );
-}
-
 function asNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
@@ -197,7 +185,7 @@ function createEffect(
   }
 ): ActivePowerEffect {
   return {
-    id: `power-effect-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    id: createTimestampedId("power-effect"),
     stackKey,
     effectKind,
     powerId: request.power.id,
@@ -215,7 +203,7 @@ function createEffect(
     manaCost,
     selectedStatId: selectedStatId ?? null,
     modifiers,
-    appliedAt: new Date().toISOString(),
+    appliedAt: getIsoTimestamp(),
   };
 }
 
@@ -827,14 +815,14 @@ export function buildAuraSharedPowerEffect(
 ): ActivePowerEffect {
   return {
     ...sourceEffect,
-    id: `power-effect-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    id: createTimestampedId("power-effect"),
     effectKind: "aura_shared",
     stackKey: getNormalizedAuraStackKey(sourceEffect),
     targetCharacterId,
     sourceEffectId: sourceEffect.id,
     sharedTargetCharacterIds: null,
     manaCost: null,
-    appliedAt: new Date().toISOString(),
+    appliedAt: getIsoTimestamp(),
   };
 }
 

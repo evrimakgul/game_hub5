@@ -1,0 +1,141 @@
+import {
+  CHARACTER_DRAFT_SCHEMA_VERSION,
+  hydrateCharacterDraft,
+} from "../config/characterTemplate.ts";
+import { isCharacterOwnerRole, type CharacterRecord } from "../types/character.ts";
+
+export const CHARACTER_STORAGE_KEY = "convergence.local.characters";
+
+type PersistedCharacterEnvelope = {
+  version: number;
+  characters: Array<{ id: string; ownerRole?: unknown; sheet: unknown }>;
+  activeCharacterId?: string | null;
+  activePlayerCharacterId?: string | null;
+  activeDmCharacterId?: string | null;
+};
+
+export type PersistedCharacterState = {
+  characters: CharacterRecord[];
+  activePlayerCharacterId: string | null;
+  activeDmCharacterId: string | null;
+};
+
+function getEmptyPersistedCharacterState(): PersistedCharacterState {
+  return {
+    characters: [],
+    activePlayerCharacterId: null,
+    activeDmCharacterId: null,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeOwnerRole(value: unknown): CharacterRecord["ownerRole"] {
+  return isCharacterOwnerRole(value) ? value : "player";
+}
+
+export function hydratePersistedCharacters(rawValue: string | null): PersistedCharacterState {
+  if (!rawValue) {
+    return getEmptyPersistedCharacterState();
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as unknown;
+    if (!isRecord(parsed)) {
+      return getEmptyPersistedCharacterState();
+    }
+
+    const envelope = parsed as Partial<PersistedCharacterEnvelope>;
+    const characters = Array.isArray(envelope.characters)
+      ? envelope.characters.flatMap((entry) => {
+          if (!isRecord(entry) || typeof entry.id !== "string") {
+            return [];
+          }
+
+          return [
+            {
+              id: entry.id,
+              ownerRole: normalizeOwnerRole(entry.ownerRole),
+              sheet: hydrateCharacterDraft(entry.sheet),
+            },
+          ];
+        })
+      : [];
+    const persistedActivePlayerCharacterId =
+      typeof envelope.activePlayerCharacterId === "string"
+        ? envelope.activePlayerCharacterId
+        : null;
+    const persistedActiveDmCharacterId =
+      typeof envelope.activeDmCharacterId === "string" ? envelope.activeDmCharacterId : null;
+    const legacyActiveCharacterId =
+      typeof envelope.activeCharacterId === "string" ? envelope.activeCharacterId : null;
+    const legacyActiveCharacter =
+      legacyActiveCharacterId
+        ? characters.find((character) => character.id === legacyActiveCharacterId) ?? null
+        : null;
+
+    return {
+      characters,
+      activePlayerCharacterId:
+        persistedActivePlayerCharacterId &&
+        characters.some(
+          (character) =>
+            character.id === persistedActivePlayerCharacterId && character.ownerRole === "player"
+        )
+          ? persistedActivePlayerCharacterId
+          : legacyActiveCharacter?.ownerRole === "player"
+            ? legacyActiveCharacter.id
+            : null,
+      activeDmCharacterId:
+        persistedActiveDmCharacterId &&
+        characters.some(
+          (character) =>
+            character.id === persistedActiveDmCharacterId && character.ownerRole === "dm"
+        )
+          ? persistedActiveDmCharacterId
+          : legacyActiveCharacter?.ownerRole === "dm"
+            ? legacyActiveCharacter.id
+            : null,
+    };
+  } catch {
+    return getEmptyPersistedCharacterState();
+  }
+}
+
+export function readPersistedCharactersFromStorage(
+  storage: Pick<Storage, "getItem"> | null
+): PersistedCharacterState {
+  if (!storage) {
+    return getEmptyPersistedCharacterState();
+  }
+
+  return hydratePersistedCharacters(storage.getItem(CHARACTER_STORAGE_KEY));
+}
+
+export function serializePersistedCharacters(
+  state: PersistedCharacterState
+): PersistedCharacterEnvelope {
+  return {
+    version: CHARACTER_DRAFT_SCHEMA_VERSION,
+    characters: state.characters.map((character) => ({
+      id: character.id,
+      ownerRole: character.ownerRole,
+      sheet: character.sheet,
+    })),
+    activePlayerCharacterId: state.activePlayerCharacterId,
+    activeDmCharacterId: state.activeDmCharacterId,
+  };
+}
+
+export function writePersistedCharactersToStorage(
+  storage: Pick<Storage, "setItem"> | null,
+  state: PersistedCharacterState
+): void {
+  if (!storage) {
+    return;
+  }
+
+  storage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify(serializePersistedCharacters(state)));
+}

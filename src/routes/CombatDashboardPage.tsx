@@ -5,7 +5,8 @@ import {
   buildEncounterParticipantInput,
   createCombatEncounter,
 } from "../config/combatEncounter";
-import { type CharacterRecord, useAppFlow } from "../state/appFlow";
+import { useAppFlow } from "../state/appFlow";
+import type { CharacterRecord } from "../types/character";
 import type { CombatEncounterParty } from "../types/combatEncounter";
 
 const DEFAULT_PARTIES: CombatEncounterParty[] = [

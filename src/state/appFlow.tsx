@@ -12,28 +12,25 @@ import {
   CHARACTER_DRAFT_SCHEMA_VERSION,
   PLAYER_CHARACTER_TEMPLATE,
   type CharacterDraft,
-  hydrateCharacterDraft,
   normalizeCharacterDraft,
 } from "../config/characterTemplate";
+import {
+  CHARACTER_STORAGE_KEY,
+  readPersistedCharactersFromStorage,
+  type PersistedCharacterState,
+  writePersistedCharactersToStorage,
+} from "./appFlowPersistence";
+import {
+  isCharacterOwnerRole,
+  type CharacterOwnerRole,
+  type CharacterRecord,
+} from "../types/character";
 import type { CombatEncounterState } from "../types/combatEncounter";
+
+export type { CharacterOwnerRole, CharacterRecord } from "../types/character";
 
 type AuthChoice = "login" | "signup" | null;
 type RoleChoice = "player" | "dm" | null;
-export type CharacterOwnerRole = "player" | "dm";
-
-export type CharacterRecord = {
-  id: string;
-  ownerRole: CharacterOwnerRole;
-  sheet: CharacterDraft;
-};
-
-type PersistedCharacterEnvelope = {
-  version: number;
-  characters: Array<{ id: string; ownerRole?: unknown; sheet: unknown }>;
-  activeCharacterId?: string | null;
-  activePlayerCharacterId?: string | null;
-  activeDmCharacterId?: string | null;
-};
 
 type AppFlowContextValue = {
   authChoice: AuthChoice;
@@ -61,111 +58,15 @@ type AppFlowContextValue = {
 };
 
 const AppFlowContext = createContext<AppFlowContextValue | null>(null);
-const CHARACTER_STORAGE_KEY = "convergence.local.characters";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function normalizeOwnerRole(value: unknown): CharacterOwnerRole {
-  return value === "dm" ? "dm" : "player";
-}
-
-function readPersistedCharacters(): {
-  characters: CharacterRecord[];
-  activePlayerCharacterId: string | null;
-  activeDmCharacterId: string | null;
-} {
-  if (typeof window === "undefined") {
-    return {
-      characters: [],
-      activePlayerCharacterId: null,
-      activeDmCharacterId: null,
-    };
-  }
-
-  const rawValue = window.localStorage.getItem(CHARACTER_STORAGE_KEY);
-  if (!rawValue) {
-    return {
-      characters: [],
-      activePlayerCharacterId: null,
-      activeDmCharacterId: null,
-    };
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue) as unknown;
-    if (!isRecord(parsed)) {
-      return {
-        characters: [],
-        activePlayerCharacterId: null,
-        activeDmCharacterId: null,
-      };
-    }
-
-    const envelope = parsed as Partial<PersistedCharacterEnvelope>;
-    const characters = Array.isArray(envelope.characters)
-      ? envelope.characters.flatMap((entry) => {
-          if (!isRecord(entry) || typeof entry.id !== "string") {
-            return [];
-          }
-
-          return [
-            {
-              id: entry.id,
-              ownerRole: normalizeOwnerRole(entry.ownerRole),
-              sheet: hydrateCharacterDraft(entry.sheet),
-            },
-          ];
-        })
-      : [];
-    const persistedActivePlayerCharacterId =
-      typeof envelope.activePlayerCharacterId === "string"
-        ? envelope.activePlayerCharacterId
-        : null;
-    const persistedActiveDmCharacterId =
-      typeof envelope.activeDmCharacterId === "string" ? envelope.activeDmCharacterId : null;
-    const legacyActiveCharacterId =
-      typeof envelope.activeCharacterId === "string" ? envelope.activeCharacterId : null;
-    const legacyActiveCharacter =
-      legacyActiveCharacterId
-        ? characters.find((character) => character.id === legacyActiveCharacterId) ?? null
-        : null;
-
-    return {
-      characters,
-      activePlayerCharacterId:
-        persistedActivePlayerCharacterId &&
-        characters.some(
-          (character) =>
-            character.id === persistedActivePlayerCharacterId && character.ownerRole === "player"
-        )
-          ? persistedActivePlayerCharacterId
-          : legacyActiveCharacter?.ownerRole === "player"
-            ? legacyActiveCharacter.id
-            : null,
-      activeDmCharacterId:
-        persistedActiveDmCharacterId &&
-        characters.some(
-          (character) =>
-            character.id === persistedActiveDmCharacterId && character.ownerRole === "dm"
-        )
-          ? persistedActiveDmCharacterId
-          : legacyActiveCharacter?.ownerRole === "dm"
-            ? legacyActiveCharacter.id
-            : null,
-    };
-  } catch {
-    return {
-      characters: [],
-      activePlayerCharacterId: null,
-      activeDmCharacterId: null,
-    };
-  }
-}
 
 export function AppFlowProvider({ children }: PropsWithChildren) {
-  const persistedCharacters = useMemo(readPersistedCharacters, []);
+  const persistedCharacters = useMemo<PersistedCharacterState>(
+    () =>
+      readPersistedCharactersFromStorage(
+        typeof window === "undefined" ? null : window.localStorage
+      ),
+    []
+  );
   const skipNextPersistRef = useRef(false);
   const [authChoice, setAuthChoice] = useState<AuthChoice>(null);
   const [roleChoice, setRoleChoice] = useState<RoleChoice>(null);
@@ -189,27 +90,18 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
     if (skipNextPersistRef.current) {
       skipNextPersistRef.current = false;
       return;
     }
-
-    const payload: PersistedCharacterEnvelope = {
-      version: CHARACTER_DRAFT_SCHEMA_VERSION,
-      characters: characters.map((character) => ({
-        id: character.id,
-        ownerRole: character.ownerRole,
-        sheet: character.sheet,
-      })),
-      activePlayerCharacterId,
-      activeDmCharacterId,
-    };
-
-    window.localStorage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify(payload));
+    writePersistedCharactersToStorage(
+      typeof window === "undefined" ? null : window.localStorage,
+      {
+        characters,
+        activePlayerCharacterId,
+        activeDmCharacterId,
+      }
+    );
   }, [activeDmCharacterId, activePlayerCharacterId, characters]);
 
   useEffect(() => {
@@ -222,7 +114,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         return;
       }
 
-      const nextState = readPersistedCharacters();
+      const nextState = readPersistedCharactersFromStorage(window.localStorage);
       skipNextPersistRef.current = true;
       setCharacters(nextState.characters);
       setActivePlayerCharacterId((currentActiveCharacterId) =>

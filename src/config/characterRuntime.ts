@@ -3,9 +3,9 @@ import type {
   CharacterDraft,
   SkillEntry,
   StatEntry,
-  StatId,
   StatSource,
 } from "./characterTemplate.ts";
+import type { StatId } from "../types/character.ts";
 import { getRuntimePowerCantripLevels } from "./powerData.ts";
 import {
   calculateArmorClass,
@@ -171,8 +171,7 @@ export function calculateT1BaseMana(
   currentStats: Record<StatId, number>
 ): number {
   return sheet.powers.reduce((total, power) => {
-    const governingStat = power.governingStat as StatId;
-    return total + power.level + (currentStats[governingStat] ?? 0);
+    return total + power.level + (currentStats[power.governingStat] ?? 0);
   }, 0);
 }
 

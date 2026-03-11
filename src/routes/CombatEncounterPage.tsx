@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { D10Icon } from "../components/shared/D10Icon";
 import { resolveDicePool } from "../config/combat";
 import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
 import { applyDamageToSheet, applyHealingToSheet } from "../config/combatResolution";
@@ -28,17 +29,26 @@ import {
   spendPowerMana,
   updateAuraSourceTargets,
 } from "../config/powerEffects";
-import { getRuntimePowerAbbreviation, getRuntimePowerLevelDefinition } from "../config/powerData.ts";
-import type { GameHistoryEntry, PowerEntry, StatId } from "../config/characterTemplate";
+import { getRuntimePowerAbbreviation, getRuntimePowerLevelDefinition } from "../config/powerData";
+import type { GameHistoryEntry, PowerEntry } from "../config/characterTemplate";
 import { getCrAndRankFromXpUsed } from "../config/xpTables";
-import { type CharacterRecord, useAppFlow } from "../state/appFlow";
+import { useAppFlow } from "../state/appFlow";
 import type { ActivePowerEffect, ActivePowerShareMode } from "../types/activePowerEffects";
 import type {
   CastPowerMode,
   CastPowerVariantId,
   DamageMitigationChannel,
 } from "../config/powerEffects";
-import type { DamageTypeId } from "../config/resistances.ts";
+import { CombatantRuntimeAdjustments } from "../components/combat-encounter/CombatantRuntimeAdjustments";
+import type {
+  CharacterSheetUpdater,
+  EncounterParticipantView,
+} from "../components/combat-encounter/types";
+import { rollD10Faces } from "../lib/dice";
+import { prependGameHistoryEntry } from "../lib/historyEntries";
+import { createTimestampedId } from "../lib/ids";
+import type { DamageTypeId } from "../config/resistances";
+import type { CharacterRecord, StatId } from "../types/character";
 import type {
   CharacterEncounterSnapshot,
   CombatEncounterParty,
@@ -66,16 +76,6 @@ type RollTarget = {
   value: number;
   category: "summary" | "stat" | "skill";
 };
-
-type EncounterParticipantView = {
-  participant: CombatEncounterParticipant;
-  character: CharacterRecord | null;
-  snapshot: CharacterEncounterSnapshot | null;
-};
-
-type CharacterSheetUpdater =
-  | CharacterRecord["sheet"]
-  | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"]);
 
 type PreparedCastRequest = {
   casterCharacterId: string;
@@ -135,319 +135,6 @@ function formatEncounterTime(isoDateTime: string): string {
   }
 
   return date.toLocaleString();
-}
-
-function D10Icon() {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true" className="d10-icon">
-      <path
-        d="M32 4 52 18 58 40 44 58 20 58 6 40 12 18Z"
-        fill="currentColor"
-        opacity="0.16"
-      />
-      <path
-        d="M32 4 52 18 58 40 44 58 20 58 6 40 12 18Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 18h40M6 40h52M20 58l12-54 12 54"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinejoin="round"
-      />
-      <text x="32" y="38" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">
-        10
-      </text>
-    </svg>
-  );
-}
-
-type CombatantRuntimeAdjustmentsProps = {
-  view: EncounterParticipantView;
-  updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
-};
-
-function CombatantRuntimeAdjustments({
-  view,
-  updateCharacter,
-}: CombatantRuntimeAdjustmentsProps) {
-  const character = view.character;
-  const derived = character ? buildCharacterDerivedValues(character.sheet) : null;
-  const popoverRef = useRef<HTMLDivElement | null>(null);
-  const popoverPanelRef = useRef<HTMLDivElement | null>(null);
-  const [hpSet, setHpSet] = useState("");
-  const [manaSet, setManaSet] = useState("");
-  const [inspirationSet, setInspirationSet] = useState("");
-  const [reason, setReason] = useState("");
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [popoverPlacement, setPopoverPlacement] = useState<"below" | "above">("below");
-
-  useEffect(() => {
-    if (!isPopoverOpen) {
-      return;
-    }
-
-    function handlePointerDown(event: MouseEvent): void {
-      if (!popoverRef.current?.contains(event.target as Node)) {
-        setIsPopoverOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent): void {
-      if (event.key === "Escape") {
-        setIsPopoverOpen(false);
-      }
-    }
-
-    window.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isPopoverOpen]);
-
-  useEffect(() => {
-    if (!isPopoverOpen) {
-      return;
-    }
-
-    function updatePlacement(): void {
-      const anchor = popoverRef.current;
-      const panel = popoverPanelRef.current;
-      if (!anchor || !panel) {
-        return;
-      }
-
-      const anchorRect = anchor.getBoundingClientRect();
-      const panelHeight = panel.offsetHeight;
-      const spaceBelow = window.innerHeight - anchorRect.bottom;
-      const spaceAbove = anchorRect.top;
-
-      setPopoverPlacement(
-        spaceBelow < panelHeight + 16 && spaceAbove > spaceBelow ? "above" : "below"
-      );
-    }
-
-    const frameId = window.requestAnimationFrame(updatePlacement);
-    window.addEventListener("resize", updatePlacement);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.removeEventListener("resize", updatePlacement);
-    };
-  }, [isPopoverOpen]);
-
-  if (!character) {
-    return null;
-  }
-  const runtimeCharacter = character;
-  const runtimeDerived = derived;
-
-  function appendDmAuditEntry(
-    sheet: CharacterRecord["sheet"],
-    fieldPath: string,
-    beforeValue: number,
-    afterValue: number
-  ): CharacterRecord["sheet"] {
-    const entry = {
-      id: `dm-edit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-      timestamp: new Date().toISOString(),
-      characterId: runtimeCharacter.id,
-      targetOwnerRole: view.participant.ownerRole,
-      editLayer: "runtime" as const,
-      fieldPath,
-      beforeValue: String(beforeValue),
-      afterValue: String(afterValue),
-      reason: reason.trim(),
-      sourceScreen: "dm-combat-encounter",
-    };
-
-    return {
-      ...sheet,
-      dmAuditLog: [...(sheet.dmAuditLog ?? []), entry],
-    };
-  }
-
-  function applyRuntimeValue(
-    field: "currentHp" | "currentMana" | "inspiration",
-    value: number
-  ): void {
-    updateCharacter(runtimeCharacter.id, (currentSheet) => {
-      const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
-      const nextBaseValue =
-        field === "currentHp" ? Math.trunc(value) : Math.max(0, Math.trunc(value));
-      const before =
-        field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field] ?? 0;
-      const maxValue =
-        field === "currentHp"
-          ? null
-          : field === "currentMana"
-            ? derivedSnapshot.maxMana
-            : null;
-      const nextValue = maxValue === null ? nextBaseValue : Math.min(nextBaseValue, maxValue);
-      if (before === nextValue) {
-        return currentSheet;
-      }
-
-      return appendDmAuditEntry(
-        {
-          ...currentSheet,
-          [field]: nextValue,
-          ...(field === "currentMana" ? { manaInitialized: true } : null),
-        },
-        field,
-        before,
-        nextValue
-      );
-    });
-  }
-
-  function adjustRuntimeValue(
-    field: "currentHp" | "currentMana" | "inspiration",
-    delta: number
-  ): void {
-    const currentValue =
-      field === "currentMana" ? runtimeDerived?.currentMana ?? 0 : runtimeCharacter.sheet[field];
-    applyRuntimeValue(field, currentValue + delta);
-  }
-
-  function handleSet(
-    field: "currentHp" | "currentMana" | "inspiration",
-    inputValue: string,
-    clear: () => void
-  ): void {
-    const parsed = Number.parseInt(inputValue.trim(), 10);
-    if (!Number.isFinite(parsed)) {
-      return;
-    }
-
-    applyRuntimeValue(field, parsed);
-    clear();
-  }
-
-  function renderRuntimeStepper(
-    label: string,
-    field: "currentHp" | "currentMana" | "inspiration",
-    value: number
-  ) {
-    return (
-      <div className="dm-runtime-stepper-row">
-        <span>{label}</span>
-        <div className="dm-runtime-stepper">
-          <button type="button" onClick={() => adjustRuntimeValue(field, -1)}>
-            -
-          </button>
-          <strong>{value}</strong>
-          <button type="button" onClick={() => adjustRuntimeValue(field, 1)}>
-            +
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="dm-combatant-tool-subsection">
-      <p className="section-kicker">Edit Character</p>
-      <div className="dm-runtime-popover-anchor" ref={popoverRef}>
-        <button
-          type="button"
-          className="flow-secondary"
-          onClick={() => setIsPopoverOpen((current) => !current)}
-        >
-          Edit Character
-        </button>
-        {isPopoverOpen ? (
-          <div
-            ref={popoverPanelRef}
-            className={`dm-runtime-popover ${
-              popoverPlacement === "above" ? "is-above" : "is-below"
-            }`}
-          >
-            <div className="dm-runtime-popover-head">
-              <div>
-                <p className="section-kicker">Runtime Adjustments</p>
-                <strong>{character.sheet.name.trim() || "Unnamed Character"}</strong>
-              </div>
-            </div>
-
-            <div className="dm-runtime-stepper-list">
-              {renderRuntimeStepper("HP", "currentHp", character.sheet.currentHp)}
-              {renderRuntimeStepper("Mana", "currentMana", derived?.currentMana ?? 0)}
-              {renderRuntimeStepper("Inspiration", "inspiration", character.sheet.inspiration)}
-            </div>
-            <div className="dm-runtime-set-grid">
-              <label>
-                <span>Set HP</span>
-                <input
-                  type="number"
-                  value={hpSet}
-                  onChange={(event) => setHpSet(event.target.value)}
-                  placeholder="HP"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => handleSet("currentHp", hpSet, () => setHpSet(""))}
-              >
-                Set
-              </button>
-            </div>
-            <div className="dm-runtime-set-grid">
-              <label>
-                <span>Set Mana</span>
-                <input
-                  type="number"
-                  value={manaSet}
-                  onChange={(event) => setManaSet(event.target.value)}
-                  placeholder="Mana"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => handleSet("currentMana", manaSet, () => setManaSet(""))}
-              >
-                Set
-              </button>
-            </div>
-            <div className="dm-runtime-set-grid">
-              <label>
-                <span>Set Inspiration</span>
-                <input
-                  type="number"
-                  value={inspirationSet}
-                  onChange={(event) => setInspirationSet(event.target.value)}
-                  placeholder="Inspiration"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  handleSet("inspiration", inspirationSet, () => setInspirationSet(""))
-                }
-              >
-                Set
-              </button>
-            </div>
-            <label className="dm-field">
-              <span>Reason (optional)</span>
-              <input
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="Why this change?"
-              />
-            </label>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
 }
 
 type CombatantPowerControlsProps = {
@@ -1599,7 +1286,7 @@ export function CombatEncounterPage() {
 
         return {
           ...spentMana.sheet,
-          gameHistory: [nextHistoryEntry, ...(spentMana.sheet.gameHistory ?? [])],
+          gameHistory: prependGameHistoryEntry(spentMana.sheet.gameHistory ?? [], nextHistoryEntry),
         };
       });
 
@@ -1608,7 +1295,7 @@ export function CombatEncounterPage() {
         .forEach((item) => {
           updateCharacter(item.characterId, (currentSheet) => ({
             ...currentSheet,
-            gameHistory: [item.entry, ...(currentSheet.gameHistory ?? [])],
+            gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], item.entry),
           }));
         });
 
@@ -1903,7 +1590,7 @@ export function CombatEncounterPage() {
       return;
     }
 
-    const faces = Array.from({ length: selectedRollPool }, () => Math.floor(Math.random() * 10) + 1);
+    const faces = rollD10Faces(selectedRollPool);
     const resolution = resolveDicePool(faces, selectedRollPool);
 
     setLastRoll({
@@ -2557,7 +2244,7 @@ function buildAssessCharacterHistoryEntry(
   const targetProgression = getCrAndRankFromXpUsed(targetCharacter.sheet.xpUsed);
 
   return {
-    id: `history-intel-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    id: createTimestampedId("history-intel"),
     type: "intel_snapshot",
     actualDateTime,
     gameDateTime: casterSheet.gameDateTime,

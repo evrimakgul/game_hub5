@@ -1,7 +1,7 @@
 import type {
   CharacterDraft,
-  StatId,
 } from "./characterTemplate.ts";
+import { STAT_IDS, type StatId } from "../types/character.ts";
 import { DAMAGE_TYPES, RESISTANCE_LEVELS } from "./resistances.ts";
 import { resolveDicePool } from "./combat.ts";
 import { calculateInitiative } from "./stats.ts";
@@ -19,17 +19,9 @@ import type {
   EncounterBreakdownField,
   EncounterCombatSummaryField,
 } from "../types/combatEncounter.ts";
-
-const STAT_IDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
+import { createTimestampedId, getIsoTimestamp } from "../lib/ids.ts";
+import { rollD10Faces } from "../lib/dice.ts";
 const HIGHLIGHTED_SKILL_IDS = ["intimidation", "stealth", "alertness"] as const;
-
-function randomD10(): number {
-  return Math.floor(Math.random() * 10) + 1;
-}
-
-function rollInitiativePool(poolSize: number): number[] {
-  return Array.from({ length: Math.max(0, poolSize) }, () => randomD10());
-}
 
 export function buildEncounterParticipantInput(
   characterId: string,
@@ -83,7 +75,7 @@ export function createCombatEncounter(
     const initiativeFaces =
       participant.initiativeFaces !== undefined
         ? participant.initiativeFaces
-        : rollInitiativePool(initiativePool);
+        : rollD10Faces(initiativePool);
 
     if (initiativeFaces.length !== initiativePool) {
       throw new RangeError(
@@ -127,11 +119,11 @@ export function createCombatEncounter(
   });
 
   return {
-    encounterId: `encounter-${Date.now()}`,
+    encounterId: createTimestampedId("encounter"),
     label: label.trim() || "Combat Encounter",
     parties: [...parties],
     participants: resolvedParticipants,
-    createdAt: new Date().toISOString(),
+    createdAt: getIsoTimestamp(),
   };
 }
 
