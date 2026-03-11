@@ -12,7 +12,11 @@ import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 export type CastPowerTargetMode = "self" | "single" | "multiple";
 export type CastPowerMode = "self" | "aura";
 export type DamageMitigationChannel = "dr" | "soak";
-export type CastPowerVariantId = "default" | "shadow_cloak" | "shadow_manipulation";
+export type CastPowerVariantId =
+  | "default"
+  | "shadow_cloak"
+  | "shadow_manipulation"
+  | "necrotic_touch";
 export type CastPowerVariantOption = {
   id: CastPowerVariantId;
   label: string;
@@ -203,7 +207,7 @@ function createEffect(
 }
 
 export function getSupportedCastablePowerIds(): string[] {
-  return ["body_reinforcement", "healing", "light_support", "shadow_control"];
+  return ["body_reinforcement", "healing", "light_support", "necromancy", "shadow_control"];
 }
 
 export function isSupportedCastablePower(powerId: string): boolean {
@@ -211,7 +215,17 @@ export function isSupportedCastablePower(powerId: string): boolean {
 }
 
 export function getSupportedCastablePowers(sheet: CharacterDraft): PowerEntry[] {
-  return sheet.powers.filter((power) => isSupportedCastablePower(power.id) && power.level > 0);
+  return sheet.powers.filter((power) => {
+    if (!isSupportedCastablePower(power.id) || power.level <= 0) {
+      return false;
+    }
+
+    if (power.id === "necromancy") {
+      return power.level >= 3;
+    }
+
+    return true;
+  });
 }
 
 export function getCastPowerTargetMode(power: PowerEntry): CastPowerTargetMode {
@@ -224,6 +238,10 @@ export function getCastPowerTargetModeForVariant(
 ): CastPowerTargetMode {
   if (power.id === "healing") {
     return getCastPowerTargetLimit(power) > 1 ? "multiple" : "single";
+  }
+
+  if (power.id === "necromancy" && variantId === "necrotic_touch") {
+    return "single";
   }
 
   if (power.id === "light_support") {
@@ -293,6 +311,10 @@ export function getCastPowerModeOptionsForVariant(
 }
 
 export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantOption[] {
+  if (power.id === "necromancy" && power.level >= 3) {
+    return [{ id: "necrotic_touch", label: "Necrotic Touch" }];
+  }
+
   if (power.id === "shadow_control" && power.level >= 3) {
     return [
       { id: "shadow_cloak", label: "Cloak of Shadow" },
@@ -461,6 +483,58 @@ export function buildDirectDamageCastResolution(request: {
           mitigationChannel,
           sourceLabel: `${request.power.name} Lv ${request.power.level}`,
           sourceSummary: `Shadow Manipulation (${rawAmount} ${damageType})`,
+        },
+      ],
+    };
+  }
+
+  if (request.power.id === "necromancy" && request.variantId === "necrotic_touch") {
+    const runtimeLevel = getRuntimePowerLevelDefinition(request.power.id, request.power.level);
+    const necroticTouch =
+      runtimeLevel?.mechanics?.necrotic_touch &&
+      typeof runtimeLevel.mechanics.necrotic_touch === "object"
+        ? (runtimeLevel.mechanics.necrotic_touch as Record<string, unknown>)
+        : null;
+    const damage =
+      necroticTouch?.damage && typeof necroticTouch.damage === "object"
+        ? (necroticTouch.damage as Record<string, unknown>)
+        : null;
+
+    if (!runtimeLevel || !necroticTouch || !damage) {
+      return {
+        error: `Power data for ${request.power.name} Lv ${request.power.level} is missing necrotic touch data.`,
+      };
+    }
+
+    const uniqueTargetIds = Array.from(new Set(request.targetCharacterIds));
+    if (uniqueTargetIds.length !== 1) {
+      return { error: "Necrotic Touch requires exactly one target." };
+    }
+
+    const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "APP";
+    const baseAmount =
+      getCurrentStatValue(request.casterSheet, baseStat) +
+      request.power.level * asNumber(damage.power_level_multiplier);
+    const livingMultiplier =
+      typeof necroticTouch.living_damage_multiplier === "number"
+        ? necroticTouch.living_damage_multiplier
+        : 1;
+    const rawAmount = Math.max(0, Math.ceil(baseAmount * livingMultiplier));
+    const manaCost =
+      typeof necroticTouch.mana_cost === "number"
+        ? necroticTouch.mana_cost
+        : asNumber(runtimeLevel.mana_cost);
+
+    return {
+      manaCost,
+      applications: [
+        {
+          targetCharacterId: uniqueTargetIds[0],
+          rawAmount,
+          damageType: "necrotic",
+          mitigationChannel: "soak",
+          sourceLabel: `${request.power.name} Lv ${request.power.level}`,
+          sourceSummary: `Necrotic Touch (${rawAmount} necrotic)`,
         },
       ],
     };

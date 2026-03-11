@@ -218,9 +218,9 @@ export const powerLibrary: PowerTemplate[] = [
     levelBenefits: {
       1: ["Summon one simple skeleton", "10 minutes or portal duration"],
       2: ["Summon two simple skeletons or one skeleton king", "Cantrip: undead aggro drops"],
-      3: ["Necrotic Touch unlocked", "Summons retained"],
-      4: ["Zombie option unlocked", "Summons gain +2 attack and damage"],
-      5: ["Summons gain +5 attack and damage", "Resurrection unlocked"],
+      3: ["Necrotic Touch unlocked (3 Mana)", "Summons retained"],
+      4: ["Zombie unlocked (4 Mana)", "Summons gain +2 attack and damage"],
+      5: ["Summons gain +5 attack and damage", "Resurrection unlocked (6 Mana)"],
     },
   },
   {

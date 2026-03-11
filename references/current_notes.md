@@ -39,5 +39,18 @@ This file tracks active reminders and implementation notes for the current branc
   - Summon templates now use structured stat formulas, structured attack definitions, and numeric resistance levels.
   - Resistance data is aligned with the character-sheet model (`-2` to `+2`) and the `cold` damage-type naming.
 - Combat rules now separate attack delivery from mitigation so future magical attacks can still deal physical damage and be reduced by DR.
+- DM character editing now has a concrete spec in `references/dm_editing_spec.md`.
+  - Split future DM edits into `Runtime Adjustments`, `Sheet Administration`, and `Admin Override`.
+  - Keep DM combat edits focused on runtime values such as hp, mana, inspiration, and temporary state.
+  - Keep permanent progression-sensitive edits behind a separate override path with reason + confirmation.
+  - Add a DM audit log when this feature is implemented.
+- Deferred until after the current powers/spells implementation block:
+  - Add a `History` block to the combat encounter page between `Parties` and `Init Order`.
+  - The block should be a small three-line visible logger by default, with newest entries at the top.
+  - It should be scrollable with a standard vertical scrollbar.
+  - It should be resizable by dragging from the bottom-right corner.
+  - Use short action summaries only, not verbose full-resolution text.
+  - Include the target in summary lines when relevant, e.g. `t4 cast Body Reinforcement on t1 (STR)`.
+  - This logger should eventually receive combat actions and resolutions after the remaining powers/spells are implemented.
 - The current branch does not use Supabase at runtime.
 - Old Supabase schema and realtime reference documents have been removed from this branch.

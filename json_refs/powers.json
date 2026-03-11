@@ -1126,7 +1126,8 @@
               "options": [
                 {
                   "template_id": "simple_skeleton",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 2
                 }
               ]
             }
@@ -1147,11 +1148,18 @@
               "options": [
                 {
                   "template_id": "simple_skeleton",
-                  "quantity": 2
+                  "quantity": 1,
+                  "mana_cost": 2
+                },
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2,
+                  "mana_cost": 3
                 },
                 {
                   "template_id": "skeleton_king",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 3
                 }
               ]
             }
@@ -1172,15 +1180,23 @@
               "options": [
                 {
                   "template_id": "simple_skeleton",
-                  "quantity": 2
+                  "quantity": 1,
+                  "mana_cost": 2
+                },
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2,
+                  "mana_cost": 3
                 },
                 {
                   "template_id": "skeleton_king",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 3
                 }
               ]
             },
             "necrotic_touch": {
+              "mana_cost": 3,
               "damage": {
                 "base_stat": "APP",
                 "power_level_multiplier": 1,
@@ -1210,7 +1226,7 @@
         {
           "level": 4,
           "action_type": "standard",
-          "mana_cost": 4,
+          "mana_cost": null,
           "mechanics": {
             "summoning": {
               "max_active": 2,
@@ -1220,19 +1236,28 @@
               "options": [
                 {
                   "template_id": "simple_skeleton",
-                  "quantity": 2
+                  "quantity": 1,
+                  "mana_cost": 2
+                },
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2,
+                  "mana_cost": 3
                 },
                 {
                   "template_id": "skeleton_king",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 3
                 },
                 {
                   "template_id": "zombie",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 4
                 }
               ]
             },
             "necrotic_touch": {
+              "mana_cost": 3,
               "damage": {
                 "base_stat": "APP",
                 "power_level_multiplier": 1,
@@ -1261,7 +1286,7 @@
         {
           "level": 5,
           "action_type": "standard",
-          "mana_cost": 6,
+          "mana_cost": null,
           "mechanics": {
             "summoning": {
               "max_active": 2,
@@ -1272,19 +1297,28 @@
               "options": [
                 {
                   "template_id": "simple_skeleton",
-                  "quantity": 2
+                  "quantity": 1,
+                  "mana_cost": 2
+                },
+                {
+                  "template_id": "simple_skeleton",
+                  "quantity": 2,
+                  "mana_cost": 3
                 },
                 {
                   "template_id": "skeleton_king",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 3
                 },
                 {
                   "template_id": "zombie",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 4
                 }
               ]
             },
             "necrotic_touch": {
+              "mana_cost": 3,
               "damage": {
                 "base_stat": "APP",
                 "power_level_multiplier": 2,
@@ -1306,7 +1340,8 @@
             },
             "resurrection": {
               "enabled": true,
-              "target_type": "recently_fallen_human"
+              "target_type": "recently_fallen_human",
+              "mana_cost": 6
             }
           },
           "adjudication": {

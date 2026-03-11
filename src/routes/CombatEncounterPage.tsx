@@ -28,7 +28,7 @@ import {
   spendPowerMana,
   updateAuraSourceTargets,
 } from "../config/powerEffects";
-import { getRuntimePowerAbbreviation } from "../config/powerData.ts";
+import { getRuntimePowerAbbreviation, getRuntimePowerLevelDefinition } from "../config/powerData.ts";
 import type { PowerEntry, StatId } from "../config/characterTemplate";
 import { type CharacterRecord, useAppFlow } from "../state/appFlow";
 import type { ActivePowerEffect, ActivePowerShareMode } from "../types/activePowerEffects";
@@ -94,6 +94,8 @@ type PreparedCastRequest = {
   }>;
 };
 
+type CastOutcomeState = "unresolved" | "hit" | "miss";
+
 type PendingCastConfirmation = {
   request: PreparedCastRequest;
   warnings: string[];
@@ -104,6 +106,7 @@ type CastRequestPayload = {
   casterDisplayName: string;
   selectedPower: PowerEntry;
   selectedVariantId: CastPowerVariantId;
+  attackOutcome: "unresolved" | "hit" | "miss";
   selectedTargetIds: string[];
   fallbackTargetIds: string[];
   healingAllocations: Record<string, number>;
@@ -545,6 +548,71 @@ function prepareCastRequest(
     };
   }
 
+  if (
+    payload.selectedPower.id === "necromancy" &&
+    payload.selectedVariantId === "necrotic_touch"
+  ) {
+    if (payload.attackOutcome === "unresolved") {
+      return { error: "Resolve the touch attack outcome first." };
+    }
+
+    if (payload.attackOutcome === "miss") {
+      const runtimeLevel = getRuntimePowerLevelDefinition(
+        payload.selectedPower.id,
+        payload.selectedPower.level
+      );
+      const necroticTouch =
+        runtimeLevel?.mechanics?.necrotic_touch &&
+        typeof runtimeLevel.mechanics.necrotic_touch === "object"
+          ? (runtimeLevel.mechanics.necrotic_touch as Record<string, unknown>)
+          : null;
+
+      return {
+        request: {
+          casterCharacterId: payload.casterCharacter.id,
+          targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
+          manaCost:
+            typeof necroticTouch?.mana_cost === "number"
+              ? necroticTouch.mana_cost
+              : (runtimeLevel?.mana_cost ?? 0),
+          effects: [],
+          healingApplications: [],
+          damageApplications: [],
+        },
+        warnings: [],
+      };
+    }
+
+    const damageResolution = buildDirectDamageCastResolution({
+      casterSheet: payload.casterCharacter.sheet,
+      power: payload.selectedPower,
+      variantId: payload.selectedVariantId,
+      targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
+    });
+    if ("error" in damageResolution) {
+      return { error: damageResolution.error };
+    }
+
+    return {
+      request: {
+        casterCharacterId: payload.casterCharacter.id,
+        targetCharacterIds: damageResolution.applications.map(
+          (application) => application.targetCharacterId
+        ),
+        manaCost: damageResolution.manaCost,
+        effects: [],
+        healingApplications: [
+          {
+            targetCharacterId: payload.casterCharacter.id,
+            amount: payload.selectedPower.level,
+          },
+        ],
+        damageApplications: damageResolution.applications,
+      },
+      warnings: [],
+    };
+  }
+
   const builtEffects = finalTargets.map((targetCharacter) =>
     buildActivePowerEffect({
       casterCharacterId: payload.casterCharacter.id,
@@ -591,6 +659,7 @@ function CombatantPowerControls({
 }: CombatantPowerControlsProps) {
   const [selectedPowerId, setSelectedPowerId] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState<CastPowerVariantId>("default");
+  const [attackOutcome, setAttackOutcome] = useState<CastOutcomeState>("unresolved");
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [healingAllocations, setHealingAllocations] = useState<Record<string, string>>({});
   const [selectedStatId, setSelectedStatId] = useState("");
@@ -659,6 +728,7 @@ function CombatantPowerControls({
     targetMode === "multiple" &&
     healingTotal !== null &&
     resolvedTargetIds.length > 0;
+  const requiresAttackOutcome = selectedPower?.id === "necromancy" && resolvedVariantId === "necrotic_touch";
 
   useEffect(() => {
     if (castablePowers.length === 0) {
@@ -683,6 +753,10 @@ function CombatantPowerControls({
       setSelectedVariantId(variantOptions[0].id);
     }
   }, [selectedVariantId, variantOptions]);
+
+  useEffect(() => {
+    setAttackOutcome("unresolved");
+  }, [selectedPower?.id, resolvedVariantId, resolvedSingleTargetId]);
 
   useEffect(() => {
     if (!selectedPower) {
@@ -880,6 +954,7 @@ function CombatantPowerControls({
       casterDisplayName: view.participant.displayName,
       selectedPower,
       selectedVariantId: resolvedVariantId,
+      attackOutcome,
       selectedTargetIds,
       fallbackTargetIds: resolvedTargetIds,
       healingAllocations: resolvedHealingAllocations,
@@ -1157,6 +1232,22 @@ function CombatantPowerControls({
                 </label>
               ) : null}
 
+              {requiresAttackOutcome ? (
+                <label className="dm-field">
+                  <span>Touch Attack</span>
+                  <select
+                    value={attackOutcome}
+                    onChange={(event) =>
+                      setAttackOutcome(event.target.value as CastOutcomeState)
+                    }
+                  >
+                    <option value="unresolved">Resolve First</option>
+                    <option value="hit">Hit</option>
+                    <option value="miss">Miss</option>
+                  </select>
+                </label>
+              ) : null}
+
               {allowedStats.length > 0 ? (
                 <label className="dm-field">
                   <span>Stat</span>
@@ -1421,18 +1512,26 @@ export function CombatEncounterPage() {
       return spentMana.error;
     }
 
-    if (request.healingApplications.length > 0) {
-      const selfHealingApplication = request.healingApplications.find(
-        (application) => application.targetCharacterId === casterCharacter.id
-      );
+    if (request.healingApplications.length > 0 || request.damageApplications.length > 0) {
+      let nextCasterSheet = spentMana.sheet;
 
-      if (selfHealingApplication) {
-        updateCharacter(casterCharacter.id, () =>
-          applyHealingToSheet(spentMana.sheet, selfHealingApplication.amount).sheet
-        );
-      } else {
-        updateCharacter(casterCharacter.id, spentMana.sheet);
-      }
+      request.healingApplications
+        .filter((application) => application.targetCharacterId === casterCharacter.id)
+        .forEach((application) => {
+          nextCasterSheet = applyHealingToSheet(nextCasterSheet, application.amount).sheet;
+        });
+
+      request.damageApplications
+        .filter((application) => application.targetCharacterId === casterCharacter.id)
+        .forEach((application) => {
+          nextCasterSheet = applyDamageToSheet(nextCasterSheet, {
+            rawAmount: application.rawAmount,
+            damageType: application.damageType,
+            mitigationChannel: application.mitigationChannel,
+          }).sheet;
+        });
+
+      updateCharacter(casterCharacter.id, nextCasterSheet);
 
       request.healingApplications
         .filter((application) => application.targetCharacterId !== casterCharacter.id)
@@ -1442,20 +1541,17 @@ export function CombatEncounterPage() {
           );
         });
 
-      return null;
-    }
-
-    if (request.damageApplications.length > 0) {
-      updateCharacter(casterCharacter.id, spentMana.sheet);
-      request.damageApplications.forEach((application) => {
-        updateCharacter(application.targetCharacterId, (currentSheet) =>
-          applyDamageToSheet(currentSheet, {
-            rawAmount: application.rawAmount,
-            damageType: application.damageType,
-            mitigationChannel: application.mitigationChannel,
-          }).sheet
-        );
-      });
+      request.damageApplications
+        .filter((application) => application.targetCharacterId !== casterCharacter.id)
+        .forEach((application) => {
+          updateCharacter(application.targetCharacterId, (currentSheet) =>
+            applyDamageToSheet(currentSheet, {
+              rawAmount: application.rawAmount,
+              damageType: application.damageType,
+              mitigationChannel: application.mitigationChannel,
+            }).sheet
+          );
+        });
 
       return null;
     }

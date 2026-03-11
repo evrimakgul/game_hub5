@@ -7,6 +7,7 @@ This file marks which documents are active objective drivers and which are retai
 - `references/project_objective.md`
 - `references/project_risks.md`
 - `references/current_notes.md`
+- `references/dm_editing_spec.md`
 - `references/state_vs_derived.md`
 - `references/npc_template_reference.md`
 - `references/auction_house_reference.md`
