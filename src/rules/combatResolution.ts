@@ -1,5 +1,5 @@
-import type { CharacterDraft } from "./characterTemplate.ts";
-import { buildCharacterDerivedValues } from "./characterRuntime.ts";
+import type { CharacterDraft } from "../config/characterTemplate.ts";
+import { buildCharacterDerivedValues } from "../config/characterRuntime.ts";
 import { RESISTANCE_LEVELS, type DamageTypeId } from "./resistances.ts";
 import type { DamageMitigationChannel } from "./powerEffects.ts";
 

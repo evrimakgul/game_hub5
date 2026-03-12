@@ -1,4 +1,4 @@
-import { buildCharacterEncounterSnapshot } from "../config/combatEncounter.ts";
+import { buildCharacterEncounterSnapshot } from "../rules/combatEncounter.ts";
 import { buildCharacterDerivedValues, getCurrentSkillValue } from "../config/characterRuntime.ts";
 import {
   buildActivePowerEffect,
@@ -7,10 +7,10 @@ import {
   buildHealingCastResolution,
   doesActivePowerEffectConflict,
   isAuraSharedEffect,
-} from "../config/powerEffects.ts";
-import { getRuntimePowerLevelDefinition } from "../config/powerData.ts";
+} from "../rules/powerEffects.ts";
+import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
 import type { GameHistoryEntry } from "../config/characterTemplate.ts";
-import { getCrAndRankFromXpUsed } from "../config/xpTables.ts";
+import { getCrAndRankFromXpUsed } from "../rules/xpTables.ts";
 import type { ActivePowerEffect } from "../types/activePowerEffects.ts";
 import type { CharacterRecord } from "../types/character.ts";
 import type {
@@ -392,3 +392,5 @@ export function getEncounterPartyMembers(
     ];
   });
 }
+
+

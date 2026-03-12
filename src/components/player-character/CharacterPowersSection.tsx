@@ -1,6 +1,6 @@
 import { getPowerBenefits } from "../../config/characterTemplate";
 import type { CharacterDraft } from "../../config/characterTemplate";
-import { T1_POWER_XP_BY_LEVEL } from "../../config/xpTables";
+import { T1_POWER_XP_BY_LEVEL } from "../../rules/xpTables";
 import { getIncrementCost } from "../../lib/progressionCosts";
 
 type CharacterPowersSectionProps = {
@@ -121,3 +121,5 @@ export function CharacterPowersSection({
     </article>
   );
 }
+
+

@@ -1,7 +1,7 @@
 import {
   DAMAGE_TYPES,
   RESISTANCE_LEVELS,
-} from "../../config/resistances";
+} from "../../rules/resistances";
 import type { CharacterDerivedValues } from "../../config/characterRuntime";
 import type { CharacterDraft } from "../../config/characterTemplate";
 
@@ -102,3 +102,5 @@ export function CharacterResources({
     </>
   );
 }
+
+

@@ -1,6 +1,6 @@
 import type {
   CharacterDraft,
-} from "./characterTemplate.ts";
+} from "../config/characterTemplate.ts";
 import { STAT_IDS, type StatId } from "../types/character.ts";
 import { DAMAGE_TYPES, RESISTANCE_LEVELS } from "./resistances.ts";
 import { resolveDicePool } from "./combat.ts";
@@ -10,7 +10,7 @@ import {
   getCurrentStatValue,
   getSkillBreakdown,
   getStatBreakdown,
-} from "./characterRuntime.ts";
+} from "../config/characterRuntime.ts";
 import type {
   CharacterEncounterSnapshot,
   CombatEncounterParty,

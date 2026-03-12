@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { applyDamageToSheet, applyHealingToSheet } from "../src/config/combatResolution.ts";
+import { applyDamageToSheet, applyHealingToSheet } from "../src/rules/combatResolution.ts";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import { runTestSuite } from "./harness.ts";
 
@@ -38,3 +38,5 @@ export async function runCombatResolutionTests(): Promise<void> {
     },
   ]);
 }
+
+

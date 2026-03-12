@@ -11,14 +11,14 @@ import { CharacterResources } from "../components/player-character/CharacterReso
 import { CharacterSkillsSection } from "../components/player-character/CharacterSkillsSection";
 import { CharacterStatsSection } from "../components/player-character/CharacterStatsSection";
 import { RollHelperPopover } from "../components/player-character/RollHelperPopover";
-import { resolveDicePool } from "../config/combat";
+import { resolveDicePool } from "../rules/combat";
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import { getPowerTemplate, type CharacterDraft } from "../config/characterTemplate";
 import {
   STAT_XP_BY_LEVEL,
   T1_POWER_XP_BY_LEVEL,
   T1_SKILL_XP_BY_LEVEL,
-} from "../config/xpTables";
+} from "../rules/xpTables";
 import { formatDateDayMonthYear } from "../lib/dateTime";
 import {
   appendDmAuditEntry as appendDmAuditEntryToSheet,
@@ -1031,3 +1031,5 @@ export function PlayerCharacterPage({
     </main>
   );
 }
+
+

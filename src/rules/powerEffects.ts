@@ -7,8 +7,8 @@ import type {
 import { createTimestampedId, getIsoTimestamp } from "../lib/ids.ts";
 import { isStatId, type StatId } from "../types/character.ts";
 import type { DamageTypeId } from "./resistances.ts";
-import type { CharacterDraft, PowerEntry } from "./characterTemplate.ts";
-import { buildCharacterDerivedValues, getCurrentStatValue } from "./characterRuntime.ts";
+import type { CharacterDraft, PowerEntry } from "../config/characterTemplate.ts";
+import { buildCharacterDerivedValues, getCurrentStatValue } from "../config/characterRuntime.ts";
 import { getRuntimePowerLevelDefinition } from "./powerData.ts";
 
 export type CastPowerTargetMode = "self" | "single" | "multiple";

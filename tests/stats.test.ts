@@ -12,7 +12,7 @@ import {
   getStatsForCategory,
   isPhysicalStat,
   isStatInCategory,
-} from "../src/config/stats.ts";
+} from "../src/rules/stats.ts";
 import { runTestSuite } from "./harness.ts";
 
 export async function runStatsTests(): Promise<void> {
@@ -70,3 +70,4 @@ export async function runStatsTests(): Promise<void> {
     },
   ]);
 }
+

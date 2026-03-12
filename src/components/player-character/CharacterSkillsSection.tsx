@@ -1,6 +1,6 @@
 import { getSkillBreakdown } from "../../config/characterRuntime";
 import type { CharacterDraft } from "../../config/characterTemplate";
-import { T1_SKILL_XP_BY_LEVEL } from "../../config/xpTables";
+import { T1_SKILL_XP_BY_LEVEL } from "../../rules/xpTables";
 import { getIncrementCost } from "../../lib/progressionCosts";
 
 type CharacterSkillsSectionProps = {
@@ -80,3 +80,5 @@ export function CharacterSkillsSection({
     </article>
   );
 }
+
+

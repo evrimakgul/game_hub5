@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 
-import { buildCharacterEncounterSnapshot } from "../src/config/combatEncounter.ts";
+import { buildCharacterEncounterSnapshot } from "../src/rules/combatEncounter.ts";
 import { buildCharacterDerivedValues } from "../src/config/characterRuntime.ts";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
   spendPowerMana,
-} from "../src/config/powerEffects.ts";
+} from "../src/rules/powerEffects.ts";
 import { runTestSuite } from "./harness.ts";
 
 export async function runPowerEffectsTests(): Promise<void> {
@@ -180,3 +180,5 @@ export async function runPowerEffectsTests(): Promise<void> {
     },
   ]);
 }
+
+

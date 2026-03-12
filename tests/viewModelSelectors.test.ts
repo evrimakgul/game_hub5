@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { buildCharacterEncounterSnapshot } from "../src/config/combatEncounter.ts";
+import { buildCharacterEncounterSnapshot } from "../src/rules/combatEncounter.ts";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import { buildDefaultHealingAllocations } from "../src/lib/combatEncounterCasting.ts";
 import { getDecrementRefund, getIncrementCost } from "../src/lib/progressionCosts.ts";
@@ -101,3 +101,5 @@ export async function runViewModelSelectorTests(): Promise<void> {
     },
   ]);
 }
+
+

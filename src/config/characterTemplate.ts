@@ -2,9 +2,9 @@ import {
   createDefaultResistances,
   type DamageTypeId,
   type ResistanceLevel,
-} from "./resistances.ts";
-import { getRuntimePowerLevelDefinition } from "./powerData.ts";
-import { calculateMaxHP } from "./stats.ts";
+} from "../rules/resistances.ts";
+import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
+import { calculateMaxHP } from "../rules/stats.ts";
 import type {
   ActivePowerEffect,
   ActivePowerEffectModifier,
@@ -947,3 +947,4 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     dmAuditLog: hydrateDmAuditLog(record.dmAuditLog),
   });
 }
+

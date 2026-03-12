@@ -7,7 +7,7 @@ import {
   statGroups,
   type CharacterDraft,
 } from "../config/characterTemplate.ts";
-import { getCrAndRankFromXpUsed } from "../config/xpTables.ts";
+import { getCrAndRankFromXpUsed } from "../rules/xpTables.ts";
 import type { StatId } from "../types/character.ts";
 
 export type PlayerRollTarget = {
@@ -66,3 +66,5 @@ export function buildPlayerCharacterViewModel(sheet: CharacterDraft) {
     ),
   };
 }
+
+

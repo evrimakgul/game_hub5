@@ -2,7 +2,7 @@ import {
   getStatBreakdown,
 } from "../../config/characterRuntime";
 import { statGroups, type CharacterDraft } from "../../config/characterTemplate";
-import { STAT_XP_BY_LEVEL } from "../../config/xpTables";
+import { STAT_XP_BY_LEVEL } from "../../rules/xpTables";
 import { getIncrementCost } from "../../lib/progressionCosts";
 import type { StatId } from "../../types/character";
 
@@ -96,3 +96,5 @@ export function CharacterStatsSection({
     </article>
   );
 }
+
+

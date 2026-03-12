@@ -6,14 +6,14 @@ import type {
   StatSource,
 } from "./characterTemplate.ts";
 import type { StatId } from "../types/character.ts";
-import { getRuntimePowerCantripLevels } from "./powerData.ts";
+import { getRuntimePowerCantripLevels } from "../rules/powerData.ts";
 import {
   calculateArmorClass,
   calculateInitiative,
   calculateMaxHP,
   calculateOccultManaBonus,
   calculateRangedBonusDice,
-} from "./stats.ts";
+} from "../rules/stats.ts";
 
 export type CharacterBreakdown = {
   base: number;

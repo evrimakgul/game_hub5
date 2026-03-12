@@ -8,7 +8,7 @@ import {
   T1_SKILL_XP_BY_LEVEL,
   T2_POWER_XP_BY_LEVEL,
   T2_SKILL_XP_BY_LEVEL,
-} from "../src/config/xpTables.ts";
+} from "../src/rules/xpTables.ts";
 import { runTestSuite } from "./harness.ts";
 
 export async function runXpTablesTests(): Promise<void> {
@@ -45,3 +45,4 @@ export async function runXpTablesTests(): Promise<void> {
     },
   ]);
 }
+

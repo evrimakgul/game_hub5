@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
-import { resolveDicePool } from "../config/combat";
-import { buildCharacterEncounterSnapshot } from "../config/combatEncounter";
-import { applyDamageToSheet, applyHealingToSheet } from "../config/combatResolution";
+import { resolveDicePool } from "../rules/combat";
+import { buildCharacterEncounterSnapshot } from "../rules/combatEncounter";
+import { applyDamageToSheet, applyHealingToSheet } from "../rules/combatResolution";
 import {
   applyActivePowerEffect,
   doesActivePowerEffectConflict,
   isAuraSourceEffect,
   removeAuraSharedEffectsForTarget,
   spendPowerMana,
-} from "../config/powerEffects";
+} from "../rules/powerEffects";
 import {
   getAuraSelectedTargetIds,
   prepareCastRequest,
@@ -541,3 +541,4 @@ export function CombatEncounterPage() {
     </main>
   );
 }
+

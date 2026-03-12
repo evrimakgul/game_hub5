@@ -4,7 +4,7 @@ import {
   buildCharacterEncounterSnapshot,
   buildEncounterParticipantInput,
   createCombatEncounter,
-} from "../src/config/combatEncounter.ts";
+} from "../src/rules/combatEncounter.ts";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import { runTestSuite } from "./harness.ts";
 
@@ -78,3 +78,5 @@ export async function runCombatEncounterTests(): Promise<void> {
     },
   ]);
 }
+
+

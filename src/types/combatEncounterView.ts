@@ -3,8 +3,8 @@ import type {
   CastPowerMode,
   CastPowerVariantId,
   DamageMitigationChannel,
-} from "../config/powerEffects";
-import type { DamageTypeId } from "../config/resistances";
+} from "../rules/powerEffects";
+import type { DamageTypeId } from "../rules/resistances";
 import type { ActivePowerEffect } from "./activePowerEffects";
 import type { CharacterRecord, StatId } from "./character";
 import type {
@@ -76,3 +76,5 @@ export type EncounterRollTarget = {
   value: number;
   category: "summary" | "stat" | "skill";
 };
+
+

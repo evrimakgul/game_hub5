@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import {
   buildEncounterParticipantInput,
   createCombatEncounter,
-} from "../config/combatEncounter";
+} from "../rules/combatEncounter";
 import { useAppFlow } from "../state/appFlow";
 import type { CharacterRecord } from "../types/character";
 import type { CombatEncounterParty } from "../types/combatEncounter";
@@ -384,3 +384,4 @@ export function CombatDashboardPage() {
     </main>
   );
 }
+

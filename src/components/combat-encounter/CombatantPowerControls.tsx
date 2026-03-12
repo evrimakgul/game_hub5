@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { getRuntimePowerAbbreviation } from "../../config/powerData";
+import { getRuntimePowerAbbreviation } from "../../rules/powerData";
 import {
   applyActivePowerEffect,
   buildAuraSharedPowerEffect,
@@ -20,7 +20,7 @@ import {
   updateAuraSourceTargets,
   type CastPowerMode,
   type CastPowerVariantId,
-} from "../../config/powerEffects";
+} from "../../rules/powerEffects";
 import {
   buildDefaultHealingAllocations,
   getAuraSelectedTargetIds,
@@ -740,3 +740,4 @@ export function CombatantPowerControls({
     </>
   );
 }
+
