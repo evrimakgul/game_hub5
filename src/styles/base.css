@@ -1,0 +1,28 @@
+:root {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1f1b17;
+  background:
+    radial-gradient(circle at top left, rgba(182, 132, 79, 0.22), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(129, 78, 43, 0.18), transparent 24%),
+    linear-gradient(180deg, #e9decb 0%, #d7c4a7 100%);
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+

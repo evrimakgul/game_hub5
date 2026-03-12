@@ -1,0 +1,85 @@
+.flow-card h1 {
+  margin-top: 10px;
+  font-size: 2rem;
+  color: #26170d;
+}
+
+.flow-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.edit-mode-indicator {
+  color: #6d4021;
+  font-size: 0.92rem;
+}
+
+.flow-primary,
+.flow-secondary {
+  width: 100%;
+  padding: 3px 18px;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.flow-primary {
+  border: 0;
+  background: #6d4021;
+  color: #fff7ee;
+}
+
+.flow-secondary {
+  border: 1px solid rgba(84, 57, 37, 0.15);
+  background: rgba(255, 255, 255, 0.7);
+  color: #2b190f;
+}
+
+.character-access-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.character-open {
+  text-align: left;
+}
+
+.flow-danger,
+.flow-cancel {
+  padding: 11px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.flow-danger {
+  border: 0;
+  background: #8c2f22;
+  color: #fff7ee;
+}
+
+.flow-danger.is-confirm {
+  background: #7d2419;
+}
+
+.flow-cancel {
+  border: 1px solid rgba(84, 57, 37, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  color: #3a2416;
+}
+
+.delete-confirm-wrap {
+  display: flex;
+  gap: 8px;
+}
+
+h1,
+h2,
+h3,
+p,
+ul {
+  margin: 0;
+}
+

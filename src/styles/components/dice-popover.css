@@ -1,0 +1,233 @@
+.dice-popover {
+  position: fixed;
+  z-index: 19;
+  width: min(640px, calc(100vw - 20px));
+  padding: 10px;
+  border-radius: 22px;
+  border: 1px solid rgba(84, 57, 37, 0.15);
+  background: rgba(255, 248, 238, 0.98);
+  box-shadow: 0 30px 90px rgba(61, 41, 28, 0.22);
+  overflow: hidden;
+}
+
+.dice-popover-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dice-popover-head .d10-icon {
+  width: 24px;
+  height: 24px;
+  color: #6d4021;
+}
+
+.dice-summary,
+.roll-result {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.dice-summary-section {
+  margin-top: 8px;
+}
+
+.dice-summary-section h3 {
+  margin: 0 0 6px;
+  font-size: 0.74rem;
+  color: #2a1a10;
+}
+
+.dice-summary-targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.dice-summary strong,
+.roll-result strong {
+  display: block;
+  margin-top: 4px;
+  color: #26170d;
+}
+
+.dice-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  align-items: start;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dice-column {
+  min-width: 0;
+}
+
+.dice-column:first-child .dice-targets {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dice-column:last-child .dice-targets {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dice-column h3 {
+  margin: 0 0 6px;
+  font-size: 0.74rem;
+  color: #2a1a10;
+}
+
+.dice-targets {
+  display: grid;
+  gap: 5px;
+}
+
+.dice-target {
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid rgba(109, 64, 33, 0.18);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #6d4021;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dice-target.is-selected {
+  background: rgba(109, 64, 33, 0.14);
+  border-color: rgba(109, 64, 33, 0.4);
+}
+
+.dice-target span {
+  display: block;
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #88654d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dice-target strong {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.76rem;
+}
+
+.dice-target:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dice-custom-add {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(84, 57, 37, 0.12);
+}
+
+.dice-custom-add > span {
+  display: block;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #88654d;
+}
+
+.dice-custom-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.dice-custom-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid rgba(84, 57, 37, 0.15);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.dice-custom-row button {
+  padding: 6px 7px;
+  border: 0;
+  border-radius: 9px;
+  background: #6d4021;
+  color: #fff7ee;
+  font: inherit;
+  cursor: pointer;
+  font-size: 0.76rem;
+}
+
+.dice-custom-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.dice-custom-chip {
+  padding: 4px 7px;
+  border: 1px solid rgba(109, 64, 33, 0.18);
+  border-radius: 999px;
+  background: rgba(109, 64, 33, 0.12);
+  color: #6d4021;
+  font: inherit;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.dice-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dice-actions button {
+  flex: 1;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: #6d4021;
+  color: #fff7ee;
+  font: inherit;
+  cursor: pointer;
+  font-size: 0.76rem;
+}
+
+.dice-actions button:last-child {
+  background: rgba(109, 64, 33, 0.14);
+  color: #6d4021;
+}
+
+.dice-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.roll-result small {
+  display: block;
+  margin-top: 6px;
+  color: #745745;
+  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+

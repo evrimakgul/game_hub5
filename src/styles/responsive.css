@@ -1,0 +1,182 @@
+@media (max-width: 1120px) {
+  .sheet-header,
+  .sheet-grid,
+  .sheet-banner,
+  .combat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .biography-card,
+  .combat-card {
+    grid-column: span 2;
+  }
+
+  .dm-detail-grid-compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dm-power-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dm-combatant-tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dm-combatant-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .sheet-page {
+    padding: 16px 12px 28px;
+  }
+
+  .sheet-frame {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .sheet-top-nav {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+
+  .sheet-header,
+  .sheet-badges,
+  .sheet-banner,
+  .sheet-grid,
+  .resource-strip,
+  .combat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-edit-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .banner-date-block {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-edit-toggle-row {
+    grid-template-columns: 1fr;
+  }
+
+  .resistance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dice-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .dice-summary-targets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dice-column:first-child .dice-targets,
+  .dice-column:last-child .dice-targets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .biography-card,
+  .combat-card {
+    grid-column: span 1;
+  }
+
+  .character-access-row {
+    grid-template-columns: 1fr;
+  }
+
+  .delete-confirm-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .dm-topbar {
+    flex-direction: column;
+  }
+
+  .dm-nav-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dm-hub-grid,
+  .dm-setup-grid,
+  .dm-dashboard-grid,
+  .dm-option-grid,
+  .dm-parameter-grid,
+  .dm-two-up,
+  .dm-inline-controls,
+  .dm-inline-controls-two-up {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-summary-mini-grid,
+  .dm-compact-grid,
+  .dm-detail-grid,
+  .dm-detail-grid-small,
+  .dm-power-form {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-detail-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dm-combatant-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-combatant-tool-section + .dm-combatant-tool-section {
+    padding-left: 0;
+    padding-top: 12px;
+  }
+
+  .dm-combatant-tool-section + .dm-combatant-tool-section::before {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(84, 57, 37, 0.2),
+      transparent
+    );
+  }
+
+  .dm-combatant-values {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-combatant-side-stack {
+    padding-left: 0;
+    padding-top: 12px;
+  }
+
+  .dm-combatant-side-stack::before {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(84, 57, 37, 0.2),
+      transparent
+    );
+  }
+}
