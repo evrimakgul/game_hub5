@@ -11,22 +11,11 @@ import { CharacterResources } from "../components/player-character/CharacterReso
 import { CharacterSkillsSection } from "../components/player-character/CharacterSkillsSection";
 import { CharacterStatsSection } from "../components/player-character/CharacterStatsSection";
 import { RollHelperPopover } from "../components/player-character/RollHelperPopover";
-import { resolveDicePool } from "../rules/combat";
-import { buildCharacterDerivedValues } from "../config/characterRuntime";
-import { getPowerTemplate, type CharacterDraft } from "../config/characterTemplate";
-import {
-  STAT_XP_BY_LEVEL,
-  T1_POWER_XP_BY_LEVEL,
-  T1_SKILL_XP_BY_LEVEL,
-} from "../rules/xpTables";
+import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate";
 import { formatDateDayMonthYear } from "../lib/dateTime";
-import {
-  appendDmAuditEntry as appendDmAuditEntryToSheet,
-  createDmAuditEntry as createDmAuditLogEntry,
-} from "../lib/dmAudit";
 import { rollD10Faces } from "../lib/dice";
-import { buildGameHistoryNoteEntry, prependGameHistoryEntry } from "../lib/historyEntries";
-import { getDecrementRefund, getIncrementCost } from "../lib/progressionCosts";
+import { usePlayerCharacterMutations } from "../hooks/usePlayerCharacterMutations";
+import { resolveDicePool } from "../rules/combat";
 import {
   buildEditSessionStatFloor,
   buildPlayerCharacterViewModel,
@@ -47,13 +36,6 @@ type CustomRollModifier = {
   id: number;
   value: number;
 };
-
-type RuntimeEditableField =
-  | "currentHp"
-  | "currentMana"
-  | "inspiration"
-  | "positiveKarma"
-  | "negativeKarma";
 
 export type PlayerCharacterPageViewMode = "player" | "dm-readonly" | "dm-editable";
 
@@ -101,6 +83,8 @@ export function PlayerCharacterPage({
   const isReadOnlyView = isDmReadOnlyView;
   const activeCharacter =
     queriedCharacter ?? (isDmEditableView ? activeDmCharacter : activePlayerCharacter);
+  const activeSheet = activeCharacter?.sheet ?? null;
+  const sheetState = activeSheet ?? PLAYER_CHARACTER_TEMPLATE.createInstance();
 
   useEffect(() => {
     function handleMouseMove(event: globalThis.MouseEvent): void {
@@ -128,22 +112,6 @@ export function PlayerCharacterPage({
     };
   }, []);
 
-  const activeSheet = activeCharacter?.sheet ?? null;
-
-  function setSheetState(
-    updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
-  ): void {
-    if (!activeCharacter) {
-      return;
-    }
-
-    if (isReadOnlyView && !dmEditMode && !adminOverrideMode && !isDmEditableView) {
-      return;
-    }
-
-    updateCharacter(activeCharacter.id, updater);
-  }
-
   useEffect(() => {
     if (!activeSheet || !activeCharacter) {
       return;
@@ -168,16 +136,6 @@ export function PlayerCharacterPage({
     );
   }, [activeCharacter?.id, isDmEditableView, isDmReadOnlyView]);
 
-  if (!activeCharacter || !activeSheet) {
-    return (
-      <Navigate
-        to={isDmEditableView ? "/dm/npc-creator" : isDmReadOnlyView ? "/dm/characters" : "/player"}
-        replace
-      />
-    );
-  }
-
-  const sheetState = activeSheet;
   const isSheetEditMode = isEditMode || dmEditMode;
   const isDmRuntimeEditMode = isDmView && dmEditMode;
   const isProgressionEditMode = isEditMode || (isDmEditableView && dmEditMode);
@@ -197,21 +155,25 @@ export function PlayerCharacterPage({
   const customRollPool = customRollModifiers.reduce((total, modifier) => total + modifier.value, 0);
   const selectedRollPool =
     selectedRollTargets.reduce((total, target) => total + target.value, 0) + customRollPool;
-
-  function handleAppendHistory(): void {
-    const note = sessionNotes.trim();
-    if (!note) {
-      return;
-    }
-
-    const entry = buildGameHistoryNoteEntry(note, sheetState.gameDateTime, new Date());
-
-    setSheetState((currentSheet) => ({
-      ...currentSheet,
-      gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], entry),
-    }));
-    setSessionNotes("");
-  }
+  const mutations = usePlayerCharacterMutations({
+    activeCharacter,
+    sheetState,
+    xpLeftOver,
+    isReadOnlyView,
+    isDmView,
+    isDmEditableView,
+    dmEditMode,
+    adminOverrideMode,
+    dmEditReason,
+    adminOverrideReason,
+    editSessionStatFloor,
+    pendingPowerId,
+    sessionNotes,
+    updateCharacter,
+    setPendingPowerId,
+    setSessionNotes,
+    setAdminOverrideError,
+  });
 
   function handleDiceMouseDown(event: ReactMouseEvent<HTMLButtonElement>): void {
     dragRef.current.active = true;
@@ -266,16 +228,15 @@ export function PlayerCharacterPage({
   }
 
   function handleRoll(): void {
-    if (selectedRollTargets.length === 0 && customRollModifiers.length === 0) {
+    if (selectedRollPool <= 0) {
       return;
     }
 
     const faces = rollD10Faces(selectedRollPool);
     const resolution = resolveDicePool(faces, selectedRollPool);
-
     setLastRoll({
       labels: [
-        ...selectedRollTargets.map((target) => target.label),
+        ...selectedRollTargets.map((target) => `${target.label} +${target.value}`),
         ...customRollModifiers.map(
           (modifier) => `Custom ${modifier.value >= 0 ? "+" : ""}${modifier.value}`
         ),
@@ -292,573 +253,6 @@ export function PlayerCharacterPage({
     setCustomRollModifiers([]);
     setCustomRollInput("");
     setLastRoll(null);
-  }
-
-  function adjustStat(statId: StatId, direction: 1 | -1): void {
-    const currentLevel = sheetState.statState[statId].base;
-    const floorLevel = editSessionStatFloor?.[statId] ?? currentLevel;
-    const nextLevel = currentLevel + direction;
-    if (nextLevel < floorLevel || nextLevel >= STAT_XP_BY_LEVEL.length) {
-      return;
-    }
-
-    const xpDelta =
-      direction === 1
-        ? getIncrementCost(STAT_XP_BY_LEVEL, currentLevel)
-        : -getDecrementRefund(STAT_XP_BY_LEVEL, currentLevel);
-    if (direction === 1 && xpLeftOver < xpDelta) {
-      return;
-    }
-
-    setSheetState((currentSheet) => ({
-      ...currentSheet,
-      xpUsed: currentSheet.xpUsed + xpDelta,
-      statState: {
-        ...currentSheet.statState,
-        [statId]: {
-          ...currentSheet.statState[statId],
-          base: nextLevel,
-        },
-      },
-    }));
-  }
-
-  function adjustSkill(skillId: string, direction: 1 | -1): void {
-    const currentSkill = sheetState.skills.find((skill) => skill.id === skillId);
-    if (!currentSkill) {
-      return;
-    }
-
-    const nextLevel = currentSkill.base + direction;
-    if (nextLevel < 0 || nextLevel >= T1_SKILL_XP_BY_LEVEL.length) {
-      return;
-    }
-
-    const xpDelta =
-      direction === 1
-        ? getIncrementCost(T1_SKILL_XP_BY_LEVEL, currentSkill.base)
-        : -getDecrementRefund(T1_SKILL_XP_BY_LEVEL, currentSkill.base);
-    if (direction === 1 && xpLeftOver < xpDelta) {
-      return;
-    }
-
-    setSheetState((currentSheet) => ({
-      ...currentSheet,
-      xpUsed: currentSheet.xpUsed + xpDelta,
-      skills: currentSheet.skills.map((skill) =>
-        skill.id === skillId
-          ? {
-              ...skill,
-              base: nextLevel,
-            }
-          : skill
-      ),
-    }));
-  }
-
-  function adjustPower(powerId: string, direction: 1 | -1): void {
-    const currentPower = sheetState.powers.find((power) => power.id === powerId);
-    if (!currentPower) {
-      return;
-    }
-
-    const nextLevel = currentPower.level + direction;
-    if (nextLevel < 0 || nextLevel >= T1_POWER_XP_BY_LEVEL.length) {
-      return;
-    }
-
-    const xpDelta =
-      direction === 1
-        ? getIncrementCost(T1_POWER_XP_BY_LEVEL, currentPower.level)
-        : -getDecrementRefund(T1_POWER_XP_BY_LEVEL, currentPower.level);
-    if (direction === 1 && xpLeftOver < xpDelta) {
-      return;
-    }
-
-    setSheetState((currentSheet) => ({
-      ...currentSheet,
-      xpUsed: currentSheet.xpUsed + xpDelta,
-      powers:
-        nextLevel === 0
-          ? currentSheet.powers.filter((power) => power.id !== powerId)
-          : currentSheet.powers.map((power) =>
-              power.id === powerId
-                ? {
-                    ...power,
-                    level: nextLevel,
-                  }
-                : power
-            ),
-    }));
-  }
-
-  function adjustStatOverride(statId: StatId, direction: 1 | -1): void {
-    const reason = requireAdminReason();
-    if (!reason) {
-      return;
-    }
-
-    const stat = sheetState.statState[statId];
-    const nextLevel = stat.base + direction;
-    if (nextLevel < 0 || nextLevel >= STAT_XP_BY_LEVEL.length) {
-      return;
-    }
-
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          statState: {
-            ...currentSheet.statState,
-            [statId]: {
-              ...currentSheet.statState[statId],
-              base: nextLevel,
-            },
-          },
-        },
-        createDmAuditEntry(
-          "admin_override",
-          `statState.${statId}.base`,
-          currentSheet.statState[statId].base,
-          nextLevel,
-          reason,
-          "dm-character-sheet"
-        )
-      )
-    );
-  }
-
-  function adjustSkillOverride(skillId: string, direction: 1 | -1): void {
-    const reason = requireAdminReason();
-    if (!reason) {
-      return;
-    }
-
-    const currentSkill = sheetState.skills.find((skill) => skill.id === skillId);
-    if (!currentSkill) {
-      return;
-    }
-
-    const nextLevel = currentSkill.base + direction;
-    if (nextLevel < 0 || nextLevel >= T1_SKILL_XP_BY_LEVEL.length) {
-      return;
-    }
-
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          skills: currentSheet.skills.map((skill) =>
-            skill.id === skillId
-              ? {
-                  ...skill,
-                  base: nextLevel,
-                }
-              : skill
-          ),
-        },
-        createDmAuditEntry(
-          "admin_override",
-          `skills.${skillId}.base`,
-          currentSkill.base,
-          nextLevel,
-          reason,
-          "dm-character-sheet"
-        )
-      )
-    );
-  }
-
-  function adjustPowerOverride(powerId: string, direction: 1 | -1): void {
-    const reason = requireAdminReason();
-    if (!reason) {
-      return;
-    }
-
-    const currentPower = sheetState.powers.find((power) => power.id === powerId);
-    if (!currentPower) {
-      return;
-    }
-
-    const nextLevel = currentPower.level + direction;
-    if (nextLevel < 0 || nextLevel >= T1_POWER_XP_BY_LEVEL.length) {
-      return;
-    }
-
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          powers:
-            nextLevel === 0
-              ? currentSheet.powers.filter((power) => power.id !== powerId)
-              : currentSheet.powers.map((power) =>
-                  power.id === powerId
-                    ? {
-                        ...power,
-                        level: nextLevel,
-                      }
-                    : power
-                ),
-        },
-        createDmAuditEntry(
-          "admin_override",
-          `powers.${powerId}.level`,
-          currentPower.level,
-          nextLevel,
-          reason,
-          "dm-character-sheet"
-        )
-      )
-    );
-  }
-
-  function handleAddPowerOverride(): void {
-    const reason = requireAdminReason();
-    if (!reason) {
-      return;
-    }
-
-    if (!pendingPowerId) {
-      return;
-    }
-
-    const template = getPowerTemplate(pendingPowerId);
-    if (!template) {
-      return;
-    }
-
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          powers: [
-            ...currentSheet.powers,
-            {
-              id: template.id,
-              name: template.name,
-              level: 1,
-              governingStat: template.governingStat,
-            },
-          ],
-        },
-        createDmAuditEntry(
-          "admin_override",
-          `powers.${template.id}.level`,
-          0,
-          1,
-          reason,
-          "dm-character-sheet"
-        )
-      )
-    );
-    setPendingPowerId("");
-  }
-
-  function updateInventoryEntry(
-    index: number,
-    field: "name" | "category" | "note",
-    value: string
-  ): void {
-    setSheetState((currentSheet) => {
-      const nextInventory = currentSheet.inventory.map((entry, entryIndex) =>
-        entryIndex === index ? { ...entry, [field]: value } : entry
-      );
-
-      return appendDmAuditEntry(
-        {
-          ...currentSheet,
-          inventory: nextInventory,
-        },
-        createDmAuditEntry(
-          "sheet",
-          `inventory[${index}].${field}`,
-          currentSheet.inventory[index]?.[field] ?? "",
-          value,
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      );
-    });
-  }
-
-  function addInventoryEntry(): void {
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          inventory: [
-            ...currentSheet.inventory,
-            {
-              name: "",
-              category: "",
-              note: "",
-              qualityTier: null,
-              hiddenSpec: null,
-              revealedSpec: null,
-              identified: false,
-              identifiedAtAwarenessLevel: null,
-            },
-          ],
-        },
-        createDmAuditEntry(
-          "sheet",
-          "inventory",
-          currentSheet.inventory.length,
-          currentSheet.inventory.length + 1,
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      )
-    );
-  }
-
-  function removeInventoryEntry(index: number): void {
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          inventory: currentSheet.inventory.filter((_, entryIndex) => entryIndex !== index),
-        },
-        createDmAuditEntry(
-          "sheet",
-          `inventory[${index}]`,
-          currentSheet.inventory[index]?.name ?? "",
-          "",
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      )
-    );
-  }
-
-  function updateEquipmentEntry(
-    index: number,
-    field: "slot" | "item" | "effect",
-    value: string
-  ): void {
-    setSheetState((currentSheet) => {
-      const nextEquipment = currentSheet.equipment.map((entry, entryIndex) =>
-        entryIndex === index ? { ...entry, [field]: value } : entry
-      );
-
-      return appendDmAuditEntry(
-        {
-          ...currentSheet,
-          equipment: nextEquipment,
-        },
-        createDmAuditEntry(
-          "sheet",
-          `equipment[${index}].${field}`,
-          currentSheet.equipment[index]?.[field] ?? "",
-          value,
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      );
-    });
-  }
-
-  function addEquipmentEntry(): void {
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          equipment: [
-            ...currentSheet.equipment,
-            {
-              slot: "",
-              item: "",
-              effect: "",
-              qualityTier: null,
-              hiddenSpec: null,
-              revealedSpec: null,
-              identified: false,
-              identifiedAtAwarenessLevel: null,
-            },
-          ],
-        },
-        createDmAuditEntry(
-          "sheet",
-          "equipment",
-          currentSheet.equipment.length,
-          currentSheet.equipment.length + 1,
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      )
-    );
-  }
-
-  function removeEquipmentEntry(index: number): void {
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        {
-          ...currentSheet,
-          equipment: currentSheet.equipment.filter((_, entryIndex) => entryIndex !== index),
-        },
-        createDmAuditEntry(
-          "sheet",
-          `equipment[${index}]`,
-          currentSheet.equipment[index]?.slot ?? "",
-          "",
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      )
-    );
-  }
-
-  function handleAddPower(): void {
-    if (!pendingPowerId) {
-      return;
-    }
-
-    const template = getPowerTemplate(pendingPowerId);
-    const levelOneCost = getIncrementCost(T1_POWER_XP_BY_LEVEL, 0);
-    if (!template || xpLeftOver < levelOneCost) {
-      return;
-    }
-
-    setSheetState((currentSheet) => ({
-      ...currentSheet,
-      xpUsed: currentSheet.xpUsed + levelOneCost,
-      powers: [
-        ...currentSheet.powers,
-        {
-          id: template.id,
-          name: template.name,
-          level: 1,
-          governingStat: template.governingStat,
-        },
-      ],
-    }));
-    setPendingPowerId("");
-  }
-
-  function createDmAuditEntry(
-    editLayer: "runtime" | "sheet" | "admin_override",
-    fieldPath: string,
-    beforeValue: unknown,
-    afterValue: unknown,
-    reason: string,
-    sourceScreen: string
-  ) {
-    if (!activeCharacter) {
-      return null;
-    }
-
-    return createDmAuditLogEntry({
-      characterId: activeCharacter.id,
-      targetOwnerRole: activeCharacter.ownerRole,
-      editLayer,
-      fieldPath,
-      beforeValue,
-      afterValue,
-      reason,
-      sourceScreen,
-    });
-  }
-
-  function requireAdminReason(): string | null {
-    const reason = adminOverrideReason.trim();
-    if (!reason) {
-      setAdminOverrideError("Admin override requires a reason.");
-      return null;
-    }
-
-    setAdminOverrideError(null);
-    return reason;
-  }
-
-  function appendDmAuditEntry(
-    sheet: CharacterDraft,
-    entry: ReturnType<typeof createDmAuditEntry>
-  ): CharacterDraft {
-    return appendDmAuditEntryToSheet(sheet, entry);
-  }
-
-  function updateRuntimeField(field: RuntimeEditableField, rawValue: number): void {
-    if (!isDmView) {
-      return;
-    }
-
-    setSheetState((currentSheet) => {
-      const nextBaseValue =
-        field === "currentHp" ? Math.trunc(rawValue) : Math.max(0, Math.trunc(rawValue));
-      const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
-      const currentValue =
-        field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field];
-      const maxValue =
-        field === "currentHp"
-          ? null
-          : field === "currentMana"
-            ? derivedSnapshot.maxMana
-            : null;
-      const nextValue = maxValue === null ? nextBaseValue : Math.min(nextBaseValue, maxValue);
-
-      if (nextValue === currentValue) {
-        return currentSheet;
-      }
-
-      return appendDmAuditEntry(
-        {
-          ...currentSheet,
-          [field]: nextValue,
-          ...(field === "currentMana" ? { manaInitialized: true } : null),
-        },
-        createDmAuditEntry(
-          "runtime",
-          field,
-          currentValue,
-          nextValue,
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      );
-    });
-  }
-
-  function handleRuntimeInput(field: RuntimeEditableField, value: string): void {
-    if (value.trim() === "") {
-      return;
-    }
-
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isNaN(parsed)) {
-      return;
-    }
-
-    updateRuntimeField(field, parsed);
-  }
-
-  function updateSheetField<K extends keyof CharacterDraft>(
-    field: K,
-    value: CharacterDraft[K]
-  ): void {
-    setSheetState((currentSheet) => {
-      const shouldLog = isDmView && (dmEditMode || adminOverrideMode || isDmEditableView);
-      const nextSheet = {
-        ...currentSheet,
-        [field]: value,
-      };
-
-      if (!shouldLog) {
-        return nextSheet;
-      }
-
-      return appendDmAuditEntry(
-        nextSheet,
-        createDmAuditEntry(
-          adminOverrideMode ? "admin_override" : "sheet",
-          String(field),
-          currentSheet[field],
-          value,
-          adminOverrideMode ? adminOverrideReason.trim() : dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      );
-    });
   }
 
   function handleToggleEditMode(): void {
@@ -898,6 +292,15 @@ export function PlayerCharacterPage({
     setDmEditMode(false);
     setAdminOverrideMode((current) => !current);
     setAdminOverrideError(null);
+  }
+
+  if (!activeCharacter || !activeSheet) {
+    return (
+      <Navigate
+        to={isDmEditableView ? "/dm/npc-creator" : isDmReadOnlyView ? "/dm/characters" : "/player"}
+        replace
+      />
+    );
   }
 
   return (
@@ -945,7 +348,7 @@ export function PlayerCharacterPage({
               isDmEditableView ? "/dm/npc-creator" : isDmReadOnlyView ? "/dm/characters" : "/player"
             )
           }
-          onUpdateField={updateSheetField}
+          onUpdateField={mutations.updateSheetField}
           onToggleEditMode={handleToggleEditMode}
           onToggleDmEditMode={handleToggleDmEditMode}
           onToggleAdminOverrideMode={handleToggleAdminOverrideMode}
@@ -957,21 +360,21 @@ export function PlayerCharacterPage({
           <CharacterIdentitySection
             sheetState={sheetState}
             isSheetEditMode={isSheetEditMode}
-            onUpdateField={updateSheetField}
+            onUpdateField={mutations.updateSheetField}
           />
 
           <CharacterResources
             sheetState={sheetState}
             derived={derived}
             isDmRuntimeEditMode={isDmRuntimeEditMode}
-            onRuntimeInput={handleRuntimeInput}
+            onRuntimeInput={mutations.handleRuntimeInput}
           />
 
           <CharacterCombatSummary
             sheetState={sheetState}
             derived={derived}
             isDmRuntimeEditMode={isDmRuntimeEditMode}
-            onRuntimeInput={handleRuntimeInput}
+            onRuntimeInput={mutations.handleRuntimeInput}
           />
 
           <CharacterStatsSection
@@ -980,8 +383,8 @@ export function PlayerCharacterPage({
             adminOverrideMode={adminOverrideMode}
             editSessionStatFloor={editSessionStatFloor}
             xpLeftOver={xpLeftOver}
-            onAdjustStat={adjustStat}
-            onAdjustStatOverride={adjustStatOverride}
+            onAdjustStat={mutations.adjustStat}
+            onAdjustStatOverride={mutations.adjustStatOverride}
           />
 
           <CharacterSkillsSection
@@ -989,8 +392,8 @@ export function PlayerCharacterPage({
             isProgressionEditMode={isProgressionEditMode}
             adminOverrideMode={adminOverrideMode}
             xpLeftOver={xpLeftOver}
-            onAdjustSkill={adjustSkill}
-            onAdjustSkillOverride={adjustSkillOverride}
+            onAdjustSkill={mutations.adjustSkill}
+            onAdjustSkillOverride={mutations.adjustSkillOverride}
           />
 
           <CharacterPowersSection
@@ -1001,22 +404,22 @@ export function PlayerCharacterPage({
             isProgressionEditMode={isProgressionEditMode}
             adminOverrideMode={adminOverrideMode}
             onPendingPowerIdChange={setPendingPowerId}
-            onAddPower={handleAddPower}
-            onAddPowerOverride={handleAddPowerOverride}
-            onAdjustPower={adjustPower}
-            onAdjustPowerOverride={adjustPowerOverride}
+            onAddPower={mutations.handleAddPower}
+            onAddPowerOverride={mutations.handleAddPowerOverride}
+            onAdjustPower={mutations.adjustPower}
+            onAdjustPowerOverride={mutations.adjustPowerOverride}
           />
 
           <CharacterInventorySection
             sheetState={sheetState}
             isSheetEditMode={isSheetEditMode}
-            onUpdateEquipmentEntry={updateEquipmentEntry}
-            onAddEquipmentEntry={addEquipmentEntry}
-            onRemoveEquipmentEntry={removeEquipmentEntry}
-            onUpdateInventoryEntry={updateInventoryEntry}
-            onAddInventoryEntry={addInventoryEntry}
-            onRemoveInventoryEntry={removeInventoryEntry}
-            onUpdateMoney={(value) => updateSheetField("money", value)}
+            onUpdateEquipmentEntry={mutations.updateEquipmentEntry}
+            onAddEquipmentEntry={mutations.addEquipmentEntry}
+            onRemoveEquipmentEntry={mutations.removeEquipmentEntry}
+            onUpdateInventoryEntry={mutations.updateInventoryEntry}
+            onAddInventoryEntry={mutations.addInventoryEntry}
+            onRemoveInventoryEntry={mutations.removeInventoryEntry}
+            onUpdateMoney={(value) => mutations.updateSheetField("money", value)}
           />
 
           <CharacterHistorySection
@@ -1024,12 +427,10 @@ export function PlayerCharacterPage({
             isReadOnlyView={isReadOnlyView}
             gameHistory={sheetState.gameHistory}
             onSessionNotesChange={setSessionNotes}
-            onAppendHistory={handleAppendHistory}
+            onAppendHistory={mutations.handleAppendHistory}
           />
         </section>
       </section>
     </main>
   );
 }
-
-
