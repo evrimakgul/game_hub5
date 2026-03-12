@@ -1,28 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
-import { D10Icon } from "../components/shared/D10Icon";
+import { CharacterCombatSummary } from "../components/player-character/CharacterCombatSummary";
+import { CharacterHeader } from "../components/player-character/CharacterHeader";
+import { CharacterHistorySection } from "../components/player-character/CharacterHistorySection";
+import { CharacterIdentitySection } from "../components/player-character/CharacterIdentitySection";
+import { CharacterInventorySection } from "../components/player-character/CharacterInventorySection";
+import { CharacterPowersSection } from "../components/player-character/CharacterPowersSection";
+import { CharacterResources } from "../components/player-character/CharacterResources";
+import { CharacterSkillsSection } from "../components/player-character/CharacterSkillsSection";
+import { CharacterStatsSection } from "../components/player-character/CharacterStatsSection";
+import { RollHelperPopover } from "../components/player-character/RollHelperPopover";
 import { resolveDicePool } from "../config/combat";
+import { buildCharacterDerivedValues } from "../config/characterRuntime";
+import { getPowerTemplate, type CharacterDraft } from "../config/characterTemplate";
 import {
-  buildCharacterDerivedValues,
-  getCurrentSkillValue,
-  getSkillBreakdown,
-  getStatBreakdown,
-} from "../config/characterRuntime";
-import {
-  DAMAGE_TYPES,
-  RESISTANCE_LEVELS,
-} from "../config/resistances";
-import {
-  getPowerBenefits,
-  getPowerTemplate,
-  powerLibrary,
-  statGroups,
-  type CharacterDraft,
-  type GameHistoryEntry,
-} from "../config/characterTemplate";
-import {
-  getCrAndRankFromXpUsed,
   STAT_XP_BY_LEVEL,
   T1_POWER_XP_BY_LEVEL,
   T1_SKILL_XP_BY_LEVEL,
@@ -34,15 +26,14 @@ import {
 } from "../lib/dmAudit";
 import { rollD10Faces } from "../lib/dice";
 import { buildGameHistoryNoteEntry, prependGameHistoryEntry } from "../lib/historyEntries";
+import { getDecrementRefund, getIncrementCost } from "../lib/progressionCosts";
+import {
+  buildEditSessionStatFloor,
+  buildPlayerCharacterViewModel,
+  type PlayerRollTarget,
+} from "../selectors/playerCharacterViewModel";
 import { useAppFlow } from "../state/appFlow";
 import type { StatId } from "../types/character";
-
-type RollTarget = {
-  id: string;
-  label: string;
-  value: number;
-  category: "stat" | "skill";
-};
 
 type RollResult = {
   labels: string[];
@@ -65,40 +56,6 @@ type RuntimeEditableField =
   | "negativeKarma";
 
 export type PlayerCharacterPageViewMode = "player" | "dm-readonly" | "dm-editable";
-
-function buildEditSessionStatFloor(sheet: CharacterDraft): Record<StatId, number> {
-  return {
-    STR: sheet.statState.STR.base,
-    DEX: sheet.statState.DEX.base,
-    STAM: sheet.statState.STAM.base,
-    CHA: sheet.statState.CHA.base,
-    APP: sheet.statState.APP.base,
-    MAN: sheet.statState.MAN.base,
-    INT: sheet.statState.INT.base,
-    WITS: sheet.statState.WITS.base,
-    PER: sheet.statState.PER.base,
-  };
-}
-
-function getHistoryEntryKey(entry: GameHistoryEntry): string {
-  return entry.id;
-}
-
-function getIncrementCost(table: number[], currentLevel: number): number {
-  if (currentLevel >= table.length - 1) {
-    return 0;
-  }
-
-  return table[currentLevel + 1] - table[currentLevel];
-}
-
-function getDecrementRefund(table: number[], currentLevel: number): number {
-  if (currentLevel <= 0) {
-    return 0;
-  }
-
-  return table[currentLevel] - table[currentLevel - 1];
-}
 
 export function PlayerCharacterPage({
   viewMode,
@@ -125,13 +82,14 @@ export function PlayerCharacterPage({
   const [customRollModifiers, setCustomRollModifiers] = useState<CustomRollModifier[]>([]);
   const [lastRoll, setLastRoll] = useState<RollResult | null>(null);
   const [sessionNotes, setSessionNotes] = useState("");
-
-  const dragRef = useRef<{ active: boolean; moved: boolean; offsetX: number; offsetY: number }>({
-    active: false,
-    moved: false,
-    offsetX: 0,
-    offsetY: 0,
-  });
+  const dragRef = useRef<{ active: boolean; moved: boolean; offsetX: number; offsetY: number }>(
+    {
+      active: false,
+      moved: false,
+      offsetX: 0,
+      offsetY: 0,
+    }
+  );
   const isDmReadOnlyView = viewMode === "dm-readonly";
   const isDmEditableView = viewMode === "dm-editable";
   const isDmView = viewMode !== "player";
@@ -223,43 +181,22 @@ export function PlayerCharacterPage({
   const isSheetEditMode = isEditMode || dmEditMode;
   const isDmRuntimeEditMode = isDmView && dmEditMode;
   const isProgressionEditMode = isEditMode || (isDmEditableView && dmEditMode);
-
   const actualDate = formatDateDayMonthYear(new Date());
-  const xpLeftOver = sheetState.xpEarned - sheetState.xpUsed;
-  const progression = getCrAndRankFromXpUsed(sheetState.xpUsed);
-
-  const derived = buildCharacterDerivedValues(sheetState);
-  const currentStats = derived.currentStats;
-
-  const rollTargets: RollTarget[] = [
-    ...statGroups.flatMap((group) =>
-      group.ids.map((statId) => ({
-        id: `stat:${statId}`,
-        label: statId,
-        value: currentStats[statId],
-        category: "stat" as const,
-      }))
-    ),
-    ...sheetState.skills.map((skill) => ({
-        id: `skill:${skill.id}`,
-        label: skill.label,
-        value: getCurrentSkillValue(sheetState, skill.id),
-        category: "skill" as const,
-      })),
-  ];
-
-  const statRollTargets = rollTargets.filter((target) => target.category === "stat");
-  const skillRollTargets = rollTargets.filter((target) => target.category === "skill");
-
+  const {
+    derived,
+    progression,
+    xpLeftOver,
+    rollTargets,
+    statRollTargets,
+    skillRollTargets,
+    availablePowerOptions,
+  } = buildPlayerCharacterViewModel(sheetState);
   const selectedRollTargets = selectedRollIds
     .map((targetId) => rollTargets.find((target) => target.id === targetId))
-    .filter((target): target is RollTarget => target !== undefined);
+    .filter((target): target is PlayerRollTarget => target !== undefined);
   const customRollPool = customRollModifiers.reduce((total, modifier) => total + modifier.value, 0);
-  const selectedRollPool = selectedRollTargets.reduce((total, target) => total + target.value, 0) + customRollPool;
-
-  const availablePowerOptions = powerLibrary.filter(
-    (power) => !sheetState.powers.some((knownPower) => knownPower.id === power.id)
-  );
+  const selectedRollPool =
+    selectedRollTargets.reduce((total, target) => total + target.value, 0) + customRollPool;
 
   function handleAppendHistory(): void {
     const note = sessionNotes.trim();
@@ -276,7 +213,7 @@ export function PlayerCharacterPage({
     setSessionNotes("");
   }
 
-  function handleDiceMouseDown(event: React.MouseEvent<HTMLButtonElement>): void {
+  function handleDiceMouseDown(event: ReactMouseEvent<HTMLButtonElement>): void {
     dragRef.current.active = true;
     dragRef.current.moved = false;
     dragRef.current.offsetX = window.innerWidth - event.clientX - dicePosition.x;
@@ -339,13 +276,22 @@ export function PlayerCharacterPage({
     setLastRoll({
       labels: [
         ...selectedRollTargets.map((target) => target.label),
-        ...customRollModifiers.map((modifier) => `Custom ${modifier.value >= 0 ? "+" : ""}${modifier.value}`),
+        ...customRollModifiers.map(
+          (modifier) => `Custom ${modifier.value >= 0 ? "+" : ""}${modifier.value}`
+        ),
       ],
       poolSize: selectedRollPool,
       faces,
       successes: resolution.successes,
       isBotch: resolution.isBotch,
     });
+  }
+
+  function clearRollHelper(): void {
+    setSelectedRollIds([]);
+    setCustomRollModifiers([]);
+    setCustomRollInput("");
+    setLastRoll(null);
   }
 
   function adjustStat(statId: StatId, direction: 1 | -1): void {
@@ -357,7 +303,9 @@ export function PlayerCharacterPage({
     }
 
     const xpDelta =
-      direction === 1 ? getIncrementCost(STAT_XP_BY_LEVEL, currentLevel) : -getDecrementRefund(STAT_XP_BY_LEVEL, currentLevel);
+      direction === 1
+        ? getIncrementCost(STAT_XP_BY_LEVEL, currentLevel)
+        : -getDecrementRefund(STAT_XP_BY_LEVEL, currentLevel);
     if (direction === 1 && xpLeftOver < xpDelta) {
       return;
     }
@@ -837,9 +785,7 @@ export function PlayerCharacterPage({
 
     setSheetState((currentSheet) => {
       const nextBaseValue =
-        field === "currentHp"
-          ? Math.trunc(rawValue)
-          : Math.max(0, Math.trunc(rawValue));
+        field === "currentHp" ? Math.trunc(rawValue) : Math.max(0, Math.trunc(rawValue));
       const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
       const currentValue =
         field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field];
@@ -956,887 +902,130 @@ export function PlayerCharacterPage({
 
   return (
     <main className="sheet-page">
-      <button
-        type="button"
-        className="floating-dice"
-        style={{ right: `${dicePosition.x}px`, bottom: `${dicePosition.y}px` }}
-        onMouseDown={handleDiceMouseDown}
-        onClick={handleDiceClick}
-        aria-label="Open roll helper"
-      >
-        <D10Icon />
-        <span className="sr-only">Open roll helper</span>
-      </button>
-
-      {isDiceOpen ? (
-        <aside
-          className="dice-popover"
-          style={{ right: `${dicePosition.x}px`, bottom: `${dicePosition.y + 72}px` }}
-        >
-          <div className="dice-popover-head">
-            <D10Icon />
-            <p className="section-kicker">Roll Helper</p>
-          </div>
-          <h2>Dice Pool</h2>
-          <div className="dice-summary">
-            <span>Selected</span>
-            <strong>
-              {selectedRollTargets.length > 0 || customRollModifiers.length > 0
-                ? [
-                    ...selectedRollTargets.map((target) => target.label),
-                    ...customRollModifiers.map((modifier) => `Custom ${modifier.value >= 0 ? "+" : ""}${modifier.value}`),
-                  ].join(" + ")
-                : "None"}
-            </strong>
-          </div>
-          <div className="dice-summary">
-            <span>Pool</span>
-            <strong>{selectedRollPool}</strong>
-          </div>
-          <div className="dice-columns">
-            <section className="dice-column">
-              <h3>Stats</h3>
-              <div className="dice-targets">
-                {statRollTargets.map((target) => {
-                  const isSelected = selectedRollIds.includes(target.id);
-                  const wouldExceedLimit = !isSelected && selectedRollIds.length >= 9;
-
-                  return (
-                    <button
-                      key={target.id}
-                      type="button"
-                      className={`dice-target${isSelected ? " is-selected" : ""}`}
-                      onClick={() => toggleRollTarget(target.id)}
-                      disabled={wouldExceedLimit}
-                    >
-                      <span>{target.label}</span>
-                      <strong>{target.value}</strong>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="dice-custom-add">
-                <span>Add</span>
-                <div className="dice-custom-row">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={customRollInput}
-                    onChange={(event) => setCustomRollInput(event.target.value)}
-                    placeholder="+2"
-                  />
-                  <button type="button" onClick={handleAddCustomRollModifier}>
-                    Add
-                  </button>
-                </div>
-                {customRollModifiers.length > 0 ? (
-                  <div className="dice-custom-list">
-                    {customRollModifiers.map((modifier) => (
-                      <button
-                        key={modifier.id}
-                        type="button"
-                        className="dice-custom-chip"
-                        onClick={() => removeCustomRollModifier(modifier.id)}
-                      >
-                        {modifier.value >= 0 ? "+" : ""}
-                        {modifier.value}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            <section className="dice-column">
-              <h3>Skills</h3>
-              <div className="dice-targets">
-                {skillRollTargets.map((target) => {
-                  const isSelected = selectedRollIds.includes(target.id);
-                  const wouldExceedLimit = !isSelected && selectedRollIds.length >= 9;
-
-                  return (
-                    <button
-                      key={target.id}
-                      type="button"
-                      className={`dice-target${isSelected ? " is-selected" : ""}`}
-                      onClick={() => toggleRollTarget(target.id)}
-                      disabled={wouldExceedLimit}
-                    >
-                      <span>{target.label}</span>
-                      <strong>{target.value}</strong>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
-          <div className="dice-actions">
-            <button type="button" onClick={handleRoll} disabled={selectedRollTargets.length === 0 && customRollModifiers.length === 0}>
-              Roll
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedRollIds([]);
-                setCustomRollModifiers([]);
-              }}
-            >
-              Clear
-            </button>
-          </div>
-          {lastRoll ? (
-            <div className="roll-result">
-              <span>Last Roll</span>
-              <strong>
-                {lastRoll.successes} successes{lastRoll.isBotch ? " (botch)" : ""}
-              </strong>
-              <small>{lastRoll.labels.join(" + ")}</small>
-              <small>{lastRoll.faces.join(", ")}</small>
-            </div>
-          ) : null}
-        </aside>
-      ) : null}
+      <RollHelperPopover
+        isDiceOpen={isDiceOpen}
+        dicePosition={dicePosition}
+        statRollTargets={statRollTargets}
+        skillRollTargets={skillRollTargets}
+        selectedRollIds={selectedRollIds}
+        selectedRollTargets={selectedRollTargets}
+        customRollInput={customRollInput}
+        customRollModifiers={customRollModifiers}
+        selectedRollPool={selectedRollPool}
+        lastRoll={lastRoll}
+        onDiceMouseDown={handleDiceMouseDown}
+        onDiceClick={handleDiceClick}
+        onToggleRollTarget={toggleRollTarget}
+        onCustomRollInputChange={setCustomRollInput}
+        onAddCustomRollModifier={handleAddCustomRollModifier}
+        onRemoveCustomRollModifier={removeCustomRollModifier}
+        onRoll={handleRoll}
+        onClear={clearRollHelper}
+      />
 
       <section className="sheet-frame">
-        <div className="sheet-top-nav">
-          <button type="button" className="sheet-nav-button" onClick={() => navigate("/")}>
-            Main Menu
-          </button>
-          <button
-            type="button"
-            className="sheet-nav-button"
-            onClick={() =>
-              navigate(
-                isDmEditableView
-                  ? "/dm/npc-creator"
-                  : isDmReadOnlyView
-                    ? "/dm/characters"
-                    : "/player"
-              )
-            }
-          >
-            {isDmEditableView
-              ? "NPC Creator"
-              : isDmReadOnlyView
-                ? "Player Characters"
-                : "Player Menu"}
-          </button>
-        </div>
-
-        <header className="sheet-header">
-          <div className="sheet-header-copy">
-            <p className="sheet-kicker">Convergence Character Sheet Draft</p>
-            {isSheetEditMode ? (
-              <div className="identity-edit-stack">
-                <input
-                  className="sheet-name-input"
-                  value={sheetState.name}
-                  onChange={(event) => updateSheetField("name", event.target.value)}
-                  placeholder="Character Name"
-                />
-                <div className="identity-edit-row">
-                  <input
-                    className="sheet-meta-input"
-                    value={sheetState.concept}
-                    onChange={(event) => updateSheetField("concept", event.target.value)}
-                    placeholder="Concept"
-                  />
-                  <input
-                    className="sheet-meta-input"
-                    value={sheetState.faction}
-                    onChange={(event) => updateSheetField("faction", event.target.value)}
-                    placeholder="Faction"
-                  />
-                </div>
-              </div>
-            ) : (
-              <>
-                <h1>{sheetState.name.trim() || "Unnamed Character"}</h1>
-                <p className="sheet-concept">
-                  {sheetState.concept || "No concept"} | {sheetState.faction || "No faction"}
-                </p>
-              </>
-            )}
-          </div>
-
-          <div className="sheet-badges">
-            <div>
-              <span>Rank</span>
-              <strong>{progression.rank}</strong>
-            </div>
-            <div>
-              <span>CR</span>
-              <strong>{progression.cr}</strong>
-            </div>
-            <div>
-              <span>Age</span>
-              {isSheetEditMode ? (
-                <input
-                  className="badge-input"
-                  type="number"
-                  min="0"
-                  value={sheetState.age ?? ""}
-                  onChange={(event) =>
-                    updateSheetField(
-                      "age",
-                      event.target.value === "" ? null : Number.parseInt(event.target.value, 10)
-                    )
-                  }
-                  placeholder="Age"
-                />
-              ) : (
-                <strong>{sheetState.age ?? "-"}</strong>
-              )}
-            </div>
-          </div>
-        </header>
-
-        <section className="sheet-banner">
-          <div className="banner-date-block">
-            <div>
-              <span>Actual Date</span>
-              <strong>{actualDate}</strong>
-            </div>
-            <div>
-              <span>Game Date-Time</span>
-              <strong>{sheetState.gameDateTime}</strong>
-            </div>
-          </div>
-          <div>
-            <span>XP Block</span>
-            <div className="xp-block-grid">
-              <span>Earned</span>
-              <span>Used</span>
-              <span>Left-Over</span>
-              <strong>{sheetState.xpEarned}</strong>
-              <strong>{sheetState.xpUsed}</strong>
-              <strong>{xpLeftOver}</strong>
-            </div>
-          </div>
-          <div className="edit-card">
-            <span>Edit Sheet</span>
-            {isDmView ? (
-              <div className="dm-edit-controls">
-                <div className="dm-edit-toggle-row">
-                  <button type="button" onClick={handleToggleDmEditMode}>
-                    {dmEditMode ? "DM Edit: On" : "DM Edit: Off"}
-                  </button>
-                  <button type="button" onClick={handleToggleAdminOverrideMode}>
-                    {adminOverrideMode ? "Override: On" : "Override: Off"}
-                  </button>
-                </div>
-                <div className="dm-edit-reasons">
-                  {dmEditMode ? (
-                    <input
-                      className="sheet-meta-input"
-                      value={dmEditReason}
-                      onChange={(event) => setDmEditReason(event.target.value)}
-                      placeholder="DM reason (optional)"
-                    />
-                  ) : null}
-                  {adminOverrideMode ? (
-                    <>
-                      <input
-                        className="sheet-meta-input"
-                        value={adminOverrideReason}
-                        onChange={(event) => setAdminOverrideReason(event.target.value)}
-                        placeholder="Admin reason (required)"
-                      />
-                      {adminOverrideError ? (
-                        <strong className="edit-mode-indicator">{adminOverrideError}</strong>
-                      ) : null}
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            ) : (
-              <button type="button" className="edit-trigger" onClick={handleToggleEditMode}>
-                {isEditMode ? "Lock" : "Edit"}
-              </button>
-            )}
-          </div>
-        </section>
+        <CharacterHeader
+          sheetState={sheetState}
+          actualDate={actualDate}
+          progression={progression}
+          xpLeftOver={xpLeftOver}
+          isSheetEditMode={isSheetEditMode}
+          isDmView={isDmView}
+          isDmEditableView={isDmEditableView}
+          isDmReadOnlyView={isDmReadOnlyView}
+          isEditMode={isEditMode}
+          dmEditMode={dmEditMode}
+          adminOverrideMode={adminOverrideMode}
+          dmEditReason={dmEditReason}
+          adminOverrideReason={adminOverrideReason}
+          adminOverrideError={adminOverrideError}
+          onNavigateMainMenu={() => navigate("/")}
+          onNavigateBack={() =>
+            navigate(
+              isDmEditableView ? "/dm/npc-creator" : isDmReadOnlyView ? "/dm/characters" : "/player"
+            )
+          }
+          onUpdateField={updateSheetField}
+          onToggleEditMode={handleToggleEditMode}
+          onToggleDmEditMode={handleToggleDmEditMode}
+          onToggleAdminOverrideMode={handleToggleAdminOverrideMode}
+          onDmEditReasonChange={setDmEditReason}
+          onAdminOverrideReasonChange={setAdminOverrideReason}
+        />
 
         <section className="sheet-grid">
-          <article className="sheet-card biography-card">
-            <p className="section-kicker">Identity</p>
-            <h2>Biography</h2>
-            {isSheetEditMode ? (
-              <div className="bio-edit-stack">
-                <textarea
-                  className="bio-edit-input"
-                  value={sheetState.biographyPrimary}
-                  onChange={(event) => updateSheetField("biographyPrimary", event.target.value)}
-                  placeholder="Primary bio"
-                />
-                <textarea
-                  className="bio-edit-input"
-                  value={sheetState.biographySecondary}
-                  onChange={(event) => updateSheetField("biographySecondary", event.target.value)}
-                  placeholder="Secondary bio"
-                />
-              </div>
-            ) : (
-              <>
-                <p>{sheetState.biographyPrimary || "No primary biography yet."}</p>
-                <p>{sheetState.biographySecondary || "No secondary biography yet."}</p>
-              </>
-            )}
-          </article>
+          <CharacterIdentitySection
+            sheetState={sheetState}
+            isSheetEditMode={isSheetEditMode}
+            onUpdateField={updateSheetField}
+          />
 
-          <article className="sheet-card resource-card">
-            <p className="section-kicker">Stored State</p>
-            <h2>Resources</h2>
-            <div className="resource-strip">
-              <div>
-                <span>Inspiration</span>
-                {isDmRuntimeEditMode ? (
-                  <input
-                    className="sheet-runtime-input"
-                    type="number"
-                    min="0"
-                    value={sheetState.inspiration}
-                    onChange={(event) => handleRuntimeInput("inspiration", event.target.value)}
-                  />
-                ) : (
-                  <>
-                    <strong>{derived.totalInspiration}</strong>
-                    <small>
-                      Base {derived.permanentInspiration}
-                      {derived.temporaryInspiration > 0
-                        ? ` + Temp ${derived.temporaryInspiration}`
-                        : ""}
-                    </small>
-                  </>
-                )}
-              </div>
-              <div>
-                <span>Karma</span>
-                {isDmRuntimeEditMode ? (
-                  <div className="runtime-split-inputs">
-                    <input
-                      className="sheet-runtime-input"
-                      type="number"
-                      min="0"
-                      value={sheetState.negativeKarma}
-                      onChange={(event) => handleRuntimeInput("negativeKarma", event.target.value)}
-                    />
-                    <input
-                      className="sheet-runtime-input"
-                      type="number"
-                      min="0"
-                      value={sheetState.positiveKarma}
-                      onChange={(event) => handleRuntimeInput("positiveKarma", event.target.value)}
-                    />
-                  </div>
-                ) : (
-                  <strong>
-                    -{sheetState.negativeKarma} / +{sheetState.positiveKarma}
-                  </strong>
-                )}
-              </div>
-            </div>
-          </article>
+          <CharacterResources
+            sheetState={sheetState}
+            derived={derived}
+            isDmRuntimeEditMode={isDmRuntimeEditMode}
+            onRuntimeInput={handleRuntimeInput}
+          />
 
-          <article className="sheet-card status-card">
-            <p className="section-kicker">Combat Flags</p>
-            <h2>Resistances</h2>
-            <div className="resistance-grid">
-              {DAMAGE_TYPES.map((damageType) => {
-                const level = sheetState.resistances[damageType.id];
-                const rule = RESISTANCE_LEVELS[level];
+          <CharacterCombatSummary
+            sheetState={sheetState}
+            derived={derived}
+            isDmRuntimeEditMode={isDmRuntimeEditMode}
+            onRuntimeInput={handleRuntimeInput}
+          />
 
-                return (
-                  <div key={damageType.id} className="resistance-entry">
-                    <span>{damageType.label}</span>
-                    <strong>{rule.label}</strong>
-                    <small>(x{rule.damageMultiplier})</small>
-                  </div>
-                );
-              })}
-            </div>
-          </article>
+          <CharacterStatsSection
+            sheetState={sheetState}
+            isProgressionEditMode={isProgressionEditMode}
+            adminOverrideMode={adminOverrideMode}
+            editSessionStatFloor={editSessionStatFloor}
+            xpLeftOver={xpLeftOver}
+            onAdjustStat={adjustStat}
+            onAdjustStatOverride={adjustStatOverride}
+          />
 
-          <article className="sheet-card combat-card">
-            <p className="section-kicker">Derived Summary</p>
-            <h2>Combat Summary</h2>
-            <div className="combat-grid">
-              <div>
-                <span>HP</span>
-                {isDmRuntimeEditMode ? (
-                  <input
-                    className="sheet-runtime-input"
-                    type="number"
-                    value={sheetState.currentHp}
-                    onChange={(event) => handleRuntimeInput("currentHp", event.target.value)}
-                  />
-                ) : (
-                  <>
-                    <strong>
-                      {sheetState.currentHp} / {derived.maxHp}
-                    </strong>
-                    {derived.temporaryHp > 0 ? <small>Temp HP +{derived.temporaryHp}</small> : null}
-                  </>
-                )}
-              </div>
-              <div>
-                <span>Mana</span>
-                {isDmRuntimeEditMode ? (
-                  <input
-                    className="sheet-runtime-input"
-                    type="number"
-                    min="0"
-                    max={derived.maxMana}
-                    value={derived.currentMana}
-                    onChange={(event) => handleRuntimeInput("currentMana", event.target.value)}
-                  />
-                ) : (
-                  <strong>
-                    {derived.currentMana} / {derived.maxMana}
-                  </strong>
-                )}
-              </div>
-              <div>
-                <span>Initiative</span>
-                <strong>{derived.initiative}</strong>
-              </div>
-              <div>
-                <span>Movement</span>
-                <strong>{derived.movement}</strong>
-              </div>
-              <div>
-                <span>AC</span>
-                <strong>{derived.armorClass}</strong>
-              </div>
-              <div>
-                <span>DR</span>
-                <strong>{derived.damageReduction}</strong>
-              </div>
-              <div>
-                <span>Soak</span>
-                <strong>{derived.soak}</strong>
-              </div>
-              <div>
-                <span>Melee Attack</span>
-                <strong>{derived.meleeAttack}</strong>
-              </div>
-              <div>
-                <span>Ranged Attack</span>
-                <strong>{derived.rangedAttack}</strong>
-              </div>
-              <div>
-                <span>Melee Damage</span>
-                <strong>{derived.meleeDamage}</strong>
-              </div>
-              <div>
-                <span>Ranged Damage</span>
-                <strong>{derived.rangedDamage}</strong>
-              </div>
-            </div>
-            {derived.activePowerEffects.length > 0 ? (
-              <div className="active-effects-panel">
-                <p className="section-kicker">Active Effects</p>
-                <div className="active-effects-list">
-                  {derived.activePowerEffects.map((effect) => (
-                    <article key={effect.id} className="active-effect-card">
-                      <strong>{effect.label}</strong>
-                      <small>{effect.summary}</small>
-                      <small>
-                        {effect.casterName} {"->"} {effect.powerName}
-                      </small>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </article>
+          <CharacterSkillsSection
+            sheetState={sheetState}
+            isProgressionEditMode={isProgressionEditMode}
+            adminOverrideMode={adminOverrideMode}
+            xpLeftOver={xpLeftOver}
+            onAdjustSkill={adjustSkill}
+            onAdjustSkillOverride={adjustSkillOverride}
+          />
 
-          <article className="sheet-card stat-card">
-            <p className="section-kicker">Core Build</p>
-            <h2>Stats</h2>
-            <div className="stat-groups">
-              {statGroups.map((group) => (
-                <section key={group.title} className={`stat-group stat-group-${group.accent}`}>
-                  <header>
-                    <h3>{group.title}</h3>
-                  </header>
-                  <div className="stat-list">
-                    {group.ids.map((statId) => {
-                      const stat = sheetState.statState[statId];
-                      const breakdown = getStatBreakdown(sheetState, statId);
-                      const incrementCost = getIncrementCost(STAT_XP_BY_LEVEL, stat.base);
-                      const canIncrease = adminOverrideMode
-                        ? stat.base < STAT_XP_BY_LEVEL.length - 1
-                        : isProgressionEditMode &&
-                          stat.base < STAT_XP_BY_LEVEL.length - 1 &&
-                          xpLeftOver >= incrementCost;
-                      const floorLevel = editSessionStatFloor?.[statId] ?? stat.base;
-                      const canDecrease = adminOverrideMode
-                        ? stat.base > 0
-                        : isProgressionEditMode && stat.base > floorLevel;
+          <CharacterPowersSection
+            sheetState={sheetState}
+            availablePowerOptions={availablePowerOptions}
+            pendingPowerId={pendingPowerId}
+            xpLeftOver={xpLeftOver}
+            isProgressionEditMode={isProgressionEditMode}
+            adminOverrideMode={adminOverrideMode}
+            onPendingPowerIdChange={setPendingPowerId}
+            onAddPower={handleAddPower}
+            onAddPowerOverride={handleAddPowerOverride}
+            onAdjustPower={adjustPower}
+            onAdjustPowerOverride={adjustPowerOverride}
+          />
 
-                      return (
-                        <div key={statId} className="stat-row">
-                          <div className="row-main">
-                            <strong>{statId}</strong>
-                            <small>{breakdown.detail}</small>
-                          </div>
-                          {isProgressionEditMode || adminOverrideMode ? (
-                            <div className="row-actions">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  adminOverrideMode
-                                    ? adjustStatOverride(statId, -1)
-                                    : adjustStat(statId, -1)
-                                }
-                                disabled={!canDecrease}
-                              >
-                                -
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  adminOverrideMode
-                                    ? adjustStatOverride(statId, 1)
-                                    : adjustStat(statId, 1)
-                                }
-                                disabled={!canIncrease}
-                              >
-                                +
-                              </button>
-                            </div>
-                          ) : null}
-                          <div className="row-side">
-                            <span>{breakdown.summary}</span>
-                            <em>{breakdown.value}</em>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </article>
+          <CharacterInventorySection
+            sheetState={sheetState}
+            isSheetEditMode={isSheetEditMode}
+            onUpdateEquipmentEntry={updateEquipmentEntry}
+            onAddEquipmentEntry={addEquipmentEntry}
+            onRemoveEquipmentEntry={removeEquipmentEntry}
+            onUpdateInventoryEntry={updateInventoryEntry}
+            onAddInventoryEntry={addInventoryEntry}
+            onRemoveInventoryEntry={removeInventoryEntry}
+            onUpdateMoney={(value) => updateSheetField("money", value)}
+          />
 
-          <article className="sheet-card skill-card">
-            <p className="section-kicker">Roll Inputs</p>
-            <h2>Skills</h2>
-            <div className="skill-table">
-              {sheetState.skills.map((skill) => {
-                const breakdown = getSkillBreakdown(sheetState, skill.id);
-                const incrementCost = getIncrementCost(T1_SKILL_XP_BY_LEVEL, skill.base);
-                const canIncrease = adminOverrideMode
-                  ? skill.base < T1_SKILL_XP_BY_LEVEL.length - 1
-                  : isProgressionEditMode &&
-                    skill.base < T1_SKILL_XP_BY_LEVEL.length - 1 &&
-                    xpLeftOver >= incrementCost;
-                const canDecrease = adminOverrideMode
-                  ? skill.base > 0
-                  : isProgressionEditMode && skill.base > 0;
-
-                return (
-                  <div key={skill.id} className="skill-row">
-                    <div className="row-main">
-                      <strong>{skill.label}</strong>
-                      <small>{breakdown.detail}</small>
-                    </div>
-                    {isProgressionEditMode || adminOverrideMode ? (
-                      <div className="row-actions">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            adminOverrideMode
-                              ? adjustSkillOverride(skill.id, -1)
-                              : adjustSkill(skill.id, -1)
-                          }
-                          disabled={!canDecrease}
-                        >
-                          -
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            adminOverrideMode
-                              ? adjustSkillOverride(skill.id, 1)
-                              : adjustSkill(skill.id, 1)
-                          }
-                          disabled={!canIncrease}
-                        >
-                          +
-                        </button>
-                      </div>
-                    ) : null}
-                    <div className="row-side">
-                      <span>{breakdown.summary}</span>
-                      <em>{breakdown.value}</em>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </article>
-
-          <article className="sheet-card power-card">
-            <p className="section-kicker">T1 Powers</p>
-            <h2>Known Powers</h2>
-            {isProgressionEditMode || adminOverrideMode ? (
-              <div className="power-add-row">
-                <select value={pendingPowerId} onChange={(event) => setPendingPowerId(event.target.value)}>
-                  <option value="">Add Level 1 Power</option>
-                  {availablePowerOptions.map((power) => (
-                    <option key={power.id} value={power.id}>
-                      {power.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={adminOverrideMode ? handleAddPowerOverride : handleAddPower}
-                  disabled={
-                    !pendingPowerId ||
-                    (!adminOverrideMode && xpLeftOver < getIncrementCost(T1_POWER_XP_BY_LEVEL, 0))
-                  }
-                >
-                  Add
-                </button>
-              </div>
-            ) : null}
-            <div className="power-list">
-              {sheetState.powers.length === 0 ? (
-                <p className="empty-block-copy">No powers learned yet.</p>
-              ) : sheetState.powers.map((power) => {
-                const incrementCost = getIncrementCost(T1_POWER_XP_BY_LEVEL, power.level);
-                const canIncrease = adminOverrideMode
-                  ? power.level < T1_POWER_XP_BY_LEVEL.length - 1
-                  : isProgressionEditMode &&
-                    power.level < T1_POWER_XP_BY_LEVEL.length - 1 &&
-                    xpLeftOver >= incrementCost;
-                const canDecrease = adminOverrideMode
-                  ? power.level > 0
-                  : isProgressionEditMode && power.level > 0;
-
-                return (
-                  <div key={power.id} className="power-row">
-                    <div className="row-main">
-                      <strong>
-                        {power.name} Lv {power.level}
-                      </strong>
-                      <ul className="power-benefits">
-                        {getPowerBenefits(power.id, power.level).map((benefit) => (
-                          <li key={benefit}>{benefit}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    {isProgressionEditMode || adminOverrideMode ? (
-                      <div className="row-actions">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            adminOverrideMode
-                              ? adjustPowerOverride(power.id, -1)
-                              : adjustPower(power.id, -1)
-                          }
-                          disabled={!canDecrease}
-                        >
-                          -
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            adminOverrideMode
-                              ? adjustPowerOverride(power.id, 1)
-                              : adjustPower(power.id, 1)
-                          }
-                          disabled={!canIncrease}
-                        >
-                          +
-                        </button>
-                      </div>
-                    ) : null}
-                    <div className="row-side">
-                      <span>Base {power.level}</span>
-                      <em>{power.governingStat}</em>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </article>
-
-          <article className="sheet-card equipment-card">
-            <p className="section-kicker">Equipment</p>
-            <h2>Loadout</h2>
-            <div className="equipment-list">
-              {isSheetEditMode ? (
-                <>
-                  {sheetState.equipment.map((entry, index) => (
-                    <div key={`${entry.slot}-${index}`} className="equipment-row">
-                      <div className="row-main">
-                        <input
-                          className="sheet-meta-input"
-                          value={entry.slot}
-                          onChange={(event) => updateEquipmentEntry(index, "slot", event.target.value)}
-                          placeholder="Slot"
-                        />
-                        <input
-                          className="sheet-meta-input"
-                          value={entry.item}
-                          onChange={(event) => updateEquipmentEntry(index, "item", event.target.value)}
-                          placeholder="Item"
-                        />
-                        <input
-                          className="sheet-meta-input"
-                          value={entry.effect}
-                          onChange={(event) => updateEquipmentEntry(index, "effect", event.target.value)}
-                          placeholder="Effect"
-                        />
-                      </div>
-                      <div className="row-actions">
-                        <button type="button" onClick={() => removeEquipmentEntry(index)}>
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" className="flow-secondary" onClick={addEquipmentEntry}>
-                    Add Equipment
-                  </button>
-                </>
-              ) : sheetState.equipment.length === 0 ? (
-                <p className="empty-block-copy">No loadout equipped.</p>
-              ) : (
-                sheetState.equipment.map((entry) => (
-                  <div key={entry.slot} className="equipment-row">
-                    <div>
-                      <strong>{entry.slot}</strong>
-                      <span>{entry.item}</span>
-                    </div>
-                    <em>{entry.effect}</em>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-
-          <article className="sheet-card inventory-card">
-            <p className="section-kicker">Owned Items</p>
-            <h2>Inventory</h2>
-            <div className="inventory-header">
-              <span>Money</span>
-              {isSheetEditMode ? (
-                <input
-                  className="badge-input"
-                  type="number"
-                  value={sheetState.money}
-                  onChange={(event) =>
-                    updateSheetField(
-                      "money",
-                      event.target.value === "" ? 0 : Number.parseInt(event.target.value, 10)
-                    )
-                  }
-                />
-              ) : (
-                <strong>{sheetState.money}</strong>
-              )}
-            </div>
-            <div className="inventory-list">
-              {isSheetEditMode ? (
-                <>
-                  {sheetState.inventory.map((entry, index) => (
-                    <div key={`${entry.name}-${index}`} className="inventory-row">
-                      <div className="row-main">
-                        <input
-                          className="sheet-meta-input"
-                          value={entry.name}
-                          onChange={(event) => updateInventoryEntry(index, "name", event.target.value)}
-                          placeholder="Item name"
-                        />
-                        <input
-                          className="sheet-meta-input"
-                          value={entry.category}
-                          onChange={(event) => updateInventoryEntry(index, "category", event.target.value)}
-                          placeholder="Category"
-                        />
-                        <input
-                          className="sheet-meta-input"
-                          value={entry.note}
-                          onChange={(event) => updateInventoryEntry(index, "note", event.target.value)}
-                          placeholder="Notes"
-                        />
-                      </div>
-                      <div className="row-actions">
-                        <button type="button" onClick={() => removeInventoryEntry(index)}>
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" className="flow-secondary" onClick={addInventoryEntry}>
-                    Add Item
-                  </button>
-                </>
-              ) : sheetState.inventory.length === 0 ? (
-                <p className="empty-block-copy">No items in inventory.</p>
-              ) : (
-                sheetState.inventory.map((entry) => (
-                  <div key={entry.name} className="inventory-row">
-                    <div>
-                      <strong>{entry.name}</strong>
-                      <span>{entry.category}</span>
-                    </div>
-                    <em>{entry.note}</em>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-
-          <article className="sheet-card notes-card">
-            <p className="section-kicker">Sheet Notes</p>
-            <h2>Session Notes</h2>
-            <textarea
-              className="notes-input"
-              value={sessionNotes}
-              onChange={(event) => setSessionNotes(event.target.value)}
-              readOnly={isReadOnlyView}
-            />
-            {!isReadOnlyView ? (
-              <button type="button" className="notes-submit" onClick={handleAppendHistory}>
-                Add To Game History
-              </button>
-            ) : null}
-          </article>
-
-          <article className="sheet-card history-card">
-            <p className="section-kicker">Session Log</p>
-            <h2>Game History</h2>
-            {sheetState.gameHistory.length === 0 ? (
-              <p className="history-empty">No submitted game history yet.</p>
-            ) : (
-              <div className="history-list">
-                {sheetState.gameHistory.map((entry) => (
-                  <section key={getHistoryEntryKey(entry)} className="history-entry">
-                    <strong>
-                      {entry.actualDateTime} / {entry.gameDateTime}
-                    </strong>
-                    {entry.type === "note" ? (
-                      <p>{entry.note}</p>
-                    ) : (
-                      <>
-                        <p>
-                          {entry.sourcePower}: {entry.targetName}
-                        </p>
-                        <p>{entry.summary}</p>
-                      </>
-                    )}
-                  </section>
-                ))}
-              </div>
-            )}
-          </article>
+          <CharacterHistorySection
+            sessionNotes={sessionNotes}
+            isReadOnlyView={isReadOnlyView}
+            gameHistory={sheetState.gameHistory}
+            onSessionNotesChange={setSessionNotes}
+            onAppendHistory={handleAppendHistory}
+          />
         </section>
       </section>
     </main>

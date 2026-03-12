@@ -5,7 +5,10 @@ import {
   appendDmAuditEntry as appendDmAuditEntryToSheet,
   createDmAuditEntry as createDmAuditLogEntry,
 } from "../../lib/dmAudit";
-import type { CharacterSheetUpdater, EncounterParticipantView } from "./types";
+import type {
+  CharacterSheetUpdater,
+  EncounterParticipantView,
+} from "../../types/combatEncounterView";
 
 type CombatantRuntimeAdjustmentsProps = {
   view: EncounterParticipantView;
