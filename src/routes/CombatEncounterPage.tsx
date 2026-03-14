@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { resolveDicePool } from "../rules/combat";
 import { buildCharacterEncounterSnapshot } from "../rules/combatEncounter";
+import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import { applyDamageToSheet, applyHealingToSheet } from "../rules/combatResolution";
 import {
   applyActivePowerEffect,
@@ -17,6 +18,13 @@ import {
 } from "../lib/combatEncounterCasting";
 import { rollD10Faces } from "../lib/dice";
 import { prependGameHistoryEntry } from "../lib/historyEntries";
+import {
+  POWER_USAGE_KEYS,
+  getPowerUsageCount,
+  incrementPerTargetDailyPowerUsageCount,
+  incrementPowerUsageCount,
+  setLongRestSelection,
+} from "../lib/powerUsage";
 import { buildEncounterRollTargets, getEncounterPartyMembers } from "../selectors/encounterViewModel";
 import { useAppFlow } from "../state/appFlow";
 import type {
@@ -25,6 +33,7 @@ import type {
   EncounterRollTarget,
   PreparedCastRequest,
 } from "../types/combatEncounterView";
+import type { CharacterRecord } from "../types/character";
 import { EncounterCastConfirmationDialog } from "../components/combat-encounter/EncounterCastConfirmationDialog";
 import { EncounterInitiativePanel } from "../components/combat-encounter/EncounterInitiativePanel";
 import { EncounterPartiesPanel } from "../components/combat-encounter/EncounterPartiesPanel";
@@ -56,6 +65,19 @@ function formatEncounterTime(isoDateTime: string): string {
   }
 
   return date.toLocaleString();
+}
+
+function applySheetUpdater(
+  currentSheet: CharacterRecord["sheet"],
+  updater:
+    | CharacterRecord["sheet"]
+    | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"])
+): CharacterRecord["sheet"] {
+  return typeof updater === "function" ? updater(currentSheet) : updater;
+}
+
+function normalizeStatusTagText(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
 }
 
 export function CombatEncounterPage() {
@@ -140,17 +162,37 @@ export function CombatEncounterPage() {
 
   const encounterParticipants: EncounterParticipantView[] = activeCombatEncounter.participants.map(
     (participant) => {
-      const character = characters.find((entry) => entry.id === participant.characterId) ?? null;
+      const transientCombatant =
+        activeCombatEncounter.transientCombatants.find(
+          (entry) => entry.id === participant.characterId
+        ) ?? null;
+      const character =
+        characters.find((entry) => entry.id === participant.characterId) ??
+        (transientCombatant
+          ? {
+              id: transientCombatant.id,
+              ownerRole: transientCombatant.ownerRole,
+              sheet: transientCombatant.sheet,
+            }
+          : null);
       const snapshot = character ? buildCharacterEncounterSnapshot(character.sheet) : null;
 
       return {
         participant,
         character,
+        transientCombatant,
         snapshot,
       };
     }
   );
   const encounterParties = activeCombatEncounter.parties;
+  const currentTurnState = activeCombatEncounter.turnState;
+  const activeCombatantLabel =
+    currentTurnState.activeParticipantId
+      ? encounterParticipants.find(
+          ({ participant }) => participant.characterId === currentTurnState.activeParticipantId
+        )?.participant.displayName ?? null
+      : null;
   const unassignedEncounterMembers = getEncounterPartyMembers(encounterParticipants, null);
   const selectedCombatant =
     encounterParticipants.find(({ participant }) => participant.characterId === selectedCombatantId) ??
@@ -212,95 +254,364 @@ export function CombatEncounterPage() {
     }));
   }
 
+  function updateEncounterCharacter(
+    characterId: string,
+    updater:
+      | CharacterRecord["sheet"]
+      | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"])
+  ): void {
+    if (characters.some((entry) => entry.id === characterId)) {
+      updateCharacter(characterId, updater);
+      return;
+    }
+
+    updateCombatEncounter((currentEncounter) => ({
+      ...currentEncounter,
+      transientCombatants: currentEncounter.transientCombatants.map((entry) =>
+        entry.id === characterId
+          ? {
+              ...entry,
+              sheet: applySheetUpdater(entry.sheet, updater),
+            }
+          : entry
+      ),
+    }));
+  }
+
+  function resolveEncounterSheet(
+    currentEncounter: NonNullable<typeof activeCombatEncounter>,
+    characterId: string
+  ): CharacterRecord["sheet"] | null {
+    const persistedCharacter = characters.find((entry) => entry.id === characterId);
+    if (persistedCharacter) {
+      return persistedCharacter.sheet;
+    }
+
+    return (
+      currentEncounter.transientCombatants.find((entry) => entry.id === characterId)?.sheet ?? null
+    );
+  }
+
+  function applyStatusTagChange(change: PreparedCastRequest["statusTagChanges"][number]): void {
+    updateEncounterCharacter(change.characterId, (currentSheet) => {
+      if (change.operation === "add") {
+        const alreadyExists = currentSheet.statusTags.some(
+          (tag) =>
+            tag.id === change.tag.id ||
+            normalizeStatusTagText(tag.label) === normalizeStatusTagText(change.tag.label)
+        );
+        if (alreadyExists) {
+          return currentSheet;
+        }
+
+        return {
+          ...currentSheet,
+          statusTags: [...currentSheet.statusTags, change.tag],
+        };
+      }
+
+      return {
+        ...currentSheet,
+        statusTags: currentSheet.statusTags.filter(
+          (tag) =>
+            tag.id !== change.tag.id &&
+            normalizeStatusTagText(tag.label) !== normalizeStatusTagText(change.tag.label)
+        ),
+      };
+    });
+  }
+
+  function applyUsageCounterChange(change: PreparedCastRequest["usageCounterChanges"][number]): void {
+    updateEncounterCharacter(change.characterId, (currentSheet) => {
+      if (change.operation === "setSelection") {
+        return {
+          ...currentSheet,
+          powerUsageState: setLongRestSelection(
+            currentSheet.powerUsageState,
+            change.key,
+            change.value
+          ),
+        };
+      }
+
+      return {
+        ...currentSheet,
+        powerUsageState:
+          change.scope === "perTargetDaily"
+            ? incrementPerTargetDailyPowerUsageCount(
+                currentSheet.powerUsageState,
+                change.key,
+                change.targetCharacterId ?? "",
+                change.amount
+              )
+            : incrementPowerUsageCount(
+                currentSheet.powerUsageState,
+                change.scope,
+                change.key,
+                change.amount
+              ),
+      };
+    });
+  }
+
+  function advanceEncounterTurn(): void {
+    const currentEncounter = activeCombatEncounter;
+    if (!currentEncounter || currentEncounter.participants.length === 0) {
+      return;
+    }
+
+    const currentIndex = Math.max(
+      0,
+      Math.min(currentEncounter.turnState.activeParticipantIndex, currentEncounter.participants.length - 1)
+    );
+    const nextIndex = (currentIndex + 1) % currentEncounter.participants.length;
+    const nextRound =
+      nextIndex <= currentIndex ? currentEncounter.turnState.round + 1 : currentEncounter.turnState.round;
+    const nextActiveParticipantId =
+      currentEncounter.participants[nextIndex]?.characterId ?? null;
+
+    const nextOngoingStates = currentEncounter.ongoingStates.reduce<
+      NonNullable<typeof activeCombatEncounter>["ongoingStates"]
+    >((states, state) => {
+      if (state.kind !== "body_reinforcement_revive") {
+        states.push(state);
+        return states;
+      }
+
+      const targetSheet = resolveEncounterSheet(currentEncounter, state.characterId);
+      if (!targetSheet || targetSheet.currentHp > 0 || targetSheet.currentHp < -5) {
+        return states;
+      }
+
+      if (state.remainingTurnAdvances <= 1) {
+        updateEncounterCharacter(state.characterId, (sheet) => ({
+          ...sheet,
+          currentHp: Math.max(sheet.currentHp, state.reviveHp),
+          powerUsageState: incrementPowerUsageCount(
+            sheet.powerUsageState,
+            "daily",
+            POWER_USAGE_KEYS.bodyReinforcementRevive,
+            1
+          ),
+        }));
+        return states;
+      }
+
+      states.push({
+        ...state,
+        remainingTurnAdvances: state.remainingTurnAdvances - 1,
+      });
+      return states;
+    }, []);
+
+    currentEncounter.participants.forEach((participant) => {
+      const sheet = resolveEncounterSheet(currentEncounter, participant.characterId);
+      if (!sheet) {
+        return;
+      }
+
+      const bodyReinforcementLevel =
+        sheet.powers.find((power) => power.id === "body_reinforcement")?.level ?? 0;
+      const reviveAlreadyTracked = nextOngoingStates.some(
+        (state) => state.kind === "body_reinforcement_revive" && state.characterId === participant.characterId
+      );
+      const reviveAlreadyUsed =
+        getPowerUsageCount(
+          sheet.powerUsageState,
+          "daily",
+          POWER_USAGE_KEYS.bodyReinforcementRevive
+        ) >= 1;
+
+      if (
+        bodyReinforcementLevel >= 2 &&
+        sheet.currentHp <= 0 &&
+        sheet.currentHp >= -5 &&
+        !reviveAlreadyTracked &&
+        !reviveAlreadyUsed
+      ) {
+        nextOngoingStates.push({
+          id: `body-reinforcement-revive:${participant.characterId}`,
+          kind: "body_reinforcement_revive",
+          characterId: participant.characterId,
+          reviveHp: bodyReinforcementLevel >= 5 ? 4 : 1,
+          remainingTurnAdvances: 1,
+        });
+      }
+    });
+
+    const maintainedCrowdControlStates = nextOngoingStates.filter(
+      (state): state is Extract<(typeof nextOngoingStates)[number], { kind: "crowd_control" }> =>
+        state.kind === "crowd_control"
+    );
+    const nextControllerStates = nextActiveParticipantId
+      ? maintainedCrowdControlStates.filter(
+          (state) => state.casterCharacterId === nextActiveParticipantId
+        )
+      : [];
+
+    if (nextControllerStates.length > 0 && nextActiveParticipantId) {
+      const controllerSheet = resolveEncounterSheet(currentEncounter, nextActiveParticipantId);
+      const totalMaintenanceCost = nextControllerStates.reduce(
+        (sum, state) => sum + state.maintenanceManaCost,
+        0
+      );
+      const maintenanceFailed =
+        !controllerSheet ||
+        ("error" in spendPowerMana(controllerSheet, totalMaintenanceCost));
+
+      if (totalMaintenanceCost > 0) {
+        if (maintenanceFailed) {
+          nextControllerStates.forEach((state) => {
+            applyStatusTagChange({
+              characterId: state.targetCharacterId,
+              operation: "remove",
+              tag: { id: "paralyzed", label: "Paralyzed" },
+            });
+            applyStatusTagChange({
+              characterId: state.targetCharacterId,
+              operation: "remove",
+              tag: {
+                id: `crowd_control:${state.casterCharacterId}`,
+                label: `Controlled by ${currentEncounter.participants.find((participant) => participant.characterId === state.casterCharacterId)?.displayName ?? state.casterCharacterId}`,
+              },
+            });
+          });
+        } else {
+          const spentMaintenance = spendPowerMana(controllerSheet!, totalMaintenanceCost);
+          if (!("error" in spentMaintenance)) {
+            updateEncounterCharacter(nextActiveParticipantId, spentMaintenance.sheet);
+          }
+        }
+      }
+
+      if (maintenanceFailed) {
+        for (let index = nextOngoingStates.length - 1; index >= 0; index -= 1) {
+          const state = nextOngoingStates[index];
+          if (
+            state.kind === "crowd_control" &&
+            state.casterCharacterId === nextActiveParticipantId
+          ) {
+            nextOngoingStates.splice(index, 1);
+          }
+        }
+      }
+    }
+
+    updateCombatEncounter((encounter) => ({
+      ...encounter,
+      ongoingStates: nextOngoingStates,
+      turnState: {
+        round: nextRound,
+        activeParticipantIndex: nextIndex,
+        activeParticipantId: nextActiveParticipantId,
+      },
+    }));
+  }
+
   function executePreparedCast(request: PreparedCastRequest): string | null {
     const casterCharacter = characters.find((entry) => entry.id === request.casterCharacterId);
+    const currentEncounter = activeCombatEncounter;
     if (!casterCharacter) {
       return "The casting character no longer resolves to a saved character sheet.";
+    }
+    if (!currentEncounter) {
+      return "The active encounter is no longer available.";
     }
 
     const spentMana = spendPowerMana(casterCharacter.sheet, request.manaCost);
     if ("error" in spentMana) {
       return spentMana.error;
     }
+    updateEncounterCharacter(casterCharacter.id, () => spentMana.sheet);
 
-    if (request.historyEntries.length > 0) {
-      const historyEntriesByCharacterId = new Map(
-        request.historyEntries.map((item) => [item.characterId, item.entry] as const)
-      );
+    request.historyEntries.forEach((item) => {
+      updateEncounterCharacter(item.characterId, (currentSheet) => ({
+        ...currentSheet,
+        gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], item.entry),
+      }));
+    });
 
-      updateCharacter(casterCharacter.id, (currentSheet) => {
-        const nextHistoryEntry = historyEntriesByCharacterId.get(casterCharacter.id);
-        if (!nextHistoryEntry) {
-          return spentMana.sheet;
-        }
+    request.resourceChanges.forEach((change) => {
+      updateEncounterCharacter(change.characterId, (currentSheet) => {
+        const derived = buildCharacterDerivedValues(currentSheet);
+        const currentValue =
+          change.field === "currentMana"
+            ? derived.currentMana
+            : currentSheet[change.field];
+        const rawNextValue =
+          change.operation === "set" ? change.value : currentValue + change.value;
+        const nextValue =
+          change.field === "currentMana"
+            ? Math.max(0, Math.min(Math.trunc(rawNextValue), derived.maxMana))
+            : change.field === "temporaryHp"
+              ? Math.max(0, Math.trunc(rawNextValue))
+              : Math.trunc(rawNextValue);
 
         return {
-          ...spentMana.sheet,
-          gameHistory: prependGameHistoryEntry(spentMana.sheet.gameHistory ?? [], nextHistoryEntry),
+          ...currentSheet,
+          [change.field]: nextValue,
+          ...(change.field === "currentMana" ? { manaInitialized: true } : null),
         };
       });
+    });
 
-      request.historyEntries
-        .filter((item) => item.characterId !== casterCharacter.id)
-        .forEach((item) => {
-          updateCharacter(item.characterId, (currentSheet) => ({
-            ...currentSheet,
-            gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], item.entry),
-          }));
-        });
+    request.statusTagChanges.forEach(applyStatusTagChange);
+    request.usageCounterChanges.forEach(applyUsageCounterChange);
 
-      if (
-        request.healingApplications.length === 0 &&
-        request.damageApplications.length === 0 &&
-        request.effects.length === 0
-      ) {
-        return null;
-      }
-    }
+    request.healingApplications.forEach((application) => {
+      updateEncounterCharacter(application.targetCharacterId, (currentSheet) =>
+        applyHealingToSheet(currentSheet, application.amount, {
+          temporaryHpCap: application.temporaryHpCap,
+        }).sheet
+      );
+    });
 
-    if (request.healingApplications.length > 0 || request.damageApplications.length > 0) {
-      let nextCasterSheet = spentMana.sheet;
+    request.damageApplications.forEach((application) => {
+      updateEncounterCharacter(application.targetCharacterId, (currentSheet) =>
+        applyDamageToSheet(currentSheet, {
+          rawAmount: application.rawAmount,
+          damageType: application.damageType,
+          mitigationChannel: application.mitigationChannel,
+        }).sheet
+      );
+    });
 
-      request.healingApplications
-        .filter((application) => application.targetCharacterId === casterCharacter.id)
-        .forEach((application) => {
-          nextCasterSheet = applyHealingToSheet(nextCasterSheet, application.amount).sheet;
-        });
+    const brokenCrowdControlStates = currentEncounter.ongoingStates.filter(
+      (state): state is Extract<(typeof currentEncounter.ongoingStates)[number], { kind: "crowd_control" }> =>
+        state.kind === "crowd_control" &&
+        request.damageApplications.some(
+          (application) =>
+            application.targetCharacterId === state.targetCharacterId &&
+            ((application.sourceCharacterId === state.casterCharacterId &&
+              state.breaksOnDamageFromCaster) ||
+              (application.sourceCharacterId !== state.casterCharacterId &&
+                state.breaksOnDamageFromOthers))
+        )
+    );
 
-      request.damageApplications
-        .filter((application) => application.targetCharacterId === casterCharacter.id)
-        .forEach((application) => {
-          nextCasterSheet = applyDamageToSheet(nextCasterSheet, {
-            rawAmount: application.rawAmount,
-            damageType: application.damageType,
-            mitigationChannel: application.mitigationChannel,
-          }).sheet;
-        });
-
-      updateCharacter(casterCharacter.id, nextCasterSheet);
-
-      request.healingApplications
-        .filter((application) => application.targetCharacterId !== casterCharacter.id)
-        .forEach((application) => {
-          updateCharacter(application.targetCharacterId, (currentSheet) =>
-            applyHealingToSheet(currentSheet, application.amount).sheet
-          );
-        });
-
-      request.damageApplications
-        .filter((application) => application.targetCharacterId !== casterCharacter.id)
-        .forEach((application) => {
-          updateCharacter(application.targetCharacterId, (currentSheet) =>
-            applyDamageToSheet(currentSheet, {
-              rawAmount: application.rawAmount,
-              damageType: application.damageType,
-              mitigationChannel: application.mitigationChannel,
-            }).sheet
-          );
-        });
-
-      return null;
-    }
+    brokenCrowdControlStates.forEach((state) => {
+      applyStatusTagChange({
+        characterId: state.targetCharacterId,
+        operation: "remove",
+        tag: { id: "paralyzed", label: "Paralyzed" },
+      });
+      applyStatusTagChange({
+        characterId: state.targetCharacterId,
+        operation: "remove",
+        tag: {
+          id: `crowd_control:${state.casterCharacterId}`,
+          label: `Controlled by ${state.casterCharacterId}`,
+        },
+      });
+      applyStatusTagChange({
+        characterId: state.targetCharacterId,
+        operation: "add",
+        tag: {
+          id: "crowd_control_immunity",
+          label: "Crowd Control Immune (1 day)",
+        },
+      });
+    });
 
     const auraSourceEffects = request.effects.filter((effect) => isAuraSourceEffect(effect));
     auraSourceEffects.forEach((sourceEffect) => {
@@ -314,7 +625,7 @@ export function CombatEncounterPage() {
           getAuraSelectedTargetIds(existingEffect)
             .filter((targetId) => targetId !== casterCharacter.id)
             .forEach((targetId) => {
-              updateCharacter(targetId, (currentSheet) =>
+              updateEncounterCharacter(targetId, (currentSheet) =>
                 removeAuraSharedEffectsForTarget(currentSheet, existingEffect, targetId)
               );
             });
@@ -324,21 +635,152 @@ export function CombatEncounterPage() {
     const isSelfCast =
       request.targetCharacterIds.length === 1 && request.targetCharacterIds[0] === casterCharacter.id;
 
+    if (request.effects.length === 0) {
+      updateCombatEncounter((currentEncounter) => {
+        const dismissedIds = new Set(
+          request.summonChanges
+            .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "dismiss" }> => change.operation === "dismiss")
+            .map((change) => change.summonId)
+        );
+        let participants = currentEncounter.participants.filter(
+          (participant) => !dismissedIds.has(participant.characterId)
+        );
+        let transientCombatants = currentEncounter.transientCombatants.filter(
+          (entry) => !dismissedIds.has(entry.id)
+        );
+        let insertedCount = 0;
+
+        request.summonChanges
+          .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "spawn" }> => change.operation === "spawn")
+          .forEach((change) => {
+            transientCombatants = [...transientCombatants, change.summon];
+            const casterIndex = participants.findIndex(
+              (participant) => participant.characterId === request.casterCharacterId
+            );
+            const insertIndex =
+              casterIndex >= 0 ? casterIndex + 1 + insertedCount : participants.length;
+            participants = [
+              ...participants.slice(0, insertIndex),
+              change.participant,
+              ...participants.slice(insertIndex),
+            ];
+            insertedCount += 1;
+          });
+
+        const activeParticipantId =
+          participants.some(
+            (participant) => participant.characterId === currentEncounter.turnState.activeParticipantId
+          )
+            ? currentEncounter.turnState.activeParticipantId
+            : participants[currentEncounter.turnState.activeParticipantIndex]?.characterId ??
+              participants[0]?.characterId ??
+              null;
+
+        return {
+          ...currentEncounter,
+          participants,
+          transientCombatants,
+          ongoingStates: [
+            ...currentEncounter.ongoingStates.filter(
+              (state) =>
+                !brokenCrowdControlStates.some((brokenState) => brokenState.id === state.id) &&
+                !request.ongoingStateChanges.some(
+                  (change) => change.operation === "remove" && change.ongoingStateId === state.id
+                )
+            ),
+            ...request.ongoingStateChanges.flatMap((change) =>
+              change.operation === "add" ? [change.state] : []
+            ),
+          ],
+          turnState: {
+            ...currentEncounter.turnState,
+            activeParticipantId,
+          },
+        };
+      });
+
+      return null;
+    }
+
     if (isSelfCast) {
       const selfEffect = request.effects[0];
       if (!selfEffect) {
         return "Cast effect could not be resolved.";
       }
 
-      updateCharacter(casterCharacter.id, applyActivePowerEffect(spentMana.sheet, selfEffect));
-      return null;
+      updateEncounterCharacter(casterCharacter.id, (currentSheet) =>
+        applyActivePowerEffect(currentSheet, selfEffect)
+      );
+    } else {
+      request.effects.forEach((effect) => {
+        updateEncounterCharacter(effect.targetCharacterId, (currentSheet) =>
+          applyActivePowerEffect(currentSheet, effect)
+        );
+      });
     }
 
-    updateCharacter(casterCharacter.id, spentMana.sheet);
-    request.effects.forEach((effect) => {
-      updateCharacter(effect.targetCharacterId, (currentSheet) =>
-        applyActivePowerEffect(currentSheet, effect)
+    updateCombatEncounter((currentEncounter) => {
+      const dismissedIds = new Set(
+        request.summonChanges
+          .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "dismiss" }> => change.operation === "dismiss")
+          .map((change) => change.summonId)
       );
+      let participants = currentEncounter.participants.filter(
+        (participant) => !dismissedIds.has(participant.characterId)
+      );
+      let transientCombatants = currentEncounter.transientCombatants.filter(
+        (entry) => !dismissedIds.has(entry.id)
+      );
+      let insertedCount = 0;
+
+      request.summonChanges
+        .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "spawn" }> => change.operation === "spawn")
+        .forEach((change) => {
+          transientCombatants = [...transientCombatants, change.summon];
+          const casterIndex = participants.findIndex(
+            (participant) => participant.characterId === request.casterCharacterId
+          );
+          const insertIndex =
+            casterIndex >= 0 ? casterIndex + 1 + insertedCount : participants.length;
+          participants = [
+            ...participants.slice(0, insertIndex),
+            change.participant,
+            ...participants.slice(insertIndex),
+          ];
+          insertedCount += 1;
+        });
+
+      const activeParticipantId =
+        participants.some(
+          (participant) => participant.characterId === currentEncounter.turnState.activeParticipantId
+        )
+          ? currentEncounter.turnState.activeParticipantId
+          : participants[currentEncounter.turnState.activeParticipantIndex]?.characterId ??
+            participants[0]?.characterId ??
+            null;
+
+      return {
+        ...currentEncounter,
+        participants,
+        transientCombatants,
+        ongoingStates: [
+          ...currentEncounter.ongoingStates.filter(
+            (state) =>
+              !brokenCrowdControlStates.some((brokenState) => brokenState.id === state.id) &&
+              !request.ongoingStateChanges.some(
+                (change) =>
+                  change.operation === "remove" && change.ongoingStateId === state.id
+              )
+          ),
+          ...request.ongoingStateChanges.flatMap((change) =>
+            change.operation === "add" ? [change.state] : []
+          ),
+        ],
+        turnState: {
+          ...currentEncounter.turnState,
+          activeParticipantId,
+        },
+      };
     });
 
     return null;
@@ -493,6 +935,9 @@ export function CombatEncounterPage() {
 
       <section className="dm-shell">
         <EncounterTopbar
+          currentRound={currentTurnState.round}
+          activeCombatantLabel={activeCombatantLabel}
+          onAdvanceTurn={advanceEncounterTurn}
           onOpenCombatDashboard={() => navigate("/dm/combat")}
           onOpenDmDashboard={() => navigate("/dm")}
         />
@@ -524,11 +969,11 @@ export function CombatEncounterPage() {
           />
 
           <EncounterInitiativePanel
-            encounterParticipants={encounterParticipants}
-            openCharacterSheet={openCharacterSheet}
-            requestCast={requestCast}
-            updateCharacter={updateCharacter}
-          />
+              encounterParticipants={encounterParticipants}
+              openCharacterSheet={openCharacterSheet}
+              requestCast={requestCast}
+              updateCharacter={updateEncounterCharacter}
+            />
         </section>
       </section>
 

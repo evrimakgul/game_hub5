@@ -1,0 +1,42 @@
+# Task Log
+
+## 2026-03-14
+
+- `T01` Completed roadmap/doc audit and initialized task tracking.
+  - Updated `references/plan.md`, `references/project_objective.md`, and `references/current_notes.md`.
+  - Seeded `project_tracking/tasks_todo.md`, `project_tracking/tasks_done.md`, and `project_tracking/task_log.md`.
+  - Validation pending on the implementation tasks that follow.
+- `T02` Completed `powerUsageState` model, normalization, and persistence wiring.
+  - Added structured usage state types/helpers and attached them to the character draft schema.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T03` Completed player and DM sheet usage displays and manual reset controls.
+  - Added usage summaries and reset actions on character sheet surfaces.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T04` Completed encounter runtime foundations for turn state, transient summons, and ongoing encounter-only states.
+  - Added turn tracking, transient combatant support, ongoing state storage, and execution plumbing.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T05` Completed `Elementalist` direct-cast support.
+  - Added elemental bolt and cantrip flows, low-level damage-type locking, split damage handling, bonus mana scaling, and necrotic living-target vulnerability.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T06` Completed the remaining healing slice.
+  - Added wound-mend tracking, poison/disease/curse cleanup, limb-regrowth notes, and overheal-to-temporary-HP handling.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T07` Completed passive and utility backlog support.
+  - Added passive utility traits and passive skill bonuses for Awareness, Crowd Control, Light Support, Necromancy, and Shadow Control.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T08` Completed `Light Support` mana restore and `Expose Darkness`.
+  - Added long-rest usage tracking, direct mana restoration, and temporary resistance downgrades for darkness-based defenses.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T09` Completed `Body Reinforcement` delayed stand-up behavior.
+  - Added encounter-turn revive scheduling, revive application, and daily usage tracking.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T10` Completed `Crowd Control`.
+  - Added contest-gated cast preparation, status tags, maintenance mana, break-on-damage behavior, and encounter-only control state tracking.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T11` Completed summons and resurrection.
+  - Added encounter-local necromancy summons, shadow soldier creation, summon dismissal/replacement, and resurrection to `1 HP` for loaded sheets.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `T12` Completed coverage and final reconciliation.
+  - Added combat casting and expanded power/runtime regression coverage.
+  - Reconciled `references/plan.md`, `references/project_objective.md`, `references/current_notes.md`, and tracking files with the implemented system.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.

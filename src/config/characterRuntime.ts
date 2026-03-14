@@ -6,6 +6,7 @@ import type {
   StatSource,
 } from "./characterTemplate.ts";
 import type { StatId } from "../types/character.ts";
+import type { DamageTypeId, ResistanceLevel } from "../rules/resistances.ts";
 import { getRuntimePowerCantripLevels } from "../rules/powerData.ts";
 import {
   calculateArmorClass,
@@ -46,6 +47,7 @@ export type CharacterDerivedValues = {
   rangedAttack: number;
   meleeDamage: number;
   rangedDamage: string;
+  utilityTraits: string[];
   activePowerEffects: ActivePowerEffect[];
 };
 
@@ -76,7 +78,7 @@ function buildDetail(gearSources: StatSource[], buffSources: StatSource[]): stri
 
 function getPowerEffectSources(
   sheet: CharacterDraft,
-  targetType: "stat" | "skill" | "derived",
+  targetType: "stat" | "skill" | "derived" | "resistance",
   targetId: string
 ): StatSource[] {
   return (sheet.activePowerEffects ?? []).flatMap((effect) =>
@@ -101,6 +103,99 @@ function getAwarenessAlertnessPassiveSource(sheet: CharacterDraft): StatSource[]
       value: awarenessPower.level,
     },
   ];
+}
+
+function getUnlockedCantripMechanics(
+  sheet: CharacterDraft,
+  powerId: string
+): Record<string, unknown> | null {
+  const power = sheet.powers.find((entry) => entry.id === powerId);
+  if (!power || power.level <= 0) {
+    return null;
+  }
+
+  const unlockedLevel =
+    getRuntimePowerCantripLevels(powerId)
+      .filter((level) => level.power_level <= power.level)
+      .at(-1) ?? null;
+
+  return unlockedLevel?.mechanics ?? null;
+}
+
+function getPassiveSkillBonusSources(sheet: CharacterDraft, skillId: string): StatSource[] {
+  const sources: StatSource[] = [];
+  const crowdControlMechanics = getUnlockedCantripMechanics(sheet, "crowd_control");
+  const necromancyMechanics = getUnlockedCantripMechanics(sheet, "necromancy");
+
+  if (crowdControlMechanics) {
+    const crowdControlBonusBySkillId: Record<string, string> = {
+      social: "social_skill_bonus",
+      intimidation: "intimidation_skill_bonus",
+      mechanics: "mechanics_skill_bonus",
+      technology: "technology_skill_bonus",
+    };
+    const mechanicKey = crowdControlBonusBySkillId[skillId];
+    const bonus = mechanicKey ? crowdControlMechanics[mechanicKey] : 0;
+
+    if (typeof bonus === "number" && Number.isFinite(bonus) && bonus > 0) {
+      sources.push({
+        label: "Crowd Control",
+        value: Math.trunc(bonus),
+      });
+    }
+  }
+
+  if (skillId === "melee" && necromancyMechanics) {
+    const bonus = necromancyMechanics.melee_skill_bonus;
+    if (typeof bonus === "number" && Number.isFinite(bonus) && bonus > 0) {
+      sources.push({
+        label: "Necromancy",
+        value: Math.trunc(bonus),
+      });
+    }
+  }
+
+  return sources;
+}
+
+function getPassiveUtilityTraits(sheet: CharacterDraft): string[] {
+  const traits = new Set<string>();
+  const awareness = sheet.powers.find((power) => power.id === "awareness") ?? null;
+  const lightSupport = sheet.powers.find((power) => power.id === "light_support") ?? null;
+  const necromancy = sheet.powers.find((power) => power.id === "necromancy") ?? null;
+  const shadowControl = sheet.powers.find((power) => power.id === "shadow_control") ?? null;
+  const lightSupportMechanics = getUnlockedCantripMechanics(sheet, "light_support");
+  const necromancyMechanics = getUnlockedCantripMechanics(sheet, "necromancy");
+
+  if ((awareness?.level ?? 0) >= 3) {
+    traits.add("Techno-Invisibility Immunity");
+  }
+
+  if (lightSupport && lightSupportMechanics?.nightvision === true) {
+    traits.add("Nightvision");
+  }
+
+  if (necromancy && typeof necromancyMechanics?.hostile_undead_aggro_priority === "string") {
+    traits.add(
+      necromancyMechanics.hostile_undead_aggro_priority === "ignore_unless_attacked"
+        ? "Hostile Undead Ignore Unless Attacked"
+        : "Hostile Undead Aggro Last"
+    );
+  }
+
+  if ((shadowControl?.level ?? 0) >= 2) {
+    traits.add(`Shadow Walk ${25 * shadowControl!.level}m`);
+  }
+
+  if ((shadowControl?.level ?? 0) >= 3) {
+    traits.add("Cosmetic Clothing / Armor Shift");
+  }
+
+  if ((shadowControl?.level ?? 0) >= 5) {
+    traits.add("Minor Body Cosmetics");
+  }
+
+  return [...traits];
 }
 
 export function getStatBreakdown(sheet: CharacterDraft, statId: StatId): CharacterBreakdown {
@@ -128,6 +223,7 @@ export function getSkillBreakdown(sheet: CharacterDraft, skillId: string): Chara
     ...(skill?.buffSources ?? []),
     ...getPowerEffectSources(sheet, "skill", skillId),
     ...(skillId === "alertness" ? getAwarenessAlertnessPassiveSource(sheet) : []),
+    ...getPassiveSkillBonusSources(sheet, skillId),
   ];
   const base = skill?.base ?? 0;
 
@@ -151,6 +247,31 @@ export function getCurrentSkillValue(sheet: CharacterDraft, skillId: string): nu
 
 export function getDerivedModifierTotal(sheet: CharacterDraft, targetId: string): number {
   return sumSources(getPowerEffectSources(sheet, "derived", targetId));
+}
+
+export function getResistanceModifierTotal(
+  sheet: CharacterDraft,
+  damageTypeId: DamageTypeId
+): number {
+  return sumSources(getPowerEffectSources(sheet, "resistance", damageTypeId));
+}
+
+export function getResolvedResistanceLevel(
+  sheet: CharacterDraft,
+  damageTypeId: DamageTypeId
+): ResistanceLevel {
+  const baseLevel = sheet.resistances[damageTypeId] ?? 0;
+  const nextLevel = Math.trunc(baseLevel + getResistanceModifierTotal(sheet, damageTypeId));
+
+  if (nextLevel < -2) {
+    return -2;
+  }
+
+  if (nextLevel > 2) {
+    return 2;
+  }
+
+  return nextLevel as ResistanceLevel;
 }
 
 export function getPassiveManaBonus(sheet: CharacterDraft): number {
@@ -216,6 +337,7 @@ export function buildCharacterDerivedValues(sheet: CharacterDraft): CharacterDer
     attackDiceBonus +
     getDerivedModifierTotal(sheet, "ranged_attack");
   const temporaryInspiration = sheet.temporaryInspiration;
+  const utilityTraits = getPassiveUtilityTraits(sheet);
 
   return {
     currentStats,
@@ -243,6 +365,7 @@ export function buildCharacterDerivedValues(sheet: CharacterDraft): CharacterDer
     rangedAttack,
     meleeDamage: currentStats.STR + getDerivedModifierTotal(sheet, "melee_damage"),
     rangedDamage: "-",
+    utilityTraits,
     activePowerEffects: [...(sheet.activePowerEffects ?? [])],
   };
 }

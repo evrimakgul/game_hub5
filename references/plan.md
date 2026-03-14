@@ -1,4 +1,4 @@
-# Roadmap Reset v6 (Power Completion + Awareness Reset)
+# Roadmap Reset v8 (Implemented T1 Power Runtime)
 
 This roadmap is the active implementation source of truth for this branch.
 
@@ -8,69 +8,69 @@ This roadmap is the active implementation source of truth for this branch.
 - Preserve the source reference files under `references/originals/` and the derived JSON files.
 - Use `Basic_Rules5.txt` and `T1_Supernatural_Powers5.txt` as the authoritative rule sources.
 - Damage resolution must not clamp HP at `0`; negative HP is allowed and must remain visible.
+- `AA` is deferred until item-authoring design exists; do not invent item-generation rules in this phase.
 
 ## Current State
 - Combat dashboard staging, parties, initiative ordering, and the DM combat encounter page are implemented.
 - Roll helper, aura-source sharing for `Light Support` and `Shadow Control`, and DM runtime editing are implemented.
-- First direct-combat slice is implemented for:
-  - `Body Reinforcement`
-  - `Light Support`
-  - `Shadow Control` cloak
-  - `Healing`
-  - `Shadow Manipulation`
-  - `Necrotic Touch`
+- Shared runtime scaffolding is implemented:
+  - permanent + temporary inspiration
+  - temporary HP
+  - negative HP support
+  - typed character-sheet intel snapshots
+  - item-identification metadata fields
+  - encounter-visible status tags
+  - structured `powerUsageState`
+  - manual daily and long-rest reset controls
+  - encounter turn runtime
+  - transient summon combatants
+  - encounter-only ongoing maintained states
+  - cast execution support for resource/status/usage/summon operations
+  - temporary resistance modifiers on active effects
+- Awareness implementation status:
+  - `AS` complete
+  - `AI` complete
+  - `AC` complete
+  - `AA` deferred
+- Active/direct implementation status:
+  - `Body Reinforcement` stat buff complete
+  - `Body Reinforcement` delayed self-revive cantrip complete
+  - `Crowd Control` complete for the current app surface
+  - `Elementalist` main cast complete
+  - `Elementalist` cantrip complete
+  - `Healing` complete through Lv5
+  - `Healing` cantrip complete
+  - `Light Support` aura complete
+  - `Light Support` mana restore complete
+  - `Light Support` `Expose Darkness` complete
+  - `Necromancy` summons complete
+  - `Necrotic Touch` complete
+  - `Resurrection` complete
+  - `Shadow Control` cloak complete
+  - `Shadow Manipulation` complete
+  - `Shadow Soldier` complete
+- Passive/utility implementation status:
+  - `Light Support` passive mana bonus complete
+  - `Crowd Control` cantrip skill bonuses complete
+  - `Necromancy` cantrip melee / undead-aggro behavior complete
+  - `Shadow Control` utility trait surfacing complete
+  - derived utility traits surface on sheet and encounter views
 
-## Phase 3 - Power Completion
-3.1 Update the shared data/runtime model before the remaining powers.
-  - Split inspiration into permanent and temporary.
-  - Add temporary HP as a separate runtime value.
-  - Keep HP capable of going negative.
-  - Extend character-sheet game history to support typed intel snapshots.
-  - Add item-identification state to inventory/loadout items.
-  - Add encounter-visible status tags such as `Paralyzed` and `Controlled by <caster>`.
-
-3.2 Replace Awareness with the new `AS / AI / AC / AA` model.
-  - `AS` passive alertness bonus.
-  - `AI` passive temporary inspiration per session.
-  - `AC` active character assessment with CR-limit and CR-cap rules.
-  - `AA` active item identification from owned items.
-
-3.3 Finish the remaining direct damage and healing work.
-  - Finalize `Necrotic Touch` with corrected higher-level mana rules.
-  - Implement `Elementalist` damage variants and manual allocation.
-  - Finish the remaining healing rule slice:
-    - cantrip heal / stop bleeding
-    - poison, disease, curse removal
-    - limb-regrowth flag
-    - overheal as temporary HP
-
-3.4 Finish the remaining passive / utility power backlog.
-  - `Light Support` cantrip mana bonus and nightvision.
-  - `Light Support` mana restore and `Expose Darkness`.
-  - `Body Reinforcement` cantrip stand-up behavior.
-  - `Necromancy` cantrip undead-aggro / melee bonus behavior.
-  - `Crowd Control` cantrip skill bonuses.
-  - `Shadow Control` cosmetic cantrips.
-
-3.5 Implement `Crowd Control`.
-  - Contest-based cast flow.
-  - Paralyze / control status application.
-  - Maintenance mana per turn / per target.
-  - Controlled targets stay in their party; show a control tag instead of party switching.
-  - Defer a full command UI.
-
-3.6 Implement summons.
-  - `Necromancy` summons and `Resurrection`.
-  - `Shadow Control` shadow soldier.
-  - Summons are temporary encounter units built from templates.
-  - `Resurrection` returns the target alive at `1 HP`.
+## Completed Phase 3
+3.1 Shared model/runtime upgrades completed.
+3.2 Awareness completed except deferred `AA`.
+3.3 Remaining direct damage and healing work completed.
+3.4 Passive / utility backlog completed for the current app surface.
+3.5 `Crowd Control` completed for the current app surface.
+3.6 Summons and resurrection completed for the current app surface.
 
 ## Deferred
+- Add `AA` only after item-authoring design is defined.
 - Add the combat encounter `History` block only after the remaining powers are complete.
   - 3 lines visible by default
   - newest first
   - vertical scrollbar
   - bottom-right resize handle
   - short summaries only
-- `AC` snapshots belong in the caster’s character-sheet `Game History`, not in the encounter history block.
+- `AC` snapshots belong in the caster's character-sheet `Game History`, not in the encounter history block.
 - Session-counter automation, realtime sync, encounter persistence, and player-side combat UI remain out of scope.

@@ -12,45 +12,50 @@ This file tracks active reminders and implementation notes for the current branc
   - DM dashboard
   - DM-side player character access
   - DM NPC creator and DM-owned character sheets
-  - combat dashboard as the encounter staging page
-- The pseudo NPC quick-add path has been removed from the combat dashboard.
-- The new combat rebuild starts with encounter start, initiative ordering, and the first DM combat encounter page.
+  - combat dashboard staging
+  - DM combat encounter
 - The combat encounter uses a floating roll-helper popover instead of a static helper panel.
 - Movement is shown in the character sheet combat summary as `20 + 5`.
   - `20` from standard-action conversion
   - `5` from move action
-- Named next implementation block: `Cast Power Mechanism`.
-- First `Cast Power Mechanism` slice is now active on the DM combat encounter page.
-  - Supported active casts:
-    - `Body Reinforcement`
-    - `Light Support`
-    - `Shadow Control` cloak
-  - Active power effects are now stored on locally persisted character records.
-  - Character sheet and combat encounter both read the same post-effect runtime values.
-  - `currentMana` now defaults to derived max mana until the character spends mana for the first time.
-  - Encounter instances themselves are still not persisted locally yet.
-- Authoritative source files are now:
-  - `references/originals/Basic_Rules5.txt`
-  - `references/originals/T1_Supernatural_Powers5.txt`
-- Power data normalization is now partially completed for runtime use:
-  - Awareness identification costs are explicitly free.
-  - Necrotic Touch damage and healing now scale from the acting power level instead of hard-coded flat bonuses.
-  - Shadow Manipulation damage now scales from `MAN + Shadow Control level`.
-  - Summon templates now use structured stat formulas, structured attack definitions, and numeric resistance levels.
-  - Resistance data is aligned with the character-sheet model (`-2` to `+2`) and the `cold` damage-type naming.
-- Combat rules now separate attack delivery from mitigation so future magical attacks can still deal physical damage and be reduced by DR.
-- DM character editing now has a concrete spec in `references/dm_editing_spec.md`.
-  - Split future DM edits into `Runtime Adjustments`, `Sheet Administration`, and `Admin Override`.
-  - Keep DM combat edits focused on runtime values such as hp, mana, inspiration, and temporary state.
-  - Keep permanent progression-sensitive edits behind a separate override path with reason + confirmation.
-  - Add a DM audit log when this feature is implemented.
-- Deferred until after the current powers/spells implementation block:
-  - Add a `History` block to the combat encounter page between `Parties` and `Init Order`.
-  - The block should be a small three-line visible logger by default, with newest entries at the top.
-  - It should be scrollable with a standard vertical scrollbar.
-  - It should be resizable by dragging from the bottom-right corner.
-  - Use short action summaries only, not verbose full-resolution text.
-  - Include the target in summary lines when relevant, e.g. `t4 cast Body Reinforcement on t1 (STR)`.
-  - This logger should eventually receive combat actions and resolutions after the remaining powers/spells are implemented.
+
+## Active Power Runtime
+- Cast power runtime is active on the DM combat encounter page.
+- Completed active slices:
+  - `Body Reinforcement` stat buff + delayed revive cantrip
+  - `Light Support` aura + mana restore + `Expose Darkness`
+  - `Shadow Control` cloak + `Shadow Manipulation` + `Shadow Soldier`
+  - `Healing` Lv1-Lv5 + wound-mend cantrip
+  - `Assess Character`
+  - `Crowd Control`
+  - `Elementalist`
+  - `Necrotic Touch`
+  - `Resurrection`
+- Active power effects are stored on locally persisted character records.
+- Character sheet and combat encounter both read the same post-effect runtime values.
+- `currentMana` defaults to derived max mana until the character spends mana for the first time.
+
+## Shared Runtime Notes
+- Permanent and temporary inspiration are already separated.
+- Temporary HP is already tracked separately.
+- HP must stay capable of going negative.
+- `Assess Character` snapshots belong in the caster's character-sheet `Game History`.
+- `powerUsageState` is persisted on the sheet and supports daily, long-rest, and per-target tracking.
+- Encounter runtime tracks round / active combatant state, transient summons, and maintained encounter-only states.
+- Item identification metadata exists on inventory / equipment entries, but `AA` remains deferred until item-authoring design is defined.
+
+## Remaining Active Work
+- No active power-mechanics implementation tasks remain on this branch.
+- Deferred work remains limited to:
+  - `AA`
+  - combat encounter history/logger block
+  - non-local/runtime scope items
+
+## Deferred
+- Add a `History` block to the combat encounter page only after the remaining powers are implemented.
+  - 3 visible lines
+  - newest first
+  - vertical scrollbar
+  - bottom-right resize handle
+  - short summaries only
 - The current branch does not use Supabase at runtime.
-- Old Supabase schema and realtime reference documents have been removed from this branch.

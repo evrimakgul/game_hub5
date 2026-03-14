@@ -1,6 +1,6 @@
 import type { StatId } from "./character";
 
-export type ActivePowerModifierTargetType = "stat" | "skill" | "derived";
+export type ActivePowerModifierTargetType = "stat" | "skill" | "derived" | "resistance";
 export type ActivePowerEffectKind = "direct" | "aura_source" | "aura_shared";
 export type ActivePowerShareMode = "self" | "aura" | null;
 

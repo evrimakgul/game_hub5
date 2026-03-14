@@ -36,6 +36,22 @@ export async function runCombatResolutionTests(): Promise<void> {
         assert.equal(result.appliedAmount, 3);
       },
     },
+    {
+      name: "healing overflow grants temporary HP up to the provided cap",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.statState.STAM.base = 3;
+        sheet.currentHp = 7;
+
+        const result = applyHealingToSheet(sheet, 5, {
+          temporaryHpCap: 2,
+        });
+
+        assert.equal(result.sheet.currentHp, 8);
+        assert.equal(result.sheet.temporaryHp, 2);
+        assert.equal(result.appliedAmount, 3);
+      },
+    },
   ]);
 }
 

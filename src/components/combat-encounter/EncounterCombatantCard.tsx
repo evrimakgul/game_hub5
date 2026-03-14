@@ -145,6 +145,19 @@ export function EncounterCombatantCard({
                   </div>
                 </div>
               ) : null}
+
+              {combatant.snapshot.utilityTraits.length > 0 ? (
+                <div className="dm-combatant-section dm-combatant-section-full">
+                  <p className="section-kicker">Utility Traits</p>
+                  <div className="dm-pill-list">
+                    {combatant.snapshot.utilityTraits.map((trait) => (
+                      <div key={trait} className="dm-pill">
+                        <strong>{trait}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </>
         ) : (

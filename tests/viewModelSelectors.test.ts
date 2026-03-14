@@ -63,19 +63,23 @@ export async function runViewModelSelectorTests(): Promise<void> {
               displayName: "Scout",
               initiativePool: 6,
               initiativeFaces: [6, 2, 2, 2, 2, 2],
-              initiativeSuccesses: 1,
-              dex: 3,
-              wits: 3,
-              partyId: "party-1",
-            },
-            character: {
-              id: "scout-1",
-              ownerRole: "player" as const,
-              sheet,
-            },
-            snapshot,
+            initiativeSuccesses: 1,
+            dex: 3,
+            wits: 3,
+            partyId: "party-1",
+            controllerCharacterId: null,
+            summonTemplateId: null,
+            sourcePowerId: null,
           },
-        ];
+          character: {
+            id: "scout-1",
+            ownerRole: "player" as const,
+            sheet,
+          },
+          transientCombatant: null,
+          snapshot,
+        },
+      ];
 
         const members = getEncounterPartyMembers(encounterParticipants, "party-1");
 

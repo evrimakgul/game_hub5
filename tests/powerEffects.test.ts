@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 
 import { buildCharacterEncounterSnapshot } from "../src/rules/combatEncounter.ts";
-import { buildCharacterDerivedValues } from "../src/config/characterRuntime.ts";
+import {
+  buildCharacterDerivedValues,
+  getResolvedResistanceLevel,
+} from "../src/config/characterRuntime.ts";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
+  buildDirectDamageCastResolution,
+  buildHealingCastResolution,
+  getCastPowerDamageTypeOptions,
   spendPowerMana,
 } from "../src/rules/powerEffects.ts";
 import { runTestSuite } from "./harness.ts";
@@ -176,6 +182,134 @@ export async function runPowerEffectsTests(): Promise<void> {
           4
         );
         assert.equal(derived.activePowerEffects.length, 1);
+      },
+    },
+    {
+      name: "elementalist split necrotic damage applies living vulnerability and bonus mana",
+      run: () => {
+        const caster = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        caster.statState.INT.base = 4;
+        const power = {
+          id: "elementalist",
+          name: "Elementalist",
+          level: 5,
+          governingStat: "INT" as const,
+        };
+
+        const resolution = buildDirectDamageCastResolution({
+          casterSheet: caster,
+          power,
+          variantId: "elemental_bolt",
+          targetCharacterIds: ["target-1", "target-2"],
+          selectedDamageType: "necrotic",
+          bonusManaSpend: 1,
+          targetMetadata: [
+            { characterId: "target-1", isLiving: true },
+            { characterId: "target-2", isLiving: true },
+          ],
+        });
+
+        assert.ok(!("error" in resolution));
+        if ("error" in resolution) {
+          return;
+        }
+
+        assert.equal(resolution.manaCost, 3);
+        assert.equal(resolution.applications.length, 2);
+        assert.equal(resolution.applications[0]?.rawAmount, 11);
+        assert.equal(resolution.applications[0]?.damageType, "necrotic");
+      },
+    },
+    {
+      name: "elementalist cantrip damage types exclude necrotic even at level five",
+      run: () => {
+        const power = {
+          id: "elementalist",
+          name: "Elementalist",
+          level: 5,
+          governingStat: "INT" as const,
+        };
+
+        assert.deepEqual(
+          getCastPowerDamageTypeOptions(power, "elemental_cantrip").map((option) => option.id),
+          ["fire", "cold", "lightning", "acid"]
+        );
+      },
+    },
+    {
+      name: "healing resolutions expose cantrip tracking and level-five overheal metadata",
+      run: () => {
+        const caster = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        caster.statState.INT.base = 4;
+        const levelFiveHealing = {
+          id: "healing",
+          name: "Healing",
+          level: 5,
+          governingStat: "INT" as const,
+        };
+        const cantripResolution = buildHealingCastResolution({
+          casterSheet: caster,
+          power: levelFiveHealing,
+          variantId: "wound_mend",
+          targetCharacterIds: ["target-1"],
+        });
+        const healingResolution = buildHealingCastResolution({
+          casterSheet: caster,
+          power: levelFiveHealing,
+          variantId: "default",
+          targetCharacterIds: ["target-1"],
+        });
+
+        assert.ok(!("error" in cantripResolution));
+        assert.ok(!("error" in healingResolution));
+        if ("error" in cantripResolution || "error" in healingResolution) {
+          return;
+        }
+
+        assert.equal(cantripResolution.totalAmount, 4);
+        assert.deepEqual(cantripResolution.removedStatuses, ["bleeding"]);
+        assert.equal(cantripResolution.perTargetDailyLimit, 2);
+        assert.equal(healingResolution.totalAmount, 9);
+        assert.equal(healingResolution.canRegrowLimbs, true);
+        assert.equal(healingResolution.overhealCapStat, "STAM");
+      },
+    },
+    {
+      name: "expose darkness downgrades resistance-based defenses while active",
+      run: () => {
+        const caster = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        caster.powers = [
+          {
+            id: "light_support",
+            name: "Light Support",
+            level: 5,
+            governingStat: "APP",
+          },
+        ];
+
+        const target = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        target.resistances.physical = 2;
+        target.resistances.fire = 1;
+
+        const built = buildActivePowerEffect({
+          casterCharacterId: "caster",
+          casterName: "Beacon",
+          targetCharacterId: "target",
+          targetName: "Shade",
+          power: caster.powers[0],
+          variantId: "expose_darkness",
+        });
+
+        assert.ok(!("error" in built));
+        if ("error" in built) {
+          return;
+        }
+
+        const affectedTarget = applyActivePowerEffect(target, built.effect);
+
+        assert.equal(built.manaCost, 0);
+        assert.equal(getResolvedResistanceLevel(affectedTarget, "physical"), 1);
+        assert.equal(getResolvedResistanceLevel(affectedTarget, "fire"), 0);
       },
     },
   ]);

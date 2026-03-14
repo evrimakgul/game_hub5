@@ -3,6 +3,10 @@ import {
   type DamageTypeId,
   type ResistanceLevel,
 } from "../rules/resistances.ts";
+import {
+  createEmptyPowerUsageState,
+  normalizePowerUsageState,
+} from "../lib/powerUsage.ts";
 import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
 import { calculateMaxHP } from "../rules/stats.ts";
 import type {
@@ -10,6 +14,7 @@ import type {
   ActivePowerEffectModifier,
 } from "../types/activePowerEffects";
 import { STAT_IDS, isStatId, type CharacterOwnerRole, type StatId } from "../types/character.ts";
+import type { PowerUsageState } from "../types/powerUsage.ts";
 
 export type { StatId } from "../types/character.ts";
 
@@ -145,6 +150,7 @@ export type CharacterDraft = {
   skills: SkillEntry[];
   powers: PowerEntry[];
   activePowerEffects: ActivePowerEffect[];
+  powerUsageState: PowerUsageState;
   equipment: EquipmentEntry[];
   inventory: InventoryEntry[];
   gameHistory: GameHistoryEntry[];
@@ -160,7 +166,7 @@ export type PowerTemplate = {
   levelBenefits: Record<number, string[]>;
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 4;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 5;
 
 const BLANK_STAT_ENTRY = (): StatEntry => ({
   base: 2,
@@ -349,6 +355,7 @@ export class CharacterSheetTemplate {
       skills: BLANK_SKILLS.map((skill) => ({ ...skill, gearSources: [], buffSources: [] })),
       powers: [],
       activePowerEffects: [],
+      powerUsageState: createEmptyPowerUsageState(),
       equipment: [],
       inventory: [],
       gameHistory: [],
@@ -362,11 +369,13 @@ export class CharacterSheetTemplate {
 export const PLAYER_CHARACTER_TEMPLATE = new CharacterSheetTemplate();
 
 export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
+  const normalizedUsageState = normalizePowerUsageState(sheet.powerUsageState);
   const hasAwareness = sheet.powers.some((power) => power.id === "awareness" && power.level > 0);
 
   if (hasAwareness && !sheet.awarenessInsightGranted) {
     return {
       ...sheet,
+      powerUsageState: normalizedUsageState,
       temporaryInspiration: sheet.temporaryInspiration + 1,
       awarenessInsightGranted: true,
     };
@@ -375,12 +384,16 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   if (!hasAwareness && sheet.awarenessInsightGranted) {
     return {
       ...sheet,
+      powerUsageState: normalizedUsageState,
       temporaryInspiration: Math.max(0, sheet.temporaryInspiration - 1),
       awarenessInsightGranted: false,
     };
   }
 
-  return sheet;
+  return {
+    ...sheet,
+    powerUsageState: normalizedUsageState,
+  };
 }
 
 export function getPowerTemplate(powerId: string): PowerTemplate | undefined {
@@ -749,7 +762,8 @@ function hydrateActivePowerEffectModifier(value: unknown): ActivePowerEffectModi
   if (
     value.targetType !== "stat" &&
     value.targetType !== "skill" &&
-    value.targetType !== "derived"
+    value.targetType !== "derived" &&
+    value.targetType !== "resistance"
   ) {
     return null;
   }
@@ -939,6 +953,7 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     skills: hydrateSkills(record.skills),
     powers: hydratePowers(record.powers),
     activePowerEffects: hydrateActivePowerEffects(record.activePowerEffects),
+    powerUsageState: normalizePowerUsageState(record.powerUsageState),
     equipment: hydrateEquipment(record.equipment),
     inventory: hydrateInventory(record.inventory),
     gameHistory: hydrateGameHistory(record.gameHistory),

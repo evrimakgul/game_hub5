@@ -15,6 +15,7 @@ import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate";
 import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
 import { usePlayerCharacterMutations } from "../hooks/usePlayerCharacterMutations";
+import { buildPowerUsageSummary } from "../lib/powerUsage";
 import { resolveDicePool } from "../rules/combat";
 import {
   buildEditSessionStatFloor,
@@ -149,6 +150,7 @@ export function PlayerCharacterPage({
     skillRollTargets,
     availablePowerOptions,
   } = buildPlayerCharacterViewModel(sheetState);
+  const powerUsageSummary = buildPowerUsageSummary(sheetState);
   const selectedRollTargets = selectedRollIds
     .map((targetId) => rollTargets.find((target) => target.id === targetId))
     .filter((target): target is PlayerRollTarget => target !== undefined);
@@ -367,6 +369,9 @@ export function PlayerCharacterPage({
             sheetState={sheetState}
             derived={derived}
             isDmRuntimeEditMode={isDmRuntimeEditMode}
+            canManagePowerUsage={!isReadOnlyView}
+            powerUsageSummary={powerUsageSummary}
+            onResetPowerUsage={mutations.resetPowerUsage}
             onRuntimeInput={mutations.handleRuntimeInput}
           />
 

@@ -4,6 +4,7 @@ import {
 } from "../../rules/resistances";
 import type { CharacterDerivedValues } from "../../config/characterRuntime";
 import type { CharacterDraft } from "../../config/characterTemplate";
+import type { PowerUsageResetScope, PowerUsageSummaryEntry } from "../../types/powerUsage";
 
 type RuntimeEditableField =
   | "currentHp"
@@ -16,6 +17,9 @@ type CharacterResourcesProps = {
   sheetState: CharacterDraft;
   derived: CharacterDerivedValues;
   isDmRuntimeEditMode: boolean;
+  canManagePowerUsage: boolean;
+  powerUsageSummary: PowerUsageSummaryEntry[];
+  onResetPowerUsage: (scope: PowerUsageResetScope) => void;
   onRuntimeInput: (field: RuntimeEditableField, value: string) => void;
 };
 
@@ -23,6 +27,9 @@ export function CharacterResources({
   sheetState,
   derived,
   isDmRuntimeEditMode,
+  canManagePowerUsage,
+  powerUsageSummary,
+  onResetPowerUsage,
   onRuntimeInput,
 }: CharacterResourcesProps) {
   return (
@@ -98,6 +105,38 @@ export function CharacterResources({
             );
           })}
         </div>
+      </article>
+
+      <article className="sheet-card status-card">
+        <p className="section-kicker">Power Tracking</p>
+        <h2>Usage Counters</h2>
+        {powerUsageSummary.length === 0 ? (
+          <p className="empty-block-copy">No reset-tracked power counters on this sheet yet.</p>
+        ) : (
+          <div className="resistance-grid">
+            {powerUsageSummary.map((entry) => (
+              <div key={entry.id} className="resistance-entry">
+                <span>{entry.label}</span>
+                <strong>{entry.resetLabel}</strong>
+                <small>{entry.detail}</small>
+              </div>
+            ))}
+          </div>
+        )}
+        {canManagePowerUsage ? (
+          <div className="dm-control-row">
+            <button type="button" className="flow-secondary" onClick={() => onResetPowerUsage("daily")}>
+              Reset Daily Uses
+            </button>
+            <button
+              type="button"
+              className="flow-secondary"
+              onClick={() => onResetPowerUsage("longRest")}
+            >
+              Reset Long Rest Uses
+            </button>
+          </div>
+        ) : null}
       </article>
     </>
   );

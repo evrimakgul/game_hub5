@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
-import { buildCharacterDerivedValues } from "../src/config/characterRuntime.ts";
+import {
+  buildCharacterDerivedValues,
+  getCurrentSkillValue,
+} from "../src/config/characterRuntime.ts";
 import {
   normalizeCharacterDraft,
   PLAYER_CHARACTER_TEMPLATE,
@@ -56,6 +59,60 @@ export async function runCharacterRuntimeTests(): Promise<void> {
 
         assert.equal(withoutAwareness.awarenessInsightGranted, false);
         assert.equal(withoutAwareness.temporaryInspiration, 0);
+      },
+    },
+    {
+      name: "passive utility traits and cantrip skill bonuses are derived from unlocked powers",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.powers = [
+          {
+            id: "awareness",
+            name: "Awareness",
+            level: 3,
+            governingStat: "PER",
+          },
+          {
+            id: "crowd_control",
+            name: "Crowd Control",
+            level: 5,
+            governingStat: "CHA",
+          },
+          {
+            id: "light_support",
+            name: "Light Support",
+            level: 5,
+            governingStat: "APP",
+          },
+          {
+            id: "necromancy",
+            name: "Necromancy",
+            level: 5,
+            governingStat: "APP",
+          },
+          {
+            id: "shadow_control",
+            name: "Shadow Control",
+            level: 5,
+            governingStat: "MAN",
+          },
+        ];
+
+        const derived = buildCharacterDerivedValues(sheet);
+
+        assert.equal(getCurrentSkillValue(sheet, "social"), 1);
+        assert.equal(getCurrentSkillValue(sheet, "intimidation"), 1);
+        assert.equal(getCurrentSkillValue(sheet, "mechanics"), 1);
+        assert.equal(getCurrentSkillValue(sheet, "technology"), 1);
+        assert.equal(getCurrentSkillValue(sheet, "melee"), 2);
+        assert.deepEqual(derived.utilityTraits, [
+          "Techno-Invisibility Immunity",
+          "Nightvision",
+          "Hostile Undead Ignore Unless Attacked",
+          "Shadow Walk 125m",
+          "Cosmetic Clothing / Armor Shift",
+          "Minor Body Cosmetics",
+        ]);
       },
     },
   ]);

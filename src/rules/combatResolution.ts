@@ -1,21 +1,32 @@
 import type { CharacterDraft } from "../config/characterTemplate.ts";
-import { buildCharacterDerivedValues } from "../config/characterRuntime.ts";
+import {
+  buildCharacterDerivedValues,
+  getResolvedResistanceLevel,
+} from "../config/characterRuntime.ts";
 import { RESISTANCE_LEVELS, type DamageTypeId } from "./resistances.ts";
 import type { DamageMitigationChannel } from "./powerEffects.ts";
 
 export function applyHealingToSheet(
   sheet: CharacterDraft,
-  amount: number
+  amount: number,
+  options?: {
+    temporaryHpCap?: number | null;
+  }
 ): { sheet: CharacterDraft; appliedAmount: number } {
   const resolvedAmount = Math.max(0, Math.trunc(amount));
   const derived = buildCharacterDerivedValues(sheet);
   const nextHp = Math.min(sheet.currentHp + resolvedAmount, derived.maxHp);
-  const appliedAmount = Math.max(0, nextHp - sheet.currentHp);
+  const overflowAmount = Math.max(0, sheet.currentHp + resolvedAmount - derived.maxHp);
+  const temporaryHpCap = Math.max(0, Math.trunc(options?.temporaryHpCap ?? 0));
+  const grantedTemporaryHp =
+    temporaryHpCap > 0 ? Math.min(overflowAmount, temporaryHpCap) : 0;
+  const appliedAmount = Math.max(0, nextHp - sheet.currentHp) + grantedTemporaryHp;
 
   return {
     sheet: {
       ...sheet,
       currentHp: nextHp,
+      temporaryHp: sheet.temporaryHp + grantedTemporaryHp,
     },
     appliedAmount,
   };
@@ -39,7 +50,7 @@ export function applyDamageToSheet(
   const mitigationValue =
     options.mitigationChannel === "dr" ? derived.damageReduction : derived.soak;
   const mitigatedAmount = Math.max(0, resolvedAmount - mitigationValue);
-  const resistanceLevel = sheet.resistances[options.damageType] ?? 0;
+  const resistanceLevel = getResolvedResistanceLevel(sheet, options.damageType);
   const resistanceRule = RESISTANCE_LEVELS[resistanceLevel];
   const resistedAmount = Math.max(
     0,

@@ -10,11 +10,15 @@ import type { CharacterRecord, StatId } from "./character";
 import type {
   CharacterEncounterSnapshot,
   CombatEncounterParticipant,
+  EncounterOngoingState,
+  EncounterTransientCombatant,
 } from "./combatEncounter";
+import type { PowerUsageResetScope } from "./powerUsage";
 
 export type EncounterParticipantView = {
   participant: CombatEncounterParticipant;
   character: CharacterRecord | null;
+  transientCombatant: EncounterTransientCombatant | null;
   snapshot: CharacterEncounterSnapshot | null;
 };
 
@@ -23,6 +27,7 @@ export type CharacterSheetUpdater =
   | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"]);
 
 export type CastOutcomeState = "unresolved" | "hit" | "miss";
+export type ContestOutcomeState = "unresolved" | "success" | "failure";
 
 export type PreparedCastRequest = {
   casterCharacterId: string;
@@ -36,15 +41,68 @@ export type PreparedCastRequest = {
   healingApplications: Array<{
     targetCharacterId: string;
     amount: number;
+    temporaryHpCap: number | null;
   }>;
   damageApplications: Array<{
     targetCharacterId: string;
     rawAmount: number;
     damageType: DamageTypeId;
     mitigationChannel: DamageMitigationChannel;
+    sourceCharacterId: string;
     sourceLabel: string;
     sourceSummary: string;
   }>;
+  resourceChanges: Array<{
+    characterId: string;
+    field: "currentHp" | "currentMana" | "temporaryHp";
+    operation: "set" | "adjust";
+    value: number;
+  }>;
+  statusTagChanges: Array<{
+    characterId: string;
+    operation: "add" | "remove";
+    tag: {
+      id: string;
+      label: string;
+    };
+  }>;
+  usageCounterChanges: Array<{
+    characterId: string;
+  } & (
+    | {
+        operation: "increment";
+        scope: PowerUsageResetScope | "perTargetDaily";
+        key: string;
+        targetCharacterId: string | null;
+        amount: number;
+      }
+    | {
+        operation: "setSelection";
+        key: string;
+        value: string | null;
+      }
+  )>;
+  summonChanges: Array<
+    | {
+        operation: "spawn";
+        summon: EncounterTransientCombatant;
+        participant: CombatEncounterParticipant;
+      }
+    | {
+        operation: "dismiss";
+        summonId: string;
+      }
+  >;
+  ongoingStateChanges: Array<
+    | {
+        operation: "add";
+        state: EncounterOngoingState;
+      }
+    | {
+        operation: "remove";
+        ongoingStateId: string;
+      }
+  >;
 };
 
 export type CastRequestPayload = {
@@ -53,11 +111,15 @@ export type CastRequestPayload = {
   selectedPower: PowerEntry;
   selectedVariantId: CastPowerVariantId;
   attackOutcome: CastOutcomeState;
+  contestOutcome: ContestOutcomeState;
   selectedTargetIds: string[];
   fallbackTargetIds: string[];
   healingAllocations: Record<string, number>;
   selectedStatId: StatId | null;
   castMode: CastPowerMode;
+  selectedDamageType: DamageTypeId | null;
+  bonusManaSpend: number;
+  selectedSummonOptionId: string | null;
   encounterParticipants: EncounterParticipantView[];
 };
 

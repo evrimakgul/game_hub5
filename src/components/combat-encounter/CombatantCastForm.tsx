@@ -123,6 +123,20 @@ export function CombatantCastForm({ state }: CombatantCastFormProps) {
               </label>
             ) : null}
 
+            {state.requiresContestOutcome ? (
+              <label className="dm-field">
+                <span>Contest</span>
+                <select
+                  value={state.contestOutcome}
+                  onChange={(event) => state.selectContestOutcome(event.target.value as "unresolved" | "success" | "failure")}
+                >
+                  <option value="unresolved">Resolve First</option>
+                  <option value="success">Success</option>
+                  <option value="failure">Failure</option>
+                </select>
+              </label>
+            ) : null}
+
             {state.allowedStats.length > 0 ? (
               <label className="dm-field">
                 <span>Stat</span>
@@ -136,6 +150,53 @@ export function CombatantCastForm({ state }: CombatantCastFormProps) {
                     </option>
                   ))}
                 </select>
+              </label>
+            ) : null}
+
+            {state.shouldShowDamageTypeField ? (
+              <label className="dm-field">
+                <span>Damage Type</span>
+                <select
+                  value={state.resolvedDamageTypeId ?? ""}
+                  onChange={(event) => state.selectDamageType(event.target.value)}
+                >
+                  {state.damageTypeOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {state.shouldShowSummonOptionField ? (
+              <label className="dm-field">
+                <span>Summon</span>
+                <select
+                  value={state.resolvedSummonOptionId ?? ""}
+                  onChange={(event) => state.selectSummonOption(event.target.value)}
+                >
+                  {state.summonOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {state.shouldShowBonusManaField ? (
+              <label className="dm-field">
+                <span>Extra Mana</span>
+                <input
+                  type="number"
+                  min="0"
+                  max={state.maxBonusManaSpend}
+                  value={state.bonusManaSpend}
+                  onChange={(event) =>
+                    state.setBonusManaSpend(Number.parseInt(event.target.value || "0", 10) || 0)
+                  }
+                />
               </label>
             ) : null}
           </div>

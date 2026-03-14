@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
-import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
+import {
+  CHARACTER_DRAFT_SCHEMA_VERSION,
+  PLAYER_CHARACTER_TEMPLATE,
+} from "../src/config/characterTemplate.ts";
 import {
   CHARACTER_STORAGE_KEY,
   hydratePersistedCharacters,
@@ -79,7 +82,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           }
         );
 
-        assert.equal(payload.version, 4);
+        assert.equal(payload.version, CHARACTER_DRAFT_SCHEMA_VERSION);
         assert.equal(payload.activePlayerCharacterId, "writer-1");
         assert.equal(payload.characters[0]?.ownerRole, "player");
         assert.equal(

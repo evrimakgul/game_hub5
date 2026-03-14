@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
+import { resetCharacterPowerUsageScope } from "../lib/powerUsage";
 import {
   type CharacterDraft,
   getPowerTemplate,
@@ -32,6 +33,7 @@ import {
   updateSheetFieldValue,
 } from "../mutations/characterSheetMutations";
 import type { CharacterRecord, StatId } from "../types/character";
+import type { PowerUsageResetScope } from "../types/powerUsage";
 
 type CharacterSheetUpdater =
   | CharacterDraft
@@ -73,6 +75,7 @@ export type PlayerCharacterMutations = {
   addEquipmentEntry: () => void;
   removeEquipmentEntry: (index: number) => void;
   handleAddPower: () => void;
+  resetPowerUsage: (scope: PowerUsageResetScope) => void;
   handleRuntimeInput: (field: RuntimeEditableField, value: string) => void;
   updateSheetField: <K extends keyof CharacterDraft>(field: K, value: CharacterDraft[K]) => void;
 };
@@ -409,6 +412,31 @@ export function usePlayerCharacterMutations({
     setPendingPowerId("");
   }
 
+  function resetPowerUsage(scope: PowerUsageResetScope): void {
+    setSheetState((currentSheet) => {
+      const nextSheet = resetCharacterPowerUsageScope(currentSheet, scope);
+      if (nextSheet === currentSheet) {
+        return currentSheet;
+      }
+
+      if (!isDmView) {
+        return nextSheet;
+      }
+
+      return appendDmAuditEntry(
+        nextSheet,
+        createDmAuditEntry(
+          "runtime",
+          `powerUsageState.${scope}`,
+          currentSheet.powerUsageState[scope],
+          {},
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
+  }
+
   function updateRuntimeField(field: RuntimeEditableField, rawValue: number): void {
     if (!isDmView) {
       return;
@@ -493,6 +521,7 @@ export function usePlayerCharacterMutations({
     addEquipmentEntry: addEquipmentEntryHandler,
     removeEquipmentEntry: removeEquipmentEntryHandler,
     handleAddPower,
+    resetPowerUsage,
     handleRuntimeInput,
     updateSheetField,
   };

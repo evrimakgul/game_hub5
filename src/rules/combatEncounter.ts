@@ -8,6 +8,7 @@ import { calculateInitiative } from "./stats.ts";
 import {
   buildCharacterDerivedValues,
   getCurrentStatValue,
+  getResolvedResistanceLevel,
   getSkillBreakdown,
   getStatBreakdown,
 } from "../config/characterRuntime.ts";
@@ -95,6 +96,9 @@ export function createCombatEncounter(
       dex: participant.dex,
       wits: participant.wits,
       partyId: participantPartyId,
+      controllerCharacterId: participant.controllerCharacterId ?? null,
+      summonTemplateId: participant.summonTemplateId ?? null,
+      sourcePowerId: participant.sourcePowerId ?? null,
     };
   });
 
@@ -124,6 +128,13 @@ export function createCombatEncounter(
     parties: [...parties],
     participants: resolvedParticipants,
     createdAt: getIsoTimestamp(),
+    turnState: {
+      round: 1,
+      activeParticipantIndex: 0,
+      activeParticipantId: resolvedParticipants[0]?.characterId ?? null,
+    },
+    transientCombatants: [],
+    ongoingStates: [],
   };
 }
 
@@ -224,7 +235,7 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
   });
 
   const visibleResistances = DAMAGE_TYPES.flatMap((damageType) => {
-    const level = sheet.resistances[damageType.id];
+    const level = getResolvedResistanceLevel(sheet, damageType.id);
     if (level === 0) {
       return [];
     }
@@ -251,6 +262,7 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
         ? `Base ${derived.permanentInspiration} + Temp ${derived.temporaryInspiration}`
         : `Base ${derived.permanentInspiration}`,
     statusTags: (sheet.statusTags ?? []).map((tag) => tag.label),
+    utilityTraits: derived.utilityTraits,
     activePowerEffects: derived.activePowerEffects.map((effect) => ({
       id: effect.id,
       label: effect.label,

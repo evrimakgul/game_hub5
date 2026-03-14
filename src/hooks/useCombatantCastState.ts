@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import type { PowerEntry } from "../config/characterTemplate";
 import {
   getCastPowerAllowedStats,
+  getCastPowerDamageTypeOptions,
+  getCastPowerMaxBonusManaSpend,
   getCastPowerModeOptionsForVariant,
+  getCastPowerSummonOptions,
   getCastPowerTargetLimit,
   getCastPowerTargetModeForVariant,
   getCastPowerVariantOptions,
@@ -18,9 +21,11 @@ import { buildDefaultHealingAllocations } from "../lib/combatEncounterCasting";
 import type {
   CastOutcomeState,
   CastRequestPayload,
+  ContestOutcomeState,
   EncounterParticipantView,
 } from "../types/combatEncounterView";
 import type { StatId } from "../types/character";
+import type { DamageTypeId } from "../rules/resistances";
 
 type UseCombatantCastStateParams = {
   view: EncounterParticipantView;
@@ -37,29 +42,44 @@ export type CombatantCastState = {
   targetLimit: number;
   modeOptions: CastPowerMode[];
   allowedStats: StatId[];
+  damageTypeOptions: Array<{ id: DamageTypeId; label: string }>;
+  summonOptions: Array<{ id: string; label: string }>;
   targetOptions: EncounterParticipantView[];
   selectedTargetIds: string[];
   resolvedTargetIds: string[];
   resolvedSingleTargetId: string;
   resolvedSelectedStatId: StatId | "";
+  resolvedDamageTypeId: DamageTypeId | null;
+  resolvedSummonOptionId: string | null;
   attackOutcome: CastOutcomeState;
+  contestOutcome: ContestOutcomeState;
   resolvedCastMode: CastPowerMode;
   castError: string | null;
   healingTotal: number | null;
   allocatedHealingTotal: number;
   healingAllocations: Record<string, string>;
+  bonusManaSpend: number;
+  maxBonusManaSpend: number;
   shouldShowVariantField: boolean;
   shouldShowTargetField: boolean;
   shouldShowModeField: boolean;
+  shouldShowDamageTypeField: boolean;
+  shouldShowSummonOptionField: boolean;
+  shouldShowBonusManaField: boolean;
   shouldShowHealingAllocationEditor: boolean;
   requiresAttackOutcome: boolean;
+  requiresContestOutcome: boolean;
   selectPower: (powerId: string) => void;
   selectVariant: (variantId: CastPowerVariantId) => void;
   toggleTarget: (targetId: string) => void;
   selectSingleTarget: (targetId: string) => void;
   selectCastMode: (mode: CastPowerMode) => void;
   selectAttackOutcome: (outcome: CastOutcomeState) => void;
+  selectContestOutcome: (outcome: ContestOutcomeState) => void;
   selectStat: (statId: string) => void;
+  selectDamageType: (damageTypeId: string) => void;
+  selectSummonOption: (optionId: string) => void;
+  setBonusManaSpend: (value: number) => void;
   updateHealingAllocation: (targetId: string, value: string) => void;
   handleCast: () => void;
 };
@@ -72,9 +92,13 @@ export function useCombatantCastState({
   const [selectedPowerId, setSelectedPowerId] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState<CastPowerVariantId>("default");
   const [attackOutcome, setAttackOutcome] = useState<CastOutcomeState>("unresolved");
+  const [contestOutcome, setContestOutcome] = useState<ContestOutcomeState>("unresolved");
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [healingAllocations, setHealingAllocations] = useState<Record<string, string>>({});
   const [selectedStatId, setSelectedStatId] = useState("");
+  const [selectedDamageType, setSelectedDamageType] = useState("");
+  const [selectedSummonOptionId, setSelectedSummonOptionId] = useState("");
+  const [bonusManaSpend, setBonusManaSpend] = useState(0);
   const [selectedCastMode, setSelectedCastMode] = useState<CastPowerMode>("self");
   const [castError, setCastError] = useState<string | null>(null);
 
@@ -90,11 +114,17 @@ export function useCombatantCastState({
   const targetMode = selectedPower
     ? getCastPowerTargetModeForVariant(selectedPower, resolvedVariantId)
     : "self";
-  const targetLimit = selectedPower ? getCastPowerTargetLimit(selectedPower) : 1;
+  const targetLimit = selectedPower ? getCastPowerTargetLimit(selectedPower, resolvedVariantId) : 1;
   const modeOptions = selectedPower
     ? getCastPowerModeOptionsForVariant(selectedPower, resolvedVariantId)
     : (["self"] satisfies CastPowerMode[]);
   const allowedStats = selectedPower ? getCastPowerAllowedStats(selectedPower) : [];
+  const damageTypeOptions = selectedPower
+    ? getCastPowerDamageTypeOptions(selectedPower, resolvedVariantId)
+    : [];
+  const summonOptions = selectedPower
+    ? getCastPowerSummonOptions(selectedPower, resolvedVariantId)
+    : [];
   const targetOptions =
     targetMode === "self"
       ? encounterParticipants.filter(
@@ -103,7 +133,8 @@ export function useCombatantCastState({
       : encounterParticipants.filter(
           ({ participant, character: candidateCharacter }) =>
             candidateCharacter !== null &&
-            (selectedPower?.id !== "healing" ||
+            ((selectedPower?.id !== "healing" &&
+              !(selectedPower?.id === "light_support" && resolvedVariantId === "mana_restore")) ||
               view.participant.partyId === null ||
               participant.partyId === view.participant.partyId)
         );
@@ -112,6 +143,14 @@ export function useCombatantCastState({
     allowedStats.includes(selectedStatId as StatId)
       ? (selectedStatId as StatId)
       : (allowedStats[0] ?? "");
+  const resolvedDamageTypeId =
+    damageTypeOptions.find((option) => option.id === selectedDamageType)?.id ??
+    damageTypeOptions[0]?.id ??
+    null;
+  const resolvedSummonOptionId =
+    summonOptions.find((option) => option.id === selectedSummonOptionId)?.id ??
+    summonOptions[0]?.id ??
+    null;
   const resolvedTargetIds =
     selectedTargetIds.length > 0
       ? selectedTargetIds
@@ -119,7 +158,10 @@ export function useCombatantCastState({
         ? [targetOptions[0].participant.characterId]
         : [];
   const resolvedSingleTargetId = resolvedTargetIds[0] ?? "";
-  const healingTotal = selectedPower && character ? getHealingPowerTotal(character.sheet, selectedPower) : null;
+  const healingTotal =
+    selectedPower && character
+      ? getHealingPowerTotal(character.sheet, selectedPower, resolvedVariantId)
+      : null;
   const resolvedHealingAllocations = Object.fromEntries(
     Object.entries(healingAllocations).map(([targetId, value]) => [
       targetId,
@@ -134,15 +176,29 @@ export function useCombatantCastState({
     ? selectedCastMode
     : modeOptions[0];
   const allowedStatsKey = allowedStats.join("|");
+  const damageTypeOptionsKey = damageTypeOptions.map((option) => option.id).join("|");
+  const summonOptionsKey = summonOptions.map((option) => option.id).join("|");
   const targetOptionIdsKey = targetOptions.map(({ participant }) => participant.characterId).join("|");
   const resolvedTargetIdsKey = resolvedTargetIds.join("|");
+  const maxBonusManaSpend =
+    selectedPower && character
+      ? getCastPowerMaxBonusManaSpend(
+          character.sheet,
+          selectedPower,
+          resolvedVariantId,
+          resolvedTargetIds.length
+        )
+      : 0;
   const shouldShowHealingAllocationEditor =
     selectedPower?.id === "healing" &&
+    resolvedVariantId === "default" &&
     targetMode === "multiple" &&
     healingTotal !== null &&
     resolvedTargetIds.length > 0;
   const requiresAttackOutcome =
     selectedPower?.id === "necromancy" && resolvedVariantId === "necrotic_touch";
+  const requiresContestOutcome =
+    selectedPower?.id === "crowd_control" && resolvedVariantId === "crowd_control";
 
   useEffect(() => {
     if (castablePowers.length === 0) {
@@ -170,6 +226,7 @@ export function useCombatantCastState({
 
   useEffect(() => {
     setAttackOutcome("unresolved");
+    setContestOutcome("unresolved");
   }, [selectedPower?.id, resolvedVariantId, resolvedSingleTargetId]);
 
   useEffect(() => {
@@ -257,6 +314,36 @@ export function useCombatantCastState({
   ]);
 
   useEffect(() => {
+    if (damageTypeOptions.length === 0) {
+      if (selectedDamageType !== "") {
+        setSelectedDamageType("");
+      }
+      return;
+    }
+
+    if (!damageTypeOptions.some((option) => option.id === selectedDamageType)) {
+      setSelectedDamageType(damageTypeOptions[0].id);
+    }
+  }, [damageTypeOptionsKey, selectedDamageType]);
+
+  useEffect(() => {
+    if (summonOptions.length === 0) {
+      if (selectedSummonOptionId !== "") {
+        setSelectedSummonOptionId("");
+      }
+      return;
+    }
+
+    if (!summonOptions.some((option) => option.id === selectedSummonOptionId)) {
+      setSelectedSummonOptionId(summonOptions[0].id);
+    }
+  }, [selectedSummonOptionId, summonOptionsKey]);
+
+  useEffect(() => {
+    setBonusManaSpend((currentValue) => Math.max(0, Math.min(currentValue, maxBonusManaSpend)));
+  }, [maxBonusManaSpend]);
+
+  useEffect(() => {
     if (
       selectedPower?.id !== "healing" ||
       targetMode !== "multiple" ||
@@ -324,6 +411,10 @@ export function useCombatantCastState({
       healingAllocations: resolvedHealingAllocations,
       selectedStatId: resolvedSelectedStatId || null,
       castMode: resolvedCastMode,
+      contestOutcome,
+      selectedDamageType: resolvedDamageTypeId,
+      bonusManaSpend,
+      selectedSummonOptionId: resolvedSummonOptionId,
       encounterParticipants,
     });
 
@@ -339,29 +430,47 @@ export function useCombatantCastState({
     targetLimit,
     modeOptions,
     allowedStats,
+    damageTypeOptions,
+    summonOptions,
     targetOptions,
     selectedTargetIds,
     resolvedTargetIds,
     resolvedSingleTargetId,
     resolvedSelectedStatId,
+    resolvedDamageTypeId,
+    resolvedSummonOptionId,
     attackOutcome,
+    contestOutcome,
     resolvedCastMode,
     castError,
     healingTotal,
     allocatedHealingTotal,
     healingAllocations,
+    bonusManaSpend,
+    maxBonusManaSpend,
     shouldShowVariantField: variantOptions.length > 1,
     shouldShowTargetField: targetMode !== "self",
-    shouldShowModeField: selectedPower?.id === "shadow_control" && modeOptions.length > 1,
+    shouldShowModeField:
+      selectedPower?.id === "shadow_control" &&
+      (resolvedVariantId === "default" || resolvedVariantId === "shadow_cloak") &&
+      modeOptions.length > 1,
+    shouldShowDamageTypeField: damageTypeOptions.length > 0,
+    shouldShowSummonOptionField: summonOptions.length > 0,
+    shouldShowBonusManaField: maxBonusManaSpend > 0,
     shouldShowHealingAllocationEditor,
     requiresAttackOutcome,
+    requiresContestOutcome,
     selectPower: setSelectedPowerId,
     selectVariant: setSelectedVariantId,
     toggleTarget,
     selectSingleTarget: (targetId) => setSelectedTargetIds([targetId]),
     selectCastMode: setSelectedCastMode,
     selectAttackOutcome: setAttackOutcome,
+    selectContestOutcome: setContestOutcome,
     selectStat: setSelectedStatId,
+    selectDamageType: setSelectedDamageType,
+    selectSummonOption: setSelectedSummonOptionId,
+    setBonusManaSpend: (value) => setBonusManaSpend(Math.max(0, Math.trunc(value))),
     updateHealingAllocation,
     handleCast,
   };

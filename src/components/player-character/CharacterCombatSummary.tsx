@@ -114,6 +114,18 @@ export function CharacterCombatSummary({
           </div>
         </div>
       ) : null}
+      {derived.utilityTraits.length > 0 ? (
+        <div className="active-effects-panel">
+          <p className="section-kicker">Utility Traits</p>
+          <div className="active-effects-list">
+            {derived.utilityTraits.map((trait) => (
+              <article key={trait} className="active-effect-card">
+                <strong>{trait}</strong>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }
