@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { buildItemIndex } from "../lib/items.ts";
 import {
   buildEncounterParticipantInput,
   createCombatEncounter,
@@ -44,7 +45,8 @@ function buildInitialPendingAssignments(
 
 export function CombatDashboardPage() {
   const navigate = useNavigate();
-  const { roleChoice, characters, beginCombatEncounter } = useAppFlow();
+  const { roleChoice, characters, items, beginCombatEncounter } = useAppFlow();
+  const itemsById = buildItemIndex(items);
   const [encounterLabel, setEncounterLabel] = useState("Combat Encounter");
   const [parties, setParties] = useState<CombatEncounterParty[]>(DEFAULT_PARTIES);
   const [stagedAssignments, setStagedAssignments] = useState<StagedAssignments>({});
@@ -164,7 +166,8 @@ export function CombatDashboardPage() {
               character.id,
               character.ownerRole,
               character.sheet,
-              stagedAssignments[character.id] ?? null
+              stagedAssignments[character.id] ?? null,
+              itemsById
             )
           ),
           parties

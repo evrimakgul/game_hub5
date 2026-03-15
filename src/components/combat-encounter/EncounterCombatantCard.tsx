@@ -1,4 +1,5 @@
 import { buildEncounterCombatantViewModel } from "../../selectors/encounterViewModel";
+import type { PhysicalAttackProfileId } from "../../lib/combatEncounterPhysicalAttacks";
 import type {
   CastRequestPayload,
   CharacterSheetUpdater,
@@ -13,6 +14,12 @@ type EncounterCombatantCardProps = {
   encounterParticipants: EncounterParticipantView[];
   openCharacterSheet: (characterId: string, ownerRole: "player" | "dm") => void;
   requestCast: (payload: CastRequestPayload) => string | null;
+  requestPhysicalAttack: (payload: {
+    casterView: EncounterParticipantView;
+    targetView: EncounterParticipantView;
+    profileId: PhysicalAttackProfileId;
+    landedHits: number;
+  }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
 
@@ -22,6 +29,7 @@ export function EncounterCombatantCard({
   encounterParticipants,
   openCharacterSheet,
   requestCast,
+  requestPhysicalAttack,
   updateCharacter,
 }: EncounterCombatantCardProps) {
   const combatant = buildEncounterCombatantViewModel(view);
@@ -69,6 +77,7 @@ export function EncounterCombatantCard({
                 view={view}
                 encounterParticipants={encounterParticipants}
                 requestCast={requestCast}
+                requestPhysicalAttack={requestPhysicalAttack}
                 updateCharacter={updateCharacter}
               />
             </div>

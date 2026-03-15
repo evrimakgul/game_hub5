@@ -20,6 +20,7 @@ import {
   getSummonOptionList,
   type RuntimeSummonOption,
 } from "./summons.ts";
+import type { SharedItemRecord } from "../types/items.ts";
 
 export type CastPowerTargetMode = "self" | "single" | "multiple";
 export type CastPowerMode = "self" | "aura";
@@ -28,13 +29,17 @@ export type CastPowerVariantId =
   | "default"
   | "assess_character"
   | "crowd_control"
+  | "release_control"
   | "elemental_bolt"
   | "elemental_cantrip"
+  | "cure"
   | "wound_mend"
   | "mana_restore"
   | "expose_darkness"
   | "summon_undead"
+  | "dismiss_summon"
   | "shadow_cloak"
+  | "shadow_walk"
   | "shadow_manipulation"
   | "necrotic_touch"
   | "resurrection"
@@ -338,6 +343,10 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "healing") {
+    if (variantId === "cure" || variantId === "wound_mend") {
+      return "single";
+    }
+
     return getCastPowerTargetLimit(power, variantId) > 1 ? "multiple" : "single";
   }
 
@@ -350,7 +359,7 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "necromancy") {
-    if (variantId === "summon_undead") {
+    if (variantId === "summon_undead" || variantId === "dismiss_summon") {
       return "self";
     }
 
@@ -358,11 +367,15 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "shadow_control") {
+    if (variantId === "shadow_soldier" || variantId === "dismiss_summon") {
+      return "self";
+    }
+
     if (variantId === "shadow_manipulation") {
       return "single";
     }
 
-    return variantId === "shadow_soldier" ? "self" : "self";
+    return variantId === "shadow_walk" ? "single" : "self";
   }
 
   return "single";
@@ -398,7 +411,7 @@ export function getCastPowerTargetLimit(
   }
 
   if (power.id === "healing") {
-    if (variantId === "wound_mend") {
+    if (variantId === "cure" || variantId === "wound_mend") {
       return 1;
     }
 
@@ -409,6 +422,10 @@ export function getCastPowerTargetLimit(
         : null;
     const maxTargets = healing ? asNumber(healing.max_targets) : 0;
     return Math.max(1, maxTargets || 1);
+  }
+
+  if (power.id === "light_support" && variantId === "expose_darkness") {
+    return 99;
   }
 
   return 1;
@@ -437,7 +454,7 @@ export function getCastPowerModeOptionsForVariant(
   variantId: CastPowerVariantId
 ): CastPowerMode[] {
   if (power.id === "shadow_control" && power.level >= 4) {
-    if (variantId === "shadow_manipulation") {
+    if (variantId !== "default" && variantId !== "shadow_cloak") {
       return ["self"];
     }
 
@@ -453,7 +470,10 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
   }
 
   if (power.id === "crowd_control") {
-    return [{ id: "crowd_control", label: "Control Target" }];
+    return [
+      { id: "crowd_control", label: "Control Target" },
+      { id: "release_control", label: "Release Target" },
+    ];
   }
 
   if (power.id === "elementalist") {
@@ -468,10 +488,11 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
   if (power.id === "healing") {
     return power.level >= 3
       ? [
-          { id: "default", label: "Healing" },
+          { id: "default", label: "Heal" },
+          { id: "cure", label: "Cure" },
           { id: "wound_mend", label: "Wound Mend" },
         ]
-      : [{ id: "default", label: "Healing" }];
+      : [{ id: "default", label: "Heal" }];
   }
 
   if (power.id === "light_support") {
@@ -491,6 +512,7 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
   if (power.id === "necromancy") {
     const variants: CastPowerVariantOption[] = [
       { id: "summon_undead", label: "Summon Undead" },
+      { id: "dismiss_summon", label: "Remove Summon" },
     ];
 
     if (power.level >= 3) {
@@ -504,14 +526,20 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
     return variants;
   }
 
-  if (power.id === "shadow_control" && power.level >= 3) {
-    const variants: CastPowerVariantOption[] = [
-      { id: "shadow_cloak", label: "Cloak of Shadow" },
-      { id: "shadow_manipulation", label: "Shadow Manipulation" },
-    ];
+  if (power.id === "shadow_control") {
+    const variants: CastPowerVariantOption[] = [{ id: "shadow_cloak", label: "Cloak of Shadow" }];
+
+    if (power.level >= 2) {
+      variants.push({ id: "shadow_walk", label: "Shadow Walk" });
+    }
+
+    if (power.level >= 3) {
+      variants.push({ id: "shadow_manipulation", label: "Shadow Manipulation" });
+    }
 
     if (power.level >= 5) {
       variants.push({ id: "shadow_soldier", label: "Shadow Soldier" });
+      variants.push({ id: "dismiss_summon", label: "Remove Summon" });
     }
 
     return variants;
@@ -548,7 +576,8 @@ export function getCastPowerMaxBonusManaSpend(
   sheet: CharacterDraft,
   power: PowerEntry,
   variantId: CastPowerVariantId,
-  targetCount: number
+  targetCount: number,
+  itemsById: Record<string, SharedItemRecord> = {}
 ): number {
   if (power.id !== "elementalist" || variantId !== "elemental_bolt" || targetCount <= 1) {
     return 0;
@@ -566,7 +595,7 @@ export function getCastPowerMaxBonusManaSpend(
   const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "INT";
   const totalDamage = Math.max(
     0,
-    getCurrentStatValue(sheet, baseStat) + asNumber(damage.flat_bonus)
+    getCurrentStatValue(sheet, baseStat, itemsById) + asNumber(damage.flat_bonus)
   );
   const splitAmount = getSplitAmount(
     totalDamage,
@@ -586,7 +615,8 @@ export function getCastPowerMaxBonusManaSpend(
 export function getHealingPowerTotal(
   sheet: CharacterDraft,
   power: PowerEntry,
-  variantId: CastPowerVariantId = "default"
+  variantId: CastPowerVariantId = "default",
+  itemsById: Record<string, SharedItemRecord> = {}
 ): number | null {
   if (power.id !== "healing") {
     return null;
@@ -600,6 +630,10 @@ export function getHealingPowerTotal(
         : null;
 
     return healing ? Math.max(0, asNumber(healing.flat_amount)) : null;
+  }
+
+  if (variantId === "cure") {
+    return 0;
   }
 
   const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
@@ -616,7 +650,7 @@ export function getHealingPowerTotal(
   }
 
   const baseStat = isStatId(healing.base_stat) ? healing.base_stat : "INT";
-  return Math.max(0, getCurrentStatValue(sheet, baseStat) + asNumber(healing.flat_bonus));
+  return Math.max(0, getCurrentStatValue(sheet, baseStat, itemsById) + asNumber(healing.flat_bonus));
 }
 
 function splitEvenly(totalAmount: number, targetCount: number): number[] {
@@ -639,6 +673,7 @@ export function buildHealingCastResolution(request: {
   variantId: CastPowerVariantId;
   targetCharacterIds: string[];
   allocations?: Record<string, number>;
+  itemsById?: Record<string, SharedItemRecord>;
 }):
   | { error: string }
   | {
@@ -698,17 +733,24 @@ export function buildHealingCastResolution(request: {
   }
 
   const mechanics = runtimeLevel.mechanics ?? {};
-  const totalAmount = getHealingPowerTotal(request.casterSheet, request.power, request.variantId);
+  const totalAmount = getHealingPowerTotal(
+    request.casterSheet,
+    request.power,
+    request.variantId,
+    request.itemsById ?? {}
+  );
   if (totalAmount === null) {
     return { error: `Healing data for ${request.power.name} Lv ${request.power.level} is missing.` };
   }
 
-  const manaCost = asNumber(runtimeLevel.mana_cost);
+  const manaCost = request.variantId === "cure" ? 3 : 2;
   const uniqueTargetIds = Array.from(new Set(request.targetCharacterIds));
   const targetLimit = getCastPowerTargetLimit(request.power, request.variantId);
   const removedStatuses = Array.isArray(mechanics.removes_statuses)
     ? mechanics.removes_statuses.filter((status): status is string => typeof status === "string")
     : [];
+  const cureStatuses = removedStatuses.filter((status) => status !== "bleeding");
+  const healStatuses = removedStatuses.includes("bleeding") ? ["bleeding"] : [];
   const overheal =
     mechanics.overheal && typeof mechanics.overheal === "object"
       ? (mechanics.overheal as Record<string, unknown>)
@@ -726,6 +768,28 @@ export function buildHealingCastResolution(request: {
     return { error: `Healing can affect at most ${targetLimit} target(s) at this level.` };
   }
 
+  if (request.variantId === "cure") {
+    if (request.power.level < 3) {
+      return { error: "Cure is not unlocked for this Healing level." };
+    }
+
+    return {
+      manaCost,
+      totalAmount: 0,
+      applications: [
+        {
+          targetCharacterId: uniqueTargetIds[0],
+          amount: 0,
+          temporaryHpCap: null,
+        },
+      ],
+      removedStatuses: cureStatuses,
+      canRegrowLimbs: false,
+      overhealCapStat: null,
+      perTargetDailyLimit: null,
+    };
+  }
+
   if (targetLimit === 1) {
     return {
       manaCost,
@@ -737,7 +801,7 @@ export function buildHealingCastResolution(request: {
           temporaryHpCap: null,
         },
       ],
-      removedStatuses,
+      removedStatuses: healStatuses,
       canRegrowLimbs: mechanics.can_regrow_limbs === true,
       overhealCapStat,
       perTargetDailyLimit: null,
@@ -773,7 +837,7 @@ export function buildHealingCastResolution(request: {
     manaCost,
     totalAmount,
     applications: positiveAllocations,
-    removedStatuses,
+    removedStatuses: healStatuses,
     canRegrowLimbs: mechanics.can_regrow_limbs === true,
     overhealCapStat,
     perTargetDailyLimit: null,
@@ -792,6 +856,7 @@ export function buildDirectDamageCastResolution(request: {
     isLiving: boolean;
     blocksNecroticTouch?: boolean;
   }>;
+  itemsById?: Record<string, SharedItemRecord>;
 }):
   | { error: string }
   | {
@@ -842,7 +907,8 @@ export function buildDirectDamageCastResolution(request: {
     const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "INT";
     const totalAmount = Math.max(
       0,
-      getCurrentStatValue(request.casterSheet, baseStat) + asNumber(damage.flat_bonus)
+      getCurrentStatValue(request.casterSheet, baseStat, request.itemsById ?? {}) +
+        asNumber(damage.flat_bonus)
     );
     const splitAmount = getSplitAmount(
       totalAmount,
@@ -933,7 +999,7 @@ export function buildDirectDamageCastResolution(request: {
 
     const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "MAN";
     const rawAmount =
-      getCurrentStatValue(request.casterSheet, baseStat) +
+      getCurrentStatValue(request.casterSheet, baseStat, request.itemsById ?? {}) +
       request.power.level * asNumber(damage.power_level_multiplier);
     const damageType = typeof damage.damage_type === "string" ? (damage.damage_type as DamageTypeId) : "shadow";
     const mitigationChannel: DamageMitigationChannel = damageType === "physical" ? "dr" : "soak";
@@ -978,7 +1044,7 @@ export function buildDirectDamageCastResolution(request: {
 
     const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "APP";
     const baseAmount =
-      getCurrentStatValue(request.casterSheet, baseStat) +
+      getCurrentStatValue(request.casterSheet, baseStat, request.itemsById ?? {}) +
       request.power.level * asNumber(damage.power_level_multiplier);
     const isLiving =
       request.targetMetadata?.find((entry) => entry.characterId === uniqueTargetIds[0])?.isLiving ??
@@ -1407,9 +1473,10 @@ export function removeActivePowerEffect(
 
 export function spendPowerMana(
   sheet: CharacterDraft,
-  manaCost: number
+  manaCost: number,
+  itemsById: Record<string, SharedItemRecord> = {}
 ): { error: string } | { sheet: CharacterDraft } {
-  const runtime = buildCharacterDerivedValues(sheet);
+  const runtime = buildCharacterDerivedValues(sheet, itemsById);
   if (manaCost > runtime.currentMana) {
     return {
       error: `Not enough mana. ${runtime.currentMana} available, ${manaCost} required.`,

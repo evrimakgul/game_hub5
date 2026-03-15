@@ -15,6 +15,7 @@ import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate";
 import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
 import { usePlayerCharacterMutations } from "../hooks/usePlayerCharacterMutations";
+import { buildItemIndex, getCharacterArtifactAppraisalLevel } from "../lib/items.ts";
 import { buildPowerUsageSummary } from "../lib/powerUsage";
 import { resolveDicePool } from "../rules/combat";
 import {
@@ -45,7 +46,16 @@ export function PlayerCharacterPage({
 }: {
   viewMode: PlayerCharacterPageViewMode;
 }) {
-  const { characters, activePlayerCharacter, activeDmCharacter, updateCharacter } = useAppFlow();
+  const {
+    characters,
+    items,
+    activePlayerCharacter,
+    activeDmCharacter,
+    updateCharacter,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useAppFlow();
   const navigate = useNavigate();
   const location = useLocation();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -141,6 +151,7 @@ export function PlayerCharacterPage({
   const isDmRuntimeEditMode = isDmView && dmEditMode;
   const isProgressionEditMode = isEditMode || (isDmEditableView && dmEditMode);
   const actualDate = formatDateDayMonthYear(new Date());
+  const itemsById = buildItemIndex(items);
   const {
     derived,
     progression,
@@ -149,8 +160,9 @@ export function PlayerCharacterPage({
     statRollTargets,
     skillRollTargets,
     availablePowerOptions,
-  } = buildPlayerCharacterViewModel(sheetState);
+  } = buildPlayerCharacterViewModel(sheetState, itemsById);
   const powerUsageSummary = buildPowerUsageSummary(sheetState);
+  const artifactAppraisalLevel = getCharacterArtifactAppraisalLevel(sheetState);
   const selectedRollTargets = selectedRollIds
     .map((targetId) => rollTargets.find((target) => target.id === targetId))
     .filter((target): target is PlayerRollTarget => target !== undefined);
@@ -160,6 +172,7 @@ export function PlayerCharacterPage({
   const mutations = usePlayerCharacterMutations({
     activeCharacter,
     sheetState,
+    items,
     xpLeftOver,
     isReadOnlyView,
     isDmView,
@@ -172,6 +185,9 @@ export function PlayerCharacterPage({
     pendingPowerId,
     sessionNotes,
     updateCharacter,
+    createItem,
+    updateItem,
+    deleteItem,
     setPendingPowerId,
     setSessionNotes,
     setAdminOverrideError,
@@ -384,6 +400,7 @@ export function PlayerCharacterPage({
 
           <CharacterStatsSection
             sheetState={sheetState}
+            itemsById={itemsById}
             isProgressionEditMode={isProgressionEditMode}
             adminOverrideMode={adminOverrideMode}
             editSessionStatFloor={editSessionStatFloor}
@@ -394,6 +411,7 @@ export function PlayerCharacterPage({
 
           <CharacterSkillsSection
             sheetState={sheetState}
+            itemsById={itemsById}
             isProgressionEditMode={isProgressionEditMode}
             adminOverrideMode={adminOverrideMode}
             xpLeftOver={xpLeftOver}
@@ -416,14 +434,26 @@ export function PlayerCharacterPage({
           />
 
           <CharacterInventorySection
+            characterId={activeCharacter.id}
             sheetState={sheetState}
+            itemsById={itemsById}
+            artifactAppraisalLevel={artifactAppraisalLevel}
             isSheetEditMode={isSheetEditMode}
+            onCreateSharedItem={mutations.createSharedItem}
+            onUpdateSharedItemField={mutations.updateSharedItemField}
+            onUpdateSharedItemBlueprint={mutations.updateSharedItemBlueprint}
+            onUpdateSharedItemBonusNotes={mutations.updateSharedItemBonusNotes}
+            onUpdateSharedItemStatBonus={mutations.updateSharedItemStatBonus}
+            onUpdateSharedItemDerivedBonus={mutations.updateSharedItemDerivedBonus}
+            onUpdateSharedItemOwnedState={mutations.updateSharedItemOwnedState}
+            onUpdateSharedItemInventoryState={mutations.updateSharedItemInventoryState}
+            onUpdateSharedItemActiveState={mutations.updateSharedItemActiveState}
+            onIdentifySharedItem={mutations.identifySharedItem}
+            onMaskSharedItem={mutations.maskSharedItem}
+            onDeleteSharedItem={mutations.deleteSharedItem}
             onUpdateEquipmentEntry={mutations.updateEquipmentEntry}
             onAddEquipmentEntry={mutations.addEquipmentEntry}
             onRemoveEquipmentEntry={mutations.removeEquipmentEntry}
-            onUpdateInventoryEntry={mutations.updateInventoryEntry}
-            onAddInventoryEntry={mutations.addInventoryEntry}
-            onRemoveInventoryEntry={mutations.removeInventoryEntry}
             onUpdateMoney={(value) => mutations.updateSheetField("money", value)}
           />
 

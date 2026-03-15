@@ -14,6 +14,7 @@ import {
   type CharacterDraft,
   normalizeCharacterDraft,
 } from "../config/characterTemplate";
+import { createSharedItemRecord } from "../lib/items.ts";
 import {
   CHARACTER_STORAGE_KEY,
   readPersistedCharactersFromStorage,
@@ -26,6 +27,7 @@ import {
   type CharacterRecord,
 } from "../types/character";
 import type { CombatEncounterState } from "../types/combatEncounter";
+import type { ItemBlueprintId, SharedItemRecord } from "../types/items.ts";
 
 export type { CharacterOwnerRole, CharacterRecord } from "../types/character";
 
@@ -36,12 +38,27 @@ type AppFlowContextValue = {
   authChoice: AuthChoice;
   roleChoice: RoleChoice;
   characters: CharacterRecord[];
+  items: SharedItemRecord[];
   activePlayerCharacter: CharacterRecord | null;
   activeDmCharacter: CharacterRecord | null;
   activeCombatEncounter: CombatEncounterState | null;
   chooseAuth: (choice: Exclude<AuthChoice, null>) => void;
   chooseRole: (choice: Exclude<RoleChoice, null>) => void;
   createCharacter: (ownerRole?: CharacterOwnerRole) => string;
+  createItem: (
+    blueprintId: ItemBlueprintId,
+    overrides?: Partial<
+      Pick<
+        SharedItemRecord,
+        "name" | "itemLevel" | "qualityTier" | "baseDescription" | "bonusProfile" | "knowledge"
+      >
+    >
+  ) => string;
+  updateItem: (
+    itemId: string,
+    updater: SharedItemRecord | ((current: SharedItemRecord) => SharedItemRecord)
+  ) => void;
+  deleteItem: (itemId: string) => void;
   selectCharacter: (characterId: string) => void;
   deleteCharacter: (characterId: string) => void;
   updateCharacter: (
@@ -71,6 +88,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   const [authChoice, setAuthChoice] = useState<AuthChoice>(null);
   const [roleChoice, setRoleChoice] = useState<RoleChoice>(null);
   const [characters, setCharacters] = useState<CharacterRecord[]>(persistedCharacters.characters);
+  const [items, setItems] = useState<SharedItemRecord[]>(persistedCharacters.items);
   const [activePlayerCharacterId, setActivePlayerCharacterId] = useState<string | null>(
     persistedCharacters.activePlayerCharacterId
   );
@@ -98,11 +116,12 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       typeof window === "undefined" ? null : window.localStorage,
       {
         characters,
+        items,
         activePlayerCharacterId,
         activeDmCharacterId,
       }
     );
-  }, [activeDmCharacterId, activePlayerCharacterId, characters]);
+  }, [activeDmCharacterId, activePlayerCharacterId, characters, items]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -117,6 +136,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       const nextState = readPersistedCharactersFromStorage(window.localStorage);
       skipNextPersistRef.current = true;
       setCharacters(nextState.characters);
+      setItems(nextState.items);
       setActivePlayerCharacterId((currentActiveCharacterId) =>
         currentActiveCharacterId &&
         nextState.characters.some(
@@ -159,6 +179,53 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     setActivePlayerCharacterId(characterId);
 
     return characterId;
+  }
+
+  function createItem(
+    blueprintId: ItemBlueprintId,
+    overrides: Partial<
+      Pick<
+        SharedItemRecord,
+        "name" | "itemLevel" | "qualityTier" | "baseDescription" | "bonusProfile" | "knowledge"
+      >
+    > = {}
+  ): string {
+    const nextItem = createSharedItemRecord(blueprintId, overrides);
+    setItems((currentItems) => [...currentItems, nextItem]);
+    return nextItem.id;
+  }
+
+  function updateItem(
+    itemId: string,
+    updater: SharedItemRecord | ((current: SharedItemRecord) => SharedItemRecord)
+  ): void {
+    setItems((currentItems) =>
+      currentItems.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+
+        return typeof updater === "function" ? updater(item) : updater;
+      })
+    );
+  }
+
+  function deleteItem(itemId: string): void {
+    setItems((currentItems) => currentItems.filter((item) => item.id !== itemId));
+    setCharacters((currentCharacters) =>
+      currentCharacters.map((character) => ({
+        ...character,
+        sheet: normalizeCharacterDraft({
+          ...character.sheet,
+          ownedItemIds: character.sheet.ownedItemIds.filter((entry) => entry !== itemId),
+          inventoryItemIds: character.sheet.inventoryItemIds.filter((entry) => entry !== itemId),
+          activeItemIds: character.sheet.activeItemIds.filter((entry) => entry !== itemId),
+          equipment: character.sheet.equipment.map((entry) =>
+            entry.itemId === itemId ? { ...entry, itemId: null } : entry
+          ),
+        }),
+      }))
+    );
   }
 
   function selectCharacter(characterId: string): void {
@@ -236,12 +303,16 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         authChoice,
         roleChoice,
         characters,
+        items,
         activePlayerCharacter,
         activeDmCharacter,
         activeCombatEncounter,
         chooseAuth: setAuthChoice,
         chooseRole: setRoleChoice,
         createCharacter,
+        createItem,
+        updateItem,
+        deleteItem,
         selectCharacter,
         deleteCharacter,
         updateCharacter,

@@ -9,6 +9,7 @@ import {
   applyActivePowerEffect,
   doesActivePowerEffectConflict,
   isAuraSourceEffect,
+  removeActivePowerEffect,
   removeAuraSharedEffectsForTarget,
   spendPowerMana,
 } from "../rules/powerEffects";
@@ -16,8 +17,14 @@ import {
   getAuraSelectedTargetIds,
   prepareCastRequest,
 } from "../lib/combatEncounterCasting";
+import {
+  preparePhysicalAttackRequest,
+  type PhysicalAttackProfileId,
+} from "../lib/combatEncounterPhysicalAttacks";
 import { rollD10Faces } from "../lib/dice";
+import { createTimestampedId } from "../lib/ids.ts";
 import { prependGameHistoryEntry } from "../lib/historyEntries";
+import { buildItemIndex } from "../lib/items.ts";
 import {
   POWER_USAGE_KEYS,
   getPowerUsageCount,
@@ -35,6 +42,7 @@ import type {
 } from "../types/combatEncounterView";
 import type { CharacterRecord } from "../types/character";
 import { EncounterCastConfirmationDialog } from "../components/combat-encounter/EncounterCastConfirmationDialog";
+import { EncounterActivityLogPanel } from "../components/combat-encounter/EncounterActivityLogPanel";
 import { EncounterInitiativePanel } from "../components/combat-encounter/EncounterInitiativePanel";
 import { EncounterPartiesPanel } from "../components/combat-encounter/EncounterPartiesPanel";
 import { EncounterRollHelper } from "../components/combat-encounter/EncounterRollHelper";
@@ -80,12 +88,21 @@ function normalizeStatusTagText(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, "_");
 }
 
+function buildEncounterLogEntry(summary: string) {
+  return {
+    id: createTimestampedId("encounter-log"),
+    createdAt: new Date().toISOString(),
+    summary,
+  };
+}
+
 export function CombatEncounterPage() {
   const navigate = useNavigate();
   const {
     roleChoice,
     activeCombatEncounter,
     characters,
+    items,
     updateCharacter,
     updateCombatEncounter,
   } = useAppFlow();
@@ -99,6 +116,7 @@ export function CombatEncounterPage() {
   const [customRollInput, setCustomRollInput] = useState("");
   const [customRollModifiers, setCustomRollModifiers] = useState<CustomRollModifier[]>([]);
   const [lastRoll, setLastRoll] = useState<RollResult | null>(null);
+  const itemsById = buildItemIndex(items);
   const dragRef = useRef<{ active: boolean; moved: boolean; offsetX: number; offsetY: number }>(
     {
       active: false,
@@ -175,7 +193,7 @@ export function CombatEncounterPage() {
               sheet: transientCombatant.sheet,
             }
           : null);
-      const snapshot = character ? buildCharacterEncounterSnapshot(character.sheet) : null;
+      const snapshot = character ? buildCharacterEncounterSnapshot(character.sheet, itemsById) : null;
 
       return {
         participant,
@@ -193,7 +211,11 @@ export function CombatEncounterPage() {
           ({ participant }) => participant.characterId === currentTurnState.activeParticipantId
         )?.participant.displayName ?? null
       : null;
-  const unassignedEncounterMembers = getEncounterPartyMembers(encounterParticipants, null);
+  const unassignedEncounterMembers = getEncounterPartyMembers(
+    encounterParticipants,
+    null,
+    itemsById
+  );
   const selectedCombatant =
     encounterParticipants.find(({ participant }) => participant.characterId === selectedCombatantId) ??
     encounterParticipants[0] ??
@@ -354,11 +376,151 @@ export function CombatEncounterPage() {
     });
   }
 
+  function mergeEncounterStructuralChanges(
+    currentEncounter: NonNullable<typeof activeCombatEncounter>,
+    request: PreparedCastRequest,
+    brokenCrowdControlStates: Array<
+      Extract<(typeof currentEncounter.ongoingStates)[number], { kind: "crowd_control" }>
+    >
+  ): NonNullable<typeof activeCombatEncounter> {
+    const dismissedIds = new Set(
+      request.summonChanges
+        .filter(
+          (change): change is Extract<typeof request.summonChanges[number], { operation: "dismiss" }> =>
+            change.operation === "dismiss"
+        )
+        .map((change) => change.summonId)
+    );
+    const explicitRemovedStateIds = new Set(
+      request.ongoingStateChanges
+        .filter(
+          (change): change is Extract<typeof request.ongoingStateChanges[number], { operation: "remove" }> =>
+            change.operation === "remove"
+        )
+        .map((change) => change.ongoingStateId)
+    );
+    const releasedCrowdControlTargets = request.ongoingStateChanges.filter(
+      (
+        change
+      ): change is Extract<
+        typeof request.ongoingStateChanges[number],
+        { operation: "releaseCrowdControl" }
+      > => change.operation === "releaseCrowdControl"
+    );
+    const addedStates = request.ongoingStateChanges.flatMap((change) =>
+      change.operation === "add" ? [change.state] : []
+    );
+    let participants = currentEncounter.participants.filter(
+      (participant) => !dismissedIds.has(participant.characterId)
+    );
+    let transientCombatants = currentEncounter.transientCombatants.filter(
+      (entry) => !dismissedIds.has(entry.id)
+    );
+    let insertedCount = 0;
+
+    request.summonChanges
+      .filter(
+        (change): change is Extract<typeof request.summonChanges[number], { operation: "spawn" }> =>
+          change.operation === "spawn"
+      )
+      .forEach((change) => {
+        transientCombatants = [...transientCombatants, change.summon];
+        const casterIndex = participants.findIndex(
+          (participant) => participant.characterId === request.casterCharacterId
+        );
+        const insertIndex = casterIndex >= 0 ? casterIndex + 1 + insertedCount : participants.length;
+        participants = [
+          ...participants.slice(0, insertIndex),
+          change.participant,
+          ...participants.slice(insertIndex),
+        ];
+        insertedCount += 1;
+      });
+
+    const activeParticipantId = participants.some(
+      (participant) => participant.characterId === currentEncounter.turnState.activeParticipantId
+    )
+      ? currentEncounter.turnState.activeParticipantId
+      : participants[currentEncounter.turnState.activeParticipantIndex]?.characterId ??
+        participants[0]?.characterId ??
+        null;
+
+    return {
+      ...currentEncounter,
+      participants,
+      transientCombatants,
+      ongoingStates: [
+        ...currentEncounter.ongoingStates.filter((state) => {
+          if (brokenCrowdControlStates.some((brokenState) => brokenState.id === state.id)) {
+            return false;
+          }
+
+          if (explicitRemovedStateIds.has(state.id)) {
+            return false;
+          }
+
+          if (
+            state.kind === "crowd_control" &&
+            releasedCrowdControlTargets.some(
+              (change) =>
+                change.casterCharacterId === state.casterCharacterId &&
+                change.targetCharacterId === state.targetCharacterId
+            )
+          ) {
+            return false;
+          }
+
+          if (
+            addedStates.some((addedState) => {
+              if (addedState.kind !== state.kind) {
+                return false;
+              }
+
+              if (state.kind === "crowd_control" && addedState.kind === "crowd_control") {
+                return (
+                  state.casterCharacterId === addedState.casterCharacterId &&
+                  state.targetCharacterId === addedState.targetCharacterId
+                );
+              }
+
+              if (state.kind === "expose_darkness" && addedState.kind === "expose_darkness") {
+                return (
+                  state.casterCharacterId === addedState.casterCharacterId &&
+                  state.targetCharacterId === addedState.targetCharacterId
+                );
+              }
+
+              if (
+                state.kind === "body_reinforcement_revive" &&
+                addedState.kind === "body_reinforcement_revive"
+              ) {
+                return state.characterId === addedState.characterId;
+              }
+
+              return false;
+            })
+          ) {
+            return false;
+          }
+
+          return true;
+        }),
+        ...addedStates,
+      ],
+      activityLog: [...request.activityLogEntries, ...currentEncounter.activityLog].slice(0, 200),
+      turnState: {
+        ...currentEncounter.turnState,
+        activeParticipantId,
+      },
+    };
+  }
+
   function advanceEncounterTurn(): void {
     const currentEncounter = activeCombatEncounter;
     if (!currentEncounter || currentEncounter.participants.length === 0) {
       return;
     }
+    const turnLogEntries: Array<ReturnType<typeof buildEncounterLogEntry>> = [];
 
     const currentIndex = Math.max(
       0,
@@ -394,6 +556,11 @@ export function CombatEncounterPage() {
             1
           ),
         }));
+        turnLogEntries.push(
+          buildEncounterLogEntry(
+            `Body Reinforcement revived ${currentEncounter.participants.find((participant) => participant.characterId === state.characterId)?.displayName ?? state.characterId}.`
+          )
+        );
         return states;
       }
 
@@ -457,7 +624,7 @@ export function CombatEncounterPage() {
       );
       const maintenanceFailed =
         !controllerSheet ||
-        ("error" in spendPowerMana(controllerSheet, totalMaintenanceCost));
+        ("error" in spendPowerMana(controllerSheet, totalMaintenanceCost, itemsById));
 
       if (totalMaintenanceCost > 0) {
         if (maintenanceFailed) {
@@ -476,8 +643,21 @@ export function CombatEncounterPage() {
               },
             });
           });
+          turnLogEntries.push(
+            buildEncounterLogEntry(
+              `Crowd Control dropped because ${
+                currentEncounter.participants.find(
+                  (participant) => participant.characterId === nextActiveParticipantId
+                )?.displayName ?? nextActiveParticipantId
+              } could not pay upkeep.`
+            )
+          );
         } else {
-          const spentMaintenance = spendPowerMana(controllerSheet!, totalMaintenanceCost);
+          const spentMaintenance = spendPowerMana(
+            controllerSheet!,
+            totalMaintenanceCost,
+            itemsById
+          );
           if (!("error" in spentMaintenance)) {
             updateEncounterCharacter(nextActiveParticipantId, spentMaintenance.sheet);
           }
@@ -497,8 +677,48 @@ export function CombatEncounterPage() {
       }
     }
 
+    currentEncounter.participants.forEach((participant) => {
+      const sheet = resolveEncounterSheet(currentEncounter, participant.characterId);
+      if (!sheet) {
+        return;
+      }
+
+      const sourceEffects = (sheet.activePowerEffects ?? []).filter(isAuraSourceEffect);
+      if (sourceEffects.length === 0) {
+        return;
+      }
+
+      const isDeadSource =
+        sheet.currentHp <= -10 ||
+        sheet.statusTags.some(
+          (tag) =>
+            normalizeStatusTagText(tag.id) === "dead" ||
+            normalizeStatusTagText(tag.label) === "dead"
+        );
+      if (!isDeadSource) {
+        return;
+      }
+
+      sourceEffects.forEach((effect) => {
+        getAuraSelectedTargetIds(effect)
+          .filter((targetId) => targetId !== participant.characterId)
+          .forEach((targetId) => {
+            updateEncounterCharacter(targetId, (currentSheet) =>
+              removeAuraSharedEffectsForTarget(currentSheet, effect, targetId)
+            );
+          });
+        updateEncounterCharacter(participant.characterId, (currentSheet) =>
+          removeActivePowerEffect(currentSheet, effect.id)
+        );
+      });
+      turnLogEntries.push(
+        buildEncounterLogEntry(`Aura effects ended because ${participant.displayName} is down.`)
+      );
+    });
+
     updateCombatEncounter((encounter) => ({
       ...encounter,
+      activityLog: [...turnLogEntries, ...encounter.activityLog].slice(0, 200),
       ongoingStates: nextOngoingStates,
       turnState: {
         round: nextRound,
@@ -518,7 +738,7 @@ export function CombatEncounterPage() {
       return "The active encounter is no longer available.";
     }
 
-    const spentMana = spendPowerMana(casterCharacter.sheet, request.manaCost);
+    const spentMana = spendPowerMana(casterCharacter.sheet, request.manaCost, itemsById);
     if ("error" in spentMana) {
       return spentMana.error;
     }
@@ -533,7 +753,7 @@ export function CombatEncounterPage() {
 
     request.resourceChanges.forEach((change) => {
       updateEncounterCharacter(change.characterId, (currentSheet) => {
-        const derived = buildCharacterDerivedValues(currentSheet);
+        const derived = buildCharacterDerivedValues(currentSheet, itemsById);
         const currentValue =
           change.field === "currentMana"
             ? derived.currentMana
@@ -562,6 +782,7 @@ export function CombatEncounterPage() {
       updateEncounterCharacter(application.targetCharacterId, (currentSheet) =>
         applyHealingToSheet(currentSheet, application.amount, {
           temporaryHpCap: application.temporaryHpCap,
+          itemsById,
         }).sheet
       );
     });
@@ -572,6 +793,7 @@ export function CombatEncounterPage() {
           rawAmount: application.rawAmount,
           damageType: application.damageType,
           mitigationChannel: application.mitigationChannel,
+          itemsById,
         }).sheet
       );
     });
@@ -632,162 +854,24 @@ export function CombatEncounterPage() {
         });
     });
 
-    const isSelfCast =
-      request.targetCharacterIds.length === 1 && request.targetCharacterIds[0] === casterCharacter.id;
-
-    if (request.effects.length === 0) {
-      updateCombatEncounter((currentEncounter) => {
-        const dismissedIds = new Set(
-          request.summonChanges
-            .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "dismiss" }> => change.operation === "dismiss")
-            .map((change) => change.summonId)
-        );
-        let participants = currentEncounter.participants.filter(
-          (participant) => !dismissedIds.has(participant.characterId)
-        );
-        let transientCombatants = currentEncounter.transientCombatants.filter(
-          (entry) => !dismissedIds.has(entry.id)
-        );
-        let insertedCount = 0;
-
-        request.summonChanges
-          .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "spawn" }> => change.operation === "spawn")
-          .forEach((change) => {
-            transientCombatants = [...transientCombatants, change.summon];
-            const casterIndex = participants.findIndex(
-              (participant) => participant.characterId === request.casterCharacterId
-            );
-            const insertIndex =
-              casterIndex >= 0 ? casterIndex + 1 + insertedCount : participants.length;
-            participants = [
-              ...participants.slice(0, insertIndex),
-              change.participant,
-              ...participants.slice(insertIndex),
-            ];
-            insertedCount += 1;
-          });
-
-        const activeParticipantId =
-          participants.some(
-            (participant) => participant.characterId === currentEncounter.turnState.activeParticipantId
-          )
-            ? currentEncounter.turnState.activeParticipantId
-            : participants[currentEncounter.turnState.activeParticipantIndex]?.characterId ??
-              participants[0]?.characterId ??
-              null;
-
-        return {
-          ...currentEncounter,
-          participants,
-          transientCombatants,
-          ongoingStates: [
-            ...currentEncounter.ongoingStates.filter(
-              (state) =>
-                !brokenCrowdControlStates.some((brokenState) => brokenState.id === state.id) &&
-                !request.ongoingStateChanges.some(
-                  (change) => change.operation === "remove" && change.ongoingStateId === state.id
-                )
-            ),
-            ...request.ongoingStateChanges.flatMap((change) =>
-              change.operation === "add" ? [change.state] : []
-            ),
-          ],
-          turnState: {
-            ...currentEncounter.turnState,
-            activeParticipantId,
-          },
-        };
-      });
-
-      return null;
-    }
-
-    if (isSelfCast) {
-      const selfEffect = request.effects[0];
-      if (!selfEffect) {
-        return "Cast effect could not be resolved.";
-      }
-
-      updateEncounterCharacter(casterCharacter.id, (currentSheet) =>
-        applyActivePowerEffect(currentSheet, selfEffect)
+    request.effects.forEach((effect) => {
+      updateEncounterCharacter(effect.targetCharacterId, (currentSheet) =>
+        applyActivePowerEffect(currentSheet, effect)
       );
-    } else {
-      request.effects.forEach((effect) => {
-        updateEncounterCharacter(effect.targetCharacterId, (currentSheet) =>
-          applyActivePowerEffect(currentSheet, effect)
-        );
-      });
-    }
+    });
 
     updateCombatEncounter((currentEncounter) => {
-      const dismissedIds = new Set(
-        request.summonChanges
-          .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "dismiss" }> => change.operation === "dismiss")
-          .map((change) => change.summonId)
-      );
-      let participants = currentEncounter.participants.filter(
-        (participant) => !dismissedIds.has(participant.characterId)
-      );
-      let transientCombatants = currentEncounter.transientCombatants.filter(
-        (entry) => !dismissedIds.has(entry.id)
-      );
-      let insertedCount = 0;
-
-      request.summonChanges
-        .filter((change): change is Extract<typeof request.summonChanges[number], { operation: "spawn" }> => change.operation === "spawn")
-        .forEach((change) => {
-          transientCombatants = [...transientCombatants, change.summon];
-          const casterIndex = participants.findIndex(
-            (participant) => participant.characterId === request.casterCharacterId
-          );
-          const insertIndex =
-            casterIndex >= 0 ? casterIndex + 1 + insertedCount : participants.length;
-          participants = [
-            ...participants.slice(0, insertIndex),
-            change.participant,
-            ...participants.slice(insertIndex),
-          ];
-          insertedCount += 1;
-        });
-
-      const activeParticipantId =
-        participants.some(
-          (participant) => participant.characterId === currentEncounter.turnState.activeParticipantId
-        )
-          ? currentEncounter.turnState.activeParticipantId
-          : participants[currentEncounter.turnState.activeParticipantIndex]?.characterId ??
-            participants[0]?.characterId ??
-            null;
-
-      return {
-        ...currentEncounter,
-        participants,
-        transientCombatants,
-        ongoingStates: [
-          ...currentEncounter.ongoingStates.filter(
-            (state) =>
-              !brokenCrowdControlStates.some((brokenState) => brokenState.id === state.id) &&
-              !request.ongoingStateChanges.some(
-                (change) =>
-                  change.operation === "remove" && change.ongoingStateId === state.id
-              )
-          ),
-          ...request.ongoingStateChanges.flatMap((change) =>
-            change.operation === "add" ? [change.state] : []
-          ),
-        ],
-        turnState: {
-          ...currentEncounter.turnState,
-          activeParticipantId,
-        },
-      };
+      return mergeEncounterStructuralChanges(currentEncounter, request, brokenCrowdControlStates);
     });
 
     return null;
   }
 
   function requestCast(payload: CastRequestPayload): string | null {
-    const prepared = prepareCastRequest(payload);
+    const prepared = prepareCastRequest({
+      ...payload,
+      itemsById,
+    });
     if ("error" in prepared) {
       return prepared.error;
     }
@@ -799,6 +883,32 @@ export function CombatEncounterPage() {
         warnings: prepared.warnings,
       });
       return null;
+    }
+
+    return executePreparedCast(prepared.request);
+  }
+
+  function requestPhysicalAttack(payload: {
+    casterView: EncounterParticipantView;
+    targetView: EncounterParticipantView;
+    profileId: PhysicalAttackProfileId;
+    landedHits: number;
+  }): string | null {
+    const casterCharacter = payload.casterView.character;
+    const targetCharacter = payload.targetView.character;
+    if (!casterCharacter || !targetCharacter) {
+      return "The selected combatants no longer resolve to character sheets.";
+    }
+
+    const prepared = preparePhysicalAttackRequest({
+      casterCharacter,
+      targetCharacter,
+      profileId: payload.profileId,
+      landedHits: payload.landedHits,
+      itemsById,
+    });
+    if ("error" in prepared) {
+      return prepared.error;
     }
 
     return executePreparedCast(prepared.request);
@@ -968,10 +1078,13 @@ export function CombatEncounterPage() {
             moveEncounterParticipantToParty={moveEncounterParticipantToParty}
           />
 
+          <EncounterActivityLogPanel activityLog={activeCombatEncounter.activityLog} />
+
           <EncounterInitiativePanel
               encounterParticipants={encounterParticipants}
               openCharacterSheet={openCharacterSheet}
               requestCast={requestCast}
+              requestPhysicalAttack={requestPhysicalAttack}
               updateCharacter={updateEncounterCharacter}
             />
         </section>

@@ -22,20 +22,22 @@ import type {
 } from "../types/combatEncounter.ts";
 import { createTimestampedId, getIsoTimestamp } from "../lib/ids.ts";
 import { rollD10Faces } from "../lib/dice.ts";
+import type { SharedItemRecord } from "../types/items.ts";
 const HIGHLIGHTED_SKILL_IDS = ["intimidation", "stealth", "alertness"] as const;
 
 export function buildEncounterParticipantInput(
   characterId: string,
   ownerRole: "player" | "dm",
   sheet: CharacterDraft,
-  partyId: string | null = null
+  partyId: string | null = null,
+  itemsById: Record<string, SharedItemRecord> = {}
 ): CombatEncounterParticipantInput {
   return {
     characterId,
     ownerRole,
     displayName: sheet.name.trim() || "Unnamed Character",
-    dex: getCurrentStatValue(sheet, "DEX"),
-    wits: getCurrentStatValue(sheet, "WITS"),
+    dex: getCurrentStatValue(sheet, "DEX", itemsById),
+    wits: getCurrentStatValue(sheet, "WITS", itemsById),
     partyId,
   };
 }
@@ -135,11 +137,15 @@ export function createCombatEncounter(
     },
     transientCombatants: [],
     ongoingStates: [],
+    activityLog: [],
   };
 }
 
-export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): CharacterEncounterSnapshot {
-  const derived = buildCharacterDerivedValues(sheet);
+export function buildCharacterEncounterSnapshot(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord> = {}
+): CharacterEncounterSnapshot {
+  const derived = buildCharacterDerivedValues(sheet, itemsById);
   const currentStats = derived.currentStats;
 
   const combatSummary: EncounterCombatSummaryField[] = [
@@ -218,12 +224,12 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
     id: statId,
     label: statId,
     value: currentStats[statId],
-    summary: getStatBreakdown(sheet, statId).summary,
-    detail: getStatBreakdown(sheet, statId).detail,
+    summary: getStatBreakdown(sheet, statId, itemsById).summary,
+    detail: getStatBreakdown(sheet, statId, itemsById).detail,
   }));
 
   const highlightedSkills: EncounterBreakdownField[] = HIGHLIGHTED_SKILL_IDS.map((skillId) => {
-    const breakdown = getSkillBreakdown(sheet, skillId);
+    const breakdown = getSkillBreakdown(sheet, skillId, itemsById);
     const skill = sheet.skills.find((entry) => entry.id === skillId);
     return {
       id: skillId,
@@ -235,7 +241,7 @@ export function buildCharacterEncounterSnapshot(sheet: CharacterDraft): Characte
   });
 
   const visibleResistances = DAMAGE_TYPES.flatMap((damageType) => {
-    const level = getResolvedResistanceLevel(sheet, damageType.id);
+    const level = getResolvedResistanceLevel(sheet, damageType.id, itemsById);
     if (level === 0) {
       return [];
     }

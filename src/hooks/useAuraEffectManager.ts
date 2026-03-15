@@ -11,6 +11,7 @@ import {
   updateAuraSourceTargets,
 } from "../rules/powerEffects";
 import {
+  canEncounterTargetReceiveGroupBuff,
   getAuraSelectedTargetIds,
   isTargetAffectedByAuraSource,
 } from "../lib/combatEncounterCasting";
@@ -91,8 +92,10 @@ export function useAuraEffectManager({
           (targetId) =>
             targetId === latestSourceEffect.casterCharacterId ||
             encounterParticipants.some(
-              ({ character: candidateCharacter, participant }) =>
-                participant.characterId === targetId && candidateCharacter !== null
+              (view) =>
+                view.participant.characterId === targetId &&
+                view.character !== null &&
+                canEncounterTargetReceiveGroupBuff(view)
             )
         )
       )
@@ -216,6 +219,11 @@ export function useAuraEffectManager({
     if (!targetCharacter) {
       return;
     }
+    const targetView =
+      encounterParticipants.find(({ participant }) => participant.characterId === targetId) ?? null;
+    if (!targetView || !canEncounterTargetReceiveGroupBuff(targetView)) {
+      return;
+    }
 
     const isCurrentlyAffected = isTargetAffectedByAuraSource(latestSourceEffect, targetCharacter);
     const nextTargetIds = isCurrentlyAffected
@@ -236,10 +244,11 @@ export function useAuraEffectManager({
     )?.participant.partyId;
     const alliedTargetIds = encounterParticipants
       .filter(
-        ({ participant, character: targetCharacter }) =>
-          targetCharacter !== null &&
-          participant.partyId !== null &&
-          participant.partyId === casterPartyId
+        (view) =>
+          canEncounterTargetReceiveGroupBuff(view) &&
+          view.character !== null &&
+          view.participant.partyId !== null &&
+          view.participant.partyId === casterPartyId
       )
       .map(({ participant }) => participant.characterId);
     const alliedNonSelfTargetIds = alliedTargetIds.filter(

@@ -9,6 +9,7 @@ import {
 } from "../config/characterTemplate.ts";
 import { getCrAndRankFromXpUsed } from "../rules/xpTables.ts";
 import type { StatId } from "../types/character.ts";
+import type { SharedItemRecord } from "../types/items.ts";
 
 export type PlayerRollTarget = {
   id: string;
@@ -31,8 +32,11 @@ export function buildEditSessionStatFloor(sheet: CharacterDraft): Record<StatId,
   };
 }
 
-export function buildPlayerCharacterViewModel(sheet: CharacterDraft) {
-  const derived = buildCharacterDerivedValues(sheet);
+export function buildPlayerCharacterViewModel(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord> = {}
+) {
+  const derived = buildCharacterDerivedValues(sheet, itemsById);
   const currentStats = derived.currentStats;
   const progression = getCrAndRankFromXpUsed(sheet.xpUsed);
   const xpLeftOver = sheet.xpEarned - sheet.xpUsed;
@@ -48,7 +52,7 @@ export function buildPlayerCharacterViewModel(sheet: CharacterDraft) {
     ...sheet.skills.map((skill) => ({
       id: `skill:${skill.id}`,
       label: skill.label,
-      value: getCurrentSkillValue(sheet, skill.id),
+      value: getCurrentSkillValue(sheet, skill.id, itemsById),
       category: "skill" as const,
     })),
   ];

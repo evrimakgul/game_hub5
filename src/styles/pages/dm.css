@@ -177,6 +177,12 @@
   margin-top: 12px;
 }
 
+.dm-encounter-activity-log {
+  max-height: 7rem;
+  overflow-y: auto;
+  resize: vertical;
+}
+
 .dm-order-row,
 .dm-log-row {
   padding: 10px;

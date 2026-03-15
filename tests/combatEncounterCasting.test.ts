@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
-import { prepareCastRequest } from "../src/lib/combatEncounterCasting.ts";
+import {
+  getEncounterCastTargetOptions,
+  prepareCastRequest,
+} from "../src/lib/combatEncounterCasting.ts";
 import { POWER_USAGE_KEYS, setLongRestSelection } from "../src/lib/powerUsage.ts";
 import {
   getCastPowerSummonOptions,
@@ -265,9 +268,132 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           return;
         }
 
-        assert.equal(highPrepared.request.manaCost, 1);
+        assert.equal(highPrepared.request.manaCost, 0);
         assert.equal(highPrepared.request.statusTagChanges.length, 2);
         assert.equal(highPrepared.request.ongoingStateChanges.length, 1);
+      },
+    },
+    {
+      name: "shadow walk builds a zero-effect movement action with its own mana cost",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Shade", "player", {
+          powers: [
+            {
+              id: "shadow_control",
+              name: "Shadow Control",
+              level: 5,
+              governingStat: "MAN",
+            },
+          ],
+        });
+        const target = createCharacterRecord("target", "Scout", "dm");
+        const prepared = prepareCastRequest(
+          preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: [
+              createParticipantView(caster),
+              createParticipantView(target, "party-2"),
+            ],
+            selectedPower: caster.sheet.powers[0],
+            selectedTargetIds: [target.id],
+            variantId: "shadow_walk",
+          })
+        );
+
+        assert.ok(!("error" in prepared));
+        if ("error" in prepared) {
+          return;
+        }
+
+        assert.equal(prepared.request.manaCost, 2);
+        assert.equal(prepared.request.effects.length, 0);
+        assert.equal(prepared.request.damageApplications.length, 0);
+        assert.equal(prepared.request.activityLogEntries.length, 1);
+      },
+    },
+    {
+      name: "elementalist can target transient summons while crowd control cannot",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Mage", "player", {
+          powers: [
+            { id: "elementalist", name: "Elementalist", level: 5, governingStat: "INT" },
+          ],
+        });
+        const controller = createCharacterRecord("controller", "Controller", "dm", {
+          powers: [
+            { id: "shadow_control", name: "Shadow Control", level: 5, governingStat: "MAN" },
+          ],
+        });
+        const transientSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        transientSheet.name = "Shadow Soldier";
+        const summonView: EncounterParticipantView = {
+          participant: {
+            characterId: "summon-1",
+            ownerRole: "dm",
+            displayName: "Shadow Soldier",
+            initiativePool: 3,
+            initiativeFaces: [8, 7, 6],
+            initiativeSuccesses: 3,
+            dex: 3,
+            wits: 3,
+            partyId: "party-2",
+            controllerCharacterId: controller.id,
+            summonTemplateId: "shadow_soldier",
+            sourcePowerId: "shadow_control",
+          },
+          character: {
+            id: "summon-1",
+            ownerRole: "dm",
+            sheet: transientSheet,
+          },
+          transientCombatant: {
+            id: "summon-1",
+            ownerRole: "dm",
+            controllerCharacterId: controller.id,
+            sourcePowerId: "shadow_control",
+            sourcePowerLevel: 5,
+            summonTemplateId: "shadow_soldier",
+            buffRules: {
+              canReceiveSingleBuffs: true,
+              canReceiveGroupBuffs: true,
+              canBeHealed: false,
+            },
+            sheet: transientSheet,
+          },
+          snapshot: null,
+        };
+
+        const encounterParticipants = [
+          createParticipantView(caster),
+          createParticipantView(controller, "party-2"),
+          summonView,
+        ];
+        const elementalistTargets = getEncounterCastTargetOptions({
+          casterView: encounterParticipants[0],
+          encounterParticipants,
+          selectedPower: caster.sheet.powers[0],
+          selectedVariantId: "elemental_bolt",
+          castMode: "self",
+        });
+        const crowdControlTargets = getEncounterCastTargetOptions({
+          casterView: encounterParticipants[1],
+          encounterParticipants,
+          selectedPower: {
+            id: "crowd_control",
+            name: "Crowd Control",
+            level: 5,
+            governingStat: "CHA",
+          },
+          selectedVariantId: "crowd_control",
+          castMode: "self",
+        });
+
+        assert.ok(
+          elementalistTargets.some((view) => view.participant.characterId === "summon-1")
+        );
+        assert.ok(
+          !crowdControlTargets.some((view) => view.participant.characterId === "summon-1")
+        );
       },
     },
     {

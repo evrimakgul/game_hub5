@@ -4,6 +4,7 @@ import {
   CHARACTER_DRAFT_SCHEMA_VERSION,
   PLAYER_CHARACTER_TEMPLATE,
 } from "../src/config/characterTemplate.ts";
+import { buildItemIndex, createSharedItemRecord } from "../src/lib/items.ts";
 import {
   CHARACTER_STORAGE_KEY,
   hydratePersistedCharacters,
@@ -34,6 +35,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         );
 
         assert.equal(state.characters.length, 2);
+        assert.equal(state.items.length, 0);
         assert.equal(state.activePlayerCharacterId, null);
         assert.equal(state.activeDmCharacterId, "dm-1");
       },
@@ -62,8 +64,13 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
       run: () => {
         const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
         sheet.name = "Writer";
+        const item = createSharedItemRecord("weapon:one_handed", {
+          id: "item-1",
+          name: "Writer Blade",
+        });
         const payload = serializePersistedCharacters({
           characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+          items: [item],
           activePlayerCharacterId: "writer-1",
           activeDmCharacterId: null,
         });
@@ -77,18 +84,63 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           },
           {
             characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+            items: [item],
             activePlayerCharacterId: "writer-1",
             activeDmCharacterId: null,
           }
         );
 
         assert.equal(payload.version, CHARACTER_DRAFT_SCHEMA_VERSION);
+        assert.equal(payload.items?.length, 1);
         assert.equal(payload.activePlayerCharacterId, "writer-1");
         assert.equal(payload.characters[0]?.ownerRole, "player");
         assert.equal(
           JSON.parse(writes.get(CHARACTER_STORAGE_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"
         );
+      },
+    },
+    {
+      name: "hydratePersistedCharacters migrates legacy embedded inventory into shared items",
+      run: () => {
+        const legacySheet = PLAYER_CHARACTER_TEMPLATE.createInstance() as unknown as Record<string, unknown>;
+        delete legacySheet.ownedItemIds;
+        delete legacySheet.inventoryItemIds;
+        delete legacySheet.activeItemIds;
+        legacySheet.inventory = [
+          {
+            name: "Legacy Sword",
+            category: "weapon",
+            note: "Old steel blade",
+            qualityTier: "Rare",
+            revealedSpec: "+1 hit",
+            identified: true,
+          },
+        ];
+        legacySheet.equipment = [
+          {
+            slot: "Main Hand",
+            item: "Legacy Sword",
+            effect: "Equipped",
+            qualityTier: "Rare",
+            revealedSpec: "+1 hit",
+            identified: true,
+          },
+        ];
+
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 5,
+            characters: [{ id: "legacy-1", ownerRole: "player", sheet: legacySheet }],
+          })
+        );
+
+        assert.equal(state.items.length, 2);
+        assert.equal(state.characters[0]?.sheet.ownedItemIds.length, 2);
+        assert.equal(state.characters[0]?.sheet.inventoryItemIds.length, 2);
+        assert.equal(state.characters[0]?.sheet.equipment[0]?.itemId, "item-legacy-1-legacy-equipment-0");
+        const itemIndex = buildItemIndex(state.items);
+        assert.equal(itemIndex["item-legacy-1-legacy-inventory-0"]?.knowledge.visibleCharacterIds[0], "legacy-1");
       },
     },
   ]);

@@ -13,6 +13,7 @@ import type {
   ActivePowerEffect,
   ActivePowerEffectModifier,
 } from "../types/activePowerEffects";
+import type { CharacterEquipmentReference } from "../types/items.ts";
 import { STAT_IDS, isStatId, type CharacterOwnerRole, type StatId } from "../types/character.ts";
 import type { PowerUsageState } from "../types/powerUsage.ts";
 
@@ -48,28 +49,6 @@ export type PowerEntry = {
 export type EncounterStatusTag = {
   id: string;
   label: string;
-};
-
-export type InventoryEntry = {
-  name: string;
-  category: string;
-  note: string;
-  qualityTier: string | null;
-  hiddenSpec: string | null;
-  revealedSpec: string | null;
-  identified: boolean;
-  identifiedAtAwarenessLevel: number | null;
-};
-
-export type EquipmentEntry = {
-  slot: string;
-  item: string;
-  effect: string;
-  qualityTier: string | null;
-  hiddenSpec: string | null;
-  revealedSpec: string | null;
-  identified: boolean;
-  identifiedAtAwarenessLevel: number | null;
 };
 
 export type GameHistoryNoteEntry = {
@@ -151,8 +130,10 @@ export type CharacterDraft = {
   powers: PowerEntry[];
   activePowerEffects: ActivePowerEffect[];
   powerUsageState: PowerUsageState;
-  equipment: EquipmentEntry[];
-  inventory: InventoryEntry[];
+  ownedItemIds: string[];
+  inventoryItemIds: string[];
+  activeItemIds: string[];
+  equipment: CharacterEquipmentReference[];
   gameHistory: GameHistoryEntry[];
   statusTags: EncounterStatusTag[];
   effects: string[];
@@ -166,7 +147,7 @@ export type PowerTemplate = {
   levelBenefits: Record<number, string[]>;
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 5;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 6;
 
 const BLANK_STAT_ENTRY = (): StatEntry => ({
   base: 2,
@@ -356,8 +337,10 @@ export class CharacterSheetTemplate {
       powers: [],
       activePowerEffects: [],
       powerUsageState: createEmptyPowerUsageState(),
+      ownedItemIds: [],
+      inventoryItemIds: [],
+      activeItemIds: [],
       equipment: [],
-      inventory: [],
       gameHistory: [],
       statusTags: [],
       effects: [],
@@ -370,12 +353,23 @@ export const PLAYER_CHARACTER_TEMPLATE = new CharacterSheetTemplate();
 
 export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   const normalizedUsageState = normalizePowerUsageState(sheet.powerUsageState);
+  const normalizedOwnedItemIds = [...new Set((sheet.ownedItemIds ?? []).filter((entry) => entry.trim().length > 0))];
+  const normalizedInventoryItemIds = [...new Set((sheet.inventoryItemIds ?? []).filter((entry) => entry.trim().length > 0))];
+  const normalizedActiveItemIds = [...new Set((sheet.activeItemIds ?? []).filter((entry) => entry.trim().length > 0))];
+  const normalizedEquipment = (sheet.equipment ?? []).map((entry) => ({
+    slot: entry.slot,
+    itemId: entry.itemId && entry.itemId.trim().length > 0 ? entry.itemId : null,
+  }));
   const hasAwareness = sheet.powers.some((power) => power.id === "awareness" && power.level > 0);
 
   if (hasAwareness && !sheet.awarenessInsightGranted) {
     return {
       ...sheet,
       powerUsageState: normalizedUsageState,
+      ownedItemIds: normalizedOwnedItemIds,
+      inventoryItemIds: normalizedInventoryItemIds,
+      activeItemIds: normalizedActiveItemIds,
+      equipment: normalizedEquipment,
       temporaryInspiration: sheet.temporaryInspiration + 1,
       awarenessInsightGranted: true,
     };
@@ -385,6 +379,10 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
     return {
       ...sheet,
       powerUsageState: normalizedUsageState,
+      ownedItemIds: normalizedOwnedItemIds,
+      inventoryItemIds: normalizedInventoryItemIds,
+      activeItemIds: normalizedActiveItemIds,
+      equipment: normalizedEquipment,
       temporaryInspiration: Math.max(0, sheet.temporaryInspiration - 1),
       awarenessInsightGranted: false,
     };
@@ -393,6 +391,10 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   return {
     ...sheet,
     powerUsageState: normalizedUsageState,
+    ownedItemIds: normalizedOwnedItemIds,
+    inventoryItemIds: normalizedInventoryItemIds,
+    activeItemIds: normalizedActiveItemIds,
+    equipment: normalizedEquipment,
   };
 }
 
@@ -538,36 +540,15 @@ function hydratePowers(value: unknown): PowerEntry[] {
   });
 }
 
-function hydrateEquipment(value: unknown): EquipmentEntry[] {
+function hydrateItemIdList(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  return value.flatMap((entry) => {
-    if (!isRecord(entry)) {
-      return [];
-    }
-
-    return [
-      {
-        slot: coerceString(entry.slot, "Unknown Slot"),
-        item: coerceString(entry.item, ""),
-        effect: coerceString(entry.effect, ""),
-        qualityTier: typeof entry.qualityTier === "string" ? entry.qualityTier : null,
-        hiddenSpec: typeof entry.hiddenSpec === "string" ? entry.hiddenSpec : null,
-        revealedSpec: typeof entry.revealedSpec === "string" ? entry.revealedSpec : null,
-        identified: entry.identified === true,
-        identifiedAtAwarenessLevel:
-          typeof entry.identifiedAtAwarenessLevel === "number" &&
-          Number.isFinite(entry.identifiedAtAwarenessLevel)
-            ? Math.max(0, Math.trunc(entry.identifiedAtAwarenessLevel))
-            : null,
-      },
-    ];
-  });
+  return [...new Set(value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0))];
 }
 
-function hydrateInventory(value: unknown): InventoryEntry[] {
+function hydrateEquipment(value: unknown): CharacterEquipmentReference[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -579,18 +560,8 @@ function hydrateInventory(value: unknown): InventoryEntry[] {
 
     return [
       {
-        name: coerceString(entry.name, "Unnamed Item"),
-        category: coerceString(entry.category, ""),
-        note: coerceString(entry.note, ""),
-        qualityTier: typeof entry.qualityTier === "string" ? entry.qualityTier : null,
-        hiddenSpec: typeof entry.hiddenSpec === "string" ? entry.hiddenSpec : null,
-        revealedSpec: typeof entry.revealedSpec === "string" ? entry.revealedSpec : null,
-        identified: entry.identified === true,
-        identifiedAtAwarenessLevel:
-          typeof entry.identifiedAtAwarenessLevel === "number" &&
-          Number.isFinite(entry.identifiedAtAwarenessLevel)
-            ? Math.max(0, Math.trunc(entry.identifiedAtAwarenessLevel))
-            : null,
+        slot: coerceString(entry.slot, ""),
+        itemId: typeof entry.itemId === "string" && entry.itemId.trim().length > 0 ? entry.itemId : null,
       },
     ];
   });
@@ -954,8 +925,10 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     powers: hydratePowers(record.powers),
     activePowerEffects: hydrateActivePowerEffects(record.activePowerEffects),
     powerUsageState: normalizePowerUsageState(record.powerUsageState),
+    ownedItemIds: hydrateItemIdList(record.ownedItemIds),
+    inventoryItemIds: hydrateItemIdList(record.inventoryItemIds),
+    activeItemIds: hydrateItemIdList(record.activeItemIds),
     equipment: hydrateEquipment(record.equipment),
-    inventory: hydrateInventory(record.inventory),
     gameHistory: hydrateGameHistory(record.gameHistory),
     statusTags: hydrateStatusTags(record.statusTags),
     effects: hydrateEffects(record.effects),

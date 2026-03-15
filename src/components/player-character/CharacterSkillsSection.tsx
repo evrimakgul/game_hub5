@@ -2,9 +2,11 @@ import { getSkillBreakdown } from "../../config/characterRuntime";
 import type { CharacterDraft } from "../../config/characterTemplate";
 import { T1_SKILL_XP_BY_LEVEL } from "../../rules/xpTables";
 import { getIncrementCost } from "../../lib/progressionCosts";
+import type { SharedItemRecord } from "../../types/items.ts";
 
 type CharacterSkillsSectionProps = {
   sheetState: CharacterDraft;
+  itemsById: Record<string, SharedItemRecord>;
   isProgressionEditMode: boolean;
   adminOverrideMode: boolean;
   xpLeftOver: number;
@@ -14,6 +16,7 @@ type CharacterSkillsSectionProps = {
 
 export function CharacterSkillsSection({
   sheetState,
+  itemsById,
   isProgressionEditMode,
   adminOverrideMode,
   xpLeftOver,
@@ -26,7 +29,7 @@ export function CharacterSkillsSection({
       <h2>Skills</h2>
       <div className="skill-table">
         {sheetState.skills.map((skill) => {
-          const breakdown = getSkillBreakdown(sheetState, skill.id);
+          const breakdown = getSkillBreakdown(sheetState, skill.id, itemsById);
           const incrementCost = getIncrementCost(T1_SKILL_XP_BY_LEVEL, skill.base);
           const canIncrease = adminOverrideMode
             ? skill.base < T1_SKILL_XP_BY_LEVEL.length - 1

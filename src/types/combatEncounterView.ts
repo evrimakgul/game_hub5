@@ -9,10 +9,12 @@ import type { ActivePowerEffect } from "./activePowerEffects";
 import type { CharacterRecord, StatId } from "./character";
 import type {
   CharacterEncounterSnapshot,
+  EncounterActivityLogEntry,
   CombatEncounterParticipant,
   EncounterOngoingState,
   EncounterTransientCombatant,
 } from "./combatEncounter";
+import type { SharedItemRecord } from "./items";
 import type { PowerUsageResetScope } from "./powerUsage";
 
 export type EncounterParticipantView = {
@@ -38,6 +40,7 @@ export type PreparedCastRequest = {
     characterId: string;
     entry: CharacterRecord["sheet"]["gameHistory"][number];
   }>;
+  activityLogEntries: EncounterActivityLogEntry[];
   healingApplications: Array<{
     targetCharacterId: string;
     amount: number;
@@ -102,6 +105,11 @@ export type PreparedCastRequest = {
         operation: "remove";
         ongoingStateId: string;
       }
+    | {
+        operation: "releaseCrowdControl";
+        casterCharacterId: string;
+        targetCharacterId: string;
+      }
   >;
 };
 
@@ -121,6 +129,7 @@ export type CastRequestPayload = {
   bonusManaSpend: number;
   selectedSummonOptionId: string | null;
   encounterParticipants: EncounterParticipantView[];
+  itemsById?: Record<string, SharedItemRecord>;
 };
 
 export type EncounterPartyMemberView = {

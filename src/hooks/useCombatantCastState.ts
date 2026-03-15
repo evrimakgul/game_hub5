@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { buildItemIndex } from "../lib/items.ts";
 import type { PowerEntry } from "../config/characterTemplate";
 import {
   getCastPowerAllowedStats,
@@ -17,7 +18,10 @@ import {
   type CastPowerVariantId,
   type CastPowerVariantOption,
 } from "../rules/powerEffects";
-import { buildDefaultHealingAllocations } from "../lib/combatEncounterCasting";
+import {
+  buildDefaultHealingAllocations,
+  getEncounterCastTargetOptions,
+} from "../lib/combatEncounterCasting";
 import type {
   CastOutcomeState,
   CastRequestPayload,
@@ -26,6 +30,7 @@ import type {
 } from "../types/combatEncounterView";
 import type { StatId } from "../types/character";
 import type { DamageTypeId } from "../rules/resistances";
+import { useAppFlow } from "../state/appFlow";
 
 type UseCombatantCastStateParams = {
   view: EncounterParticipantView;
@@ -89,6 +94,8 @@ export function useCombatantCastState({
   encounterParticipants,
   requestCast,
 }: UseCombatantCastStateParams): CombatantCastState {
+  const { items } = useAppFlow();
+  const itemsById = buildItemIndex(items);
   const [selectedPowerId, setSelectedPowerId] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState<CastPowerVariantId>("default");
   const [attackOutcome, setAttackOutcome] = useState<CastOutcomeState>("unresolved");
@@ -126,18 +133,15 @@ export function useCombatantCastState({
     ? getCastPowerSummonOptions(selectedPower, resolvedVariantId)
     : [];
   const targetOptions =
-    targetMode === "self"
-      ? encounterParticipants.filter(
-          ({ participant }) => participant.characterId === view.participant.characterId
-        )
-      : encounterParticipants.filter(
-          ({ participant, character: candidateCharacter }) =>
-            candidateCharacter !== null &&
-            ((selectedPower?.id !== "healing" &&
-              !(selectedPower?.id === "light_support" && resolvedVariantId === "mana_restore")) ||
-              view.participant.partyId === null ||
-              participant.partyId === view.participant.partyId)
-        );
+    selectedPower && character
+      ? getEncounterCastTargetOptions({
+          casterView: view,
+          encounterParticipants,
+          selectedPower,
+          selectedVariantId: resolvedVariantId,
+          castMode: selectedCastMode,
+        })
+      : [];
   const singleTargetId = selectedTargetIds[0] ?? "";
   const resolvedSelectedStatId =
     allowedStats.includes(selectedStatId as StatId)
@@ -160,7 +164,7 @@ export function useCombatantCastState({
   const resolvedSingleTargetId = resolvedTargetIds[0] ?? "";
   const healingTotal =
     selectedPower && character
-      ? getHealingPowerTotal(character.sheet, selectedPower, resolvedVariantId)
+      ? getHealingPowerTotal(character.sheet, selectedPower, resolvedVariantId, itemsById)
       : null;
   const resolvedHealingAllocations = Object.fromEntries(
     Object.entries(healingAllocations).map(([targetId, value]) => [
@@ -186,7 +190,8 @@ export function useCombatantCastState({
           character.sheet,
           selectedPower,
           resolvedVariantId,
-          resolvedTargetIds.length
+          resolvedTargetIds.length,
+          itemsById
         )
       : 0;
   const shouldShowHealingAllocationEditor =
@@ -278,10 +283,18 @@ export function useCombatantCastState({
       );
 
       if (validTargetIds.length === 0) {
-        const fallbackTargetId = targetOptions[0]?.participant.characterId ?? view.participant.characterId;
+        const fallbackTargetIds =
+          selectedPower?.id === "light_support" && resolvedVariantId === "expose_darkness"
+            ? targetOptions.map(({ participant }) => participant.characterId).slice(0, targetLimit)
+            : selectedPower?.id === "crowd_control" && resolvedVariantId === "release_control"
+              ? targetOptions.map(({ participant }) => participant.characterId).slice(0, targetLimit)
+              : [targetOptions[0]?.participant.characterId ?? view.participant.characterId];
 
-        if (selectedTargetIds.length !== 1 || selectedTargetIds[0] !== fallbackTargetId) {
-          setSelectedTargetIds([fallbackTargetId]);
+        if (
+          fallbackTargetIds.length !== selectedTargetIds.length ||
+          fallbackTargetIds.some((targetId, index) => targetId !== selectedTargetIds[index])
+        ) {
+          setSelectedTargetIds(fallbackTargetIds);
         }
       } else {
         const cappedTargetIds = validTargetIds.slice(0, targetLimit);
@@ -416,6 +429,7 @@ export function useCombatantCastState({
       bonusManaSpend,
       selectedSummonOptionId: resolvedSummonOptionId,
       encounterParticipants,
+      itemsById,
     });
 
     setCastError(error);

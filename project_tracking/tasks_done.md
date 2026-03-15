@@ -12,3 +12,19 @@
 - `T10` Implement `Crowd Control` cast flow, maintenance, and status handling.
 - `T11` Implement `Necromancy` summons, `Shadow Soldier`, and `Resurrection`.
 - `T12` Expand tests, run validation, and reconcile tracking/docs.
+- `P1-01` Re-audit docs/tracking and align the roadmap with the new combat-fix and shared-item scope.
+- `P1-02` Add `Shadow Walk` cast support and encounter action handling.
+- `P1-03` Split `Heal` and `Cure`, fix mana costs, and preserve healing cantrip limits.
+- `P1-04` Fix summon lifecycle rules: buff eligibility, healing rules, and add dismiss actions for undead summons and `Shadow Soldier`.
+- `P1-05` Fix `Expose Darkness` enemy-only targeting and ally/enemy behavior split.
+- `P1-06` Fix `Crowd Control` upkeep-only mana flow, cancel/release actions, and turn advance handling.
+- `P1-07` Fix aura lifecycle: default-allies initial application plus source-linked cleanup.
+- `P1-08` Fix `Elementalist` target validity consistency against summons and shadow entities.
+- `P1-09` Implement clickable physical attack resolution in combat encounter.
+- `P1-10` Extend encounter magical action resolution and add a minimal encounter activity log.
+- `P2-01` Design the shared item entity/domain model and storage shape.
+- `P2-02` Implement item classes, subtype classes, and compositional `BonusProfile`.
+- `P2-03` Move character sheets to item references with separate ownership, usage, and knowledge state.
+- `P2-04` Wire item bonus application hooks and minimal engine integration without overbuilding UI.
+- `V1-01` Expand tests for encounter fixes, action resolution, and shared item model behavior.
+- `V1-02` Reconcile `plan.md`, tracking files, and notes with the implemented result.

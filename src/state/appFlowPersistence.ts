@@ -2,13 +2,22 @@ import {
   CHARACTER_DRAFT_SCHEMA_VERSION,
   hydrateCharacterDraft,
 } from "../config/characterTemplate.ts";
+import {
+  createEmptyBonusProfile,
+  createSharedItemRecord,
+  hydrateSharedItemRecord,
+  inferItemBlueprintId,
+  inferItemLevelFromQualityTier,
+} from "../lib/items.ts";
 import { isCharacterOwnerRole, type CharacterRecord } from "../types/character.ts";
+import type { SharedItemRecord } from "../types/items.ts";
 
 export const CHARACTER_STORAGE_KEY = "convergence.local.characters";
 
 type PersistedCharacterEnvelope = {
   version: number;
   characters: Array<{ id: string; ownerRole?: unknown; sheet: unknown }>;
+  items?: unknown[];
   activeCharacterId?: string | null;
   activePlayerCharacterId?: string | null;
   activeDmCharacterId?: string | null;
@@ -16,6 +25,7 @@ type PersistedCharacterEnvelope = {
 
 export type PersistedCharacterState = {
   characters: CharacterRecord[];
+  items: SharedItemRecord[];
   activePlayerCharacterId: string | null;
   activeDmCharacterId: string | null;
 };
@@ -23,6 +33,7 @@ export type PersistedCharacterState = {
 function getEmptyPersistedCharacterState(): PersistedCharacterState {
   return {
     characters: [],
+    items: [],
     activePlayerCharacterId: null,
     activeDmCharacterId: null,
   };
@@ -34,6 +45,145 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function normalizeOwnerRole(value: unknown): CharacterRecord["ownerRole"] {
   return isCharacterOwnerRole(value) ? value : "player";
+}
+
+function buildLegacyItemKnowledge(
+  identified: unknown,
+  characterId: string
+): SharedItemRecord["knowledge"] {
+  if (identified === true) {
+    return {
+      learnedCharacterIds: [characterId],
+      visibleCharacterIds: [characterId],
+    };
+  }
+
+  return {
+    learnedCharacterIds: [],
+    visibleCharacterIds: [],
+  };
+}
+
+function migrateLegacySheetItems(
+  rawSheet: unknown,
+  characterId: string
+): {
+  nextSheet: unknown;
+  migratedItems: SharedItemRecord[];
+} {
+  if (!isRecord(rawSheet)) {
+    return {
+      nextSheet: rawSheet,
+      migratedItems: [],
+    };
+  }
+
+  if (
+    Array.isArray(rawSheet.ownedItemIds) ||
+    Array.isArray(rawSheet.inventoryItemIds) ||
+    Array.isArray(rawSheet.activeItemIds)
+  ) {
+    return {
+      nextSheet: rawSheet,
+      migratedItems: [],
+    };
+  }
+
+  const legacyInventory = Array.isArray(rawSheet.inventory)
+    ? rawSheet.inventory.filter((entry): entry is Record<string, unknown> => isRecord(entry))
+    : [];
+  const legacyEquipment = Array.isArray(rawSheet.equipment)
+    ? rawSheet.equipment.filter((entry): entry is Record<string, unknown> => isRecord(entry))
+    : [];
+
+  if (legacyInventory.length === 0 && legacyEquipment.length === 0) {
+    return {
+      nextSheet: rawSheet,
+      migratedItems: [],
+    };
+  }
+
+  const migratedItems: SharedItemRecord[] = [];
+  const ownedItemIds: string[] = [];
+  const inventoryItemIds: string[] = [];
+  const activeItemIds: string[] = [];
+  const equipment = legacyEquipment.map((entry, index) => {
+    const itemId = `item-${characterId}-legacy-equipment-${index}`;
+    const itemName = typeof entry.item === "string" ? entry.item : `Legacy Equipment ${index + 1}`;
+    const qualityTier = typeof entry.qualityTier === "string" ? entry.qualityTier : null;
+    const bonusText =
+      typeof entry.revealedSpec === "string"
+        ? entry.revealedSpec
+        : typeof entry.hiddenSpec === "string"
+          ? entry.hiddenSpec
+          : "";
+
+    migratedItems.push(
+      createSharedItemRecord(
+        inferItemBlueprintId(itemName, itemName, typeof entry.slot === "string" ? entry.slot : ""),
+        {
+          id: itemId,
+          name: itemName,
+          itemLevel: inferItemLevelFromQualityTier(qualityTier),
+          qualityTier,
+          baseDescription: typeof entry.effect === "string" ? entry.effect : "",
+          bonusProfile: {
+            ...createEmptyBonusProfile(),
+            notes: bonusText.trim().length > 0 ? [bonusText.trim()] : [],
+          },
+          knowledge: buildLegacyItemKnowledge(entry.identified, characterId),
+        }
+      )
+    );
+    ownedItemIds.push(itemId);
+    inventoryItemIds.push(itemId);
+    activeItemIds.push(itemId);
+
+    return {
+      slot: typeof entry.slot === "string" ? entry.slot : "",
+      itemId,
+    };
+  });
+
+  legacyInventory.forEach((entry, index) => {
+    const itemId = `item-${characterId}-legacy-inventory-${index}`;
+    const itemName = typeof entry.name === "string" ? entry.name : `Legacy Item ${index + 1}`;
+    const qualityTier = typeof entry.qualityTier === "string" ? entry.qualityTier : null;
+    const bonusText =
+      typeof entry.revealedSpec === "string"
+        ? entry.revealedSpec
+        : typeof entry.hiddenSpec === "string"
+          ? entry.hiddenSpec
+          : "";
+
+    migratedItems.push(
+      createSharedItemRecord(inferItemBlueprintId(itemName, typeof entry.category === "string" ? entry.category : ""), {
+        id: itemId,
+        name: itemName,
+        itemLevel: inferItemLevelFromQualityTier(qualityTier),
+        qualityTier,
+        baseDescription: typeof entry.note === "string" ? entry.note : "",
+        bonusProfile: {
+          ...createEmptyBonusProfile(),
+          notes: bonusText.trim().length > 0 ? [bonusText.trim()] : [],
+        },
+        knowledge: buildLegacyItemKnowledge(entry.identified, characterId),
+      })
+    );
+    ownedItemIds.push(itemId);
+    inventoryItemIds.push(itemId);
+  });
+
+  return {
+    nextSheet: {
+      ...rawSheet,
+      ownedItemIds: [...new Set(ownedItemIds)],
+      inventoryItemIds: [...new Set(inventoryItemIds)],
+      activeItemIds: [...new Set(activeItemIds)],
+      equipment,
+    },
+    migratedItems,
+  };
 }
 
 export function hydratePersistedCharacters(rawValue: string | null): PersistedCharacterState {
@@ -48,17 +198,26 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
     }
 
     const envelope = parsed as Partial<PersistedCharacterEnvelope>;
+    const persistedItems = Array.isArray(envelope.items)
+      ? envelope.items
+          .map((entry) => hydrateSharedItemRecord(entry))
+          .filter((entry): entry is SharedItemRecord => entry !== null)
+      : [];
+    const migratedItems: SharedItemRecord[] = [];
     const characters = Array.isArray(envelope.characters)
       ? envelope.characters.flatMap((entry) => {
           if (!isRecord(entry) || typeof entry.id !== "string") {
             return [];
           }
 
+          const migrated = migrateLegacySheetItems(entry.sheet, entry.id);
+          migratedItems.push(...migrated.migratedItems);
+
           return [
             {
               id: entry.id,
               ownerRole: normalizeOwnerRole(entry.ownerRole),
-              sheet: hydrateCharacterDraft(entry.sheet),
+              sheet: hydrateCharacterDraft(migrated.nextSheet),
             },
           ];
         })
@@ -78,6 +237,7 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
 
     return {
       characters,
+      items: [...persistedItems, ...migratedItems],
       activePlayerCharacterId:
         persistedActivePlayerCharacterId &&
         characters.some(
@@ -124,6 +284,7 @@ export function serializePersistedCharacters(
       ownerRole: character.ownerRole,
       sheet: character.sheet,
     })),
+    items: state.items,
     activePlayerCharacterId: state.activePlayerCharacterId,
     activeDmCharacterId: state.activeDmCharacterId,
   };

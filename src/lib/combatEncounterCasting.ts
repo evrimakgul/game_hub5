@@ -10,6 +10,7 @@ import {
   buildDirectDamageCastResolution,
   buildHealingCastResolution,
   doesActivePowerEffectConflict,
+  getCastPowerTargetModeForVariant,
   isAuraSharedEffect,
 } from "../rules/powerEffects.ts";
 import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
@@ -32,6 +33,7 @@ import {
   getPowerUsageCount,
 } from "./powerUsage.ts";
 import { buildGameHistoryNoteEntry } from "./historyEntries.ts";
+import type { CastPowerMode, CastPowerVariantId } from "../rules/powerEffects.ts";
 
 function buildPreparedCastRequest(
   casterCharacterId: string,
@@ -44,6 +46,7 @@ function buildPreparedCastRequest(
     manaCost,
     effects: [],
     historyEntries: [],
+    activityLogEntries: [],
     healingApplications: [],
     damageApplications: [],
     resourceChanges: [],
@@ -54,8 +57,179 @@ function buildPreparedCastRequest(
   };
 }
 
+function buildEncounterActivityLogEntry(summary: string) {
+  return {
+    id: createTimestampedId("encounter-log"),
+    createdAt: new Date().toISOString(),
+    summary,
+  };
+}
+
+function joinTargetNames(targets: CharacterRecord[]): string {
+  return targets.map((target) => target.sheet.name.trim() || target.id).join(", ");
+}
+
 function normalizeStatusTagText(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function hasStatusTagId(
+  view: EncounterParticipantView | CharacterRecord,
+  statusId: string
+): boolean {
+  const tags = "character" in view ? view.character?.sheet.statusTags ?? [] : view.sheet.statusTags ?? [];
+  const normalized = normalizeStatusTagText(statusId);
+  return tags.some(
+    (tag) =>
+      normalizeStatusTagText(tag.id) === normalized ||
+      normalizeStatusTagText(tag.label) === normalized
+  );
+}
+
+export function isSummonedEncounterTarget(view: EncounterParticipantView): boolean {
+  return view.transientCombatant !== null || view.participant.summonTemplateId !== null;
+}
+
+export function canEncounterTargetReceiveHealing(view: EncounterParticipantView): boolean {
+  return view.transientCombatant ? view.transientCombatant.buffRules.canBeHealed : true;
+}
+
+export function canEncounterTargetReceiveSingleBuff(view: EncounterParticipantView): boolean {
+  return view.transientCombatant ? view.transientCombatant.buffRules.canReceiveSingleBuffs : true;
+}
+
+export function canEncounterTargetReceiveGroupBuff(view: EncounterParticipantView): boolean {
+  return view.transientCombatant ? view.transientCombatant.buffRules.canReceiveGroupBuffs : true;
+}
+
+function isFriendlyEncounterTarget(
+  casterParticipant: EncounterParticipantView["participant"],
+  targetView: EncounterParticipantView
+): boolean {
+  if (targetView.character === null) {
+    return false;
+  }
+
+  if (targetView.participant.characterId === casterParticipant.characterId) {
+    return true;
+  }
+
+  if (casterParticipant.partyId === null) {
+    return true;
+  }
+
+  return targetView.participant.partyId !== null && targetView.participant.partyId === casterParticipant.partyId;
+}
+
+function isEnemyEncounterTarget(
+  casterParticipant: EncounterParticipantView["participant"],
+  targetView: EncounterParticipantView
+): boolean {
+  if (targetView.character === null || targetView.participant.characterId === casterParticipant.characterId) {
+    return false;
+  }
+
+  if (casterParticipant.partyId === null) {
+    return true;
+  }
+
+  return targetView.participant.partyId !== null && targetView.participant.partyId !== casterParticipant.partyId;
+}
+
+function isControlledByCaster(
+  targetView: EncounterParticipantView,
+  casterCharacterId: string
+): boolean {
+  return hasStatusTagId(targetView, `crowd_control:${casterCharacterId}`);
+}
+
+export function getEncounterCastTargetOptions(args: {
+  casterView: EncounterParticipantView;
+  encounterParticipants: EncounterParticipantView[];
+  selectedPower: CastRequestPayload["selectedPower"];
+  selectedVariantId: CastPowerVariantId;
+  castMode: CastPowerMode | null;
+}): EncounterParticipantView[] {
+  const { casterView, encounterParticipants, selectedPower, selectedVariantId } = args;
+  const casterParticipant = casterView.participant;
+  const targetMode = getCastPowerTargetModeForVariant(selectedPower, selectedVariantId);
+
+  if (
+    selectedPower.id === "necromancy" &&
+    (selectedVariantId === "summon_undead" || selectedVariantId === "dismiss_summon")
+  ) {
+    return encounterParticipants.filter(
+      ({ participant }) => participant.characterId === casterParticipant.characterId
+    );
+  }
+
+  if (
+    selectedPower.id === "shadow_control" &&
+    (selectedVariantId === "shadow_soldier" || selectedVariantId === "dismiss_summon")
+  ) {
+    return encounterParticipants.filter(
+      ({ participant }) => participant.characterId === casterParticipant.characterId
+    );
+  }
+
+  if (selectedPower.id === "shadow_control" && selectedVariantId === "shadow_walk") {
+    return encounterParticipants.filter(
+      (view) =>
+        view.participant.characterId !== casterParticipant.characterId && isLivingEncounterTarget(view)
+    );
+  }
+
+  if (selectedPower.id === "crowd_control" && selectedVariantId === "release_control") {
+    return encounterParticipants.filter((view) => isControlledByCaster(view, casterParticipant.characterId));
+  }
+
+  if (selectedPower.id === "crowd_control") {
+    return encounterParticipants.filter((view) => isEnemyEncounterTarget(casterParticipant, view));
+  }
+
+  if (selectedPower.id === "healing") {
+    return encounterParticipants.filter(
+      (view) =>
+        isFriendlyEncounterTarget(casterParticipant, view) && canEncounterTargetReceiveHealing(view)
+    );
+  }
+
+  if (selectedPower.id === "light_support" && selectedVariantId === "mana_restore") {
+    return encounterParticipants.filter((view) => isFriendlyEncounterTarget(casterParticipant, view));
+  }
+
+  if (selectedPower.id === "light_support" && selectedVariantId === "expose_darkness") {
+    return encounterParticipants.filter((view) => isEnemyEncounterTarget(casterParticipant, view));
+  }
+
+  if (selectedPower.id === "body_reinforcement") {
+    return encounterParticipants.filter(
+      (view) =>
+        isFriendlyEncounterTarget(casterParticipant, view) && canEncounterTargetReceiveSingleBuff(view)
+    );
+  }
+
+  if (
+    selectedPower.id === "elementalist" ||
+    (selectedPower.id === "shadow_control" && selectedVariantId === "shadow_manipulation") ||
+    (selectedPower.id === "necromancy" && selectedVariantId === "necrotic_touch")
+  ) {
+    return encounterParticipants.filter((view) => isEnemyEncounterTarget(casterParticipant, view));
+  }
+
+  if (selectedPower.id === "necromancy" && selectedVariantId === "resurrection") {
+    return encounterParticipants.filter(
+      (view) => view.transientCombatant === null && view.participant.characterId !== casterParticipant.characterId
+    );
+  }
+
+  if (targetMode === "self") {
+    return encounterParticipants.filter(
+      ({ participant }) => participant.characterId === casterParticipant.characterId
+    );
+  }
+
+  return encounterParticipants.filter(({ character }) => character !== null);
 }
 
 function buildStatusRemovalChanges(
@@ -141,10 +315,11 @@ export function buildDefaultHealingAllocations(
 export function buildAssessCharacterHistoryEntry(
   casterSheet: CharacterRecord["sheet"],
   targetCharacter: CharacterRecord,
-  actualDateTime: string
+  actualDateTime: string,
+  itemsById: Record<string, import("../types/items").SharedItemRecord> = {}
 ): GameHistoryEntry {
-  const targetDerived = buildCharacterDerivedValues(targetCharacter.sheet);
-  const targetSnapshot = buildCharacterEncounterSnapshot(targetCharacter.sheet);
+  const targetDerived = buildCharacterDerivedValues(targetCharacter.sheet, itemsById);
+  const targetSnapshot = buildCharacterEncounterSnapshot(targetCharacter.sheet, itemsById);
   const awarenessLevel = casterSheet.powers.find((power) => power.id === "awareness")?.level ?? 0;
   const targetProgression = getCrAndRankFromXpUsed(targetCharacter.sheet.xpUsed);
 
@@ -177,7 +352,7 @@ export function buildAssessCharacterHistoryEntry(
       })),
       skills: targetCharacter.sheet.skills.map((skill) => ({
         label: skill.label,
-        value: getCurrentSkillValue(targetCharacter.sheet, skill.id),
+        value: getCurrentSkillValue(targetCharacter.sheet, skill.id, itemsById),
       })),
       powers:
         awarenessLevel >= 2
@@ -236,21 +411,49 @@ export function getReplacementWarnings(
 export function prepareCastRequest(
   payload: CastRequestPayload
 ): { error: string } | { request: PreparedCastRequest; warnings: string[] } {
+  const casterView =
+    payload.encounterParticipants.find(
+      ({ participant }) => participant.characterId === payload.casterCharacter.id
+    ) ?? null;
+  const validTargetViews = casterView
+    ? getEncounterCastTargetOptions({
+        casterView,
+        encounterParticipants: payload.encounterParticipants,
+        selectedPower: payload.selectedPower,
+        selectedVariantId: payload.selectedVariantId,
+        castMode: payload.castMode,
+      })
+    : [];
+  const validTargetIds = new Set(
+    validTargetViews.map(({ participant }) => participant.characterId)
+  );
   const selectedTargetViews = payload.selectedTargetIds
     .map((targetId) =>
       payload.encounterParticipants.find(({ participant }) => participant.characterId === targetId)
     )
-    .filter((targetView): targetView is EncounterParticipantView => targetView !== undefined);
+    .filter(
+      (targetView): targetView is EncounterParticipantView =>
+        targetView !== undefined && validTargetIds.has(targetView.participant.characterId)
+    );
   const fallbackTargetViews = payload.fallbackTargetIds
     .map((targetId) =>
       payload.encounterParticipants.find(({ participant }) => participant.characterId === targetId)
     )
-    .filter((targetView): targetView is EncounterParticipantView => targetView !== undefined);
+    .filter(
+      (targetView): targetView is EncounterParticipantView =>
+        targetView !== undefined && validTargetIds.has(targetView.participant.characterId)
+    );
   const finalTargetViews = selectedTargetViews.length > 0 ? selectedTargetViews : fallbackTargetViews;
   const finalTargets = finalTargetViews
     .map((targetView) => targetView.character)
     .filter((targetCharacter): targetCharacter is CharacterRecord => targetCharacter !== null);
   const casterName = payload.casterCharacter.sheet.name.trim() || payload.casterDisplayName;
+
+  if (
+    payload.selectedTargetIds.some((targetId) => targetId.length > 0 && !validTargetIds.has(targetId))
+  ) {
+    return { error: "At least one selected target is not valid for this action." };
+  }
 
   if (finalTargets.length === 0) {
     return { error: "Select at least one valid target before casting." };
@@ -263,7 +466,10 @@ export function prepareCastRequest(
     }
 
     const awarenessLevel = payload.selectedPower.level;
-    const casterPerception = buildCharacterDerivedValues(payload.casterCharacter.sheet).currentStats.PER;
+    const casterPerception = buildCharacterDerivedValues(
+      payload.casterCharacter.sheet,
+      payload.itemsById ?? {}
+    ).currentStats.PER;
     const crCaps = [0, 6, 9, 12, 15, 18];
     const allowedCr = Math.min(casterPerception + awarenessLevel, crCaps[awarenessLevel] ?? 18);
     const targetCr = getCrAndRankFromXpUsed(targetCharacter.sheet.xpUsed).cr;
@@ -279,13 +485,19 @@ export function prepareCastRequest(
     return {
       request: {
         ...buildPreparedCastRequest(payload.casterCharacter.id, [targetCharacter.id], 0),
+        activityLogEntries: [
+          buildEncounterActivityLogEntry(
+            `Assess Character: ${casterName} read ${targetCharacter.sheet.name.trim() || targetCharacter.id}.`
+          ),
+        ],
         historyEntries: [
           {
             characterId: payload.casterCharacter.id,
             entry: buildAssessCharacterHistoryEntry(
               payload.casterCharacter.sheet,
               targetCharacter,
-              `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`
+              `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+              payload.itemsById ?? {}
             ),
           },
         ],
@@ -295,17 +507,63 @@ export function prepareCastRequest(
   }
 
   if (payload.selectedPower.id === "crowd_control") {
+    if (payload.selectedVariantId === "release_control") {
+      const request = buildPreparedCastRequest(
+        payload.casterCharacter.id,
+        finalTargets.map((targetCharacter) => targetCharacter.id),
+        0
+      );
+
+      request.statusTagChanges = finalTargets.flatMap((targetCharacter) => [
+        {
+          characterId: targetCharacter.id,
+          operation: "remove" as const,
+          tag: {
+            id: "paralyzed",
+            label: "Paralyzed",
+          },
+        },
+        {
+          characterId: targetCharacter.id,
+          operation: "remove" as const,
+          tag: {
+            id: `crowd_control:${payload.casterCharacter.id}`,
+            label: `Controlled by ${casterName}`,
+          },
+        },
+      ]);
+      request.ongoingStateChanges = finalTargets.map((targetCharacter) => ({
+        operation: "releaseCrowdControl" as const,
+        casterCharacterId: payload.casterCharacter.id,
+        targetCharacterId: targetCharacter.id,
+      }));
+      request.activityLogEntries = [
+        buildEncounterActivityLogEntry(
+          `Crowd Control released on ${joinTargetNames(finalTargets)}.`
+        ),
+      ];
+
+      return { request, warnings: [] };
+    }
+
     if (payload.contestOutcome === "unresolved") {
       return { error: "Resolve the control contest first." };
     }
 
     if (payload.contestOutcome === "failure") {
       return {
-        request: buildPreparedCastRequest(
-          payload.casterCharacter.id,
-          finalTargets.map((targetCharacter) => targetCharacter.id),
-          0
-        ),
+        request: {
+          ...buildPreparedCastRequest(
+            payload.casterCharacter.id,
+            finalTargets.map((targetCharacter) => targetCharacter.id),
+            0
+          ),
+          activityLogEntries: [
+            buildEncounterActivityLogEntry(
+              `Crowd Control failed on ${joinTargetNames(finalTargets)}.`
+            ),
+          ],
+        },
         warnings: [],
       };
     }
@@ -319,11 +577,11 @@ export function prepareCastRequest(
       ? mechanics.allowed_target_types.filter((value): value is string => typeof value === "string")
       : ["living"];
     const maxControlledTargets = Math.max(1, Math.trunc(Number(mechanics.max_controlled_targets ?? 1)));
-    const currentlyControlledTargets = payload.encounterParticipants.filter(({ character }) =>
-      (character?.sheet.statusTags ?? []).some(
-        (tag) => tag.id === `crowd_control:${payload.casterCharacter.id}`
+    const currentlyControlledTargetIds = new Set(
+      payload.encounterParticipants.flatMap((view) =>
+        isControlledByCaster(view, payload.casterCharacter.id) ? [view.participant.characterId] : []
       )
-    ).length;
+    );
     const invalidTargets = finalTargetViews.filter((targetView) => {
       const isLiving = isLivingEncounterTarget(targetView);
 
@@ -347,7 +605,10 @@ export function prepareCastRequest(
       };
     }
 
-    if (currentlyControlledTargets + finalTargets.length > maxControlledTargets) {
+    const newControlledTargetCount = finalTargets.filter(
+      (targetCharacter) => !currentlyControlledTargetIds.has(targetCharacter.id)
+    ).length;
+    if (currentlyControlledTargetIds.size + newControlledTargetCount > maxControlledTargets) {
       return {
         error: `Crowd Control can maintain at most ${maxControlledTargets} controlled target(s) at this level.`,
       };
@@ -366,7 +627,7 @@ export function prepareCastRequest(
     const request = buildPreparedCastRequest(
       payload.casterCharacter.id,
       finalTargets.map((targetCharacter) => targetCharacter.id),
-      1
+      0
     );
 
     request.statusTagChanges = finalTargets.flatMap((targetCharacter) => [
@@ -410,6 +671,11 @@ export function prepareCastRequest(
         summaryNote: null,
       },
     }));
+    request.activityLogEntries = [
+      buildEncounterActivityLogEntry(
+        `Crowd Control seized ${finalTargets.length} target${finalTargets.length === 1 ? "" : "s"}.`
+      ),
+    ];
 
     return {
       request,
@@ -424,6 +690,7 @@ export function prepareCastRequest(
       variantId: payload.selectedVariantId,
       targetCharacterIds: finalTargets.map((targetCharacter) => targetCharacter.id),
       allocations: payload.healingAllocations,
+      itemsById: payload.itemsById,
     });
     if ("error" in healingResolution) {
       return { error: healingResolution.error };
@@ -470,7 +737,11 @@ export function prepareCastRequest(
         ...application,
         temporaryHpCap:
           targetCharacter && !alreadyUsed
-            ? getCurrentStatValue(targetCharacter.sheet, healingResolution.overhealCapStat)
+            ? getCurrentStatValue(
+                targetCharacter.sheet,
+                healingResolution.overhealCapStat,
+                payload.itemsById ?? {}
+              )
             : null,
       };
     });
@@ -520,6 +791,11 @@ export function prepareCastRequest(
           : []
       ),
     ];
+    request.activityLogEntries = [
+      buildEncounterActivityLogEntry(
+        `${payload.selectedVariantId === "cure" ? "Cure" : payload.selectedVariantId === "wound_mend" ? "Wound Mend" : "Heal"}: ${casterName} affected ${joinTargetNames(finalTargets)}.`
+      ),
+    ];
 
     return {
       request,
@@ -554,7 +830,7 @@ export function prepareCastRequest(
 
     const restoreAmount = Math.max(
       0,
-      getCurrentStatValue(payload.casterCharacter.sheet, "APP") *
+      getCurrentStatValue(payload.casterCharacter.sheet, "APP", payload.itemsById ?? {}) *
         Math.max(1, Math.trunc(Number((manaRestore.max_amount_formula as { multiplier?: number })?.multiplier ?? 1)))
     );
     const targetCharacter = finalTargets[0];
@@ -565,6 +841,11 @@ export function prepareCastRequest(
     return {
       request: {
         ...buildPreparedCastRequest(payload.casterCharacter.id, [targetCharacter.id], 0),
+        activityLogEntries: [
+          buildEncounterActivityLogEntry(
+            `Mana Restore: ${casterName} restored mana to ${targetCharacter.sheet.name.trim() || targetCharacter.id}.`
+          ),
+        ],
         resourceChanges: [
           {
             characterId: targetCharacter.id,
@@ -582,6 +863,37 @@ export function prepareCastRequest(
             targetCharacterId: null,
             amount: 1,
           },
+        ],
+      },
+      warnings: [],
+    };
+  }
+
+  if (
+    payload.selectedPower.id === "shadow_control" &&
+    payload.selectedVariantId === "shadow_walk"
+  ) {
+    const runtimeLevel = getRuntimePowerLevelDefinition(
+      payload.selectedPower.id,
+      payload.selectedPower.level
+    );
+    const shadowWalk =
+      runtimeLevel?.mechanics?.shadow_walk &&
+      typeof runtimeLevel.mechanics.shadow_walk === "object"
+        ? (runtimeLevel.mechanics.shadow_walk as Record<string, unknown>)
+        : null;
+    const targetCharacter = finalTargets[0];
+    if (!targetCharacter) {
+      return { error: "Select one living target for Shadow Walk." };
+    }
+
+    return {
+      request: {
+        ...buildPreparedCastRequest(payload.casterCharacter.id, [targetCharacter.id], 2),
+        activityLogEntries: [
+          buildEncounterActivityLogEntry(
+            `Shadow Walk: ${casterName} moved through ${targetCharacter.sheet.name.trim() || targetCharacter.id}'s shadow.`
+          ),
         ],
       },
       warnings: [],
@@ -621,13 +933,20 @@ export function prepareCastRequest(
             : null;
 
         return {
-          request: buildPreparedCastRequest(
-            payload.casterCharacter.id,
-            finalTargets.map((targetCharacter) => targetCharacter.id),
-            typeof necroticTouch?.mana_cost === "number"
-              ? necroticTouch.mana_cost
-              : runtimeLevel?.mana_cost ?? 0
-          ),
+          request: {
+            ...buildPreparedCastRequest(
+              payload.casterCharacter.id,
+              finalTargets.map((targetCharacter) => targetCharacter.id),
+              typeof necroticTouch?.mana_cost === "number"
+                ? necroticTouch.mana_cost
+                : runtimeLevel?.mana_cost ?? 0
+            ),
+            activityLogEntries: [
+              buildEncounterActivityLogEntry(
+                `Necrotic Touch missed ${joinTargetNames(finalTargets)}.`
+              ),
+            ],
+          },
           warnings: [],
         };
       }
@@ -645,6 +964,7 @@ export function prepareCastRequest(
         isLiving: isLivingEncounterTarget(targetView),
         blocksNecroticTouch: blocksNecroticTouch(targetView),
       })),
+      itemsById: payload.itemsById,
     });
     if ("error" in damageResolution) {
       return { error: damageResolution.error };
@@ -694,6 +1014,11 @@ export function prepareCastRequest(
         }
       }
     }
+    request.activityLogEntries = [
+      buildEncounterActivityLogEntry(
+        `${payload.selectedVariantId === "elemental_cantrip" ? "Elemental Cantrip" : payload.selectedVariantId === "shadow_manipulation" ? "Shadow Manipulation" : "Necrotic Touch"}: ${casterName} targeted ${joinTargetNames(finalTargets)}.`
+      ),
+    ];
 
     return {
       request,
@@ -703,10 +1028,48 @@ export function prepareCastRequest(
 
   if (
     (payload.selectedPower.id === "necromancy" &&
-      payload.selectedVariantId === "summon_undead") ||
+      (payload.selectedVariantId === "summon_undead" ||
+        payload.selectedVariantId === "dismiss_summon")) ||
     (payload.selectedPower.id === "shadow_control" &&
-      payload.selectedVariantId === "shadow_soldier")
+      (payload.selectedVariantId === "shadow_soldier" ||
+        payload.selectedVariantId === "dismiss_summon"))
   ) {
+    const activeTransientCombatants = payload.encounterParticipants.flatMap((targetView) =>
+      targetView.transientCombatant ? [targetView.transientCombatant] : []
+    );
+    if (payload.selectedVariantId === "dismiss_summon") {
+      const dismissIds = activeTransientCombatants
+        .filter(
+          (entry) =>
+            entry.controllerCharacterId === payload.casterCharacter.id &&
+            entry.sourcePowerId === payload.selectedPower.id
+        )
+        .map((entry) => entry.id);
+      if (dismissIds.length === 0) {
+        return { error: "There is no active summon to remove for this power." };
+      }
+
+      return {
+        request: {
+          ...buildPreparedCastRequest(
+            payload.casterCharacter.id,
+            [payload.casterCharacter.id],
+            0
+          ),
+          activityLogEntries: [
+            buildEncounterActivityLogEntry(
+              `Remove Summon: ${casterName} dismissed an active summon.`
+            ),
+          ],
+          summonChanges: dismissIds.map((summonId) => ({
+            operation: "dismiss" as const,
+            summonId,
+          })),
+        },
+        warnings: [],
+      };
+    }
+
     const casterParticipant =
       payload.encounterParticipants.find(
         ({ participant }) => participant.characterId === payload.casterCharacter.id
@@ -720,9 +1083,7 @@ export function prepareCastRequest(
       casterParticipant,
       power: payload.selectedPower,
       selectedSummonOptionId: payload.selectedSummonOptionId ?? "",
-      activeTransientCombatants: payload.encounterParticipants.flatMap((targetView) =>
-        targetView.transientCombatant ? [targetView.transientCombatant] : []
-      ),
+      activeTransientCombatants,
     });
     if ("error" in summonResolution) {
       return { error: summonResolution.error };
@@ -735,6 +1096,11 @@ export function prepareCastRequest(
           [payload.casterCharacter.id],
           summonResolution.manaCost
         ),
+        activityLogEntries: [
+          buildEncounterActivityLogEntry(
+            `${payload.selectedPower.id === "shadow_control" ? "Shadow Soldier" : "Summon Undead"}: ${casterName} created ${summonResolution.summons.map((summon) => summon.sheet.name.trim() || summon.id).join(", ")}.`
+          ),
+        ],
         summonChanges: [
           ...summonResolution.dismissIds.map((summonId) => ({
             operation: "dismiss" as const,
@@ -765,6 +1131,11 @@ export function prepareCastRequest(
     return {
       request: {
         ...buildPreparedCastRequest(payload.casterCharacter.id, [targetCharacter.id], 6),
+        activityLogEntries: [
+          buildEncounterActivityLogEntry(
+            `Resurrection: ${casterName} restored ${targetCharacter.sheet.name.trim() || targetCharacter.id}.`
+          ),
+        ],
         resourceChanges: [
           {
             characterId: targetCharacter.id,
@@ -808,6 +1179,33 @@ export function prepareCastRequest(
 
     return effect.effect;
   });
+  const expandedEffects = [...effects];
+
+  const sourceEffect = expandedEffects.find(
+    (effect) =>
+      effect.effectKind === "aura_source" &&
+      (effect.powerId === "light_support" || effect.shareMode === "aura")
+  );
+
+  if (sourceEffect && casterView) {
+    const allyTargetIds = payload.encounterParticipants
+      .filter(
+        (view) =>
+          view.participant.characterId !== sourceEffect.casterCharacterId &&
+          isFriendlyEncounterTarget(casterView.participant, view) &&
+          canEncounterTargetReceiveGroupBuff(view)
+      )
+      .map((view) => view.participant.characterId);
+    const targetIds = Array.from(new Set([sourceEffect.casterCharacterId, ...allyTargetIds]));
+    const updatedSourceEffect = {
+      ...sourceEffect,
+      sharedTargetCharacterIds: targetIds,
+    };
+    expandedEffects[expandedEffects.indexOf(sourceEffect)] = updatedSourceEffect;
+    allyTargetIds.forEach((targetId) => {
+      expandedEffects.push(buildAuraSharedPowerEffect(updatedSourceEffect, targetId));
+    });
+  }
 
   return {
     request: {
@@ -816,7 +1214,16 @@ export function prepareCastRequest(
         finalTargets.map((targetCharacter) => targetCharacter.id),
         builtEffects[0] && !("error" in builtEffects[0]) ? builtEffects[0].manaCost : 0
       ),
-      effects,
+      effects: expandedEffects,
+      activityLogEntries: [
+        buildEncounterActivityLogEntry(
+          `${payload.selectedPower.id === "light_support" && payload.selectedVariantId === "expose_darkness"
+            ? "Expose Darkness"
+            : payload.selectedPower.id === "light_support"
+              ? "Light Aura"
+              : "Cloak of Shadow"}: ${casterName} affected ${joinTargetNames(finalTargets)}.`
+        ),
+      ],
       ongoingStateChanges:
         payload.selectedPower.id === "light_support" && payload.selectedVariantId === "expose_darkness"
           ? finalTargets.map((targetCharacter) => ({
@@ -837,14 +1244,15 @@ export function prepareCastRequest(
 
 export function getEncounterPartyMembers(
   encounterParticipants: EncounterParticipantView[],
-  partyId: string | null
+  partyId: string | null,
+  itemsById: Record<string, import("../types/items").SharedItemRecord> = {}
 ): EncounterPartyMemberView[] {
   return encounterParticipants.flatMap((view) => {
     if (!view.character || view.participant.partyId !== partyId) {
       return [];
     }
 
-    const derived = buildCharacterDerivedValues(view.character.sheet);
+    const derived = buildCharacterDerivedValues(view.character.sheet, itemsById);
     return [
       {
         participant: view.participant,

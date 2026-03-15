@@ -1,6 +1,14 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
+import {
+  buildItemIndex,
+  canCharacterIdentifyItem,
+  getCharacterArtifactAppraisalLevel,
+  identifyItemForCharacter,
+  maskItemForCharacter,
+  retypeSharedItemRecord,
+} from "../lib/items.ts";
 import { resetCharacterPowerUsageScope } from "../lib/powerUsage";
 import {
   type CharacterDraft,
@@ -11,37 +19,49 @@ import {
   createDmAuditEntry as createDmAuditLogEntry,
 } from "../lib/dmAudit";
 import {
-  addEquipmentEntry,
-  addInventoryEntry,
   addPowerAtLevelOne,
   addPowerAtLevelOneOverride,
   adjustPowerProgression,
   adjustSkillProgression,
   adjustStatProgression,
   appendHistoryNote,
-  removeEquipmentEntry,
-  removeInventoryEntry,
   setPowerLevel,
   setSkillBaseLevel,
   setStatBaseLevel,
-  type EquipmentEntryField,
-  type InventoryEntryField,
   type RuntimeEditableField,
-  updateEquipmentEntryField,
-  updateInventoryEntryField,
   updateRuntimeFieldValue,
   updateSheetFieldValue,
 } from "../mutations/characterSheetMutations";
+import {
+  addEquipmentReference,
+  linkSharedItemToCharacter,
+  removeEquipmentReference,
+  setCharacterActiveItemState,
+  setCharacterInventoryItemState,
+  setCharacterOwnedItemState,
+  type EquipmentReferenceField,
+  updateEquipmentReferenceField,
+} from "../mutations/characterItemMutations.ts";
 import type { CharacterRecord, StatId } from "../types/character";
+import type {
+  ItemBlueprintId,
+  ItemDerivedModifierId,
+  SharedItemRecord,
+} from "../types/items.ts";
 import type { PowerUsageResetScope } from "../types/powerUsage";
 
 type CharacterSheetUpdater =
   | CharacterDraft
   | ((current: CharacterDraft) => CharacterDraft);
 
+type SharedItemUpdater =
+  | SharedItemRecord
+  | ((current: SharedItemRecord) => SharedItemRecord);
+
 type UsePlayerCharacterMutationsParams = {
   activeCharacter: CharacterRecord | null;
   sheetState: CharacterDraft;
+  items: SharedItemRecord[];
   xpLeftOver: number;
   isReadOnlyView: boolean;
   isDmView: boolean;
@@ -54,6 +74,17 @@ type UsePlayerCharacterMutationsParams = {
   pendingPowerId: string;
   sessionNotes: string;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
+  createItem: (
+    blueprintId: ItemBlueprintId,
+    overrides?: Partial<
+      Pick<
+        SharedItemRecord,
+        "name" | "itemLevel" | "qualityTier" | "baseDescription" | "bonusProfile" | "knowledge"
+      >
+    >
+  ) => string;
+  updateItem: (itemId: string, updater: SharedItemUpdater) => void;
+  deleteItem: (itemId: string) => void;
   setPendingPowerId: Dispatch<SetStateAction<string>>;
   setSessionNotes: Dispatch<SetStateAction<string>>;
   setAdminOverrideError: Dispatch<SetStateAction<string | null>>;
@@ -68,10 +99,27 @@ export type PlayerCharacterMutations = {
   adjustSkillOverride: (skillId: string, direction: 1 | -1) => void;
   adjustPowerOverride: (powerId: string, direction: 1 | -1) => void;
   handleAddPowerOverride: () => void;
-  updateInventoryEntry: (index: number, field: InventoryEntryField, value: string) => void;
-  addInventoryEntry: () => void;
-  removeInventoryEntry: (index: number) => void;
-  updateEquipmentEntry: (index: number, field: EquipmentEntryField, value: string) => void;
+  createSharedItem: (blueprintId: ItemBlueprintId) => void;
+  updateSharedItemField: (
+    itemId: string,
+    field: "name" | "itemLevel" | "qualityTier" | "baseDescription",
+    value: string
+  ) => void;
+  updateSharedItemBlueprint: (itemId: string, blueprintId: ItemBlueprintId) => void;
+  updateSharedItemBonusNotes: (itemId: string, value: string) => void;
+  updateSharedItemStatBonus: (itemId: string, statId: StatId, value: string) => void;
+  updateSharedItemDerivedBonus: (
+    itemId: string,
+    targetId: ItemDerivedModifierId,
+    value: string
+  ) => void;
+  updateSharedItemOwnedState: (itemId: string, isOwned: boolean) => void;
+  updateSharedItemInventoryState: (itemId: string, isCarried: boolean) => void;
+  updateSharedItemActiveState: (itemId: string, isActive: boolean) => void;
+  identifySharedItem: (itemId: string) => void;
+  maskSharedItem: (itemId: string) => void;
+  deleteSharedItem: (itemId: string) => void;
+  updateEquipmentEntry: (index: number, field: EquipmentReferenceField, value: string) => void;
   addEquipmentEntry: () => void;
   removeEquipmentEntry: (index: number) => void;
   handleAddPower: () => void;
@@ -83,6 +131,7 @@ export type PlayerCharacterMutations = {
 export function usePlayerCharacterMutations({
   activeCharacter,
   sheetState,
+  items,
   xpLeftOver,
   isReadOnlyView,
   isDmView,
@@ -95,10 +144,15 @@ export function usePlayerCharacterMutations({
   pendingPowerId,
   sessionNotes,
   updateCharacter,
+  createItem,
+  updateItem,
+  deleteItem,
   setPendingPowerId,
   setSessionNotes,
   setAdminOverrideError,
 }: UsePlayerCharacterMutationsParams): PlayerCharacterMutations {
+  const itemsById = buildItemIndex(items);
+
   function setSheetState(updater: CharacterSheetUpdater): void {
     if (!activeCharacter) {
       return;
@@ -109,6 +163,14 @@ export function usePlayerCharacterMutations({
     }
 
     updateCharacter(activeCharacter.id, updater);
+  }
+
+  function setItemState(itemId: string, updater: SharedItemUpdater): void {
+    if (!items.some((item) => item.id === itemId)) {
+      return;
+    }
+
+    updateItem(itemId, updater);
   }
 
   function createDmAuditEntry(
@@ -302,15 +364,16 @@ export function usePlayerCharacterMutations({
     setPendingPowerId("");
   }
 
-  function updateInventoryEntry(index: number, field: InventoryEntryField, value: string): void {
+  function createSharedItemHandler(blueprintId: ItemBlueprintId): void {
+    const itemId = createItem(blueprintId);
     setSheetState((currentSheet) =>
       appendDmAuditEntry(
-        updateInventoryEntryField(currentSheet, index, field, value),
+        linkSharedItemToCharacter(currentSheet, itemId),
         createDmAuditEntry(
           "sheet",
-          `inventory[${index}].${field}`,
-          currentSheet.inventory[index]?.[field] ?? "",
-          value,
+          "ownedItemIds",
+          currentSheet.ownedItemIds.length,
+          currentSheet.ownedItemIds.length + 1,
           dmEditReason.trim(),
           "dm-character-sheet"
         )
@@ -318,42 +381,136 @@ export function usePlayerCharacterMutations({
     );
   }
 
-  function addInventoryEntryHandler(): void {
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        addInventoryEntry(currentSheet),
-        createDmAuditEntry(
-          "sheet",
-          "inventory",
-          currentSheet.inventory.length,
-          currentSheet.inventory.length + 1,
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      )
-    );
+  function updateSharedItemField(
+    itemId: string,
+    field: "name" | "itemLevel" | "qualityTier" | "baseDescription",
+    value: string
+  ): void {
+    setItemState(itemId, (currentItem) => ({
+      ...currentItem,
+      [field]:
+        field === "itemLevel"
+          ? Math.max(1, Number.parseInt(value, 10) || currentItem.itemLevel)
+          : field === "qualityTier"
+            ? value.trim() || null
+            : value,
+    }));
   }
 
-  function removeInventoryEntryHandler(index: number): void {
-    setSheetState((currentSheet) =>
-      appendDmAuditEntry(
-        removeInventoryEntry(currentSheet, index),
-        createDmAuditEntry(
-          "sheet",
-          `inventory[${index}]`,
-          currentSheet.inventory[index]?.name ?? "",
-          "",
-          dmEditReason.trim(),
-          "dm-character-sheet"
-        )
-      )
-    );
+  function updateSharedItemBlueprint(itemId: string, blueprintId: ItemBlueprintId): void {
+    setItemState(itemId, (currentItem) => retypeSharedItemRecord(currentItem, blueprintId));
   }
 
-  function updateEquipmentEntry(index: number, field: EquipmentEntryField, value: string): void {
+  function updateSharedItemBonusNotes(itemId: string, value: string): void {
+    const notes = value
+      .split("\n")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+
+    setItemState(itemId, (currentItem) => ({
+      ...currentItem,
+      bonusProfile: {
+        ...currentItem.bonusProfile,
+        notes,
+      },
+    }));
+  }
+
+  function updateSharedItemStatBonus(itemId: string, statId: StatId, value: string): void {
+    const parsed = Number.parseInt(value, 10);
+
+    setItemState(itemId, (currentItem) => {
+      const nextBonuses = { ...currentItem.bonusProfile.statBonuses };
+      if (Number.isNaN(parsed) || parsed === 0) {
+        delete nextBonuses[statId];
+      } else {
+        nextBonuses[statId] = parsed;
+      }
+
+      return {
+        ...currentItem,
+        bonusProfile: {
+          ...currentItem.bonusProfile,
+          statBonuses: nextBonuses,
+        },
+      };
+    });
+  }
+
+  function updateSharedItemDerivedBonus(
+    itemId: string,
+    targetId: ItemDerivedModifierId,
+    value: string
+  ): void {
+    const parsed = Number.parseInt(value, 10);
+
+    setItemState(itemId, (currentItem) => {
+      const nextBonuses = { ...currentItem.bonusProfile.derivedBonuses };
+      if (Number.isNaN(parsed) || parsed === 0) {
+        delete nextBonuses[targetId];
+      } else {
+        nextBonuses[targetId] = parsed;
+      }
+
+      return {
+        ...currentItem,
+        bonusProfile: {
+          ...currentItem.bonusProfile,
+          derivedBonuses: nextBonuses,
+        },
+      };
+    });
+  }
+
+  function updateSharedItemOwnedState(itemId: string, isOwned: boolean): void {
+    setSheetState((currentSheet) => setCharacterOwnedItemState(currentSheet, itemId, isOwned));
+  }
+
+  function updateSharedItemInventoryState(itemId: string, isCarried: boolean): void {
+    setSheetState((currentSheet) => setCharacterInventoryItemState(currentSheet, itemId, isCarried));
+  }
+
+  function updateSharedItemActiveState(itemId: string, isActive: boolean): void {
+    setSheetState((currentSheet) => setCharacterActiveItemState(currentSheet, itemId, isActive));
+  }
+
+  function identifySharedItem(itemId: string): void {
+    if (!activeCharacter) {
+      return;
+    }
+
+    const currentItem = items.find((item) => item.id === itemId);
+    if (!currentItem) {
+      return;
+    }
+
+    const artifactAppraisalLevel = getCharacterArtifactAppraisalLevel(sheetState);
+    if (
+      !currentItem.knowledge.learnedCharacterIds.includes(activeCharacter.id) &&
+      !canCharacterIdentifyItem(currentItem, artifactAppraisalLevel)
+    ) {
+      return;
+    }
+
+    setItemState(itemId, (item) => identifyItemForCharacter(item, activeCharacter.id));
+  }
+
+  function maskSharedItem(itemId: string): void {
+    if (!activeCharacter) {
+      return;
+    }
+
+    setItemState(itemId, (item) => maskItemForCharacter(item, activeCharacter.id));
+  }
+
+  function deleteSharedItemHandler(itemId: string): void {
+    deleteItem(itemId);
+  }
+
+  function updateEquipmentEntry(index: number, field: EquipmentReferenceField, value: string): void {
     setSheetState((currentSheet) =>
       appendDmAuditEntry(
-        updateEquipmentEntryField(currentSheet, index, field, value),
+        updateEquipmentReferenceField(currentSheet, index, field, value),
         createDmAuditEntry(
           "sheet",
           `equipment[${index}].${field}`,
@@ -369,7 +526,7 @@ export function usePlayerCharacterMutations({
   function addEquipmentEntryHandler(): void {
     setSheetState((currentSheet) =>
       appendDmAuditEntry(
-        addEquipmentEntry(currentSheet),
+        addEquipmentReference(currentSheet),
         createDmAuditEntry(
           "sheet",
           "equipment",
@@ -385,7 +542,7 @@ export function usePlayerCharacterMutations({
   function removeEquipmentEntryHandler(index: number): void {
     setSheetState((currentSheet) =>
       appendDmAuditEntry(
-        removeEquipmentEntry(currentSheet, index),
+        removeEquipmentReference(currentSheet, index),
         createDmAuditEntry(
           "sheet",
           `equipment[${index}]`,
@@ -443,10 +600,10 @@ export function usePlayerCharacterMutations({
     }
 
     setSheetState((currentSheet) => {
-      const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
+      const derivedSnapshot = buildCharacterDerivedValues(currentSheet, itemsById);
       const currentValue =
         field === "currentMana" ? derivedSnapshot.currentMana : currentSheet[field];
-      const nextSheet = updateRuntimeFieldValue(currentSheet, field, rawValue);
+      const nextSheet = updateRuntimeFieldValue(currentSheet, field, rawValue, itemsById);
       if (nextSheet === currentSheet) {
         return currentSheet;
       }
@@ -514,9 +671,18 @@ export function usePlayerCharacterMutations({
     adjustSkillOverride,
     adjustPowerOverride,
     handleAddPowerOverride,
-    updateInventoryEntry,
-    addInventoryEntry: addInventoryEntryHandler,
-    removeInventoryEntry: removeInventoryEntryHandler,
+    createSharedItem: createSharedItemHandler,
+    updateSharedItemField,
+    updateSharedItemBlueprint,
+    updateSharedItemBonusNotes,
+    updateSharedItemStatBonus,
+    updateSharedItemDerivedBonus,
+    updateSharedItemOwnedState,
+    updateSharedItemInventoryState,
+    updateSharedItemActiveState,
+    identifySharedItem,
+    maskSharedItem,
+    deleteSharedItem: deleteSharedItemHandler,
     updateEquipmentEntry,
     addEquipmentEntry: addEquipmentEntryHandler,
     removeEquipmentEntry: removeEquipmentEntryHandler,

@@ -3,12 +3,19 @@ import type {
   CharacterSheetUpdater,
   EncounterParticipantView,
 } from "../../types/combatEncounterView";
+import type { PhysicalAttackProfileId } from "../../lib/combatEncounterPhysicalAttacks";
 import { EncounterCombatantCard } from "./EncounterCombatantCard";
 
 type EncounterInitiativePanelProps = {
   encounterParticipants: EncounterParticipantView[];
   openCharacterSheet: (characterId: string, ownerRole: "player" | "dm") => void;
   requestCast: (payload: CastRequestPayload) => string | null;
+  requestPhysicalAttack: (payload: {
+    casterView: EncounterParticipantView;
+    targetView: EncounterParticipantView;
+    profileId: PhysicalAttackProfileId;
+    landedHits: number;
+  }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
 
@@ -16,6 +23,7 @@ export function EncounterInitiativePanel({
   encounterParticipants,
   openCharacterSheet,
   requestCast,
+  requestPhysicalAttack,
   updateCharacter,
 }: EncounterInitiativePanelProps) {
   return (
@@ -31,6 +39,7 @@ export function EncounterInitiativePanel({
             encounterParticipants={encounterParticipants}
             openCharacterSheet={openCharacterSheet}
             requestCast={requestCast}
+            requestPhysicalAttack={requestPhysicalAttack}
             updateCharacter={updateCharacter}
           />
         ))}

@@ -5,9 +5,11 @@ import { statGroups, type CharacterDraft } from "../../config/characterTemplate"
 import { STAT_XP_BY_LEVEL } from "../../rules/xpTables";
 import { getIncrementCost } from "../../lib/progressionCosts";
 import type { StatId } from "../../types/character";
+import type { SharedItemRecord } from "../../types/items.ts";
 
 type CharacterStatsSectionProps = {
   sheetState: CharacterDraft;
+  itemsById: Record<string, SharedItemRecord>;
   isProgressionEditMode: boolean;
   adminOverrideMode: boolean;
   editSessionStatFloor: Record<StatId, number> | null;
@@ -18,6 +20,7 @@ type CharacterStatsSectionProps = {
 
 export function CharacterStatsSection({
   sheetState,
+  itemsById,
   isProgressionEditMode,
   adminOverrideMode,
   editSessionStatFloor,
@@ -38,7 +41,7 @@ export function CharacterStatsSection({
             <div className="stat-list">
               {group.ids.map((statId) => {
                 const stat = sheetState.statState[statId];
-                const breakdown = getStatBreakdown(sheetState, statId);
+                const breakdown = getStatBreakdown(sheetState, statId, itemsById);
                 const incrementCost = getIncrementCost(STAT_XP_BY_LEVEL, stat.base);
                 const canIncrease = adminOverrideMode
                   ? stat.base < STAT_XP_BY_LEVEL.length - 1

@@ -4,6 +4,7 @@ import {
   buildCharacterDerivedValues,
   getCurrentSkillValue,
 } from "../src/config/characterRuntime.ts";
+import { buildItemIndex, createSharedItemRecord } from "../src/lib/items.ts";
 import {
   normalizeCharacterDraft,
   PLAYER_CHARACTER_TEMPLATE,
@@ -113,6 +114,53 @@ export async function runCharacterRuntimeTests(): Promise<void> {
           "Cosmetic Clothing / Armor Shift",
           "Minor Body Cosmetics",
         ]);
+      },
+    },
+    {
+      name: "shared item references apply equipped and active item bonuses",
+      run: () => {
+        const armor = createSharedItemRecord("armor:light", {
+          id: "armor-1",
+          name: "Scout Armor",
+          bonusProfile: {
+            statBonuses: { DEX: 1 },
+            skillBonuses: { stealth: 2 },
+            derivedBonuses: { max_mana: 3 },
+            resistanceBonuses: {},
+            utilityTraits: ["Low-Light Lens"],
+            notes: ["+2 stealth"],
+            powerBonuses: {},
+          },
+        });
+        const charm = createSharedItemRecord("jewel:jewel", {
+          id: "jewel-1",
+          name: "Occult Charm",
+          bonusProfile: {
+            statBonuses: {},
+            skillBonuses: {},
+            derivedBonuses: { melee_damage: 2 },
+            resistanceBonuses: {},
+            utilityTraits: [],
+            notes: [],
+            powerBonuses: {},
+          },
+        });
+        const itemsById = buildItemIndex([armor, charm]);
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.ownedItemIds = ["armor-1", "jewel-1"];
+        sheet.inventoryItemIds = ["armor-1", "jewel-1"];
+        sheet.activeItemIds = ["jewel-1"];
+        sheet.equipment = [{ slot: "Armor", itemId: "armor-1" }];
+
+        const derived = buildCharacterDerivedValues(sheet, itemsById);
+
+        assert.equal(derived.currentStats.DEX, 3);
+        assert.equal(getCurrentSkillValue(sheet, "stealth", itemsById), 2);
+        assert.equal(derived.maxMana, 3);
+        assert.equal(derived.armorClass, 5);
+        assert.equal(derived.damageReduction, 1);
+        assert.equal(derived.meleeDamage, 4);
+        assert.ok(derived.utilityTraits.includes("Low-Light Lens"));
       },
     },
   ]);

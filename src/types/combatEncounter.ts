@@ -58,6 +58,12 @@ export type CombatEncounterTurnState = {
   activeParticipantId: string | null;
 };
 
+export type EncounterActivityLogEntry = {
+  id: string;
+  createdAt: string;
+  summary: string;
+};
+
 export type EncounterOngoingState =
   | {
       id: string;
@@ -95,6 +101,7 @@ export type CombatEncounterState = {
   turnState: CombatEncounterTurnState;
   transientCombatants: EncounterTransientCombatant[];
   ongoingStates: EncounterOngoingState[];
+  activityLog: EncounterActivityLogEntry[];
 };
 
 export type EncounterBreakdownField = {

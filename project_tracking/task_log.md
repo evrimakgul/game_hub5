@@ -40,3 +40,33 @@
   - Added combat casting and expanded power/runtime regression coverage.
   - Reconciled `references/plan.md`, `references/project_objective.md`, `references/current_notes.md`, and tracking files with the implemented system.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
+## 2026-03-15
+
+- `P1-01` Re-audited the branch after user bug reports and reopened the roadmap.
+  - Replaced the prior "power runtime complete" assumption with a new active scope:
+    - combat encounter fixes
+    - minimal encounter activity log
+    - shared standalone item model
+  - Recorded user decisions:
+    - `Heal` mana cost stays `2`
+    - `Cure` unlocks at Lv3 and costs `3`
+    - healing cantrip remains `2 uses per target per day`
+    - `Crowd Control` initial cast costs `0`
+    - `Shadow Walk` is a non-damaging encounter mobility action
+    - `Expose Darkness` targets enemy parties only
+    - items move to shared standalone records with per-character knowledge state
+  - Validation deferred until code changes land.
+- `P1-02` through `P1-10` Completed the encounter correction pass.
+  - Added `Shadow Walk`, split `Heal` / `Cure`, summon dismissal, enemy-only `Expose Darkness`, upkeep-only `Crowd Control`, release control, source-linked aura cleanup, physical attacks, and an encounter activity log.
+  - Normalized target filtering so invalid summon targets are excluded from `Crowd Control` while valid summon targets remain hittable by direct damage.
+  - Assumption kept from user direction: healing does not invert into anti-undead damage in this branch; undead and shadow summons simply remain non-healable.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `P2-01` through `P2-04` Completed the shared item domain model and first engine integration pass.
+  - Added standalone shared item records, category/subtype classes, compositional `BonusProfile`, per-character knowledge state, and item-reference migration from legacy embedded sheet items.
+  - Character sheets now store item references for ownership, carried inventory, active use, and equipped slots instead of embedded item payloads.
+  - Implemented minimal item-sheet UI for shared item creation, basic bonus editing, identify/mask visibility, and loadout assignment.
+  - Item bonuses now flow into player-sheet derived values, encounter snapshots, upkeep/runtime mana bounds, damage/healing mitigation, and physical attack option selection.
+  - Migration assumption: each legacy embedded inventory row and each legacy embedded equipment row becomes its own standalone shared item record; no automatic dedupe is attempted across old rows.
+  - Assumption recorded: multi-target share UI for item knowledge remains deferred even though the data model and share helper now exist.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.

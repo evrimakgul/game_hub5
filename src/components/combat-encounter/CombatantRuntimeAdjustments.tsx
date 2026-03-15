@@ -5,6 +5,8 @@ import {
   appendDmAuditEntry as appendDmAuditEntryToSheet,
   createDmAuditEntry as createDmAuditLogEntry,
 } from "../../lib/dmAudit";
+import { buildItemIndex } from "../../lib/items.ts";
+import { useAppFlow } from "../../state/appFlow";
 import type {
   CharacterSheetUpdater,
   EncounterParticipantView,
@@ -19,8 +21,10 @@ export function CombatantRuntimeAdjustments({
   view,
   updateCharacter,
 }: CombatantRuntimeAdjustmentsProps) {
+  const { items } = useAppFlow();
+  const itemsById = buildItemIndex(items);
   const character = view.character;
-  const derived = character ? buildCharacterDerivedValues(character.sheet) : null;
+  const derived = character ? buildCharacterDerivedValues(character.sheet, itemsById) : null;
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const popoverPanelRef = useRef<HTMLDivElement | null>(null);
   const [hpSet, setHpSet] = useState("");
@@ -119,7 +123,7 @@ export function CombatantRuntimeAdjustments({
     value: number
   ): void {
     updateCharacter(runtimeCharacter.id, (currentSheet) => {
-      const derivedSnapshot = buildCharacterDerivedValues(currentSheet);
+      const derivedSnapshot = buildCharacterDerivedValues(currentSheet, itemsById);
       const nextBaseValue =
         field === "currentHp" ? Math.trunc(value) : Math.max(0, Math.trunc(value));
       const before =

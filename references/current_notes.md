@@ -1,61 +1,27 @@
 # Current Notes
 
-This file tracks active reminders and implementation notes for the current branch state.
+This file tracks active reminders for the current implementation block.
 
-## Current Implementation Block
-- Persist created and updated characters locally.
-- Hydrate saved characters into the latest sheet shape when loading local data.
-- Store character ownership (`player` vs `dm`) so player sheets and DM-created sheets stay separated.
-- Keep active player-sheet selection and active DM-sheet selection separated so DM creation/edit flows never replace the player's currently selected character.
-- Keep these flows intact:
-  - player hub and player character sheet
-  - DM dashboard
-  - DM-side player character access
-  - DM NPC creator and DM-owned character sheets
-  - combat dashboard staging
-  - DM combat encounter
-- The combat encounter uses a floating roll-helper popover instead of a static helper panel.
-- Movement is shown in the character sheet combat summary as `20 + 5`.
-  - `20` from standard-action conversion
-  - `5` from move action
+## Active Implementation Block
+- The previous branch state marked the T1 power runtime as complete, but this is no longer the active assumption.
+- The combat encounter fix pass and the first shared item-domain model are now implemented.
+- The current branch state is green and ready for defect-driven follow-up work.
 
-## Active Power Runtime
-- Cast power runtime is active on the DM combat encounter page.
-- Completed active slices:
-  - `Body Reinforcement` stat buff + delayed revive cantrip
-  - `Light Support` aura + mana restore + `Expose Darkness`
-  - `Shadow Control` cloak + `Shadow Manipulation` + `Shadow Soldier`
-  - `Healing` Lv1-Lv5 + wound-mend cantrip
-  - `Assess Character`
-  - `Crowd Control`
-  - `Elementalist`
-  - `Necrotic Touch`
-  - `Resurrection`
-- Active power effects are stored on locally persisted character records.
-- Character sheet and combat encounter both read the same post-effect runtime values.
-- `currentMana` defaults to derived max mana until the character spends mana for the first time.
-
-## Shared Runtime Notes
-- Permanent and temporary inspiration are already separated.
-- Temporary HP is already tracked separately.
+## Confirmed Rules For This Block
 - HP must stay capable of going negative.
-- `Assess Character` snapshots belong in the caster's character-sheet `Game History`.
-- `powerUsageState` is persisted on the sheet and supports daily, long-rest, and per-target tracking.
-- Encounter runtime tracks round / active combatant state, transient summons, and maintained encounter-only states.
-- Item identification metadata exists on inventory / equipment entries, but `AA` remains deferred until item-authoring design is defined.
+- `Heal` mana cost is always `2`.
+- `Cure` unlocks at level `3` and mana cost is always `3`.
+- Healing cantrip stays at `2 uses per target per day`.
+- `Crowd Control` initial cast costs `0`; upkeep only spends mana.
+- `Shadow Walk` is an encounter mobility action with no direct numeric damage effect.
+- `Expose Darkness` targets enemy parties only and ignores allies.
+- Items will move to shared standalone records outside character sheets.
 
-## Remaining Active Work
-- No active power-mechanics implementation tasks remain on this branch.
-- Deferred work remains limited to:
-  - `AA`
-  - combat encounter history/logger block
-  - non-local/runtime scope items
+## Known Structural Gaps
+- Encounter action resolution is split across cast prep, route execution, and effect builders.
+- Encounter upkeep and cast execution still live mostly in the route layer.
+- Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
 
-## Deferred
-- Add a `History` block to the combat encounter page only after the remaining powers are implemented.
-  - 3 visible lines
-  - newest first
-  - vertical scrollbar
-  - bottom-right resize handle
-  - short summaries only
-- The current branch does not use Supabase at runtime.
+## Deferred But Recorded
+- Full item-authoring UX and multi-target `AA` knowledge-sharing UI remain deferred.
+- Backend sync and encounter persistence remain out of scope.

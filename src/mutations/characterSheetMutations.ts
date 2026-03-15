@@ -1,14 +1,13 @@
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import type {
   CharacterDraft,
-  EquipmentEntry,
-  InventoryEntry,
   PowerEntry,
 } from "../config/characterTemplate";
 import { buildGameHistoryNoteEntry, prependGameHistoryEntry } from "../lib/historyEntries";
 import { getDecrementRefund, getIncrementCost } from "../lib/progressionCosts";
 import { T1_POWER_XP_BY_LEVEL, T1_SKILL_XP_BY_LEVEL, STAT_XP_BY_LEVEL } from "../rules/xpTables";
 import type { StatId } from "../types/character";
+import type { SharedItemRecord } from "../types/items.ts";
 
 export type RuntimeEditableField =
   | "currentHp"
@@ -17,36 +16,7 @@ export type RuntimeEditableField =
   | "positiveKarma"
   | "negativeKarma";
 
-export type InventoryEntryField = "name" | "category" | "note";
-export type EquipmentEntryField = "slot" | "item" | "effect";
-
 type PowerTemplateSelection = Pick<PowerEntry, "id" | "name" | "governingStat">;
-
-function buildDefaultInventoryEntry(): InventoryEntry {
-  return {
-    name: "",
-    category: "",
-    note: "",
-    qualityTier: null,
-    hiddenSpec: null,
-    revealedSpec: null,
-    identified: false,
-    identifiedAtAwarenessLevel: null,
-  };
-}
-
-function buildDefaultEquipmentEntry(): EquipmentEntry {
-  return {
-    slot: "",
-    item: "",
-    effect: "",
-    qualityTier: null,
-    hiddenSpec: null,
-    revealedSpec: null,
-    identified: false,
-    identifiedAtAwarenessLevel: null,
-  };
-}
 
 export function appendHistoryNote(
   sheet: CharacterDraft,
@@ -278,70 +248,15 @@ export function addPowerAtLevelOneOverride(
   };
 }
 
-export function updateInventoryEntryField(
-  sheet: CharacterDraft,
-  index: number,
-  field: InventoryEntryField,
-  value: string
-): CharacterDraft {
-  return {
-    ...sheet,
-    inventory: sheet.inventory.map((entry, entryIndex) =>
-      entryIndex === index ? { ...entry, [field]: value } : entry
-    ),
-  };
-}
-
-export function addInventoryEntry(sheet: CharacterDraft): CharacterDraft {
-  return {
-    ...sheet,
-    inventory: [...sheet.inventory, buildDefaultInventoryEntry()],
-  };
-}
-
-export function removeInventoryEntry(sheet: CharacterDraft, index: number): CharacterDraft {
-  return {
-    ...sheet,
-    inventory: sheet.inventory.filter((_, entryIndex) => entryIndex !== index),
-  };
-}
-
-export function updateEquipmentEntryField(
-  sheet: CharacterDraft,
-  index: number,
-  field: EquipmentEntryField,
-  value: string
-): CharacterDraft {
-  return {
-    ...sheet,
-    equipment: sheet.equipment.map((entry, entryIndex) =>
-      entryIndex === index ? { ...entry, [field]: value } : entry
-    ),
-  };
-}
-
-export function addEquipmentEntry(sheet: CharacterDraft): CharacterDraft {
-  return {
-    ...sheet,
-    equipment: [...sheet.equipment, buildDefaultEquipmentEntry()],
-  };
-}
-
-export function removeEquipmentEntry(sheet: CharacterDraft, index: number): CharacterDraft {
-  return {
-    ...sheet,
-    equipment: sheet.equipment.filter((_, entryIndex) => entryIndex !== index),
-  };
-}
-
 export function updateRuntimeFieldValue(
   sheet: CharacterDraft,
   field: RuntimeEditableField,
-  rawValue: number
+  rawValue: number,
+  itemsById: Record<string, SharedItemRecord> = {}
 ): CharacterDraft {
   const nextBaseValue =
     field === "currentHp" ? Math.trunc(rawValue) : Math.max(0, Math.trunc(rawValue));
-  const derivedSnapshot = buildCharacterDerivedValues(sheet);
+  const derivedSnapshot = buildCharacterDerivedValues(sheet, itemsById);
   const currentValue = field === "currentMana" ? derivedSnapshot.currentMana : sheet[field];
   const maxValue =
     field === "currentHp" ? null : field === "currentMana" ? derivedSnapshot.maxMana : null;

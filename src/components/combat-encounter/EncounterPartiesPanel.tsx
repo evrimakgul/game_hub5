@@ -1,4 +1,6 @@
 import { getEncounterPartyMembers } from "../../selectors/encounterViewModel";
+import { buildItemIndex } from "../../lib/items.ts";
+import { useAppFlow } from "../../state/appFlow";
 import type { CombatEncounterParty } from "../../types/combatEncounter";
 import type { EncounterParticipantView, EncounterPartyMemberView } from "../../types/combatEncounterView";
 
@@ -77,13 +79,20 @@ export function EncounterPartiesPanel({
   unassignedEncounterMembers,
   moveEncounterParticipantToParty,
 }: EncounterPartiesPanelProps) {
+  const { items } = useAppFlow();
+  const itemsById = buildItemIndex(items);
+
   return (
     <article className="sheet-card dm-log-card">
       <p className="section-kicker">Parties</p>
       <h2>Encounter Parties</h2>
       <div className="dm-party-grid">
         {encounterParties.map((party) => {
-          const partyMembers = getEncounterPartyMembers(encounterParticipants, party.partyId);
+          const partyMembers = getEncounterPartyMembers(
+            encounterParticipants,
+            party.partyId,
+            itemsById
+          );
 
           return (
             <section key={party.partyId} className="dm-party-card">

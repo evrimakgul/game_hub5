@@ -1,4 +1,8 @@
 import type { ActivePowerEffect } from "../types/activePowerEffects";
+import {
+  buildCharacterItemModifierSources,
+  getCharacterItemUtilityTraits,
+} from "../lib/items.ts";
 import type {
   CharacterDraft,
   SkillEntry,
@@ -15,6 +19,7 @@ import {
   calculateOccultManaBonus,
   calculateRangedBonusDice,
 } from "../rules/stats.ts";
+import type { SharedItemRecord } from "../types/items.ts";
 
 export type CharacterBreakdown = {
   base: number;
@@ -89,6 +94,20 @@ function getPowerEffectSources(
         value: modifier.value,
       }))
   );
+}
+
+function getItemSources(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord>,
+  targetType: "stat" | "skill" | "derived" | "resistance",
+  targetId: string
+): StatSource[] {
+  return buildCharacterItemModifierSources(sheet, itemsById)
+    .filter((modifier) => modifier.targetType === targetType && modifier.targetId === targetId)
+    .map((modifier) => ({
+      label: modifier.sourceLabel,
+      value: modifier.value,
+    }));
 }
 
 function getAwarenessAlertnessPassiveSource(sheet: CharacterDraft): StatSource[] {
@@ -198,17 +217,22 @@ function getPassiveUtilityTraits(sheet: CharacterDraft): string[] {
   return [...traits];
 }
 
-export function getStatBreakdown(sheet: CharacterDraft, statId: StatId): CharacterBreakdown {
+export function getStatBreakdown(
+  sheet: CharacterDraft,
+  statId: StatId,
+  itemsById: Record<string, SharedItemRecord> = {}
+): CharacterBreakdown {
   const stat = sheet.statState[statId];
+  const gearSources = [...stat.gearSources, ...getItemSources(sheet, itemsById, "stat", statId)];
   const buffSources = [...stat.buffSources, ...getPowerEffectSources(sheet, "stat", statId)];
 
   return {
     base: stat.base,
-    gearSources: stat.gearSources,
+    gearSources,
     buffSources,
-    value: stat.base + sumSources(stat.gearSources) + sumSources(buffSources),
-    summary: buildSummary(stat.base, stat.gearSources, buffSources),
-    detail: buildDetail(stat.gearSources, buffSources),
+    value: stat.base + sumSources(gearSources) + sumSources(buffSources),
+    summary: buildSummary(stat.base, gearSources, buffSources),
+    detail: buildDetail(gearSources, buffSources),
   };
 }
 
@@ -216,9 +240,13 @@ export function getSkillEntry(sheet: CharacterDraft, skillId: string): SkillEntr
   return sheet.skills.find((entry) => entry.id === skillId);
 }
 
-export function getSkillBreakdown(sheet: CharacterDraft, skillId: string): CharacterBreakdown {
+export function getSkillBreakdown(
+  sheet: CharacterDraft,
+  skillId: string,
+  itemsById: Record<string, SharedItemRecord> = {}
+): CharacterBreakdown {
   const skill = getSkillEntry(sheet, skillId);
-  const gearSources = skill?.gearSources ?? [];
+  const gearSources = [...(skill?.gearSources ?? []), ...getItemSources(sheet, itemsById, "skill", skillId)];
   const buffSources = [
     ...(skill?.buffSources ?? []),
     ...getPowerEffectSources(sheet, "skill", skillId),
@@ -237,31 +265,51 @@ export function getSkillBreakdown(sheet: CharacterDraft, skillId: string): Chara
   };
 }
 
-export function getCurrentStatValue(sheet: CharacterDraft, statId: StatId): number {
-  return getStatBreakdown(sheet, statId).value;
+export function getCurrentStatValue(
+  sheet: CharacterDraft,
+  statId: StatId,
+  itemsById: Record<string, SharedItemRecord> = {}
+): number {
+  return getStatBreakdown(sheet, statId, itemsById).value;
 }
 
-export function getCurrentSkillValue(sheet: CharacterDraft, skillId: string): number {
-  return getSkillBreakdown(sheet, skillId).value;
+export function getCurrentSkillValue(
+  sheet: CharacterDraft,
+  skillId: string,
+  itemsById: Record<string, SharedItemRecord> = {}
+): number {
+  return getSkillBreakdown(sheet, skillId, itemsById).value;
 }
 
-export function getDerivedModifierTotal(sheet: CharacterDraft, targetId: string): number {
-  return sumSources(getPowerEffectSources(sheet, "derived", targetId));
+export function getDerivedModifierTotal(
+  sheet: CharacterDraft,
+  targetId: string,
+  itemsById: Record<string, SharedItemRecord> = {}
+): number {
+  return sumSources([
+    ...getPowerEffectSources(sheet, "derived", targetId),
+    ...getItemSources(sheet, itemsById, "derived", targetId),
+  ]);
 }
 
 export function getResistanceModifierTotal(
   sheet: CharacterDraft,
-  damageTypeId: DamageTypeId
+  damageTypeId: DamageTypeId,
+  itemsById: Record<string, SharedItemRecord> = {}
 ): number {
-  return sumSources(getPowerEffectSources(sheet, "resistance", damageTypeId));
+  return sumSources([
+    ...getPowerEffectSources(sheet, "resistance", damageTypeId),
+    ...getItemSources(sheet, itemsById, "resistance", damageTypeId),
+  ]);
 }
 
 export function getResolvedResistanceLevel(
   sheet: CharacterDraft,
-  damageTypeId: DamageTypeId
+  damageTypeId: DamageTypeId,
+  itemsById: Record<string, SharedItemRecord> = {}
 ): ResistanceLevel {
   const baseLevel = sheet.resistances[damageTypeId] ?? 0;
-  const nextLevel = Math.trunc(baseLevel + getResistanceModifierTotal(sheet, damageTypeId));
+  const nextLevel = Math.trunc(baseLevel + getResistanceModifierTotal(sheet, damageTypeId, itemsById));
 
   if (nextLevel < -2) {
     return -2;
@@ -304,40 +352,43 @@ export function getCurrentManaValue(sheet: CharacterDraft, maxMana: number): num
   return Math.max(0, Math.min(sheet.currentMana, maxMana));
 }
 
-export function buildCharacterDerivedValues(sheet: CharacterDraft): CharacterDerivedValues {
+export function buildCharacterDerivedValues(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord> = {}
+): CharacterDerivedValues {
   const currentStats = {
-    STR: getCurrentStatValue(sheet, "STR"),
-    DEX: getCurrentStatValue(sheet, "DEX"),
-    STAM: getCurrentStatValue(sheet, "STAM"),
-    CHA: getCurrentStatValue(sheet, "CHA"),
-    APP: getCurrentStatValue(sheet, "APP"),
-    MAN: getCurrentStatValue(sheet, "MAN"),
-    INT: getCurrentStatValue(sheet, "INT"),
-    WITS: getCurrentStatValue(sheet, "WITS"),
-    PER: getCurrentStatValue(sheet, "PER"),
+    STR: getCurrentStatValue(sheet, "STR", itemsById),
+    DEX: getCurrentStatValue(sheet, "DEX", itemsById),
+    STAM: getCurrentStatValue(sheet, "STAM", itemsById),
+    CHA: getCurrentStatValue(sheet, "CHA", itemsById),
+    APP: getCurrentStatValue(sheet, "APP", itemsById),
+    MAN: getCurrentStatValue(sheet, "MAN", itemsById),
+    INT: getCurrentStatValue(sheet, "INT", itemsById),
+    WITS: getCurrentStatValue(sheet, "WITS", itemsById),
+    PER: getCurrentStatValue(sheet, "PER", itemsById),
   };
-  const occultManaBonus = calculateOccultManaBonus(getCurrentSkillValue(sheet, "occultism"), sheet.xpUsed);
+  const occultManaBonus = calculateOccultManaBonus(getCurrentSkillValue(sheet, "occultism", itemsById), sheet.xpUsed);
   const passiveManaBonus = getPassiveManaBonus(sheet);
   const maxMana =
     calculateT1BaseMana(sheet, currentStats) +
     occultManaBonus +
     passiveManaBonus +
-    getDerivedModifierTotal(sheet, "max_mana");
+    getDerivedModifierTotal(sheet, "max_mana", itemsById);
   const currentMana = getCurrentManaValue(sheet, maxMana);
-  const attackDiceBonus = getDerivedModifierTotal(sheet, "attack_dice_bonus");
+  const attackDiceBonus = getDerivedModifierTotal(sheet, "attack_dice_bonus", itemsById);
   const meleeAttack =
-    getCurrentSkillValue(sheet, "melee") +
+    getCurrentSkillValue(sheet, "melee", itemsById) +
     currentStats.DEX +
     attackDiceBonus +
-    getDerivedModifierTotal(sheet, "melee_attack");
+    getDerivedModifierTotal(sheet, "melee_attack", itemsById);
   const rangedAttack =
-    getCurrentSkillValue(sheet, "ranged") +
+    getCurrentSkillValue(sheet, "ranged", itemsById) +
     currentStats.DEX +
     calculateRangedBonusDice(currentStats.PER) +
     attackDiceBonus +
-    getDerivedModifierTotal(sheet, "ranged_attack");
+    getDerivedModifierTotal(sheet, "ranged_attack", itemsById);
   const temporaryInspiration = sheet.temporaryInspiration;
-  const utilityTraits = getPassiveUtilityTraits(sheet);
+  const utilityTraits = [...new Set([...getPassiveUtilityTraits(sheet), ...getCharacterItemUtilityTraits(sheet, itemsById)])];
 
   return {
     currentStats,
@@ -356,14 +407,14 @@ export function buildCharacterDerivedValues(sheet: CharacterDraft): CharacterDer
     movementSelectable: 25,
     armorClass: calculateArmorClass(
       currentStats.DEX,
-      getCurrentSkillValue(sheet, "athletics"),
-      getDerivedModifierTotal(sheet, "armor_class")
+      getCurrentSkillValue(sheet, "athletics", itemsById),
+      getDerivedModifierTotal(sheet, "armor_class", itemsById)
     ),
-    damageReduction: getDerivedModifierTotal(sheet, "damage_reduction"),
-    soak: currentStats.STAM + getDerivedModifierTotal(sheet, "soak"),
+    damageReduction: getDerivedModifierTotal(sheet, "damage_reduction", itemsById),
+    soak: currentStats.STAM + getDerivedModifierTotal(sheet, "soak", itemsById),
     meleeAttack,
     rangedAttack,
-    meleeDamage: currentStats.STR + getDerivedModifierTotal(sheet, "melee_damage"),
+    meleeDamage: currentStats.STR + getDerivedModifierTotal(sheet, "melee_damage", itemsById),
     rangedDamage: "-",
     utilityTraits,
     activePowerEffects: [...(sheet.activePowerEffects ?? [])],

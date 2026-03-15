@@ -259,10 +259,21 @@ export async function runPowerEffectsTests(): Promise<void> {
           variantId: "default",
           targetCharacterIds: ["target-1"],
         });
+        const cureResolution = buildHealingCastResolution({
+          casterSheet: caster,
+          power: levelFiveHealing,
+          variantId: "cure",
+          targetCharacterIds: ["target-1"],
+        });
 
         assert.ok(!("error" in cantripResolution));
         assert.ok(!("error" in healingResolution));
-        if ("error" in cantripResolution || "error" in healingResolution) {
+        assert.ok(!("error" in cureResolution));
+        if (
+          "error" in cantripResolution ||
+          "error" in healingResolution ||
+          "error" in cureResolution
+        ) {
           return;
         }
 
@@ -270,8 +281,12 @@ export async function runPowerEffectsTests(): Promise<void> {
         assert.deepEqual(cantripResolution.removedStatuses, ["bleeding"]);
         assert.equal(cantripResolution.perTargetDailyLimit, 2);
         assert.equal(healingResolution.totalAmount, 9);
+        assert.equal(healingResolution.manaCost, 2);
         assert.equal(healingResolution.canRegrowLimbs, true);
         assert.equal(healingResolution.overhealCapStat, "STAM");
+        assert.equal(cureResolution.manaCost, 3);
+        assert.equal(cureResolution.totalAmount, 0);
+        assert.deepEqual(cureResolution.removedStatuses, ["poison", "disease", "curse"]);
       },
     },
     {
