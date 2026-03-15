@@ -66,7 +66,11 @@ export type DirectDamageCastApplication = {
   sourceSummary: string;
 };
 
-const LIGHT_SUPPORT_STACK_KEYS = new Set(["light_support", "light_support:aura"]);
+const LIGHT_SUPPORT_STACK_KEYS = new Set([
+  "light_support",
+  "light_support:aura",
+  "light_support:expose_darkness",
+]);
 const SHADOW_CLOAK_STACK_KEYS = new Set([
   "shadow_control:cloak",
   "shadow_control:cloak:self",
@@ -191,6 +195,14 @@ function resolveAuraCastMode(request: CastPowerBuildRequest): CastPowerMode {
 
 function asNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function getLightSupportExposeDarknessMechanics(sourceLevel: number): Record<string, unknown> | null {
+  const runtimeLevel = getRuntimePowerLevelDefinition("light_support", sourceLevel);
+  return runtimeLevel?.mechanics?.expose_darkness &&
+    typeof runtimeLevel.mechanics.expose_darkness === "object"
+    ? (runtimeLevel.mechanics.expose_darkness as Record<string, unknown>)
+    : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -351,11 +363,7 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "light_support") {
-    return variantId === "mana_restore"
-      ? "single"
-      : variantId === "expose_darkness"
-        ? "multiple"
-        : "self";
+    return variantId === "mana_restore" ? "single" : "self";
   }
 
   if (power.id === "necromancy") {
@@ -422,10 +430,6 @@ export function getCastPowerTargetLimit(
         : null;
     const maxTargets = healing ? asNumber(healing.max_targets) : 0;
     return Math.max(1, maxTargets || 1);
-  }
-
-  if (power.id === "light_support" && variantId === "expose_darkness") {
-    return 99;
   }
 
   return 1;
@@ -500,10 +504,6 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
 
     if (power.level >= 4) {
       variants.push({ id: "mana_restore", label: "Mana Restore" });
-    }
-
-    if (power.level >= 5) {
-      variants.push({ id: "expose_darkness", label: "Expose Darkness" });
     }
 
     return variants;
@@ -854,6 +854,7 @@ export function buildDirectDamageCastResolution(request: {
   targetMetadata?: Array<{
     characterId: string;
     isLiving: boolean;
+    isUndead: boolean;
     blocksNecroticTouch?: boolean;
   }>;
   itemsById?: Record<string, SharedItemRecord>;
@@ -862,7 +863,10 @@ export function buildDirectDamageCastResolution(request: {
   | {
       manaCost: number;
       applications: DirectDamageCastApplication[];
-      undeadHealingAmount?: number | null;
+      healingApplications?: Array<{
+        targetCharacterId: string;
+        amount: number;
+      }>;
     } {
   if (
     request.power.id === "elementalist" &&
@@ -953,24 +957,47 @@ export function buildDirectDamageCastResolution(request: {
 
     return {
       manaCost,
-      applications: uniqueTargetIds.map((targetCharacterId) => {
-        const isLiving =
-          request.targetMetadata?.find((entry) => entry.characterId === targetCharacterId)
-            ?.isLiving ?? true;
+      applications: uniqueTargetIds.flatMap((targetCharacterId) => {
+        const targetMetadata =
+          request.targetMetadata?.find((entry) => entry.characterId === targetCharacterId) ?? null;
+        const isLiving = targetMetadata?.isLiving ?? true;
+        const isUndead = targetMetadata?.isUndead === true;
         const rawAmount =
           selectedDamageType === "necrotic" && isLiving
             ? Math.ceil(perTargetBaseAmount * vulnerabilityMultiplier)
             : perTargetBaseAmount;
 
-        return {
-          targetCharacterId,
-          rawAmount,
-          damageType: selectedDamageType,
-          mitigationChannel: selectedDamageType === "physical" ? "dr" : "soak",
-          sourceLabel: `${request.power.name} Lv ${request.power.level}`,
-          sourceSummary: `${request.variantId === "elemental_cantrip" ? "Elemental Cantrip" : "Elemental Bolt"} (${rawAmount} ${selectedDamageType})`,
-        };
+        if (selectedDamageType === "necrotic" && isUndead) {
+          return [];
+        }
+
+        return [
+          {
+            targetCharacterId,
+            rawAmount,
+            damageType: selectedDamageType,
+            mitigationChannel: selectedDamageType === "physical" ? "dr" : "soak",
+            sourceLabel: `${request.power.name} Lv ${request.power.level}`,
+            sourceSummary: `${request.variantId === "elemental_cantrip" ? "Elemental Cantrip" : "Elemental Bolt"} (${rawAmount} ${selectedDamageType})`,
+          },
+        ];
       }),
+      healingApplications:
+        selectedDamageType === "necrotic"
+          ? uniqueTargetIds.flatMap((targetCharacterId) => {
+              const isUndead =
+                request.targetMetadata?.find((entry) => entry.characterId === targetCharacterId)
+                  ?.isUndead === true;
+              return isUndead
+                ? [
+                    {
+                      targetCharacterId,
+                      amount: perTargetBaseAmount,
+                    },
+                  ]
+                : [];
+            })
+          : [],
     };
   }
 
@@ -1049,6 +1076,9 @@ export function buildDirectDamageCastResolution(request: {
     const isLiving =
       request.targetMetadata?.find((entry) => entry.characterId === uniqueTargetIds[0])?.isLiving ??
       true;
+    const isUndead =
+      request.targetMetadata?.find((entry) => entry.characterId === uniqueTargetIds[0])?.isUndead ===
+      true;
     const blocksNecroticTouch =
       request.targetMetadata?.find((entry) => entry.characterId === uniqueTargetIds[0])
         ?.blocksNecroticTouch === true;
@@ -1071,8 +1101,9 @@ export function buildDirectDamageCastResolution(request: {
 
     return {
       manaCost,
-      applications: isLiving
-        ? [
+      applications: isUndead
+        ? []
+        : [
             {
               targetCharacterId: uniqueTargetIds[0],
               rawAmount,
@@ -1081,9 +1112,15 @@ export function buildDirectDamageCastResolution(request: {
               sourceLabel: `${request.power.name} Lv ${request.power.level}`,
               sourceSummary: `Necrotic Touch (${rawAmount} necrotic)`,
             },
+          ],
+      healingApplications: isUndead
+        ? [
+            {
+              targetCharacterId: uniqueTargetIds[0],
+              amount: baseAmount,
+            },
           ]
         : [],
-      undeadHealingAmount: isLiving ? null : baseAmount,
     };
   }
 
@@ -1215,36 +1252,6 @@ export function buildActivePowerEffect(
         }
       ),
       manaCost,
-    };
-  }
-
-  if (request.power.id === "light_support" && request.variantId === "expose_darkness") {
-    const exposeDarkness =
-      mechanics.expose_darkness && typeof mechanics.expose_darkness === "object"
-        ? (mechanics.expose_darkness as Record<string, unknown>)
-        : null;
-    if (!exposeDarkness) {
-      return { error: "Expose Darkness data is missing for this Light Support level." };
-    }
-
-    return {
-      effect: createEffect(
-        request,
-        asNumber(exposeDarkness.mana_cost),
-        typeof exposeDarkness.action_type === "string" ? exposeDarkness.action_type : actionType,
-        "light_support:expose_darkness",
-        "direct",
-        "Expose Darkness",
-        "-1 physical / elemental resistance",
-        null,
-        LIGHT_SUPPORT_LEVEL_FIVE_EXPOSE_DARKNESS_TYPES.map((damageType) => ({
-          targetType: "resistance" as const,
-          targetId: damageType,
-          value: Math.trunc(asNumber(exposeDarkness.resistance_level_delta)),
-          sourceLabel: "Expose Darkness",
-        }))
-      ),
-      manaCost: asNumber(exposeDarkness.mana_cost),
     };
   }
 
@@ -1393,6 +1400,44 @@ export function buildAuraSharedPowerEffect(
     manaCost: null,
     appliedAt: getIsoTimestamp(),
   };
+}
+
+export function buildLinkedAuraEffectForTarget(
+  sourceEffect: ActivePowerEffect,
+  targetCharacterId: string,
+  options?: {
+    targetDisposition?: "ally" | "enemy";
+  }
+): ActivePowerEffect {
+  if (
+    sourceEffect.powerId === "light_support" &&
+    options?.targetDisposition === "enemy" &&
+    sourceEffect.sourceLevel >= 5
+  ) {
+    const exposeDarkness = getLightSupportExposeDarknessMechanics(sourceEffect.sourceLevel);
+    const resistanceLevelDelta = Math.trunc(asNumber(exposeDarkness?.resistance_level_delta));
+
+    return {
+      ...sourceEffect,
+      id: createTimestampedId("power-effect"),
+      effectKind: "aura_shared",
+      stackKey: "light_support:expose_darkness",
+      targetCharacterId,
+      sourceEffectId: sourceEffect.id,
+      label: "Expose Darkness",
+      summary: "-1 physical / elemental resistance",
+      manaCost: null,
+      modifiers: LIGHT_SUPPORT_LEVEL_FIVE_EXPOSE_DARKNESS_TYPES.map((damageType) => ({
+        targetType: "resistance" as const,
+        targetId: damageType,
+        value: resistanceLevelDelta,
+        sourceLabel: "Expose Darkness",
+      })),
+      appliedAt: getIsoTimestamp(),
+    };
+  }
+
+  return buildAuraSharedPowerEffect(sourceEffect, targetCharacterId);
 }
 
 export function canSelectAuraTargets(effect: ActivePowerEffect): boolean {

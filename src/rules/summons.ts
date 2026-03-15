@@ -43,6 +43,7 @@ type RuntimeTemplateAttack = {
 type RuntimeTemplateRules = {
   label: string;
   buffRules: EncounterTransientCombatant["buffRules"];
+  statusTags: CharacterDraft["statusTags"];
   stats: Partial<Record<StatId, number>>;
   naturalDamageReduction: number;
   meleeSkill: number;
@@ -74,6 +75,18 @@ function humanizeTemplateId(templateId: string): string {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function buildSummonStatusTags(powerId: string, templateId: string): CharacterDraft["statusTags"] {
+  if (powerId === "necromancy") {
+    return [{ id: "undead", label: "Undead" }];
+  }
+
+  if (powerId === "shadow_control" && templateId === "shadow_soldier") {
+    return [{ id: "shadow", label: "Shadow" }];
+  }
+
+  return [];
 }
 
 function resolveFormulaValue(
@@ -117,6 +130,7 @@ function readSummonOptions(power: PowerEntry): RuntimeSummonOption[] {
       ? (runtimeLevel.mechanics.summoning as Record<string, unknown>)
       : null;
   const options = Array.isArray(summoning?.options) ? summoning.options : [];
+  const defaultManaCost = Math.max(0, Math.trunc(asNumber(runtimeLevel?.mana_cost)));
 
   return options.flatMap((option) => {
     if (!isRecord(option)) {
@@ -132,7 +146,12 @@ function readSummonOptions(power: PowerEntry): RuntimeSummonOption[] {
     }
 
     const quantity = Math.max(1, Math.trunc(asNumber(option.quantity) || 1));
-    const manaCost = Math.max(0, Math.trunc(asNumber(option.mana_cost)));
+    const manaCost = Math.max(
+      0,
+      Math.trunc(
+        option.mana_cost === undefined ? defaultManaCost : asNumber(option.mana_cost)
+      )
+    );
     const labelPrefix = quantity > 1 ? `${quantity}x ` : "";
 
     return [
@@ -215,6 +234,7 @@ function readTemplateRules(
       canReceiveGroupBuffs: buffRules.can_receive_group_buffs !== false,
       canBeHealed: buffRules.can_be_healed !== false,
     },
+    statusTags: buildSummonStatusTags(powerId, templateId),
     stats,
     naturalDamageReduction: asNumber(combatSummary.natural_damage_reduction),
     meleeSkill,
@@ -343,6 +363,7 @@ function buildSummonSheet(
   sheet.temporaryInspiration = 0;
   sheet.currentMana = 0;
   sheet.manaInitialized = true;
+  sheet.statusTags = templateRules.statusTags.map((tag) => ({ ...tag }));
 
   for (const statId of Object.keys(sheet.statState) as StatId[]) {
     sheet.statState[statId].base = Math.max(0, Math.trunc(templateRules.stats[statId] ?? 0));

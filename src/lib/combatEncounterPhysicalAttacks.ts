@@ -1,7 +1,18 @@
-import { buildCharacterDerivedValues } from "../config/characterRuntime";
-import { createTimestampedId } from "./ids";
-import type { CharacterRecord } from "../types/character";
-import type { PreparedCastRequest } from "../types/combatEncounterView";
+import {
+  buildCharacterDerivedValues,
+  getDerivedModifierTotal,
+} from "../config/characterRuntime.ts";
+import { applyDamageToSheet } from "../rules/combatResolution.ts";
+import { resolveDicePool } from "../rules/combat.ts";
+import { createTimestampedId } from "./ids.ts";
+import { rollD10Faces } from "./dice.ts";
+import {
+  getEquippedWeaponHandItems,
+  getLegacyEquippedWeaponItems,
+  itemOccupiesBothWeaponHands,
+} from "./items.ts";
+import type { CharacterRecord } from "../types/character.ts";
+import type { PreparedCastRequest } from "../types/combatEncounterView.ts";
 import type { SharedItemRecord } from "../types/items.ts";
 
 export type PhysicalAttackProfileId =
@@ -9,15 +20,27 @@ export type PhysicalAttackProfileId =
   | "one_handed"
   | "dual_one_handed"
   | "two_handed"
+  | "oversized"
   | "bow";
 
-export type PhysicalAttackOption = {
+export type PhysicalAttackProfile = {
   id: PhysicalAttackProfileId;
   label: string;
   attacksPerAction: number;
   attackPool: number;
   successDc: number;
-  damagePerHit: number;
+  baseDamagePool: number;
+};
+
+type PhysicalAttackSequenceResult = {
+  index: number;
+  hitSuccesses: number;
+  targetArmorClass: number;
+  marginal: number;
+  damageSuccesses: number;
+  targetDamageReduction: number;
+  appliedDamage: number;
+  missed: boolean;
 };
 
 function buildPreparedActionRequest(
@@ -49,128 +72,233 @@ function buildEncounterActivityLogEntry(summary: string) {
   };
 }
 
-export function getPhysicalAttackOptions(
+function getPhysicalAttackProfileSuccesses(
+  faces: number[],
+  poolSize: number,
+  successDc: number
+): number {
+  if (successDc <= 6) {
+    return resolveDicePool(faces, poolSize).successes;
+  }
+
+  return faces.reduce((total, face) => {
+    if (face === 1) {
+      return total - 1;
+    }
+
+    if (face >= successDc && face <= 9) {
+      return total + 1;
+    }
+
+    if (face === 10) {
+      return total + (poolSize < 10 ? 1 : 2);
+    }
+
+    return total;
+  }, 0);
+}
+
+function getResolvedWeaponCandidates(
+  sheet: CharacterRecord["sheet"],
+  itemsById: Record<string, SharedItemRecord>
+): SharedItemRecord[] {
+  const weaponHands = getEquippedWeaponHandItems(sheet, itemsById);
+  const handWeapons = [weaponHands.weapon_primary, weaponHands.weapon_secondary]
+    .filter((item): item is SharedItemRecord => item !== null && item.category === "weapon")
+    .filter(
+      (item, index, entries) => entries.findIndex((candidate) => candidate.id === item.id) === index
+    );
+
+  if (handWeapons.length > 0) {
+    return handWeapons;
+  }
+
+  return getLegacyEquippedWeaponItems(sheet, itemsById).filter(
+    (item, index, entries) => entries.findIndex((candidate) => candidate.id === item.id) === index
+  );
+}
+
+export function getResolvedPhysicalAttackProfile(
   sheet: CharacterRecord["sheet"],
   itemsById: Record<string, SharedItemRecord> = {}
-): PhysicalAttackOption[] {
+): PhysicalAttackProfile {
   const derived = buildCharacterDerivedValues(sheet, itemsById);
-  const equippedWeapons = (sheet.equipment ?? [])
-    .map((entry) => (entry.itemId ? itemsById[entry.itemId] : null))
-    .filter(
-      (item): item is SharedItemRecord => item !== null && item !== undefined && item.category === "weapon"
-    );
-  const oneHandedCount = equippedWeapons.filter((item) => item.subtype === "one_handed").length;
-  const hasTwoHanded = equippedWeapons.some((item) => item.subtype === "two_handed");
-  const hasOversized = equippedWeapons.some((item) => item.subtype === "oversized");
-  const hasBow = equippedWeapons.some((item) => item.subtype === "bow");
-  const hasBrawlWeapon = equippedWeapons.some((item) => item.subtype === "brawl");
+  const rangedDamageBonus = getDerivedModifierTotal(sheet, "ranged_damage", itemsById);
+  const weaponCandidates = getResolvedWeaponCandidates(sheet, itemsById);
+  const occupyingBothHandsWeapon = weaponCandidates.find((item) => itemOccupiesBothWeaponHands(item));
+  const oneHandedWeapons = weaponCandidates.filter((item) => item.subtype === "one_handed");
+  const brawlWeapons = weaponCandidates.filter((item) => item.subtype === "brawl");
 
-  const options: PhysicalAttackOption[] = [
-    {
-      id: "brawl",
-      label: hasBrawlWeapon ? "Brawl Weapon" : "Brawl",
-      attacksPerAction: 2,
-      attackPool: derived.meleeAttack,
-      successDc: 6,
-      damagePerHit: derived.currentStats.STR,
-    },
-  ];
+  if (occupyingBothHandsWeapon) {
+    if (occupyingBothHandsWeapon.subtype === "oversized") {
+      return {
+        id: "oversized",
+        label: occupyingBothHandsWeapon.name || "Oversized Weapon",
+        attacksPerAction: 1,
+        attackPool: derived.meleeAttack,
+        successDc: 6,
+        baseDamagePool: derived.meleeDamage + 9,
+      };
+    }
 
-  if (oneHandedCount >= 1) {
-    options.push({
-      id: "one_handed",
-      label: "One-Handed Weapon",
+    if (occupyingBothHandsWeapon.subtype === "bow") {
+      return {
+        id: "bow",
+        label: occupyingBothHandsWeapon.name || "Bow",
+        attacksPerAction: 1,
+        attackPool: derived.rangedAttack,
+        successDc: 6,
+        baseDamagePool: 5 + rangedDamageBonus,
+      };
+    }
+
+    return {
+      id: "two_handed",
+      label: occupyingBothHandsWeapon.name || "Two-Handed Weapon",
       attacksPerAction: 1,
       attackPool: derived.meleeAttack,
       successDc: 6,
-      damagePerHit: derived.currentStats.STR + 2,
-    });
+      baseDamagePool: derived.meleeDamage + 6,
+    };
   }
 
-  if (oneHandedCount >= 2) {
-    options.push({
+  if (oneHandedWeapons.length >= 2) {
+    return {
       id: "dual_one_handed",
       label: "Two One-Handed Weapons",
       attacksPerAction: 2,
       attackPool: derived.meleeAttack,
       successDc: 7,
-      damagePerHit: derived.currentStats.STR + 2,
-    });
+      baseDamagePool: derived.meleeDamage + 2,
+    };
   }
 
-  if (hasTwoHanded || hasOversized) {
-    options.push({
-      id: "two_handed",
-      label: hasOversized ? "Oversized Weapon" : "Two-Handed Weapon",
+  if (oneHandedWeapons.length === 1) {
+    return {
+      id: "one_handed",
+      label: oneHandedWeapons[0].name || "One-Handed Weapon",
       attacksPerAction: 1,
       attackPool: derived.meleeAttack,
       successDc: 6,
-      damagePerHit: derived.currentStats.STR + (hasOversized ? 9 : 6),
-    });
+      baseDamagePool: derived.meleeDamage + 2,
+    };
   }
 
-  if (hasBow) {
-    options.push({
-      id: "bow",
-      label: "Bow",
-      attacksPerAction: 1,
-      attackPool: derived.rangedAttack,
+  if (brawlWeapons.length > 0) {
+    return {
+      id: "brawl",
+      label: brawlWeapons[0].name || "Brawl Weapon",
+      attacksPerAction: 2,
+      attackPool: derived.meleeAttack,
       successDc: 6,
-      damagePerHit: 5,
-    });
+      baseDamagePool: derived.meleeDamage,
+    };
   }
 
-  return options;
+  return {
+    id: "brawl",
+    label: "Brawl / Fists",
+    attacksPerAction: 2,
+    attackPool: derived.meleeAttack,
+    successDc: 6,
+    baseDamagePool: derived.meleeDamage,
+  };
+}
+
+function formatPhysicalAttackSequence(result: PhysicalAttackSequenceResult): string {
+  if (result.missed) {
+    return `A${result.index} miss ${result.hitSuccesses} vs AC ${result.targetArmorClass}`;
+  }
+
+  return `A${result.index} hit ${result.hitSuccesses} vs AC ${result.targetArmorClass}, marginal ${result.marginal}, dmg ${result.damageSuccesses} vs DR ${result.targetDamageReduction}, took ${result.appliedDamage}`;
 }
 
 export function preparePhysicalAttackRequest(payload: {
   casterCharacter: CharacterRecord;
   targetCharacter: CharacterRecord;
-  profileId: PhysicalAttackProfileId;
-  landedHits: number;
   itemsById?: Record<string, SharedItemRecord>;
-}): { error: string } | { request: PreparedCastRequest; option: PhysicalAttackOption } {
+}): { error: string } | { request: PreparedCastRequest; profile: PhysicalAttackProfile } {
   if (payload.casterCharacter.id === payload.targetCharacter.id) {
     return { error: "Choose another target for a physical attack." };
   }
 
-  const option = getPhysicalAttackOptions(
-    payload.casterCharacter.sheet,
-    payload.itemsById ?? {}
-  ).find(
-    (candidate) => candidate.id === payload.profileId
-  );
-  if (!option) {
-    return { error: "Choose a valid physical attack option first." };
+  const itemsById = payload.itemsById ?? {};
+  const profile = getResolvedPhysicalAttackProfile(payload.casterCharacter.sheet, itemsById);
+  const request = buildPreparedActionRequest(payload.casterCharacter.id, payload.targetCharacter.id);
+  const sequenceResults: PhysicalAttackSequenceResult[] = [];
+  let previewTargetSheet = payload.targetCharacter.sheet;
+
+  for (let index = 0; index < profile.attacksPerAction; index += 1) {
+    const targetDerived = buildCharacterDerivedValues(previewTargetSheet, itemsById);
+    const hitFaces = rollD10Faces(profile.attackPool);
+    const hitSuccesses = getPhysicalAttackProfileSuccesses(
+      hitFaces,
+      profile.attackPool,
+      profile.successDc
+    );
+
+    if (hitSuccesses <= targetDerived.armorClass) {
+      sequenceResults.push({
+        index: index + 1,
+        hitSuccesses,
+        targetArmorClass: targetDerived.armorClass,
+        marginal: 0,
+        damageSuccesses: 0,
+        targetDamageReduction: targetDerived.damageReduction,
+        appliedDamage: 0,
+        missed: true,
+      });
+      continue;
+    }
+
+    const marginal = hitSuccesses - targetDerived.armorClass;
+    const damagePool = Math.max(0, profile.baseDamagePool + marginal);
+    const damageFaces = rollD10Faces(damagePool);
+    const damageSuccesses = Math.max(
+      0,
+      getPhysicalAttackProfileSuccesses(damageFaces, damagePool, 6)
+    );
+    const damagePreview = applyDamageToSheet(previewTargetSheet, {
+      rawAmount: damageSuccesses,
+      damageType: "physical",
+      mitigationChannel: "dr",
+      itemsById,
+    });
+
+    if (damageSuccesses > 0) {
+      request.damageApplications.push({
+        targetCharacterId: payload.targetCharacter.id,
+        rawAmount: damageSuccesses,
+        damageType: "physical",
+        mitigationChannel: "dr",
+        sourceCharacterId: payload.casterCharacter.id,
+        sourceLabel: profile.label,
+        sourceSummary: `${profile.label} (${damageSuccesses} physical)`,
+      });
+    }
+
+    sequenceResults.push({
+      index: index + 1,
+      hitSuccesses,
+      targetArmorClass: targetDerived.armorClass,
+      marginal,
+      damageSuccesses,
+      targetDamageReduction: targetDerived.damageReduction,
+      appliedDamage: damagePreview.appliedDamage,
+      missed: false,
+    });
+    previewTargetSheet = damagePreview.sheet;
   }
 
-  const landedHits = Math.max(0, Math.trunc(payload.landedHits));
-  if (landedHits > option.attacksPerAction) {
-    return {
-      error: `${option.label} can land at most ${option.attacksPerAction} hit(s) per action.`,
-    };
-  }
-
-  const request = buildPreparedActionRequest(
-    payload.casterCharacter.id,
-    payload.targetCharacter.id
-  );
-  request.damageApplications = Array.from({ length: landedHits }, () => ({
-    targetCharacterId: payload.targetCharacter.id,
-    rawAmount: option.damagePerHit,
-    damageType: "physical" as const,
-    mitigationChannel: "dr" as const,
-    sourceCharacterId: payload.casterCharacter.id,
-    sourceLabel: option.label,
-    sourceSummary: `${option.label} (${option.damagePerHit} physical)`,
-  }));
+  const attackerName = payload.casterCharacter.sheet.name.trim() || payload.casterCharacter.id;
+  const targetName = payload.targetCharacter.sheet.name.trim() || payload.targetCharacter.id;
   request.activityLogEntries = [
     buildEncounterActivityLogEntry(
-      landedHits === 0
-        ? `${payload.casterCharacter.sheet.name.trim() || payload.casterCharacter.id} missed ${payload.targetCharacter.sheet.name.trim() || payload.targetCharacter.id} with ${option.label}.`
-        : `${payload.casterCharacter.sheet.name.trim() || payload.casterCharacter.id} hit ${payload.targetCharacter.sheet.name.trim() || payload.targetCharacter.id} with ${option.label} (${landedHits} hit${landedHits === 1 ? "" : "s"}).`
+      `${attackerName} attacked ${targetName} with ${profile.label}. ${sequenceResults
+        .map(formatPhysicalAttackSequence)
+        .join(" | ")}.`
     ),
   ];
 
-  return { request, option };
+  return { request, profile };
 }

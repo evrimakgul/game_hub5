@@ -43,6 +43,11 @@
 
 ## 2026-03-15
 
+- Reopened Phase 1 combat encounter completion pass after user review.
+  - Updated `references/plan.md`, `references/current_notes.md`, and `references/project_objective.md` to match the remaining actionable work instead of the earlier "completed" branch state.
+  - Added a historical reopen note to `project_tracking/tasks_done.md`.
+  - Baseline validation before new code changes: `npm run typecheck`, `npm test`, `npm run build`.
+  - Result: all three passed before the new change set started.
 - `P1-01` Re-audited the branch after user bug reports and reopened the roadmap.
   - Replaced the prior "power runtime complete" assumption with a new active scope:
     - combat encounter fixes
@@ -69,4 +74,74 @@
   - Item bonuses now flow into player-sheet derived values, encounter snapshots, upkeep/runtime mana bounds, damage/healing mitigation, and physical attack option selection.
   - Migration assumption: each legacy embedded inventory row and each legacy embedded equipment row becomes its own standalone shared item record; no automatic dedupe is attempted across old rows.
   - Assumption recorded: multi-target share UI for item knowledge remains deferred even though the data model and share helper now exist.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- Docs/tracking reopen validation completed.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `P1-BUG-01` and `P1-BUG-03` completed.
+  - Updated `src/lib/combatEncounterCasting.ts` so generic buff logs use the real action name instead of the `Cloak of Shadow` fallback.
+  - Updated `src/rules/summons.ts` and `json_refs/powers.json` so `Shadow Soldier` resolves with the correct summon mana cost, with a safe summon option fallback to level mana cost if the option omits one.
+  - Added focused regression coverage in `tests/combatEncounterCasting.test.ts`.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `P1-RULE-04` completed.
+  - Removed manual contest outcome selection from the encounter cast state, cast payload, and cast form.
+  - `Crowd Control` now auto-resolves using caster `CHA + INT` against each target's `CHA + WITS`, with ties failing.
+  - Added deterministic success, failure, and tie regression tests in `tests/combatEncounterCasting.test.ts`.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `P1-RULE-01` completed.
+  - Added undead/shadow summon classification tags in `src/rules/summons.ts` so necromancy summons are tagged `Undead` and `Shadow Soldier` is tagged `Shadow`.
+  - Added undead sheet detection in `src/rules/combatResolution.ts` and used it in encounter casting to invert healing and necrotic interactions cleanly.
+  - Healing cast applications now become `radiant` damage against `soak` when the target is undead; living-only cure/regrowth side effects stay off undead targets.
+  - Necrotic damage now heals only true undead targets instead of all non-living targets.
+  - Added regression coverage in `tests/combatResolution.test.ts`, `tests/combatEncounterCasting.test.ts`, and updated `tests/powerEffects.test.ts` typing for the extended target metadata.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `P1-RULE-02` and `P1-RULE-03` completed together.
+  - Removed `Expose Darkness` from the Light Support cast-variant list and folded the enemy debuff into the default Light Aura level-five cast.
+  - Added linked aura-target effect building so Light Aura can buff allies and apply the level-five enemy resistance debuff from the same source effect.
+  - Updated aura target management so the same Light Aura source can later add/remove enemy-party debuff targets as well as allied buff targets.
+  - Reordered encounter effect application after structural summon merges so spawned summons can receive linked aura effects in the same execution step.
+  - Summon casts now extend existing aura-source target lists when a newly spawned allied summon should inherit the active aura, covering the `Shadow Soldier` plus active `Cloak of Shadow` case.
+  - Added regression coverage in `tests/combatEncounterCasting.test.ts` and `tests/powerEffects.test.ts`.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `P1-BUG-02` completed.
+  - Encounter snapshot rendering now suppresses `Paralyzed` when a Crowd Control ownership tag is already present, so the card shows only `Controlled by <caster>`.
+  - Added snapshot regression coverage in `tests/combatEncounter.test.ts`.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `P1-UI-01` and `P1-UI-02` completed together.
+  - Replaced the inline encounter `Physical Attacks` and `Cast Power Mechanism` sections with an `Actions` popover that embeds both forms without changing their underlying mechanics.
+  - Updated encounter layout styling so the card now presents `Character Sheet`, `Actions`, and `Applied Effects` as the main sections.
+  - Relaxed encounter history sizing to a three-row minimum with vertical resizing and an eighteen-row max cap.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- Actionable Phase 1 combat encounter items are now complete.
+  - Remaining TODO entries are reminder-only (`ARCH-REM-01`) or deferred (`B01`).
+- Reopened follow-up work for character-sheet and encounter action flow updates.
+  - Added active tasks:
+    - `CS-UI-01` Derived Summary consolidation
+    - `CS-RULE-01` automatic loadout-driven physical attacks
+    - `CS-UX-01` manual `Body Reinforcement` encounter trigger
+  - Locked user decisions:
+    - `Derived Summary` should show all subsections even when empty
+    - automatic physical attacks stay single-target in the UI for now
+    - physical attack math uses hit pool vs AC, then damage pool + marginal vs DR
+    - no active-weapon selector; infer from explicit two hand slots
+    - if no weapon is equipped, use brawl/fists
+    - if an equipped item is explicitly typed as brawl, use the brawl profile
+    - bow occupies both hand slots
+    - `Body Reinforcement` revive becomes a manual encounter action
+  - Baseline validation before follow-up implementation: `npm run typecheck`, `npm test`, `npm run build`.
+- `CS-UI-01` completed.
+  - Moved `Active Effects`, `Utility Traits`, `Combat Flags`, and `Power Tracking` into `CharacterCombatSummary`.
+  - Reduced `CharacterResources` back to stored inspiration and karma only.
+  - Preserved all existing power-usage reset behavior, but relocated the controls under `Derived Summary`.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `CS-RULE-01` completed.
+  - Replaced manual `Attack Style` plus `Hits Landed` encounter flow with automatic loadout-driven physical attack resolution.
+  - Added canonical primary and secondary hand slot handling on the character sheet while preserving support for older extra loadout slots.
+  - Automatic attacks now infer profile from the equipped hand slots, roll in-system for hit and damage, and log each attack sequence with AC, marginal, DR, and final damage taken.
+  - Added dedicated physical-attack regression coverage, including brawl fallback, explicit brawl items, dual one-handed inference, bow hand-slot occupancy, and deterministic auto-resolution.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `CS-UX-01` completed.
+  - Replaced automatic turn-advance `Body Reinforcement` revive scheduling with a manual encounter action.
+  - Added visible BR eligibility text and a `Trigger Body Reinforcement` action inside the encounter `Actions` popover for characters who have the cantrip unlocked.
+  - Kept the trigger window locked to `0` through `-5 HP`, daily-use tracking intact, and revive output at `1 HP` for BR `2-4` and `4 HP` for BR `5`.
+  - Added focused regression coverage for unavailable, ineligible, spent, and successful BR revive states in `tests/combatEncounterSpecialActions.test.ts`.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.

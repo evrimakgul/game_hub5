@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 
-import { applyDamageToSheet, applyHealingToSheet } from "../src/rules/combatResolution.ts";
+import {
+  applyDamageToSheet,
+  applyHealingToSheet,
+  isUndeadSheet,
+} from "../src/rules/combatResolution.ts";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import { runTestSuite } from "./harness.ts";
 
@@ -50,6 +54,19 @@ export async function runCombatResolutionTests(): Promise<void> {
         assert.equal(result.sheet.currentHp, 8);
         assert.equal(result.sheet.temporaryHp, 2);
         assert.equal(result.appliedAmount, 3);
+      },
+    },
+    {
+      name: "undead sheet detection only matches undead-tagged sheets",
+      run: () => {
+        const undeadSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        undeadSheet.statusTags = [{ id: "undead", label: "Undead" }];
+
+        const shadowSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        shadowSheet.statusTags = [{ id: "shadow", label: "Shadow" }];
+
+        assert.equal(isUndeadSheet(undeadSheet), true);
+        assert.equal(isUndeadSheet(shadowSheet), false);
       },
     },
   ]);

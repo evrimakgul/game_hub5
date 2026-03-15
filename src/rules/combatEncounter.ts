@@ -25,6 +25,31 @@ import { rollD10Faces } from "../lib/dice.ts";
 import type { SharedItemRecord } from "../types/items.ts";
 const HIGHLIGHTED_SKILL_IDS = ["intimidation", "stealth", "alertness"] as const;
 
+function normalizeStatusTag(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function getVisibleEncounterStatusTags(sheet: CharacterDraft): string[] {
+  const tags = sheet.statusTags ?? [];
+  const hasCrowdControlTag = tags.some((tag) =>
+    normalizeStatusTag(tag.id).startsWith("crowd_control:") ||
+    normalizeStatusTag(tag.label).startsWith("controlled_by_")
+  );
+
+  return tags
+    .filter((tag) => {
+      if (!hasCrowdControlTag) {
+        return true;
+      }
+
+      return (
+        normalizeStatusTag(tag.id) !== "paralyzed" &&
+        normalizeStatusTag(tag.label) !== "paralyzed"
+      );
+    })
+    .map((tag) => tag.label);
+}
+
 export function buildEncounterParticipantInput(
   characterId: string,
   ownerRole: "player" | "dm",
@@ -267,7 +292,7 @@ export function buildCharacterEncounterSnapshot(
       derived.temporaryInspiration > 0
         ? `Base ${derived.permanentInspiration} + Temp ${derived.temporaryInspiration}`
         : `Base ${derived.permanentInspiration}`,
-    statusTags: (sheet.statusTags ?? []).map((tag) => tag.label),
+    statusTags: getVisibleEncounterStatusTags(sheet),
     utilityTraits: derived.utilityTraits,
     activePowerEffects: derived.activePowerEffects.map((effect) => ({
       id: effect.id,

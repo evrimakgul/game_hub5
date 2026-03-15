@@ -9,9 +9,11 @@ import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import {
   applyActivePowerEffect,
   buildActivePowerEffect,
+  buildLinkedAuraEffectForTarget,
   buildDirectDamageCastResolution,
   buildHealingCastResolution,
   getCastPowerDamageTypeOptions,
+  getCastPowerVariantOptions,
   spendPowerMana,
 } from "../src/rules/powerEffects.ts";
 import { runTestSuite } from "./harness.ts";
@@ -203,11 +205,11 @@ export async function runPowerEffectsTests(): Promise<void> {
           targetCharacterIds: ["target-1", "target-2"],
           selectedDamageType: "necrotic",
           bonusManaSpend: 1,
-          targetMetadata: [
-            { characterId: "target-1", isLiving: true },
-            { characterId: "target-2", isLiving: true },
-          ],
-        });
+           targetMetadata: [
+             { characterId: "target-1", isLiving: true, isUndead: false },
+             { characterId: "target-2", isLiving: true, isUndead: false },
+           ],
+         });
 
         assert.ok(!("error" in resolution));
         if ("error" in resolution) {
@@ -290,7 +292,7 @@ export async function runPowerEffectsTests(): Promise<void> {
       },
     },
     {
-      name: "expose darkness downgrades resistance-based defenses while active",
+      name: "light support level five folds expose darkness into the light aura flow",
       run: () => {
         const caster = PLAYER_CHARACTER_TEMPLATE.createInstance();
         caster.powers = [
@@ -301,28 +303,37 @@ export async function runPowerEffectsTests(): Promise<void> {
             governingStat: "APP",
           },
         ];
+        const variants = getCastPowerVariantOptions(caster.powers[0]);
 
         const target = PLAYER_CHARACTER_TEMPLATE.createInstance();
         target.resistances.physical = 2;
         target.resistances.fire = 1;
 
-        const built = buildActivePowerEffect({
+        const builtSource = buildActivePowerEffect({
           casterCharacterId: "caster",
           casterName: "Beacon",
-          targetCharacterId: "target",
-          targetName: "Shade",
+          targetCharacterId: "caster",
+          targetName: "Beacon",
           power: caster.powers[0],
-          variantId: "expose_darkness",
+          variantId: "default",
         });
 
-        assert.ok(!("error" in built));
-        if ("error" in built) {
+        assert.deepEqual(
+          variants.map((variant) => variant.id),
+          ["default", "mana_restore"]
+        );
+        assert.ok(!("error" in builtSource));
+        if ("error" in builtSource) {
           return;
         }
 
-        const affectedTarget = applyActivePowerEffect(target, built.effect);
+        const enemyAuraEffect = buildLinkedAuraEffectForTarget(builtSource.effect, "target", {
+          targetDisposition: "enemy",
+        });
+        const affectedTarget = applyActivePowerEffect(target, enemyAuraEffect);
 
-        assert.equal(built.manaCost, 0);
+        assert.equal(builtSource.manaCost, 2);
+        assert.equal(enemyAuraEffect.label, "Expose Darkness");
         assert.equal(getResolvedResistanceLevel(affectedTarget, "physical"), 1);
         assert.equal(getResolvedResistanceLevel(affectedTarget, "fire"), 0);
       },

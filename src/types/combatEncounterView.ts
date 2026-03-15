@@ -29,7 +29,6 @@ export type CharacterSheetUpdater =
   | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"]);
 
 export type CastOutcomeState = "unresolved" | "hit" | "miss";
-export type ContestOutcomeState = "unresolved" | "success" | "failure";
 
 export type PreparedCastRequest = {
   casterCharacterId: string;
@@ -119,7 +118,6 @@ export type CastRequestPayload = {
   selectedPower: PowerEntry;
   selectedVariantId: CastPowerVariantId;
   attackOutcome: CastOutcomeState;
-  contestOutcome: ContestOutcomeState;
   selectedTargetIds: string[];
   fallbackTargetIds: string[];
   healingAllocations: Record<string, number>;

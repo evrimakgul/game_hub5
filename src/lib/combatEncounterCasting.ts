@@ -1,4 +1,6 @@
 import { buildCharacterEncounterSnapshot } from "../rules/combatEncounter.ts";
+import { resolveDicePool } from "../rules/combat.ts";
+import { isUndeadSheet } from "../rules/combatResolution.ts";
 import {
   buildCharacterDerivedValues,
   getCurrentSkillValue,
@@ -6,11 +8,14 @@ import {
 } from "../config/characterRuntime.ts";
 import {
   buildActivePowerEffect,
+  buildLinkedAuraEffectForTarget,
   buildAuraSharedPowerEffect,
   buildDirectDamageCastResolution,
   buildHealingCastResolution,
   doesActivePowerEffectConflict,
+  getAuraShareMode,
   getCastPowerTargetModeForVariant,
+  isAuraSourceEffect,
   isAuraSharedEffect,
 } from "../rules/powerEffects.ts";
 import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
@@ -26,6 +31,7 @@ import type {
   PreparedCastRequest,
 } from "../types/combatEncounterView.ts";
 import { createTimestampedId } from "./ids.ts";
+import { rollD10Faces } from "./dice.ts";
 import {
   POWER_USAGE_KEYS,
   getLongRestSelection,
@@ -69,6 +75,65 @@ function joinTargetNames(targets: CharacterRecord[]): string {
   return targets.map((target) => target.sheet.name.trim() || target.id).join(", ");
 }
 
+function getGenericBuffActionLabel(
+  powerId: CastRequestPayload["selectedPower"]["id"],
+  variantId: CastPowerVariantId,
+  powerName: string
+): string {
+  if (powerId === "light_support") {
+    return "Light Aura";
+  }
+
+  if (powerId === "shadow_control") {
+    return "Cloak of Shadow";
+  }
+
+  return powerName;
+}
+
+type CrowdControlContestResult = {
+  targetCharacter: CharacterRecord;
+  casterPool: number;
+  casterFaces: number[];
+  casterSuccesses: number;
+  targetPool: number;
+  targetFaces: number[];
+  targetSuccesses: number;
+  didSucceed: boolean;
+};
+
+function resolveCrowdControlContest(
+  casterCharacter: CharacterRecord,
+  targetCharacter: CharacterRecord,
+  itemsById: Record<string, import("../types/items").SharedItemRecord> = {}
+): CrowdControlContestResult {
+  const casterPool = Math.max(
+    0,
+    getCurrentStatValue(casterCharacter.sheet, "CHA", itemsById) +
+      getCurrentStatValue(casterCharacter.sheet, "INT", itemsById)
+  );
+  const targetPool = Math.max(
+    0,
+    getCurrentStatValue(targetCharacter.sheet, "CHA", itemsById) +
+      getCurrentStatValue(targetCharacter.sheet, "WITS", itemsById)
+  );
+  const casterFaces = rollD10Faces(casterPool);
+  const targetFaces = rollD10Faces(targetPool);
+  const casterSuccesses = resolveDicePool(casterFaces, casterPool).successes;
+  const targetSuccesses = resolveDicePool(targetFaces, targetPool).successes;
+
+  return {
+    targetCharacter,
+    casterPool,
+    casterFaces,
+    casterSuccesses,
+    targetPool,
+    targetFaces,
+    targetSuccesses,
+    didSucceed: casterSuccesses > targetSuccesses,
+  };
+}
+
 function normalizeStatusTagText(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, "_");
 }
@@ -77,7 +142,10 @@ function hasStatusTagId(
   view: EncounterParticipantView | CharacterRecord,
   statusId: string
 ): boolean {
-  const tags = "character" in view ? view.character?.sheet.statusTags ?? [] : view.sheet.statusTags ?? [];
+  const tags =
+    "character" in view
+      ? view.transientCombatant?.sheet.statusTags ?? view.character?.sheet.statusTags ?? []
+      : view.sheet.statusTags ?? [];
   const normalized = normalizeStatusTagText(statusId);
   return tags.some(
     (tag) =>
@@ -90,8 +158,13 @@ export function isSummonedEncounterTarget(view: EncounterParticipantView): boole
   return view.transientCombatant !== null || view.participant.summonTemplateId !== null;
 }
 
+function isUndeadEncounterTarget(view: EncounterParticipantView): boolean {
+  const sheet = view.transientCombatant?.sheet ?? view.character?.sheet ?? null;
+  return sheet ? isUndeadSheet(sheet) : false;
+}
+
 export function canEncounterTargetReceiveHealing(view: EncounterParticipantView): boolean {
-  return view.transientCombatant ? view.transientCombatant.buffRules.canBeHealed : true;
+  return isUndeadEncounterTarget(view) || (view.transientCombatant ? view.transientCombatant.buffRules.canBeHealed : true);
 }
 
 export function canEncounterTargetReceiveSingleBuff(view: EncounterParticipantView): boolean {
@@ -198,10 +271,6 @@ export function getEncounterCastTargetOptions(args: {
     return encounterParticipants.filter((view) => isFriendlyEncounterTarget(casterParticipant, view));
   }
 
-  if (selectedPower.id === "light_support" && selectedVariantId === "expose_darkness") {
-    return encounterParticipants.filter((view) => isEnemyEncounterTarget(casterParticipant, view));
-  }
-
   if (selectedPower.id === "body_reinforcement") {
     return encounterParticipants.filter(
       (view) =>
@@ -279,7 +348,7 @@ function isLivingEncounterTarget(view: EncounterParticipantView): boolean {
 }
 
 function blocksNecroticTouch(view: EncounterParticipantView): boolean {
-  const tags = view.character?.sheet.statusTags ?? [];
+  const tags = view.transientCombatant?.sheet.statusTags ?? view.character?.sheet.statusTags ?? [];
 
   return tags.some((tag) =>
     ["shadow", "incorporeal"].includes(normalizeStatusTagText(tag.id)) ||
@@ -546,28 +615,6 @@ export function prepareCastRequest(
       return { request, warnings: [] };
     }
 
-    if (payload.contestOutcome === "unresolved") {
-      return { error: "Resolve the control contest first." };
-    }
-
-    if (payload.contestOutcome === "failure") {
-      return {
-        request: {
-          ...buildPreparedCastRequest(
-            payload.casterCharacter.id,
-            finalTargets.map((targetCharacter) => targetCharacter.id),
-            0
-          ),
-          activityLogEntries: [
-            buildEncounterActivityLogEntry(
-              `Crowd Control failed on ${joinTargetNames(finalTargets)}.`
-            ),
-          ],
-        },
-        warnings: [],
-      };
-    }
-
     const runtimeLevel = getRuntimePowerLevelDefinition(
       payload.selectedPower.id,
       payload.selectedPower.level
@@ -624,13 +671,24 @@ export function prepareCastRequest(
       return { error: "At least one target is currently immune to Crowd Control." };
     }
 
+    const contestResults = finalTargets.map((targetCharacter) =>
+      resolveCrowdControlContest(
+        payload.casterCharacter,
+        targetCharacter,
+        payload.itemsById ?? {}
+      )
+    );
+    const successfulTargets = contestResults
+      .filter((result) => result.didSucceed)
+      .map((result) => result.targetCharacter);
+
     const request = buildPreparedCastRequest(
       payload.casterCharacter.id,
       finalTargets.map((targetCharacter) => targetCharacter.id),
       0
     );
 
-    request.statusTagChanges = finalTargets.flatMap((targetCharacter) => [
+    request.statusTagChanges = successfulTargets.flatMap((targetCharacter) => [
       {
         characterId: targetCharacter.id,
         operation: "add" as const,
@@ -648,7 +706,7 @@ export function prepareCastRequest(
         },
       },
     ]);
-    request.ongoingStateChanges = finalTargets.map((targetCharacter) => ({
+    request.ongoingStateChanges = successfulTargets.map((targetCharacter) => ({
       operation: "add" as const,
       state: {
         id: createTimestampedId("crowd-control"),
@@ -671,11 +729,11 @@ export function prepareCastRequest(
         summaryNote: null,
       },
     }));
-    request.activityLogEntries = [
+    request.activityLogEntries = contestResults.map((result) =>
       buildEncounterActivityLogEntry(
-        `Crowd Control seized ${finalTargets.length} target${finalTargets.length === 1 ? "" : "s"}.`
-      ),
-    ];
+        `Crowd Control: ${casterName} ${result.casterSuccesses} vs ${result.targetCharacter.sheet.name.trim() || result.targetCharacter.id} ${result.targetSuccesses} (${result.didSucceed ? "success" : "failure"}).`
+      )
+    );
 
     return {
       request,
@@ -717,38 +775,66 @@ export function prepareCastRequest(
       healingResolution.manaCost
     );
 
-    request.healingApplications = healingResolution.applications.map((application) => {
-      if (!healingResolution.overhealCapStat) {
-        return application;
-      }
-
+    request.healingApplications = healingResolution.applications.flatMap((application) => {
       const targetCharacter = finalTargets.find(
         (target) => target.id === application.targetCharacterId
       );
-      const alreadyUsed =
-        targetCharacter &&
-        getPerTargetDailyPowerUsageCount(
+
+      if (!targetCharacter || isUndeadSheet(targetCharacter.sheet)) {
+        return [];
+      }
+
+      if (!healingResolution.overhealCapStat) {
+        return [application];
+      }
+
+      const alreadyUsed = getPerTargetDailyPowerUsageCount(
           payload.casterCharacter.sheet.powerUsageState,
           POWER_USAGE_KEYS.healingOverheal,
           targetCharacter.id
         ) >= 1;
 
-      return {
-        ...application,
-        temporaryHpCap:
-          targetCharacter && !alreadyUsed
-            ? getCurrentStatValue(
-                targetCharacter.sheet,
-                healingResolution.overhealCapStat,
-                payload.itemsById ?? {}
-              )
-            : null,
-      };
+      return [
+        {
+          ...application,
+          temporaryHpCap:
+            !alreadyUsed
+              ? getCurrentStatValue(
+                  targetCharacter.sheet,
+                  healingResolution.overhealCapStat,
+                  payload.itemsById ?? {}
+                )
+              : null,
+        },
+      ];
     });
-    request.statusTagChanges = finalTargets.flatMap((targetCharacter) =>
+    request.damageApplications = healingResolution.applications.flatMap((application) => {
+      const targetCharacter = finalTargets.find(
+        (target) => target.id === application.targetCharacterId
+      );
+      if (!targetCharacter || !isUndeadSheet(targetCharacter.sheet) || application.amount <= 0) {
+        return [];
+      }
+
+      return [
+        {
+          targetCharacterId: targetCharacter.id,
+          rawAmount: application.amount,
+          damageType: "radiant",
+          mitigationChannel: "soak",
+          sourceCharacterId: payload.casterCharacter.id,
+          sourceLabel: `${payload.selectedPower.name} Lv ${payload.selectedPower.level}`,
+          sourceSummary: `Healing Reversal (${application.amount} radiant)`,
+        },
+      ];
+    });
+    const nonUndeadTargets = finalTargets.filter(
+      (targetCharacter) => !isUndeadSheet(targetCharacter.sheet)
+    );
+    request.statusTagChanges = nonUndeadTargets.flatMap((targetCharacter) =>
       buildStatusRemovalChanges(targetCharacter, healingResolution.removedStatuses)
     );
-    request.historyEntries = finalTargets.flatMap((targetCharacter) =>
+    request.historyEntries = nonUndeadTargets.flatMap((targetCharacter) =>
       healingResolution.canRegrowLimbs
         ? [
             {
@@ -962,6 +1048,7 @@ export function prepareCastRequest(
       targetMetadata: finalTargetViews.map((targetView) => ({
         characterId: targetView.participant.characterId,
         isLiving: isLivingEncounterTarget(targetView),
+        isUndead: isUndeadEncounterTarget(targetView),
         blocksNecroticTouch: blocksNecroticTouch(targetView),
       })),
       itemsById: payload.itemsById,
@@ -1002,18 +1089,14 @@ export function prepareCastRequest(
         amount: payload.selectedPower.level,
         temporaryHpCap: null,
       });
-
-      if (damageResolution.undeadHealingAmount !== null && damageResolution.undeadHealingAmount !== undefined) {
-        const targetCharacter = finalTargets[0];
-        if (targetCharacter) {
-          request.healingApplications.push({
-            targetCharacterId: targetCharacter.id,
-            amount: damageResolution.undeadHealingAmount,
-            temporaryHpCap: null,
-          });
-        }
-      }
     }
+    request.healingApplications.push(
+      ...(damageResolution.healingApplications ?? []).map((application) => ({
+        targetCharacterId: application.targetCharacterId,
+        amount: application.amount,
+        temporaryHpCap: null,
+      }))
+    );
     request.activityLogEntries = [
       buildEncounterActivityLogEntry(
         `${payload.selectedVariantId === "elemental_cantrip" ? "Elemental Cantrip" : payload.selectedVariantId === "shadow_manipulation" ? "Shadow Manipulation" : "Necrotic Touch"}: ${casterName} targeted ${joinTargetNames(finalTargets)}.`
@@ -1089,32 +1172,59 @@ export function prepareCastRequest(
       return { error: summonResolution.error };
     }
 
-    return {
-      request: {
-        ...buildPreparedCastRequest(
-          payload.casterCharacter.id,
-          [payload.casterCharacter.id],
-          summonResolution.manaCost
-        ),
+      return {
+        request: {
+          ...buildPreparedCastRequest(
+            payload.casterCharacter.id,
+            [payload.casterCharacter.id],
+            summonResolution.manaCost
+          ),
         activityLogEntries: [
           buildEncounterActivityLogEntry(
             `${payload.selectedPower.id === "shadow_control" ? "Shadow Soldier" : "Summon Undead"}: ${casterName} created ${summonResolution.summons.map((summon) => summon.sheet.name.trim() || summon.id).join(", ")}.`
           ),
         ],
-        summonChanges: [
-          ...summonResolution.dismissIds.map((summonId) => ({
-            operation: "dismiss" as const,
-            summonId,
-          })),
-          ...summonResolution.summons.map((summon, index) => ({
-            operation: "spawn" as const,
-            summon,
-            participant: summonResolution.participants[index],
-          })),
-        ],
-      },
-      warnings: [],
-    };
+          summonChanges: [
+            ...summonResolution.dismissIds.map((summonId) => ({
+              operation: "dismiss" as const,
+              summonId,
+            })),
+            ...summonResolution.summons.map((summon, index) => ({
+              operation: "spawn" as const,
+              summon,
+              participant: summonResolution.participants[index],
+            })),
+          ],
+          effects: (payload.casterCharacter.sheet.activePowerEffects ?? []).flatMap((effect) => {
+            if (!isAuraSourceEffect(effect) || getAuraShareMode(effect) !== "aura") {
+              return [];
+            }
+
+            const summonTargetIds = summonResolution.summons
+              .filter((summon) => summon.buffRules.canReceiveGroupBuffs)
+              .map((summon) => summon.id)
+              .filter((summonId) => !getAuraSelectedTargetIds(effect).includes(summonId));
+            if (summonTargetIds.length === 0) {
+              return [];
+            }
+
+            const updatedSourceEffect = {
+              ...effect,
+              sharedTargetCharacterIds: [...getAuraSelectedTargetIds(effect), ...summonTargetIds],
+            };
+
+            return [
+              updatedSourceEffect,
+              ...summonTargetIds.map((summonId) =>
+                buildLinkedAuraEffectForTarget(updatedSourceEffect, summonId, {
+                  targetDisposition: "ally",
+                })
+              ),
+            ];
+          }),
+        },
+        warnings: [],
+      };
   }
 
   if (payload.selectedPower.id === "necromancy" && payload.selectedVariantId === "resurrection") {
@@ -1196,14 +1306,33 @@ export function prepareCastRequest(
           canEncounterTargetReceiveGroupBuff(view)
       )
       .map((view) => view.participant.characterId);
-    const targetIds = Array.from(new Set([sourceEffect.casterCharacterId, ...allyTargetIds]));
+    const enemyTargetIds =
+      sourceEffect.powerId === "light_support" && sourceEffect.sourceLevel >= 5
+        ? payload.encounterParticipants
+            .filter((view) => isEnemyEncounterTarget(casterView.participant, view))
+            .map((view) => view.participant.characterId)
+        : [];
+    const targetIds = Array.from(
+      new Set([sourceEffect.casterCharacterId, ...allyTargetIds, ...enemyTargetIds])
+    );
     const updatedSourceEffect = {
       ...sourceEffect,
       sharedTargetCharacterIds: targetIds,
     };
     expandedEffects[expandedEffects.indexOf(sourceEffect)] = updatedSourceEffect;
     allyTargetIds.forEach((targetId) => {
-      expandedEffects.push(buildAuraSharedPowerEffect(updatedSourceEffect, targetId));
+      expandedEffects.push(
+        buildLinkedAuraEffectForTarget(updatedSourceEffect, targetId, {
+          targetDisposition: "ally",
+        })
+      );
+    });
+    enemyTargetIds.forEach((targetId) => {
+      expandedEffects.push(
+        buildLinkedAuraEffectForTarget(updatedSourceEffect, targetId, {
+          targetDisposition: "enemy",
+        })
+      );
     });
   }
 
@@ -1217,26 +1346,13 @@ export function prepareCastRequest(
       effects: expandedEffects,
       activityLogEntries: [
         buildEncounterActivityLogEntry(
-          `${payload.selectedPower.id === "light_support" && payload.selectedVariantId === "expose_darkness"
-            ? "Expose Darkness"
-            : payload.selectedPower.id === "light_support"
-              ? "Light Aura"
-              : "Cloak of Shadow"}: ${casterName} affected ${joinTargetNames(finalTargets)}.`
+          `${getGenericBuffActionLabel(
+            payload.selectedPower.id,
+            payload.selectedVariantId,
+            payload.selectedPower.name
+          )}: ${casterName} affected ${joinTargetNames(finalTargets)}.`
         ),
       ],
-      ongoingStateChanges:
-        payload.selectedPower.id === "light_support" && payload.selectedVariantId === "expose_darkness"
-          ? finalTargets.map((targetCharacter) => ({
-              operation: "add" as const,
-              state: {
-                id: createTimestampedId("light-support-expose"),
-                kind: "expose_darkness" as const,
-                casterCharacterId: payload.casterCharacter.id,
-                targetCharacterId: targetCharacter.id,
-                summaryNote: "Expose Darkness concentration",
-              },
-            }))
-          : [],
     },
     warnings: getReplacementWarnings(finalTargets, effects),
   };

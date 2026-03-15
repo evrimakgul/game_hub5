@@ -8,17 +8,15 @@ import type { CastOutcomeState } from "../../types/combatEncounterView";
 
 type CombatantCastFormProps = {
   state: CombatantCastState;
+  embedded?: boolean;
 };
 
-export function CombatantCastForm({ state }: CombatantCastFormProps) {
-  return (
-    <div className="dm-combatant-tool-section">
-      <p className="section-kicker">Cast Power Mechanism</p>
-      <h3 className="dm-subheading">Active Power Effects</h3>
-      {state.castablePowers.length === 0 ? (
-        <p className="dm-summary-line">This combatant has no supported castable powers in the first slice.</p>
-      ) : (
-        <>
+export function CombatantCastForm({ state, embedded = false }: CombatantCastFormProps) {
+  const content =
+    state.castablePowers.length === 0 ? (
+      <p className="dm-summary-line">This combatant has no supported castable powers in the first slice.</p>
+    ) : (
+      <>
           <div className="dm-power-form">
             <label className="dm-field">
               <span>Power</span>
@@ -119,20 +117,6 @@ export function CombatantCastForm({ state }: CombatantCastFormProps) {
                   <option value="unresolved">Resolve First</option>
                   <option value="hit">Hit</option>
                   <option value="miss">Miss</option>
-                </select>
-              </label>
-            ) : null}
-
-            {state.requiresContestOutcome ? (
-              <label className="dm-field">
-                <span>Contest</span>
-                <select
-                  value={state.contestOutcome}
-                  onChange={(event) => state.selectContestOutcome(event.target.value as "unresolved" | "success" | "failure")}
-                >
-                  <option value="unresolved">Resolve First</option>
-                  <option value="success">Success</option>
-                  <option value="failure">Failure</option>
                 </select>
               </label>
             ) : null}
@@ -254,8 +238,18 @@ export function CombatantCastForm({ state }: CombatantCastFormProps) {
           </div>
 
           {state.castError ? <p className="dm-error">{state.castError}</p> : null}
-        </>
-      )}
+      </>
+    );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <div className="dm-combatant-tool-section">
+      <p className="section-kicker">Cast Power Mechanism</p>
+      <h3 className="dm-subheading">Active Power Effects</h3>
+      {content}
     </div>
   );
 }

@@ -1,5 +1,10 @@
+import {
+  DAMAGE_TYPES,
+  RESISTANCE_LEVELS,
+} from "../../rules/resistances";
 import type { CharacterDerivedValues } from "../../config/characterRuntime";
 import type { CharacterDraft } from "../../config/characterTemplate";
+import type { PowerUsageResetScope, PowerUsageSummaryEntry } from "../../types/powerUsage";
 
 type RuntimeEditableField =
   | "currentHp"
@@ -12,6 +17,9 @@ type CharacterCombatSummaryProps = {
   sheetState: CharacterDraft;
   derived: CharacterDerivedValues;
   isDmRuntimeEditMode: boolean;
+  canManagePowerUsage: boolean;
+  powerUsageSummary: PowerUsageSummaryEntry[];
+  onResetPowerUsage: (scope: PowerUsageResetScope) => void;
   onRuntimeInput: (field: RuntimeEditableField, value: string) => void;
 };
 
@@ -19,6 +27,9 @@ export function CharacterCombatSummary({
   sheetState,
   derived,
   isDmRuntimeEditMode,
+  canManagePowerUsage,
+  powerUsageSummary,
+  onResetPowerUsage,
   onRuntimeInput,
 }: CharacterCombatSummaryProps) {
   return (
@@ -98,34 +109,94 @@ export function CharacterCombatSummary({
           <strong>{derived.rangedDamage}</strong>
         </div>
       </div>
-      {derived.activePowerEffects.length > 0 ? (
+      <div className="derived-summary-subsections">
         <div className="active-effects-panel">
           <p className="section-kicker">Active Effects</p>
-          <div className="active-effects-list">
-            {derived.activePowerEffects.map((effect) => (
-              <article key={effect.id} className="active-effect-card">
-                <strong>{effect.label}</strong>
-                <small>{effect.summary}</small>
-                <small>
-                  {effect.casterName} {"->"} {effect.powerName}
-                </small>
-              </article>
-            ))}
-          </div>
+          {derived.activePowerEffects.length === 0 ? (
+            <p className="empty-block-copy">No active effects on this sheet.</p>
+          ) : (
+            <div className="active-effects-list">
+              {derived.activePowerEffects.map((effect) => (
+                <article key={effect.id} className="active-effect-card">
+                  <strong>{effect.label}</strong>
+                  <small>{effect.summary}</small>
+                  <small>
+                    {effect.casterName} {"->"} {effect.powerName}
+                  </small>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
-      ) : null}
-      {derived.utilityTraits.length > 0 ? (
+
         <div className="active-effects-panel">
           <p className="section-kicker">Utility Traits</p>
-          <div className="active-effects-list">
-            {derived.utilityTraits.map((trait) => (
-              <article key={trait} className="active-effect-card">
-                <strong>{trait}</strong>
-              </article>
-            ))}
+          {derived.utilityTraits.length === 0 ? (
+            <p className="empty-block-copy">No utility traits on this sheet.</p>
+          ) : (
+            <div className="active-effects-list">
+              {derived.utilityTraits.map((trait) => (
+                <article key={trait} className="active-effect-card">
+                  <strong>{trait}</strong>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="active-effects-panel">
+          <p className="section-kicker">Combat Flags</p>
+          <div className="resistance-grid">
+            {DAMAGE_TYPES.map((damageType) => {
+              const level = sheetState.resistances[damageType.id];
+              const rule = RESISTANCE_LEVELS[level];
+
+              return (
+                <div key={damageType.id} className="resistance-entry">
+                  <span>{damageType.label}</span>
+                  <strong>{rule.label}</strong>
+                  <small>(x{rule.damageMultiplier})</small>
+                </div>
+              );
+            })}
           </div>
         </div>
-      ) : null}
+
+        <div className="active-effects-panel">
+          <p className="section-kicker">Power Tracking</p>
+          {powerUsageSummary.length === 0 ? (
+            <p className="empty-block-copy">No reset-tracked power counters on this sheet yet.</p>
+          ) : (
+            <div className="resistance-grid">
+              {powerUsageSummary.map((entry) => (
+                <div key={entry.id} className="resistance-entry">
+                  <span>{entry.label}</span>
+                  <strong>{entry.resetLabel}</strong>
+                  <small>{entry.detail}</small>
+                </div>
+              ))}
+            </div>
+          )}
+          {canManagePowerUsage ? (
+            <div className="dm-control-row">
+              <button
+                type="button"
+                className="flow-secondary"
+                onClick={() => onResetPowerUsage("daily")}
+              >
+                Reset Daily Uses
+              </button>
+              <button
+                type="button"
+                className="flow-secondary"
+                onClick={() => onResetPowerUsage("longRest")}
+              >
+                Reset Long Rest Uses
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </article>
   );
 }

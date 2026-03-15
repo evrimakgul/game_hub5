@@ -25,7 +25,6 @@ import {
 import type {
   CastOutcomeState,
   CastRequestPayload,
-  ContestOutcomeState,
   EncounterParticipantView,
 } from "../types/combatEncounterView";
 import type { StatId } from "../types/character";
@@ -57,7 +56,6 @@ export type CombatantCastState = {
   resolvedDamageTypeId: DamageTypeId | null;
   resolvedSummonOptionId: string | null;
   attackOutcome: CastOutcomeState;
-  contestOutcome: ContestOutcomeState;
   resolvedCastMode: CastPowerMode;
   castError: string | null;
   healingTotal: number | null;
@@ -73,14 +71,12 @@ export type CombatantCastState = {
   shouldShowBonusManaField: boolean;
   shouldShowHealingAllocationEditor: boolean;
   requiresAttackOutcome: boolean;
-  requiresContestOutcome: boolean;
   selectPower: (powerId: string) => void;
   selectVariant: (variantId: CastPowerVariantId) => void;
   toggleTarget: (targetId: string) => void;
   selectSingleTarget: (targetId: string) => void;
   selectCastMode: (mode: CastPowerMode) => void;
   selectAttackOutcome: (outcome: CastOutcomeState) => void;
-  selectContestOutcome: (outcome: ContestOutcomeState) => void;
   selectStat: (statId: string) => void;
   selectDamageType: (damageTypeId: string) => void;
   selectSummonOption: (optionId: string) => void;
@@ -99,7 +95,6 @@ export function useCombatantCastState({
   const [selectedPowerId, setSelectedPowerId] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState<CastPowerVariantId>("default");
   const [attackOutcome, setAttackOutcome] = useState<CastOutcomeState>("unresolved");
-  const [contestOutcome, setContestOutcome] = useState<ContestOutcomeState>("unresolved");
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [healingAllocations, setHealingAllocations] = useState<Record<string, string>>({});
   const [selectedStatId, setSelectedStatId] = useState("");
@@ -202,8 +197,6 @@ export function useCombatantCastState({
     resolvedTargetIds.length > 0;
   const requiresAttackOutcome =
     selectedPower?.id === "necromancy" && resolvedVariantId === "necrotic_touch";
-  const requiresContestOutcome =
-    selectedPower?.id === "crowd_control" && resolvedVariantId === "crowd_control";
 
   useEffect(() => {
     if (castablePowers.length === 0) {
@@ -231,7 +224,6 @@ export function useCombatantCastState({
 
   useEffect(() => {
     setAttackOutcome("unresolved");
-    setContestOutcome("unresolved");
   }, [selectedPower?.id, resolvedVariantId, resolvedSingleTargetId]);
 
   useEffect(() => {
@@ -284,9 +276,7 @@ export function useCombatantCastState({
 
       if (validTargetIds.length === 0) {
         const fallbackTargetIds =
-          selectedPower?.id === "light_support" && resolvedVariantId === "expose_darkness"
-            ? targetOptions.map(({ participant }) => participant.characterId).slice(0, targetLimit)
-            : selectedPower?.id === "crowd_control" && resolvedVariantId === "release_control"
+          selectedPower?.id === "crowd_control" && resolvedVariantId === "release_control"
               ? targetOptions.map(({ participant }) => participant.characterId).slice(0, targetLimit)
               : [targetOptions[0]?.participant.characterId ?? view.participant.characterId];
 
@@ -424,7 +414,6 @@ export function useCombatantCastState({
       healingAllocations: resolvedHealingAllocations,
       selectedStatId: resolvedSelectedStatId || null,
       castMode: resolvedCastMode,
-      contestOutcome,
       selectedDamageType: resolvedDamageTypeId,
       bonusManaSpend,
       selectedSummonOptionId: resolvedSummonOptionId,
@@ -454,7 +443,6 @@ export function useCombatantCastState({
     resolvedDamageTypeId,
     resolvedSummonOptionId,
     attackOutcome,
-    contestOutcome,
     resolvedCastMode,
     castError,
     healingTotal,
@@ -473,14 +461,12 @@ export function useCombatantCastState({
     shouldShowBonusManaField: maxBonusManaSpend > 0,
     shouldShowHealingAllocationEditor,
     requiresAttackOutcome,
-    requiresContestOutcome,
     selectPower: setSelectedPowerId,
     selectVariant: setSelectedVariantId,
     toggleTarget,
     selectSingleTarget: (targetId) => setSelectedTargetIds([targetId]),
     selectCastMode: setSelectedCastMode,
     selectAttackOutcome: setAttackOutcome,
-    selectContestOutcome: setContestOutcome,
     selectStat: setSelectedStatId,
     selectDamageType: setSelectedDamageType,
     selectSummonOption: setSelectedSummonOptionId,

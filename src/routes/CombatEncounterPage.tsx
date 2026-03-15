@@ -19,15 +19,15 @@ import {
 } from "../lib/combatEncounterCasting";
 import {
   preparePhysicalAttackRequest,
-  type PhysicalAttackProfileId,
 } from "../lib/combatEncounterPhysicalAttacks";
+import {
+  prepareBodyReinforcementReviveRequest,
+} from "../lib/combatEncounterSpecialActions.ts";
 import { rollD10Faces } from "../lib/dice";
 import { createTimestampedId } from "../lib/ids.ts";
 import { prependGameHistoryEntry } from "../lib/historyEntries";
 import { buildItemIndex } from "../lib/items.ts";
 import {
-  POWER_USAGE_KEYS,
-  getPowerUsageCount,
   incrementPerTargetDailyPowerUsageCount,
   incrementPowerUsageCount,
   setLongRestSelection,
@@ -535,76 +535,13 @@ export function CombatEncounterPage() {
     const nextOngoingStates = currentEncounter.ongoingStates.reduce<
       NonNullable<typeof activeCombatEncounter>["ongoingStates"]
     >((states, state) => {
-      if (state.kind !== "body_reinforcement_revive") {
-        states.push(state);
+      if (state.kind === "body_reinforcement_revive") {
         return states;
       }
 
-      const targetSheet = resolveEncounterSheet(currentEncounter, state.characterId);
-      if (!targetSheet || targetSheet.currentHp > 0 || targetSheet.currentHp < -5) {
-        return states;
-      }
-
-      if (state.remainingTurnAdvances <= 1) {
-        updateEncounterCharacter(state.characterId, (sheet) => ({
-          ...sheet,
-          currentHp: Math.max(sheet.currentHp, state.reviveHp),
-          powerUsageState: incrementPowerUsageCount(
-            sheet.powerUsageState,
-            "daily",
-            POWER_USAGE_KEYS.bodyReinforcementRevive,
-            1
-          ),
-        }));
-        turnLogEntries.push(
-          buildEncounterLogEntry(
-            `Body Reinforcement revived ${currentEncounter.participants.find((participant) => participant.characterId === state.characterId)?.displayName ?? state.characterId}.`
-          )
-        );
-        return states;
-      }
-
-      states.push({
-        ...state,
-        remainingTurnAdvances: state.remainingTurnAdvances - 1,
-      });
+      states.push(state);
       return states;
     }, []);
-
-    currentEncounter.participants.forEach((participant) => {
-      const sheet = resolveEncounterSheet(currentEncounter, participant.characterId);
-      if (!sheet) {
-        return;
-      }
-
-      const bodyReinforcementLevel =
-        sheet.powers.find((power) => power.id === "body_reinforcement")?.level ?? 0;
-      const reviveAlreadyTracked = nextOngoingStates.some(
-        (state) => state.kind === "body_reinforcement_revive" && state.characterId === participant.characterId
-      );
-      const reviveAlreadyUsed =
-        getPowerUsageCount(
-          sheet.powerUsageState,
-          "daily",
-          POWER_USAGE_KEYS.bodyReinforcementRevive
-        ) >= 1;
-
-      if (
-        bodyReinforcementLevel >= 2 &&
-        sheet.currentHp <= 0 &&
-        sheet.currentHp >= -5 &&
-        !reviveAlreadyTracked &&
-        !reviveAlreadyUsed
-      ) {
-        nextOngoingStates.push({
-          id: `body-reinforcement-revive:${participant.characterId}`,
-          kind: "body_reinforcement_revive",
-          characterId: participant.characterId,
-          reviveHp: bodyReinforcementLevel >= 5 ? 4 : 1,
-          remainingTurnAdvances: 1,
-        });
-      }
-    });
 
     const maintainedCrowdControlStates = nextOngoingStates.filter(
       (state): state is Extract<(typeof nextOngoingStates)[number], { kind: "crowd_control" }> =>
@@ -835,6 +772,10 @@ export function CombatEncounterPage() {
       });
     });
 
+    updateCombatEncounter((currentEncounter) => {
+      return mergeEncounterStructuralChanges(currentEncounter, request, brokenCrowdControlStates);
+    });
+
     const auraSourceEffects = request.effects.filter((effect) => isAuraSourceEffect(effect));
     auraSourceEffects.forEach((sourceEffect) => {
       (casterCharacter.sheet.activePowerEffects ?? [])
@@ -858,10 +799,6 @@ export function CombatEncounterPage() {
       updateEncounterCharacter(effect.targetCharacterId, (currentSheet) =>
         applyActivePowerEffect(currentSheet, effect)
       );
-    });
-
-    updateCombatEncounter((currentEncounter) => {
-      return mergeEncounterStructuralChanges(currentEncounter, request, brokenCrowdControlStates);
     });
 
     return null;
@@ -891,8 +828,6 @@ export function CombatEncounterPage() {
   function requestPhysicalAttack(payload: {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
-    profileId: PhysicalAttackProfileId;
-    landedHits: number;
   }): string | null {
     const casterCharacter = payload.casterView.character;
     const targetCharacter = payload.targetView.character;
@@ -903,9 +838,25 @@ export function CombatEncounterPage() {
     const prepared = preparePhysicalAttackRequest({
       casterCharacter,
       targetCharacter,
-      profileId: payload.profileId,
-      landedHits: payload.landedHits,
       itemsById,
+    });
+    if ("error" in prepared) {
+      return prepared.error;
+    }
+
+    return executePreparedCast(prepared.request);
+  }
+
+  function requestBodyReinforcementRevive(payload: {
+    view: EncounterParticipantView;
+  }): string | null {
+    const character = payload.view.character;
+    if (!character) {
+      return "The selected combatant no longer resolves to a character sheet.";
+    }
+
+    const prepared = prepareBodyReinforcementReviveRequest({
+      character,
     });
     if ("error" in prepared) {
       return prepared.error;
@@ -1082,9 +1033,11 @@ export function CombatEncounterPage() {
 
           <EncounterInitiativePanel
               encounterParticipants={encounterParticipants}
+              itemsById={itemsById}
               openCharacterSheet={openCharacterSheet}
               requestCast={requestCast}
               requestPhysicalAttack={requestPhysicalAttack}
+              requestBodyReinforcementRevive={requestBodyReinforcementRevive}
               updateCharacter={updateEncounterCharacter}
             />
         </section>

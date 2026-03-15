@@ -658,6 +658,12 @@
   margin-top: 16px;
 }
 
+.derived-summary-subsections {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
 .active-effects-list {
   display: grid;
   gap: 8px;

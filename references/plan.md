@@ -1,4 +1,4 @@
-# Roadmap Reset v9 (Combat Encounter Fixes + Shared Item Model)
+# Roadmap Reset v10 (Phase 1 Combat Encounter Completion)
 
 This roadmap is the active implementation source of truth for this branch.
 
@@ -25,72 +25,23 @@ This roadmap is the active implementation source of truth for this branch.
   - `Elementalist`
 - Encounter-only transient summons and ongoing maintained states already exist, but need correction in this phase.
 
-## Completed Phase 1: Combat Encounter Fixes
+## Completed Phase 1: Combat Encounter Completion
 
-### 1.1 Shadow Control
-- Add a real `Shadow Walk` cast option at level 5.
-- Keep it as a non-damaging mobility action in encounter scope.
-- Use the power-defined range and log the action cleanly.
-- Verify consistency with `Chain of Shadows`, `Shadow Manipulation`, and `Shadow Soldier`.
+### 1.1 Completed Fixes
+- Encounter log labels for generic buff casts now use the real power or action name.
+- `Shadow Soldier` summon actions now consume mana correctly.
+- `Crowd Control` casting now auto-resolves in-system using `CHA + INT` for the caster and `CHA + WITS` for each target.
+- Undead handling now inverts healing and necrotic effects: healing damages undead and necrotic heals undead.
 
-### 1.2 Healing
-- Split `Heal` and `Cure` into separate encounter actions from level 3 onward.
-- `Heal` mana cost is always `2`.
-- `Cure` is available from level 3 and always costs `3`.
-- Preserve healing cantrip rule as `2 uses per target per day`.
-- Fix any level-based cast UI or runtime logic that still merges `Heal` and `Cure`.
+### 1.2 Completed Aura and Summon Rules
+- If `Cloak of Shadow` aura is already active, newly created allied `Shadow Soldier` summons inherit it automatically.
+- `Light Support` level `5` enemy debuffing is now the enemy-side portion of `Light Aura`, not a separate `Expose Darkness` cast.
+- Aura target management can add or remove both ally buffs and enemy debuffs from the same aura source.
 
-### 1.3 Necromancy and Shadow Soldier
-- Verify summon buff rules:
-  - skeletons and skeleton king must not receive single or group buffs
-  - zombie may receive group buffs
-  - shadow soldier may receive buffs
-- Decide healing-vs-undead behavior for this branch:
-  - summoned undead and shadow summons remain non-healable
-  - standard healing powers do not invert into damage against undead unless explicitly added later
-- Add `Remove Summon` / dismiss action for necromancy summons.
-- Add `Remove Summon` / dismiss action for `Shadow Soldier`.
-
-### 1.4 Light Support
-- Fix `Expose Darkness` targeting.
-- It must target enemies only: all combatants in non-caster parties.
-- It must ignore allies.
-- Keep ally bonus behavior on Light aura separate from enemy debuff behavior.
-
-### 1.5 Crowd Control
-- Add a cancel / release target action.
-- Summons must not be valid `Crowd Control` targets.
-- Initial cast costs `0`; upkeep only spends mana.
-- Upkeep cost scales by maintained target count.
-- `Advance Turn` must process upkeep and release consistently.
-
-### 1.6 Elementalist
-- Audit and fix target filtering so summon and entity behavior is consistent.
-- Resolve the observed inconsistency where `Zombie` is targetable but `Shadow Soldier` is not.
-- Keep only rule-based exclusions.
-
-### 1.7 Aura Lifecycle
-- Aura cast defaults to all allies on initial cast where aura-sharing is allowed.
-- After initial cast, targets remain addable/removable individually.
-- If the original aura source disappears, dies, or self-cancels, all linked aura effects must be removed from allies.
-
-### 1.8 Physical Combat Resolution
-- Add clickable physical attack actions to the combat encounter.
-- Temporary assumptions for now:
-  - brawl: `2` attacks, base damage `STR`
-  - one one-handed weapon: `1` attack, base damage `STR + 2`
-  - two one-handed weapons: `2` attacks, attack DC `7`, base damage `STR + 2`
-  - two-handed weapon: `1` attack, base damage `STR + 6`
-  - bow: `1` attack, base damage `5`
-- Build this so the later item system can replace the temporary rules cleanly.
-
-### 1.9 Encounter Action Resolution and Activity Log
-- Extend encounter action handling for clickable magical attack resolution:
-  - `Necrotic Touch`
-  - `Crowd Control`
-  - other targeted magical actions already on the page
-- Keep target selection, hit/contest outcome, effect application, and upkeep linkage aligned.
-- Add a minimal encounter activity log for action summaries because physical and magical action resolution now require visible runtime feedback.
+### 1.3 Completed Encounter UI Fixes
+- Encounter displays now show only one visible `Crowd Control` status tag: `Controlled by <caster>`.
+- Inline `Physical Attacks` and `Cast Power Mechanism` sections were replaced with a single `Actions` popover/button.
+- Encounter history now opens at `3` visible rows minimum, can be resized taller, and caps at `18` rows.
 
 ## Completed Phase 2: Shared Item Model Basics
 
@@ -124,15 +75,38 @@ This roadmap is the active implementation source of truth for this branch.
 - Item bonuses must apply based on the character currently using / equipping the item, not the owner.
 - Keep the model aligned with combat, sheet rendering, and future persistence.
 
+## Completed Follow-Up: Character Sheet and Encounter Action Flow
+
+### 3.1 Derived Summary Consolidation
+- `Active Effects`, `Utility Traits`, `Combat Flags`, and `Power Tracking` now live under `Derived Summary`.
+- `CharacterResources` is reduced back to stored resource state only.
+
+### 3.2 Automatic Physical Attacks
+- Encounter physical attacks now infer the active profile from equipped weapon hand slots.
+- If no weapon is equipped, use `brawl / fists`.
+- If an equipped weapon is explicitly typed as `brawl`, use the brawl profile.
+- Physical attacks now auto-resolve hit, marginal, damage, DR mitigation, and encounter activity logging in-system.
+
+### 3.3 Manual Body Reinforcement Trigger
+- `Body Reinforcement` revive is no longer scheduled automatically on turn advance.
+- The encounter UI now exposes a manual trigger with visible eligibility text.
+- The trigger is available only when:
+  - `Body Reinforcement` is at least level `2`
+  - current HP is between `0` and `-5`
+  - the daily revive use is still unspent
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`
   - `npm test`
   - `npm run build`
+- Do not mark a task complete until all three pass after that change group.
+- If a pre-existing test failure appears, log and isolate it before continuing.
 - Keep tracking files current after every task.
 - Update this roadmap when implementation reality changes.
 
 ## Deferred
+- `ARCH-REM-01` Later extract an encounter controller/engine layer from `CombatEncounterPage.tsx` so cast execution, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation move out of the route while the route stays focused on state wiring and rendering.
 - Full item-authoring workflow and richer item bonus editors.
 - Full multi-target `AA` knowledge-sharing UI.
 - Encounter persistence and backend sync.

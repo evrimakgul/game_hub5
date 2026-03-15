@@ -1663,7 +1663,8 @@
               "options": [
                 {
                   "template_id": "shadow_soldier",
-                  "quantity": 1
+                  "quantity": 1,
+                  "mana_cost": 4
                 }
               ]
             }

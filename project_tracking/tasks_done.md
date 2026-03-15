@@ -28,3 +28,16 @@
 - `P2-04` Wire item bonus application hooks and minimal engine integration without overbuilding UI.
 - `V1-01` Expand tests for encounter fixes, action resolution, and shared item model behavior.
 - `V1-02` Reconcile `plan.md`, tracking files, and notes with the implemented result.
+- `NOTE 2026-03-15` Phase 1 combat encounter work reopened for a follow-up correction pass. Existing done items remain historical checkpoints and are being supplemented by the remaining actionable items in `tasks_todo.md`.
+- `P1-BUG-01` Fixed generic encounter buff log labels so they use the real action name, including `Body Reinforcement`.
+- `P1-BUG-03` Fixed `Shadow Soldier` summon mana resolution and covered it with summon-cost tests.
+- `P1-RULE-04` Reworked `Crowd Control` encounter casting to auto-resolve the contest in-system using caster `CHA + INT` vs target `CHA + WITS`, removed manual contest selection, and added success/failure/tie tests.
+- `P1-RULE-01` Finalized undead interaction rules so healing damages undead, necrotic heals undead, and summon sheets now carry undead/shadow classification tags.
+- `P1-RULE-02` Active `Cloak of Shadow` aura sources now auto-extend to newly created allied `Shadow Soldier` summons.
+- `P1-RULE-03` Folded `Expose Darkness` into `Light Aura` level five so ally buffs and enemy-party debuffs come from one cast and one aura source.
+- `P1-BUG-02` Adjusted encounter snapshot status-tag presentation so Crowd Control shows only `Controlled by <caster>` and suppresses duplicate `Paralyzed`.
+- `P1-UI-01` Replaced inline encounter `Physical Attacks` and `Cast Power Mechanism` sections with a single `Actions` popover while keeping `Character Sheet`, `Actions`, and `Applied Effects` as the top-level layout.
+- `P1-UI-02` Fixed encounter history sizing so it opens at three visible rows, remains vertically resizable, and caps at eighteen rows.
+- `CS-UI-01` Moved `Active Effects`, `Utility Traits`, `Combat Flags`, and `Power Tracking` into `Derived Summary` as always-visible subsections and reduced `CharacterResources` to stored resources only.
+- `CS-RULE-01` Replaced manual-assisted physical attacks with automatic loadout-driven resolution, canonical hand-slot inference, automatic hit and damage rolls, DR mitigation, and detailed encounter activity logging.
+- `CS-UX-01` Replaced automatic `Body Reinforcement` cantrip revival with a visible manual encounter trigger, clear eligibility text, and focused regression coverage.

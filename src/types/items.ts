@@ -65,6 +65,18 @@ export type CharacterEquipmentReference = {
   itemId: string | null;
 };
 
+export const WEAPON_HAND_SLOT_IDS = ["weapon_primary", "weapon_secondary"] as const;
+export type WeaponHandSlotId = (typeof WEAPON_HAND_SLOT_IDS)[number];
+
+export const WEAPON_HAND_SLOT_LABELS: Record<WeaponHandSlotId, string> = {
+  weapon_primary: "Primary Hand",
+  weapon_secondary: "Secondary Hand",
+};
+
+export function isWeaponHandSlotId(value: unknown): value is WeaponHandSlotId {
+  return typeof value === "string" && WEAPON_HAND_SLOT_IDS.includes(value as WeaponHandSlotId);
+}
+
 export type ItemModifierSource = {
   targetType: "stat" | "skill" | "derived" | "resistance";
   targetId: string;

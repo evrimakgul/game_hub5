@@ -1,10 +1,10 @@
 import { buildEncounterCombatantViewModel } from "../../selectors/encounterViewModel";
-import type { PhysicalAttackProfileId } from "../../lib/combatEncounterPhysicalAttacks";
 import type {
   CastRequestPayload,
   CharacterSheetUpdater,
   EncounterParticipantView,
 } from "../../types/combatEncounterView";
+import type { SharedItemRecord } from "../../types/items";
 import { CombatantPowerControls } from "./CombatantPowerControls";
 import { CombatantRuntimeAdjustments } from "./CombatantRuntimeAdjustments";
 
@@ -12,13 +12,15 @@ type EncounterCombatantCardProps = {
   index: number;
   view: EncounterParticipantView;
   encounterParticipants: EncounterParticipantView[];
+  itemsById: Record<string, SharedItemRecord>;
   openCharacterSheet: (characterId: string, ownerRole: "player" | "dm") => void;
   requestCast: (payload: CastRequestPayload) => string | null;
   requestPhysicalAttack: (payload: {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
-    profileId: PhysicalAttackProfileId;
-    landedHits: number;
+  }) => string | null;
+  requestBodyReinforcementRevive: (payload: {
+    view: EncounterParticipantView;
   }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
@@ -27,9 +29,11 @@ export function EncounterCombatantCard({
   index,
   view,
   encounterParticipants,
+  itemsById,
   openCharacterSheet,
   requestCast,
   requestPhysicalAttack,
+  requestBodyReinforcementRevive,
   updateCharacter,
 }: EncounterCombatantCardProps) {
   const combatant = buildEncounterCombatantViewModel(view);
@@ -76,8 +80,10 @@ export function EncounterCombatantCard({
               <CombatantPowerControls
                 view={view}
                 encounterParticipants={encounterParticipants}
+                itemsById={itemsById}
                 requestCast={requestCast}
                 requestPhysicalAttack={requestPhysicalAttack}
+                requestBodyReinforcementRevive={requestBodyReinforcementRevive}
                 updateCharacter={updateCharacter}
               />
             </div>

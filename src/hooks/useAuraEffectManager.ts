@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 
 import {
   applyActivePowerEffect,
-  buildAuraSharedPowerEffect,
+  buildLinkedAuraEffectForTarget,
   doesActivePowerEffectConflict,
   isAuraSharedEffect,
   isAuraSourceEffect,
@@ -80,6 +80,46 @@ export function useAuraEffectManager({
     return (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ?? sourceEffect;
   }
 
+  function getCasterPartyId(sourceEffect: ActivePowerEffect): string | null {
+    return (
+      encounterParticipants.find(
+        ({ participant }) => participant.characterId === sourceEffect.casterCharacterId
+      )?.participant.partyId ?? null
+    );
+  }
+
+  function isEnemyLightAuraTarget(
+    sourceEffect: ActivePowerEffect,
+    targetView: EncounterParticipantView
+  ): boolean {
+    const casterPartyId = getCasterPartyId(sourceEffect);
+    return (
+      sourceEffect.powerId === "light_support" &&
+      sourceEffect.sourceLevel >= 5 &&
+      targetView.participant.partyId !== null &&
+      casterPartyId !== null &&
+      targetView.participant.partyId !== casterPartyId
+    );
+  }
+
+  function canSelectAuraTarget(
+    sourceEffect: ActivePowerEffect,
+    targetView: EncounterParticipantView
+  ): boolean {
+    if (targetView.character === null) {
+      return false;
+    }
+
+    if (targetView.participant.characterId === sourceEffect.casterCharacterId) {
+      return true;
+    }
+
+    return (
+      canEncounterTargetReceiveGroupBuff(targetView) ||
+      isEnemyLightAuraTarget(sourceEffect, targetView)
+    );
+  }
+
   function applyAuraTargets(sourceEffect: ActivePowerEffect, rawTargetIds: string[]): void {
     const latestSourceEffect = getLatestSourceEffect(sourceEffect);
     if (!latestSourceEffect) {
@@ -94,8 +134,7 @@ export function useAuraEffectManager({
             encounterParticipants.some(
               (view) =>
                 view.participant.characterId === targetId &&
-                view.character !== null &&
-                canEncounterTargetReceiveGroupBuff(view)
+                canSelectAuraTarget(latestSourceEffect, view)
             )
         )
       )
@@ -131,7 +170,15 @@ export function useAuraEffectManager({
         return;
       }
 
-      const nextSharedEffect = buildAuraSharedPowerEffect(latestSourceEffect, targetId);
+      const targetView =
+        encounterParticipants.find(({ participant }) => participant.characterId === targetId) ?? null;
+      if (!targetView) {
+        return;
+      }
+
+      const nextSharedEffect = buildLinkedAuraEffectForTarget(latestSourceEffect, targetId, {
+        targetDisposition: isEnemyLightAuraTarget(latestSourceEffect, targetView) ? "enemy" : "ally",
+      });
       const conflictingAura = (targetCharacter.sheet.activePowerEffects ?? []).find(
         (candidate) =>
           isAuraSharedEffect(candidate) &&
@@ -221,7 +268,7 @@ export function useAuraEffectManager({
     }
     const targetView =
       encounterParticipants.find(({ participant }) => participant.characterId === targetId) ?? null;
-    if (!targetView || !canEncounterTargetReceiveGroupBuff(targetView)) {
+    if (!targetView || !canSelectAuraTarget(latestSourceEffect, targetView)) {
       return;
     }
 

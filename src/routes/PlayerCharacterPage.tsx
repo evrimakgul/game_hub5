@@ -385,9 +385,6 @@ export function PlayerCharacterPage({
             sheetState={sheetState}
             derived={derived}
             isDmRuntimeEditMode={isDmRuntimeEditMode}
-            canManagePowerUsage={!isReadOnlyView}
-            powerUsageSummary={powerUsageSummary}
-            onResetPowerUsage={mutations.resetPowerUsage}
             onRuntimeInput={mutations.handleRuntimeInput}
           />
 
@@ -395,6 +392,9 @@ export function PlayerCharacterPage({
             sheetState={sheetState}
             derived={derived}
             isDmRuntimeEditMode={isDmRuntimeEditMode}
+            canManagePowerUsage={!isReadOnlyView}
+            powerUsageSummary={powerUsageSummary}
+            onResetPowerUsage={mutations.resetPowerUsage}
             onRuntimeInput={mutations.handleRuntimeInput}
           />
 
@@ -451,6 +451,7 @@ export function PlayerCharacterPage({
             onIdentifySharedItem={mutations.identifySharedItem}
             onMaskSharedItem={mutations.maskSharedItem}
             onDeleteSharedItem={mutations.deleteSharedItem}
+            onUpdateWeaponHandSlotItem={mutations.updateWeaponHandSlotItem}
             onUpdateEquipmentEntry={mutations.updateEquipmentEntry}
             onAddEquipmentEntry={mutations.addEquipmentEntry}
             onRemoveEquipmentEntry={mutations.removeEquipmentEntry}

@@ -1,4 +1,5 @@
 import type { CharacterDraft } from "../config/characterTemplate";
+import type { SharedItemRecord, WeaponHandSlotId } from "../types/items.ts";
 
 type LinkItemOptions = {
   owned?: boolean;
@@ -7,6 +8,77 @@ type LinkItemOptions = {
 };
 
 export type EquipmentReferenceField = "slot" | "itemId";
+
+function upsertEquipmentSlotValue(
+  sheet: CharacterDraft,
+  slot: string,
+  itemId: string | null
+): CharacterDraft {
+  const existingIndex = sheet.equipment.findIndex((entry) => entry.slot === slot);
+  const normalizedItemId = itemId && itemId.trim().length > 0 ? itemId : null;
+
+  if (existingIndex >= 0) {
+    return {
+      ...sheet,
+      equipment: sheet.equipment.map((entry, index) =>
+        index === existingIndex ? { ...entry, itemId: normalizedItemId } : entry
+      ),
+    };
+  }
+
+  return {
+    ...sheet,
+    equipment: [...sheet.equipment, { slot, itemId: normalizedItemId }],
+  };
+}
+
+function clearWeaponHandSlot(sheet: CharacterDraft, slot: WeaponHandSlotId): CharacterDraft {
+  return upsertEquipmentSlotValue(sheet, slot, null);
+}
+
+function itemOccupiesBothWeaponHands(item: SharedItemRecord | null | undefined): boolean {
+  return (
+    !!item &&
+    item.category === "weapon" &&
+    (item.subtype === "two_handed" || item.subtype === "oversized" || item.subtype === "bow")
+  );
+}
+
+export function setCharacterWeaponHandSlotItem(
+  sheet: CharacterDraft,
+  slot: WeaponHandSlotId,
+  itemId: string,
+  itemsById: Record<string, SharedItemRecord>
+): CharacterDraft {
+  const normalizedItemId = itemId.trim().length > 0 ? itemId : null;
+  const oppositeSlot = slot === "weapon_primary" ? "weapon_secondary" : "weapon_primary";
+  const nextItem = normalizedItemId ? itemsById[normalizedItemId] ?? null : null;
+  const currentSlotItemId =
+    sheet.equipment.find((entry) => entry.slot === slot)?.itemId ?? null;
+  const currentSlotItem = currentSlotItemId ? itemsById[currentSlotItemId] ?? null : null;
+  const oppositeSlotItemId =
+    sheet.equipment.find((entry) => entry.slot === oppositeSlot)?.itemId ?? null;
+  const oppositeSlotItem = oppositeSlotItemId ? itemsById[oppositeSlotItemId] ?? null : null;
+
+  if (!normalizedItemId) {
+    const cleared = clearWeaponHandSlot(sheet, slot);
+    return itemOccupiesBothWeaponHands(currentSlotItem) && currentSlotItemId === oppositeSlotItemId
+      ? clearWeaponHandSlot(cleared, oppositeSlot)
+      : cleared;
+  }
+
+  let nextSheet = upsertEquipmentSlotValue(sheet, slot, normalizedItemId);
+
+  if (itemOccupiesBothWeaponHands(nextItem)) {
+    return upsertEquipmentSlotValue(nextSheet, oppositeSlot, normalizedItemId);
+  }
+
+  if (itemOccupiesBothWeaponHands(oppositeSlotItem) || oppositeSlotItemId === currentSlotItemId) {
+    nextSheet = clearWeaponHandSlot(nextSheet, oppositeSlot);
+  }
+
+  return nextSheet;
+}
 
 function appendUnique(values: string[], nextValue: string): string[] {
   if (!nextValue.trim()) {

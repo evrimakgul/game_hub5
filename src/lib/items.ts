@@ -10,6 +10,12 @@ import type {
   ItemModifierSource,
   ItemSubtype,
   SharedItemRecord,
+  WeaponHandSlotId,
+} from "../types/items.ts";
+import {
+  WEAPON_HAND_SLOT_IDS,
+  WEAPON_HAND_SLOT_LABELS,
+  isWeaponHandSlotId,
 } from "../types/items.ts";
 
 type ItemProfile = BonusProfile;
@@ -428,6 +434,58 @@ export function getEquippedItemIds(sheet: CharacterDraft): string[] {
   return (sheet.equipment ?? [])
     .map((entry: CharacterEquipmentReference) => entry.itemId)
     .filter((itemId): itemId is string => typeof itemId === "string" && itemId.length > 0);
+}
+
+export function getEquipmentEntryBySlot(
+  sheet: CharacterDraft,
+  slotId: string
+): CharacterEquipmentReference | null {
+  return sheet.equipment.find((entry) => entry.slot === slotId) ?? null;
+}
+
+export function getEquipmentItemBySlot(
+  sheet: CharacterDraft,
+  slotId: string,
+  itemsById: Record<string, SharedItemRecord>
+): SharedItemRecord | null {
+  const itemId = getEquipmentEntryBySlot(sheet, slotId)?.itemId ?? null;
+  return itemId ? itemsById[itemId] ?? null : null;
+}
+
+export function getWeaponHandSlotLabel(slotId: WeaponHandSlotId): string {
+  return WEAPON_HAND_SLOT_LABELS[slotId];
+}
+
+export function getOtherEquipmentEntries(sheet: CharacterDraft): CharacterEquipmentReference[] {
+  return (sheet.equipment ?? []).filter((entry) => !isWeaponHandSlotId(entry.slot));
+}
+
+export function itemOccupiesBothWeaponHands(item: SharedItemRecord | null): boolean {
+  if (!item || item.category !== "weapon") {
+    return false;
+  }
+
+  return item.subtype === "two_handed" || item.subtype === "oversized" || item.subtype === "bow";
+}
+
+export function getEquippedWeaponHandItems(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord>
+): Record<WeaponHandSlotId, SharedItemRecord | null> {
+  return {
+    weapon_primary: getEquipmentItemBySlot(sheet, "weapon_primary", itemsById),
+    weapon_secondary: getEquipmentItemBySlot(sheet, "weapon_secondary", itemsById),
+  };
+}
+
+export function getLegacyEquippedWeaponItems(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord>
+): SharedItemRecord[] {
+  return (sheet.equipment ?? [])
+    .filter((entry) => !WEAPON_HAND_SLOT_IDS.includes(entry.slot as WeaponHandSlotId))
+    .map((entry) => (entry.itemId ? itemsById[entry.itemId] ?? null : null))
+    .filter((item): item is SharedItemRecord => item !== null && item.category === "weapon");
 }
 
 export function getApplicableItemIds(sheet: CharacterDraft): string[] {

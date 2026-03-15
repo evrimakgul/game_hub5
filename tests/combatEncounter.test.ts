@@ -76,6 +76,20 @@ export async function runCombatEncounterTests(): Promise<void> {
         );
       },
     },
+    {
+      name: "character encounter snapshot suppresses paralyzed when crowd control tag is present",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.statusTags = [
+          { id: "paralyzed", label: "Paralyzed" },
+          { id: "crowd_control:caster-1", label: "Controlled by t2" },
+        ];
+
+        const snapshot = buildCharacterEncounterSnapshot(sheet);
+
+        assert.deepEqual(snapshot.statusTags, ["Controlled by t2"]);
+      },
+    },
   ]);
 }
 

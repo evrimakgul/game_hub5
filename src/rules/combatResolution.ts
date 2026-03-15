@@ -7,6 +7,22 @@ import { RESISTANCE_LEVELS, type DamageTypeId } from "./resistances.ts";
 import type { DamageMitigationChannel } from "./powerEffects.ts";
 import type { SharedItemRecord } from "../types/items.ts";
 
+function normalizeStatusTag(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+export function hasSheetStatusTag(sheet: CharacterDraft, statusId: string): boolean {
+  const normalized = normalizeStatusTag(statusId);
+  return (sheet.statusTags ?? []).some(
+    (tag) =>
+      normalizeStatusTag(tag.id) === normalized || normalizeStatusTag(tag.label) === normalized
+  );
+}
+
+export function isUndeadSheet(sheet: CharacterDraft): boolean {
+  return hasSheetStatusTag(sheet, "undead");
+}
+
 export function applyHealingToSheet(
   sheet: CharacterDraft,
   amount: number,

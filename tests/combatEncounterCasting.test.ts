@@ -15,7 +15,6 @@ import type { CharacterRecord } from "../src/types/character.ts";
 import type {
   EncounterParticipantView,
   CastOutcomeState,
-  ContestOutcomeState,
 } from "../src/types/combatEncounterView.ts";
 import type { EncounterTransientCombatant } from "../src/types/combatEncounter.ts";
 import { runTestSuite } from "./harness.ts";
@@ -28,7 +27,7 @@ function createCharacterRecord(
     powers?: CharacterRecord["sheet"]["powers"];
     currentHp?: number;
     statusTags?: CharacterRecord["sheet"]["statusTags"];
-    stats?: Partial<Record<"APP" | "INT" | "DEX" | "WITS" | "STAM", number>>;
+    stats?: Partial<Record<"APP" | "CHA" | "INT" | "DEX" | "WITS" | "STAM", number>>;
   }
 ): CharacterRecord {
   const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
@@ -80,7 +79,6 @@ function preparePayload(options: {
   selectedTargetIds: string[];
   variantId?: CastPowerVariantId;
   attackOutcome?: CastOutcomeState;
-  contestOutcome?: ContestOutcomeState;
   selectedDamageType?: "fire" | "cold" | "lightning" | "acid" | "necrotic";
   selectedSummonOptionId?: string | null;
 }): Parameters<typeof prepareCastRequest>[0] {
@@ -90,7 +88,6 @@ function preparePayload(options: {
     selectedPower: options.selectedPower,
     selectedVariantId: options.variantId ?? "default",
     attackOutcome: options.attackOutcome ?? "unresolved",
-    contestOutcome: options.contestOutcome ?? "unresolved",
     selectedTargetIds: options.selectedTargetIds,
     fallbackTargetIds: options.selectedTargetIds,
     healingAllocations: {},
@@ -101,6 +98,22 @@ function preparePayload(options: {
     selectedSummonOptionId: options.selectedSummonOptionId ?? null,
     encounterParticipants: options.encounterParticipants,
   };
+}
+
+function withMockedRollFaces(faces: number[], run: () => void): void {
+  const originalRandom = Math.random;
+  let index = 0;
+  Math.random = () => {
+    const nextFace = faces[index] ?? 2;
+    index += 1;
+    return Math.max(0, Math.min(0.999999, (nextFace - 0.5) / 10));
+  };
+
+  try {
+    run();
+  } finally {
+    Math.random = originalRandom;
+  }
 }
 
 export async function runCombatEncounterCastingTests(): Promise<void> {
@@ -205,10 +218,118 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
       },
     },
     {
-      name: "crowd control enforces living-target rules before level five and allows nonliving sheets at level five",
+      name: "healing targets undead allies as radiant damage instead of healing",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Healer", "player", {
+          powers: [
+            {
+              id: "healing",
+              name: "Healing",
+              level: 5,
+              governingStat: "INT",
+            },
+          ],
+          stats: { INT: 4 },
+        });
+        const target = createCharacterRecord("target", "Zombie Ally", "player", {
+          statusTags: [{ id: "undead", label: "Undead" }],
+        });
+        const views = [createParticipantView(caster), createParticipantView(target)];
+
+        const targetOptions = getEncounterCastTargetOptions({
+          casterView: views[0],
+          encounterParticipants: views,
+          selectedPower: caster.sheet.powers[0],
+          selectedVariantId: "default",
+          castMode: "self",
+        });
+
+        assert.ok(targetOptions.some((view) => view.participant.characterId === target.id));
+
+        const prepared = prepareCastRequest(
+          preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: views,
+            selectedPower: caster.sheet.powers[0],
+            selectedTargetIds: [target.id],
+          })
+        );
+
+        assert.ok(!("error" in prepared));
+        if ("error" in prepared) {
+          return;
+        }
+
+        assert.equal(prepared.request.healingApplications.length, 0);
+        assert.deepEqual(prepared.request.damageApplications, [
+          {
+            targetCharacterId: target.id,
+            rawAmount: 9,
+            damageType: "radiant",
+            mitigationChannel: "soak",
+            sourceCharacterId: caster.id,
+            sourceLabel: "Healing Lv 5",
+            sourceSummary: "Healing Reversal (9 radiant)",
+          },
+        ]);
+      },
+    },
+    {
+      name: "necrotic touch heals undead targets instead of damaging them",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Necro", "player", {
+          powers: [
+            {
+              id: "necromancy",
+              name: "Necromancy",
+              level: 5,
+              governingStat: "APP",
+            },
+          ],
+          stats: { APP: 4 },
+        });
+        const target = createCharacterRecord("target", "Skeleton", "dm", {
+          statusTags: [{ id: "undead", label: "Undead" }],
+        });
+        const views = [createParticipantView(caster), createParticipantView(target, "party-2")];
+
+        const prepared = prepareCastRequest(
+          preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: views,
+            selectedPower: caster.sheet.powers[0],
+            selectedTargetIds: [target.id],
+            variantId: "necrotic_touch",
+            attackOutcome: "hit",
+          })
+        );
+
+        assert.ok(!("error" in prepared));
+        if ("error" in prepared) {
+          return;
+        }
+
+        assert.equal(prepared.request.damageApplications.length, 0);
+        assert.deepEqual(prepared.request.healingApplications, [
+          {
+            targetCharacterId: caster.id,
+            amount: 5,
+            temporaryHpCap: null,
+          },
+          {
+            targetCharacterId: target.id,
+            amount: 14,
+            temporaryHpCap: null,
+          },
+        ]);
+      },
+    },
+    {
+      name: "crowd control enforces living-target rules before level five and auto-resolves success at level five",
       run: () => {
         const target = createCharacterRecord("construct", "Construct", "dm", {
           statusTags: [{ id: "construct", label: "Construct" }],
+          stats: { CHA: 2, WITS: 2 },
         });
 
         const lowLevelCaster = createCharacterRecord("caster-low", "Controller", "player", {
@@ -220,6 +341,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
               governingStat: "CHA",
             },
           ],
+          stats: { CHA: 3, INT: 3 },
         });
         const lowPrepared = prepareCastRequest(
           preparePayload({
@@ -231,7 +353,6 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             selectedPower: lowLevelCaster.sheet.powers[0],
             selectedTargetIds: [target.id],
             variantId: "crowd_control",
-            contestOutcome: "success",
           })
         );
 
@@ -248,29 +369,128 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
               governingStat: "CHA",
             },
           ],
+          stats: { CHA: 3, INT: 3 },
         });
-        const highPrepared = prepareCastRequest(
-          preparePayload({
-            casterCharacter: highLevelCaster,
-            encounterParticipants: [
-              createParticipantView(highLevelCaster),
-              createParticipantView(target, "party-2"),
-            ],
-            selectedPower: highLevelCaster.sheet.powers[0],
-            selectedTargetIds: [target.id],
-            variantId: "crowd_control",
-            contestOutcome: "success",
-          })
-        );
 
-        assert.ok(!("error" in highPrepared));
-        if ("error" in highPrepared) {
-          return;
-        }
+        withMockedRollFaces([6, 6, 6, 6, 6, 6, 2, 2, 2, 2], () => {
+          const highPrepared = prepareCastRequest(
+            preparePayload({
+              casterCharacter: highLevelCaster,
+              encounterParticipants: [
+                createParticipantView(highLevelCaster),
+                createParticipantView(target, "party-2"),
+              ],
+              selectedPower: highLevelCaster.sheet.powers[0],
+              selectedTargetIds: [target.id],
+              variantId: "crowd_control",
+            })
+          );
 
-        assert.equal(highPrepared.request.manaCost, 0);
-        assert.equal(highPrepared.request.statusTagChanges.length, 2);
-        assert.equal(highPrepared.request.ongoingStateChanges.length, 1);
+          assert.ok(!("error" in highPrepared));
+          if ("error" in highPrepared) {
+            return;
+          }
+
+          assert.equal(highPrepared.request.manaCost, 0);
+          assert.equal(highPrepared.request.statusTagChanges.length, 2);
+          assert.equal(highPrepared.request.ongoingStateChanges.length, 1);
+          assert.equal(
+            highPrepared.request.activityLogEntries[0]?.summary,
+            "Crowd Control: Master Controller 6 vs Construct 0 (success)."
+          );
+        });
+      },
+    },
+    {
+      name: "crowd control auto-resolves failure without applying control state",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Controller", "player", {
+          powers: [
+            {
+              id: "crowd_control",
+              name: "Crowd Control",
+              level: 3,
+              governingStat: "CHA",
+            },
+          ],
+          stats: { CHA: 2, INT: 2 },
+        });
+        const target = createCharacterRecord("target", "Guard", "dm", {
+          stats: { CHA: 3, WITS: 3 },
+        });
+
+        withMockedRollFaces([2, 2, 2, 2, 6, 6, 6, 6, 6, 6], () => {
+          const prepared = prepareCastRequest(
+            preparePayload({
+              casterCharacter: caster,
+              encounterParticipants: [
+                createParticipantView(caster),
+                createParticipantView(target, "party-2"),
+              ],
+              selectedPower: caster.sheet.powers[0],
+              selectedTargetIds: [target.id],
+              variantId: "crowd_control",
+            })
+          );
+
+          assert.ok(!("error" in prepared));
+          if ("error" in prepared) {
+            return;
+          }
+
+          assert.equal(prepared.request.statusTagChanges.length, 0);
+          assert.equal(prepared.request.ongoingStateChanges.length, 0);
+          assert.equal(
+            prepared.request.activityLogEntries[0]?.summary,
+            "Crowd Control: Controller 0 vs Guard 6 (failure)."
+          );
+        });
+      },
+    },
+    {
+      name: "crowd control ties fail",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Controller", "player", {
+          powers: [
+            {
+              id: "crowd_control",
+              name: "Crowd Control",
+              level: 2,
+              governingStat: "CHA",
+            },
+          ],
+          stats: { CHA: 2, INT: 2 },
+        });
+        const target = createCharacterRecord("target", "Scout", "dm", {
+          stats: { CHA: 2, WITS: 2 },
+        });
+
+        withMockedRollFaces([6, 6, 2, 2, 6, 6, 2, 2], () => {
+          const prepared = prepareCastRequest(
+            preparePayload({
+              casterCharacter: caster,
+              encounterParticipants: [
+                createParticipantView(caster),
+                createParticipantView(target, "party-2"),
+              ],
+              selectedPower: caster.sheet.powers[0],
+              selectedTargetIds: [target.id],
+              variantId: "crowd_control",
+            })
+          );
+
+          assert.ok(!("error" in prepared));
+          if ("error" in prepared) {
+            return;
+          }
+
+          assert.equal(prepared.request.statusTagChanges.length, 0);
+          assert.equal(prepared.request.ongoingStateChanges.length, 0);
+          assert.equal(
+            prepared.request.activityLogEntries[0]?.summary,
+            "Crowd Control: Controller 2 vs Scout 2 (failure)."
+          );
+        });
       },
     },
     {
@@ -309,6 +529,84 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
         assert.equal(prepared.request.effects.length, 0);
         assert.equal(prepared.request.damageApplications.length, 0);
         assert.equal(prepared.request.activityLogEntries.length, 1);
+      },
+    },
+    {
+      name: "body reinforcement logs its real action name instead of a shadow cloak fallback",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Bulwark", "player", {
+          powers: [
+            {
+              id: "body_reinforcement",
+              name: "Body Reinforcement",
+              level: 5,
+              governingStat: "STAM",
+            },
+          ],
+          stats: { STAM: 5 },
+        });
+        const target = createCharacterRecord("target", "Frontliner", "player");
+        const prepared = prepareCastRequest({
+          ...preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: [createParticipantView(caster), createParticipantView(target)],
+            selectedPower: caster.sheet.powers[0],
+            selectedTargetIds: [target.id],
+          }),
+          selectedStatId: "STR",
+        });
+
+        assert.ok(!("error" in prepared));
+        if ("error" in prepared) {
+          return;
+        }
+
+        assert.equal(
+          prepared.request.activityLogEntries[0]?.summary,
+          "Body Reinforcement: Bulwark affected Frontliner."
+        );
+      },
+    },
+    {
+      name: "shadow soldier uses the level five summon mana cost",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Shade", "player", {
+          powers: [
+            {
+              id: "shadow_control",
+              name: "Shadow Control",
+              level: 5,
+              governingStat: "MAN",
+            },
+          ],
+        });
+        const power = caster.sheet.powers[0];
+        const summonOption = getCastPowerSummonOptions(power, "shadow_soldier")[0];
+
+        assert.ok(summonOption);
+        if (!summonOption) {
+          return;
+        }
+
+        assert.equal(summonOption.manaCost, 4);
+
+        const prepared = prepareCastRequest(
+          preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: [createParticipantView(caster)],
+            selectedPower: power,
+            selectedTargetIds: [caster.id],
+            variantId: "shadow_soldier",
+            selectedSummonOptionId: summonOption.id,
+          })
+        );
+
+        assert.ok(!("error" in prepared));
+        if ("error" in prepared) {
+          return;
+        }
+
+        assert.equal(prepared.request.manaCost, 4);
       },
     },
     {
@@ -449,6 +747,59 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
       },
     },
     {
+      name: "light aura level five automatically buffs allies and debuffs enemy parties",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Beacon", "player", {
+          powers: [
+            {
+              id: "light_support",
+              name: "Light Support",
+              level: 5,
+              governingStat: "APP",
+            },
+          ],
+          stats: { APP: 4 },
+        });
+        const ally = createCharacterRecord("ally", "Ally", "player");
+        const enemy = createCharacterRecord("enemy", "Enemy", "dm");
+        const views = [
+          createParticipantView(caster),
+          createParticipantView(ally),
+          createParticipantView(enemy, "party-2"),
+        ];
+
+        const prepared = prepareCastRequest(
+          preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: views,
+            selectedPower: caster.sheet.powers[0],
+            selectedTargetIds: [caster.id],
+          })
+        );
+
+        assert.ok(!("error" in prepared));
+        if ("error" in prepared) {
+          return;
+        }
+
+        const sourceEffect = prepared.request.effects.find(
+          (effect) => effect.effectKind === "aura_source" && effect.targetCharacterId === caster.id
+        );
+        const allyEffect = prepared.request.effects.find(
+          (effect) => effect.targetCharacterId === ally.id
+        );
+        const enemyEffect = prepared.request.effects.find(
+          (effect) => effect.targetCharacterId === enemy.id
+        );
+
+        assert.ok(sourceEffect);
+        assert.deepEqual(sourceEffect?.sharedTargetCharacterIds, [caster.id, ally.id, enemy.id]);
+        assert.equal(allyEffect?.stackKey, "light_support");
+        assert.equal(enemyEffect?.stackKey, "light_support:expose_darkness");
+        assert.equal(enemyEffect?.label, "Expose Darkness");
+      },
+    },
+    {
       name: "necromancy summons dismiss old summons and build leveled zombie stats",
       run: () => {
         const caster = createCharacterRecord("caster", "Summoner", "player", {
@@ -502,6 +853,9 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
         assert.equal(resolution.manaCost, 4);
         assert.deepEqual(resolution.dismissIds, ["old-zombie"]);
         assert.equal(resolution.summons.length, 1);
+        assert.deepEqual(resolution.summons[0]?.sheet.statusTags, [
+          { id: "undead", label: "Undead" },
+        ]);
         assert.equal(resolution.summons[0]?.sheet.statState.STR.base, 4);
         assert.equal(resolution.summons[0]?.sheet.statState.DEX.base, 4);
         assert.equal(resolution.summons[0]?.sheet.statState.STAM.base, 4);
@@ -510,6 +864,119 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           resolution.summons[0]?.sheet.activePowerEffects[0]?.summary ?? "",
           /\+4 hit, \+4 dmg/
         );
+      },
+    },
+    {
+      name: "shadow soldier summons carry a shadow status tag",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Shade", "player", {
+          powers: [
+            {
+              id: "shadow_control",
+              name: "Shadow Control",
+              level: 5,
+              governingStat: "MAN",
+            },
+          ],
+        });
+        const power = caster.sheet.powers[0];
+        const summonOption = getCastPowerSummonOptions(power, "shadow_soldier")[0];
+
+        assert.ok(summonOption);
+        if (!summonOption) {
+          return;
+        }
+
+        const resolution = buildSummonCastResolution({
+          casterCharacter: caster,
+          casterParticipant: createParticipantView(caster).participant,
+          power,
+          selectedSummonOptionId: summonOption.id,
+          activeTransientCombatants: [],
+        });
+
+        assert.ok(!("error" in resolution));
+        if ("error" in resolution) {
+          return;
+        }
+
+        assert.deepEqual(resolution.summons[0]?.sheet.statusTags, [
+          { id: "shadow", label: "Shadow" },
+        ]);
+      },
+    },
+    {
+      name: "shadow soldier inherits an active cloak aura from the caster",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Shade", "player", {
+          powers: [
+            {
+              id: "shadow_control",
+              name: "Shadow Control",
+              level: 5,
+              governingStat: "MAN",
+            },
+          ],
+        });
+        const cloakEffect = prepareCastRequest(
+          {
+            ...preparePayload({
+              casterCharacter: caster,
+              encounterParticipants: [createParticipantView(caster)],
+              selectedPower: caster.sheet.powers[0],
+              selectedTargetIds: [caster.id],
+              variantId: "shadow_cloak",
+              selectedSummonOptionId: null,
+            }),
+            castMode: "aura",
+          }
+        );
+
+        assert.ok(!("error" in cloakEffect));
+        if ("error" in cloakEffect) {
+          return;
+        }
+
+        caster.sheet.activePowerEffects = cloakEffect.request.effects;
+
+        const summonOption = getCastPowerSummonOptions(caster.sheet.powers[0], "shadow_soldier")[0];
+        assert.ok(summonOption);
+        if (!summonOption) {
+          return;
+        }
+
+        const prepared = prepareCastRequest(
+          preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: [createParticipantView(caster)],
+            selectedPower: caster.sheet.powers[0],
+            selectedTargetIds: [caster.id],
+            variantId: "shadow_soldier",
+            selectedSummonOptionId: summonOption.id,
+          })
+        );
+
+        assert.ok(!("error" in prepared));
+        if ("error" in prepared) {
+          return;
+        }
+
+        const updatedSourceEffect = prepared.request.effects.find(
+          (effect) => effect.effectKind === "aura_source" && effect.targetCharacterId === caster.id
+        );
+        const summonAuraEffect = prepared.request.effects.find(
+          (effect) =>
+            effect.effectKind === "aura_shared" &&
+            effect.targetCharacterId.startsWith("shadow_soldier")
+        );
+
+        assert.ok(updatedSourceEffect);
+        assert.ok(
+          updatedSourceEffect?.sharedTargetCharacterIds?.some((targetId) =>
+            targetId.startsWith("shadow_soldier")
+          )
+        );
+        assert.equal(summonAuraEffect?.stackKey, "shadow_control:cloak");
       },
     },
     {

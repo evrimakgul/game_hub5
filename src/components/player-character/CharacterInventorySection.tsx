@@ -2,7 +2,10 @@ import type { CharacterDraft } from "../../config/characterTemplate";
 import {
   ITEM_BLUEPRINT_OPTIONS,
   canCharacterIdentifyItem,
+  getEquipmentEntryBySlot,
   getItemBaseVisibleStats,
+  getOtherEquipmentEntries,
+  getWeaponHandSlotLabel,
   getItemBlueprintId,
   getVisibleItemBonusNotes,
   hasCharacterLearnedItem,
@@ -15,7 +18,9 @@ import type {
   ItemBlueprintId,
   ItemDerivedModifierId,
   SharedItemRecord,
+  WeaponHandSlotId,
 } from "../../types/items.ts";
+import { WEAPON_HAND_SLOT_IDS } from "../../types/items.ts";
 import type { StatId } from "../../types/character";
 
 const STAT_BONUS_FIELDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
@@ -59,6 +64,7 @@ type CharacterInventorySectionProps = {
   onIdentifySharedItem: (itemId: string) => void;
   onMaskSharedItem: (itemId: string) => void;
   onDeleteSharedItem: (itemId: string) => void;
+  onUpdateWeaponHandSlotItem: (slot: WeaponHandSlotId, itemId: string) => void;
   onUpdateEquipmentEntry: (index: number, field: EquipmentReferenceField, value: string) => void;
   onAddEquipmentEntry: () => void;
   onRemoveEquipmentEntry: (index: number) => void;
@@ -83,6 +89,7 @@ export function CharacterInventorySection({
   onIdentifySharedItem,
   onMaskSharedItem,
   onDeleteSharedItem,
+  onUpdateWeaponHandSlotItem,
   onUpdateEquipmentEntry,
   onAddEquipmentEntry,
   onRemoveEquipmentEntry,
@@ -99,6 +106,12 @@ export function CharacterInventorySection({
   const referencedItems = referencedItemIds
     .map((itemId) => itemsById[itemId])
     .filter((item): item is SharedItemRecord => item !== undefined);
+  const weaponHandEntries = WEAPON_HAND_SLOT_IDS.map((slotId) => ({
+    slotId,
+    label: getWeaponHandSlotLabel(slotId),
+    entry: getEquipmentEntryBySlot(sheetState, slotId),
+  }));
+  const otherEquipmentEntries = getOtherEquipmentEntries(sheetState);
 
   return (
     <>
@@ -106,9 +119,43 @@ export function CharacterInventorySection({
         <p className="section-kicker">Equipment</p>
         <h2>Loadout</h2>
         <div className="equipment-list">
+          {weaponHandEntries.map(({ slotId, label, entry }) => {
+            const item = entry?.itemId ? itemsById[entry.itemId] ?? null : null;
+
+            return isSheetEditMode ? (
+              <div key={slotId} className="equipment-row">
+                <div className="row-main">
+                  <strong>{label}</strong>
+                  <select
+                    className="sheet-meta-input"
+                    value={entry?.itemId ?? ""}
+                    onChange={(event) => onUpdateWeaponHandSlotItem(slotId, event.target.value)}
+                  >
+                    <option value="">No item</option>
+                    {referencedItems.map((referencedItem) => (
+                      <option key={referencedItem.id} value={referencedItem.id}>
+                        {referencedItem.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <div key={slotId} className="equipment-row">
+                <div>
+                  <strong>{label}</strong>
+                  <span>{item?.name ?? "Open Slot"}</span>
+                </div>
+                <em>{item ? getItemBaseVisibleStats(item).join(" | ") : ""}</em>
+              </div>
+            );
+          })}
+
           {isSheetEditMode ? (
             <>
-              {sheetState.equipment.map((entry, index) => (
+              {otherEquipmentEntries.map((entry) => {
+                const index = sheetState.equipment.indexOf(entry);
+                return (
                 <div key={`${entry.slot}-${index}`} className="equipment-row">
                   <div className="row-main">
                     <input
@@ -136,15 +183,17 @@ export function CharacterInventorySection({
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <button type="button" className="flow-secondary" onClick={onAddEquipmentEntry}>
-                Add Equipment
+                Add Other Slot
               </button>
             </>
-          ) : sheetState.equipment.length === 0 ? (
+          ) : otherEquipmentEntries.length === 0 &&
+            weaponHandEntries.every(({ entry }) => !entry?.itemId) ? (
             <p className="empty-block-copy">No loadout equipped.</p>
           ) : (
-            sheetState.equipment.map((entry, index) => {
+            otherEquipmentEntries.map((entry, index) => {
               const item =
                 entry.itemId && itemsById[entry.itemId] ? itemsById[entry.itemId] : null;
 

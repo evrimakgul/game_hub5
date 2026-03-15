@@ -178,7 +178,8 @@
 }
 
 .dm-encounter-activity-log {
-  max-height: 7rem;
+  min-height: 10.5rem;
+  max-height: 63rem;
   overflow-y: auto;
   resize: vertical;
 }

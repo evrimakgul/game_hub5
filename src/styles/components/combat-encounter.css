@@ -1,6 +1,6 @@
 .dm-combatant-tools {
   display: grid;
-  grid-template-columns: 1fr 3fr 3fr;
+  grid-template-columns: 1fr 1fr 1.4fr;
   gap: 12px;
   margin-top: 12px;
   padding: 10px;
@@ -46,6 +46,23 @@
 
 .dm-runtime-popover-anchor {
   position: relative;
+}
+
+.dm-actions-popover-anchor {
+  position: relative;
+}
+
+.dm-actions-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 12;
+  width: min(680px, calc(100vw - 48px));
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(84, 57, 37, 0.15);
+  background: rgba(255, 248, 238, 0.98);
+  box-shadow: 0 24px 60px rgba(61, 41, 28, 0.18);
 }
 
 .dm-runtime-popover {
@@ -671,5 +688,41 @@
 .dm-detail-detail {
   color: #7b5f4c;
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 1024px) {
+  .dm-combatant-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-combatant-tool-section + .dm-combatant-tool-section {
+    padding-left: 0;
+    padding-top: 12px;
+  }
+
+  .dm-combatant-tool-section + .dm-combatant-tool-section::before {
+    top: 0;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(84, 57, 37, 0.2),
+      transparent
+    );
+  }
+
+  .dm-actions-popover {
+    width: min(100%, calc(100vw - 48px));
+  }
+}
+
+@media (max-width: 760px) {
+  .dm-power-form {
+    grid-template-columns: 1fr;
+  }
 }
 
