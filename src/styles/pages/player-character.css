@@ -277,9 +277,12 @@
   color: #2b190f;
 }
 
-.biography-card,
-.combat-card {
+.biography-card {
   grid-column: span 2;
+}
+
+.combat-card {
+  grid-column: 1 / 1;
 }
 
 .resource-strip,

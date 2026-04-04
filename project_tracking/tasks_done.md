@@ -39,5 +39,6 @@
 - `P1-UI-01` Replaced inline encounter `Physical Attacks` and `Cast Power Mechanism` sections with a single `Actions` popover while keeping `Character Sheet`, `Actions`, and `Applied Effects` as the top-level layout.
 - `P1-UI-02` Fixed encounter history sizing so it opens at three visible rows, remains vertically resizable, and caps at eighteen rows.
 - `CS-UI-01` Moved `Active Effects`, `Utility Traits`, `Combat Flags`, and `Power Tracking` into `Derived Summary` as always-visible subsections and reduced `CharacterResources` to stored resources only.
+- `CS-UI-02` Expanded the `Derived Summary` card to span the full player-sheet page width.
 - `CS-RULE-01` Replaced manual-assisted physical attacks with automatic loadout-driven resolution, canonical hand-slot inference, automatic hit and damage rolls, DR mitigation, and detailed encounter activity logging.
 - `CS-UX-01` Replaced automatic `Body Reinforcement` cantrip revival with a visible manual encounter trigger, clear eligibility text, and focused regression coverage.

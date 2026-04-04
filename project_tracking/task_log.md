@@ -145,3 +145,6 @@
   - Kept the trigger window locked to `0` through `-5 HP`, daily-use tracking intact, and revive output at `1 HP` for BR `2-4` and `4 HP` for BR `5`.
   - Added focused regression coverage for unavailable, ineligible, spent, and successful BR revive states in `tests/combatEncounterSpecialActions.test.ts`.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `CS-UI-02` completed.
+  - Expanded the `Derived Summary` card to span the full width of the player-sheet grid by changing the `combat-card` grid-column rule.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
