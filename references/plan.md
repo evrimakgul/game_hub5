@@ -113,6 +113,13 @@ This roadmap is the active implementation source of truth for this branch.
 
 ## Deferred
 - `ARCH-REM-01` Continue extracting encounter request application, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation from `CombatEncounterPage.tsx`; spell preparation is already on the new `Action` / `Effect` runtime.
+- Future knowledge/intel work should move toward standalone revisioned knowledge cards:
+  - `History` remains a log
+  - knowledge storage should use subject/entity grouping plus immutable revisions
+  - characters may own multiple revisions of the same subject
+  - history entries should be able to link to the exact knowledge revision involved
+  - character sheets should eventually expose a dedicated `Knowledge` area for browsing and sharing owned revisions
+  - implementation details are recorded in `references/knowledge_card_design.md`
 - Full item-authoring workflow and richer item bonus editors.
 - Full multi-target `AA` knowledge-sharing UI.
 - Encounter persistence and backend sync.

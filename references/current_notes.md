@@ -5,7 +5,7 @@ This file tracks active reminders for the current implementation block.
 ## Active Implementation Block
 - The focused Phase 1 combat encounter completion pass is complete.
 - The follow-up character-sheet and encounter action-flow pass is also complete.
-- Actionable implementation items have been cleared from `project_tracking/tasks_todo.md`.
+- New follow-up design work has been recorded around a standalone knowledge-card system.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -27,8 +27,27 @@ This file tracks active reminders for the current implementation block.
 - Encounter action resolution is split across cast prep, route execution, and effect builders.
 - Encounter upkeep and cast execution still live mostly in the route layer.
 - Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
+- Knowledge gained from spells is still stored too narrowly as history entries instead of revisioned standalone knowledge records.
+
+## Recorded Knowledge-Card Direction
+- Keep `History` as an event log.
+- Introduce standalone revisioned knowledge records rather than treating history as the storage model.
+- Detailed implementation notes now live in `references/knowledge_card_design.md`.
+- Working terminology:
+  - `KnowledgeEntity` = the subject, such as a character, item, place, faction, or story topic.
+  - `KnowledgeRevision` = one immutable version/snapshot of that subject's known information.
+  - character ownership stores which revisions a character currently possesses.
+- A character may own multiple revisions of the same subject at once.
+- Edited/shared copies should create descendant revisions rather than overwriting the prior one.
+- History entries should be able to reference an exact knowledge revision so the UI can open or preview the specific version involved in that event.
+- Character sheets should eventually expose a dedicated `Knowledge` area for browsing owned subjects and revisions separately from `History`.
+- The agreed data-model direction is:
+  - standalone `KnowledgeEntity` / `KnowledgeRevision` / `KnowledgeOwnership` collections
+  - immutable revisions with lineage metadata
+  - history entries storing exact revision links instead of embedding full knowledge as the primary record
 
 ## Deferred But Recorded
 - `ARCH-REM-01` remains as a reminder to extract an encounter controller/engine layer later.
 - Full item-authoring UX and multi-target `AA` knowledge-sharing UI remain deferred.
+- Revisioned knowledge-card storage, character-sheet knowledge browsing, and history-to-card linking are now recorded future work.
 - Backend sync and encounter persistence remain out of scope.

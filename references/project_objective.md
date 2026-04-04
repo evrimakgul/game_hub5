@@ -11,6 +11,7 @@ Keep the app as a local-first TTRPG hub and preserve the completed Phase 1 comba
   - automatic loadout-driven physical attacks
   - manual `Body Reinforcement` encounter trigger
 - Leave only explicit deferred reminder or blocked work for later phases.
+- Record the agreed future direction for standalone revisioned knowledge cards without forcing it into the current history-only implementation.
 
 ## Baseline Already Present
 
@@ -29,6 +30,17 @@ Keep the app as a local-first TTRPG hub and preserve the completed Phase 1 comba
   - integrated Light Aura level `5` enemy debuffing
   - encounter status-display cleanup
 - Keep `AC` snapshots on the character sheet history.
+- Future spell-intel work should move toward standalone knowledge-card revisions instead of treating character history as the primary storage model.
+
+### Knowledge
+- Keep `History` as a log of events.
+- Future knowledge gained through spells, sharing, or discovery should be modeled as standalone revisioned records.
+- The target direction is:
+  - subject/entity-level grouping
+  - immutable revisions/snapshots
+  - per-character ownership of one or more revisions
+  - history entries linking to the exact revision involved
+  - a dedicated `Knowledge` area on the character sheet for browsing and sharing owned revisions
 
 ### Items
 - Replace embedded sheet item records with standalone shared item entities.
@@ -47,6 +59,7 @@ Keep the app as a local-first TTRPG hub and preserve the completed Phase 1 comba
 
 ## Deferred Follow-Up
 - `ARCH-REM-01` controller/engine extraction from `CombatEncounterPage.tsx`.
+- Revisioned knowledge-card model, character-sheet `Knowledge` UI, and history links to exact knowledge revisions.
 - Full item authoring UX and richer `AA` knowledge-sharing UI.
 - Encounter persistence and backend sync.
 - Player-side encounter UI.

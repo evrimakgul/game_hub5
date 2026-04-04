@@ -158,3 +158,9 @@
   - Replaced the monolithic `prepareCastRequest` spell switch with action lookup plus effect execution, and wired the manual `Body Reinforcement` revive path through the same runtime.
   - Added focused registry coverage in `tests/powerRegistry.test.ts`.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- Recorded future knowledge-card architecture notes.
+  - Agreed direction: keep `History` as an event log, but store spell/item/story intel as standalone revisioned knowledge records rather than history-only data.
+  - Agreed model direction: `KnowledgeEntity` + immutable `KnowledgeRevision` + per-character ownership, with characters allowed to own multiple revisions of the same subject.
+  - Agreed UI direction: add a character-sheet `Knowledge` area and allow history entries to link to the exact revision involved, with hover preview and click/open behavior.
+  - Added `references/knowledge_card_design.md` to capture the concrete "how" details for data model, flows, lineage, history links, and character-sheet UI.
+  - No code changes or validation were run for this note-only documentation update.
