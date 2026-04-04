@@ -21,7 +21,7 @@ import {
   preparePhysicalAttackRequest,
 } from "../lib/combatEncounterPhysicalAttacks";
 import {
-  prepareBodyReinforcementReviveRequest,
+  prepareBruteDefianceRequest,
 } from "../lib/combatEncounterSpecialActions.ts";
 import { rollD10Faces } from "../lib/dice";
 import { createTimestampedId } from "../lib/ids.ts";
@@ -847,7 +847,7 @@ export function CombatEncounterPage() {
     return executePreparedCast(prepared.request);
   }
 
-  function requestBodyReinforcementRevive(payload: {
+  function requestBruteDefiance(payload: {
     view: EncounterParticipantView;
   }): string | null {
     const character = payload.view.character;
@@ -855,7 +855,7 @@ export function CombatEncounterPage() {
       return "The selected combatant no longer resolves to a character sheet.";
     }
 
-    const prepared = prepareBodyReinforcementReviveRequest({
+    const prepared = prepareBruteDefianceRequest({
       character,
     });
     if ("error" in prepared) {
@@ -1037,7 +1037,7 @@ export function CombatEncounterPage() {
               openCharacterSheet={openCharacterSheet}
               requestCast={requestCast}
               requestPhysicalAttack={requestPhysicalAttack}
-              requestBodyReinforcementRevive={requestBodyReinforcementRevive}
+              requestBruteDefiance={requestBruteDefiance}
               updateCharacter={updateEncounterCharacter}
             />
         </section>

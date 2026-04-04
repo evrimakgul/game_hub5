@@ -10,6 +10,7 @@
 
 ## Phase 1: Combat Encounter
 - `ARCH-REM-01` Later refactor reminder: continue extracting encounter request application, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation from `CombatEncounterPage.tsx`; spell preparation already uses the new `Action` / `Effect` runtime.
+- `BR-BD-01` Update `Brute Defiance (BD)` under `Body Reinforcement` so it becomes a passive delayed stand-up effect again: 1/day, triggers while HP is between `0` and `-5`, resolves after one turn, and restores HP by BR level as `1 / 2 / 4 / 8 / 16`. Do not overwrite older BR work until validation is planned for the behavior change group.
 
 ## Blocked / Deferred
 - `B01` Expand the shared item UI into a full item-authoring and multi-target knowledge-sharing flow.

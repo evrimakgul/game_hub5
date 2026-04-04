@@ -87,8 +87,8 @@ This roadmap is the active implementation source of truth for this branch.
 - If an equipped weapon is explicitly typed as `brawl`, use the brawl profile.
 - Physical attacks now auto-resolve hit, marginal, damage, DR mitigation, and encounter activity logging in-system.
 
-### 3.3 Manual Body Reinforcement Trigger
-- `Body Reinforcement` revive is no longer scheduled automatically on turn advance.
+### 3.3 Manual Brute Defiance Trigger
+- `Brute Defiance` is no longer scheduled automatically on turn advance.
 - The encounter UI now exposes a manual trigger with visible eligibility text.
 - The trigger is available only when:
   - `Body Reinforcement` is at least level `2`
@@ -113,6 +113,7 @@ This roadmap is the active implementation source of truth for this branch.
 
 ## Deferred
 - `ARCH-REM-01` Continue extracting encounter request application, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation from `CombatEncounterPage.tsx`; spell preparation is already on the new `Action` / `Effect` runtime.
+- `BR-BD-01` Restore `Brute Defiance` to the intended passive delayed stand-up behavior with 1/day use and HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
 - Future knowledge/intel work should move toward standalone revisioned knowledge cards:
   - `History` remains a log
   - knowledge storage should use subject/entity grouping plus immutable revisions

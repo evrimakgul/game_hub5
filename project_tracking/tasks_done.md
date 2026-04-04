@@ -8,7 +8,7 @@
 - `T06` Finish Healing Lv3-Lv5 and healing cantrip tracking.
 - `T07` Implement passive/utility backlog surfacing and mechanics.
 - `T08` Implement `Light Support` mana restore and `Expose Darkness`.
-- `T09` Implement `Body Reinforcement` delayed stand-up cantrip.
+- `T09` Implement `Brute Defiance` delayed stand-up cantrip under `Body Reinforcement`.
 - `T10` Implement `Crowd Control` cast flow, maintenance, and status handling.
 - `T11` Implement `Necromancy` summons, `Shadow Soldier`, and `Resurrection`.
 - `T12` Expand tests, run validation, and reconcile tracking/docs.
@@ -29,7 +29,7 @@
 - `V1-01` Expand tests for encounter fixes, action resolution, and shared item model behavior.
 - `V1-02` Reconcile `plan.md`, tracking files, and notes with the implemented result.
 - `NOTE 2026-03-15` Phase 1 combat encounter work reopened for a follow-up correction pass. Existing done items remain historical checkpoints and are being supplemented by the remaining actionable items in `tasks_todo.md`.
-- `P1-BUG-01` Fixed generic encounter buff log labels so they use the real action name, including `Body Reinforcement`.
+- `P1-BUG-01` Fixed generic encounter buff log labels so they use the real action name, including `Boost Physique`.
 - `P1-BUG-03` Fixed `Shadow Soldier` summon mana resolution and covered it with summon-cost tests.
 - `P1-RULE-04` Reworked `Crowd Control` encounter casting to auto-resolve the contest in-system using caster `CHA + INT` vs target `CHA + WITS`, removed manual contest selection, and added success/failure/tie tests.
 - `P1-RULE-01` Finalized undead interaction rules so healing damages undead, necrotic heals undead, and summon sheets now carry undead/shadow classification tags.
@@ -41,5 +41,5 @@
 - `CS-UI-01` Moved `Active Effects`, `Utility Traits`, `Combat Flags`, and `Power Tracking` into `Derived Summary` as always-visible subsections and reduced `CharacterResources` to stored resources only.
 - `CS-UI-02` Expanded the `Derived Summary` card to span the full player-sheet page width.
 - `CS-RULE-01` Replaced manual-assisted physical attacks with automatic loadout-driven resolution, canonical hand-slot inference, automatic hit and damage rolls, DR mitigation, and detailed encounter activity logging.
-- `CS-UX-01` Replaced automatic `Body Reinforcement` cantrip revival with a visible manual encounter trigger, clear eligibility text, and focused regression coverage.
+- `CS-UX-01` Replaced automatic `Brute Defiance` revival with a visible manual encounter trigger, clear eligibility text, and focused regression coverage.
 - `PWR-ARCH-01` Refactored spell preparation and passive derivation into the new `Action` / `Effect` runtime, power registry, and passive provider registry while preserving current powers, spells, local saves, and encounter UI flows.

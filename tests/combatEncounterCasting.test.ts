@@ -532,7 +532,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
       },
     },
     {
-      name: "body reinforcement logs its real action name instead of a shadow cloak fallback",
+      name: "boost physique logs its real action name instead of a shadow cloak fallback",
       run: () => {
         const caster = createCharacterRecord("caster", "Bulwark", "player", {
           powers: [
@@ -563,7 +563,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
 
         assert.equal(
           prepared.request.activityLogEntries[0]?.summary,
-          "Body Reinforcement: Bulwark affected Frontliner."
+          "Boost Physique: Bulwark affected Frontliner."
         );
       },
     },

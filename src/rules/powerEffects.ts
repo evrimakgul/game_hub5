@@ -21,6 +21,7 @@ import {
   type RuntimeSummonOption,
 } from "./summons.ts";
 import type { SharedItemRecord } from "../types/items.ts";
+import { BODY_REINFORCEMENT_BUFF_SPELL_NAME, getBoostPhysiqueSourceLabel } from "../powers/spellLabels.ts";
 export type {
   CastPowerDamageTypeOption,
   CastPowerMode,
@@ -447,6 +448,10 @@ export function getCastPowerModeOptionsForVariant(
 export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantOption[] {
   if (power.id === "awareness") {
     return [{ id: "assess_character", label: "Assess Character" }];
+  }
+
+  if (power.id === "body_reinforcement") {
+    return [{ id: "default", label: BODY_REINFORCEMENT_BUFF_SPELL_NAME }];
   }
 
   if (power.id === "crowd_control") {
@@ -1120,7 +1125,7 @@ export function buildActivePowerEffect(
   if (request.power.id === "body_reinforcement") {
     const allowedStats = getCastPowerAllowedStats(request.power);
     if (!request.selectedStatId || !allowedStats.includes(request.selectedStatId)) {
-      return { error: "Body Reinforcement needs a valid physical stat selection." };
+      return { error: `${BODY_REINFORCEMENT_BUFF_SPELL_NAME} needs a valid physical stat selection.` };
     }
 
     const statBonus = asNumber(mechanics.stat_bonus);
@@ -1131,7 +1136,7 @@ export function buildActivePowerEffect(
         targetType: "stat",
         targetId: request.selectedStatId,
         value: statBonus,
-        sourceLabel: `${request.power.name} Lv ${request.power.level}`,
+        sourceLabel: getBoostPhysiqueSourceLabel(request.power.level),
       },
     ];
 
@@ -1141,7 +1146,7 @@ export function buildActivePowerEffect(
         targetType: "derived",
         targetId: "damage_reduction",
         value: damageReductionBonus,
-        sourceLabel: `${request.power.name} Lv ${request.power.level}`,
+        sourceLabel: getBoostPhysiqueSourceLabel(request.power.level),
       });
     }
 
@@ -1152,7 +1157,7 @@ export function buildActivePowerEffect(
         actionType,
         `body_reinforcement:${request.selectedStatId}`,
         "direct",
-        `${request.power.name} Lv ${request.power.level}`,
+        getBoostPhysiqueSourceLabel(request.power.level),
         joinSummary(summaryParts),
         request.selectedStatId,
         modifiers

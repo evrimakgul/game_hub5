@@ -4,6 +4,7 @@ import type {
   PowerUsageState,
   PowerUsageSummaryEntry,
 } from "../types/powerUsage";
+import { BODY_REINFORCEMENT_CANTRIP_SPELL_NAME } from "../powers/spellLabels.ts";
 
 export const POWER_USAGE_KEYS = {
   bodyReinforcementRevive: "body_reinforcement:cantrip:revive",
@@ -196,7 +197,7 @@ export function buildPowerUsageSummary(sheet: CharacterDraft): PowerUsageSummary
   if ((powerLevelById.body_reinforcement ?? 0) >= 2) {
     summary.push({
       id: POWER_USAGE_KEYS.bodyReinforcementRevive,
-      label: "Body Reinforcement Revive",
+      label: BODY_REINFORCEMENT_CANTRIP_SPELL_NAME,
       resetLabel: "Daily",
       detail: `${getPowerUsageCount(state, "daily", POWER_USAGE_KEYS.bodyReinforcementRevive)} / 1 used`,
     });

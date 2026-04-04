@@ -5,8 +5,9 @@ import { buildEncounterActivityLogEntry, getGenericBuffActionLabel, getReplaceme
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 import type { ActionContext } from "../engine/context.ts";
 import { buildActivePowerEffect } from "../rules/powerEffects.ts";
-import { getBodyReinforcementReviveState } from "../lib/combatEncounterSpecialActions.ts";
+import { getBruteDefianceState } from "../lib/combatEncounterSpecialActions.ts";
 import { POWER_USAGE_KEYS } from "../lib/powerUsage.ts";
+import { BODY_REINFORCEMENT_CANTRIP_SPELL_NAME } from "./spellLabels.ts";
 
 class EmptyPassiveProvider extends PowerPassiveProvider {
   override getResult() {
@@ -14,7 +15,7 @@ class EmptyPassiveProvider extends PowerPassiveProvider {
   }
 }
 
-class BodyReinforcementSpellAction extends BuffSpellAction {
+class BoostPhysiqueSpellAction extends BuffSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     const targetCharacter = context.finalTargets[0];
@@ -57,16 +58,16 @@ class BodyReinforcementSpellAction extends BuffSpellAction {
   }
 }
 
-export class BodyReinforcementReviveSpellAction extends RestorationSpellAction {
+export class BruteDefianceSpellAction extends RestorationSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower =
       context.selectedPower ??
       context.casterCharacter.sheet.powers.find((power) => power.id === "body_reinforcement") ??
       null;
-    const reviveState = getBodyReinforcementReviveState(context.casterCharacter);
+    const reviveState = getBruteDefianceState(context.casterCharacter);
 
     if (!selectedPower) {
-      throw new Error("Body Reinforcement is not available.");
+      throw new Error(`${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} is not available.`);
     }
 
     if (!reviveState.isAvailable || !reviveState.isEligible) {
@@ -93,7 +94,7 @@ export class BodyReinforcementReviveSpellAction extends RestorationSpellAction {
       }),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Body Reinforcement revived ${
+          `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} revived ${
             context.casterCharacter.sheet.name.trim() || context.casterCharacter.id
           } to ${reviveState.reviveHp} HP.`
         )
@@ -108,7 +109,7 @@ export const bodyReinforcementModule: PowerModule = {
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {
     if (context.selectedSpellId === "default") {
-      return new BodyReinforcementSpellAction();
+      return new BoostPhysiqueSpellAction();
     }
 
     return null;

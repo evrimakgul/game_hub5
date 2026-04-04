@@ -3,9 +3,10 @@ import type { CharacterRecord } from "../types/character.ts";
 import type { PreparedCastRequest } from "../types/combatEncounterView.ts";
 import type { ActionContext } from "../engine/context.ts";
 import { executeAction } from "../engine/effectExecutor.ts";
-import { BodyReinforcementReviveSpellAction } from "../powers/bodyReinforcement.ts";
+import { BruteDefianceSpellAction } from "../powers/bodyReinforcement.ts";
+import { BODY_REINFORCEMENT_CANTRIP_SPELL_NAME } from "../powers/spellLabels.ts";
 
-export type BodyReinforcementReviveState = {
+export type BruteDefianceState = {
   isAvailable: boolean;
   isEligible: boolean;
   usageSpent: boolean;
@@ -13,9 +14,9 @@ export type BodyReinforcementReviveState = {
   statusText: string;
 };
 
-export function getBodyReinforcementReviveState(
+export function getBruteDefianceState(
   character: CharacterRecord
-): BodyReinforcementReviveState {
+): BruteDefianceState {
   const powerLevel = character.sheet.powers.find((power) => power.id === "body_reinforcement")?.level ?? 0;
   if (powerLevel < 2) {
     return {
@@ -23,7 +24,7 @@ export function getBodyReinforcementReviveState(
       isEligible: false,
       usageSpent: false,
       reviveHp: 0,
-      statusText: "Body Reinforcement revive is not unlocked.",
+      statusText: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} is not unlocked.`,
     };
   }
 
@@ -42,7 +43,7 @@ export function getBodyReinforcementReviveState(
       isEligible: false,
       usageSpent: true,
       reviveHp,
-      statusText: "Body Reinforcement revive has already been used today.",
+      statusText: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} has already been used today.`,
     };
   }
 
@@ -61,14 +62,14 @@ export function getBodyReinforcementReviveState(
     isEligible: false,
     usageSpent: false,
     reviveHp,
-    statusText: "Body Reinforcement revive becomes available only while HP is between 0 and -5.",
+    statusText: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} becomes available only while HP is between 0 and -5.`,
   };
 }
 
-export function prepareBodyReinforcementReviveRequest(payload: {
+export function prepareBruteDefianceRequest(payload: {
   character: CharacterRecord;
 }): { error: string } | { request: PreparedCastRequest; reviveHp: number } {
-  const reviveState = getBodyReinforcementReviveState(payload.character);
+  const reviveState = getBruteDefianceState(payload.character);
   if (!reviveState.isAvailable) {
     return { error: reviveState.statusText };
   }
@@ -80,7 +81,7 @@ export function prepareBodyReinforcementReviveRequest(payload: {
   const selectedPower =
     payload.character.sheet.powers.find((power) => power.id === "body_reinforcement") ?? null;
   if (!selectedPower) {
-    return { error: "Body Reinforcement is not available." };
+    return { error: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} is not available.` };
   }
 
   const selfView = {
@@ -126,11 +127,14 @@ export function prepareBodyReinforcementReviveRequest(payload: {
   };
 
   try {
-    const { request } = executeAction(new BodyReinforcementReviveSpellAction(), context);
+    const { request } = executeAction(new BruteDefianceSpellAction(), context);
     return { request, reviveHp: reviveState.reviveHp };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Failed to prepare Body Reinforcement revive.",
+      error:
+        error instanceof Error
+          ? error.message
+          : `Failed to prepare ${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME}.`,
     };
   }
 }

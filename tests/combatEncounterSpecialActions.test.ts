@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import {
-  getBodyReinforcementReviveState,
-  prepareBodyReinforcementReviveRequest,
+  getBruteDefianceState,
+  prepareBruteDefianceRequest,
 } from "../src/lib/combatEncounterSpecialActions.ts";
 import { POWER_USAGE_KEYS, incrementPowerUsageCount } from "../src/lib/powerUsage.ts";
 import type { CharacterRecord } from "../src/types/character.ts";
@@ -53,28 +53,28 @@ function createCharacterRecord(
 export async function runCombatEncounterSpecialActionTests(): Promise<void> {
   await runTestSuite("combatEncounterSpecialActions", [
     {
-      name: "body reinforcement revive is unavailable below level two",
+      name: "brute defiance is unavailable below level two",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
           bodyReinforcementLevel: 1,
           currentHp: 0,
         });
 
-        const state = getBodyReinforcementReviveState(character);
+        const state = getBruteDefianceState(character);
 
         assert.equal(state.isAvailable, false);
         assert.equal(state.isEligible, false);
       },
     },
     {
-      name: "body reinforcement revive is visible but not eligible outside the hp window",
+      name: "brute defiance is visible but not eligible outside the hp window",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
           bodyReinforcementLevel: 2,
           currentHp: -6,
         });
 
-        const state = getBodyReinforcementReviveState(character);
+        const state = getBruteDefianceState(character);
 
         assert.equal(state.isAvailable, true);
         assert.equal(state.isEligible, false);
@@ -82,7 +82,7 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
       },
     },
     {
-      name: "body reinforcement revive shows spent state after the daily use is consumed",
+      name: "brute defiance shows spent state after the daily use is consumed",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
           bodyReinforcementLevel: 5,
@@ -90,7 +90,7 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
           reviveAlreadyUsed: true,
         });
 
-        const state = getBodyReinforcementReviveState(character);
+        const state = getBruteDefianceState(character);
 
         assert.equal(state.isAvailable, true);
         assert.equal(state.isEligible, false);
@@ -98,14 +98,14 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
       },
     },
     {
-      name: "body reinforcement revive prepares a one hp recovery at levels two through four",
+      name: "brute defiance prepares a one hp recovery at levels two through four",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
           bodyReinforcementLevel: 2,
           currentHp: -3,
         });
 
-        const prepared = prepareBodyReinforcementReviveRequest({ character });
+        const prepared = prepareBruteDefianceRequest({ character });
 
         assert.ok(!("error" in prepared));
         if ("error" in prepared) {
@@ -134,14 +134,14 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
       },
     },
     {
-      name: "body reinforcement revive prepares a four hp recovery at level five",
+      name: "brute defiance prepares a four hp recovery at level five",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
           bodyReinforcementLevel: 5,
           currentHp: 0,
         });
 
-        const prepared = prepareBodyReinforcementReviveRequest({ character });
+        const prepared = prepareBruteDefianceRequest({ character });
 
         assert.ok(!("error" in prepared));
         if ("error" in prepared) {
@@ -151,7 +151,7 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
         assert.equal(prepared.reviveHp, 4);
         assert.equal(
           prepared.request.activityLogEntries[0]?.summary,
-          "Body Reinforcement revived Hero to 4 HP."
+          "Brute Defiance revived Hero to 4 HP."
         );
       },
     },

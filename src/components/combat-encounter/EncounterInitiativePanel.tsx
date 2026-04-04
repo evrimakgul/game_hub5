@@ -15,7 +15,7 @@ type EncounterInitiativePanelProps = {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
   }) => string | null;
-  requestBodyReinforcementRevive: (payload: {
+  requestBruteDefiance: (payload: {
     view: EncounterParticipantView;
   }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
@@ -27,7 +27,7 @@ export function EncounterInitiativePanel({
   openCharacterSheet,
   requestCast,
   requestPhysicalAttack,
-  requestBodyReinforcementRevive,
+  requestBruteDefiance,
   updateCharacter,
 }: EncounterInitiativePanelProps) {
   return (
@@ -45,7 +45,7 @@ export function EncounterInitiativePanel({
             openCharacterSheet={openCharacterSheet}
             requestCast={requestCast}
             requestPhysicalAttack={requestPhysicalAttack}
-            requestBodyReinforcementRevive={requestBodyReinforcementRevive}
+            requestBruteDefiance={requestBruteDefiance}
             updateCharacter={updateCharacter}
           />
         ))}

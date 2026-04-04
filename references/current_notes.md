@@ -21,7 +21,7 @@ This file tracks active reminders for the current implementation block.
 - `Expose Darkness` is no longer treated as a separate encounter cast at Light Support level `5`; enemy debuffing is part of `Light Aura`.
 - Items will move to shared standalone records outside character sheets.
 - Encounter physical attacks now resolve automatically from equipped loadout state.
-- `Body Reinforcement` revive is now a manual encounter action instead of a turn-advance auto trigger.
+- `Brute Defiance` is now a manual encounter action instead of a turn-advance auto trigger.
 
 ## Known Structural Gaps
 - Encounter action resolution is split across cast prep, route execution, and effect builders.
@@ -48,6 +48,7 @@ This file tracks active reminders for the current implementation block.
 
 ## Deferred But Recorded
 - `ARCH-REM-01` remains as a reminder to extract an encounter controller/engine layer later.
+- `Brute Defiance` is still using the temporary manual-trigger implementation; the recorded follow-up is to restore it as a passive delayed stand-up with HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
 - Full item-authoring UX and multi-target `AA` knowledge-sharing UI remain deferred.
 - Revisioned knowledge-card storage, character-sheet knowledge browsing, and history-to-card linking are now recorded future work.
 - Backend sync and encounter persistence remain out of scope.

@@ -50,7 +50,7 @@ export async function runPowerEffectsTests(): Promise<void> {
       },
     },
     {
-      name: "body reinforcement applies stat and DR bonuses and spends mana",
+      name: "boost physique applies stat and DR bonuses and spends mana",
       run: () => {
         const caster = PLAYER_CHARACTER_TEMPLATE.createInstance();
         caster.name = "Caster";

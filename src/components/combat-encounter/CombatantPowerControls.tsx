@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 
 import { useAuraEffectManager } from "../../hooks/useAuraEffectManager";
 import { useCombatantCastState } from "../../hooks/useCombatantCastState";
-import { getBodyReinforcementReviveState } from "../../lib/combatEncounterSpecialActions.ts";
+import { getBruteDefianceState } from "../../lib/combatEncounterSpecialActions.ts";
 import type {
   CastRequestPayload,
   CharacterSheetUpdater,
   EncounterParticipantView,
 } from "../../types/combatEncounterView";
 import type { SharedItemRecord } from "../../types/items";
+import { BODY_REINFORCEMENT_CANTRIP_SPELL_NAME } from "../../powers/spellLabels.ts";
 import { CombatantActiveEffectsPanel } from "./CombatantActiveEffectsPanel";
 import { CombatantCastForm } from "./CombatantCastForm";
 import { CombatantPhysicalAttackForm } from "./CombatantPhysicalAttackForm";
@@ -22,7 +23,7 @@ type CombatantPowerControlsProps = {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
   }) => string | null;
-  requestBodyReinforcementRevive: (payload: {
+  requestBruteDefiance: (payload: {
     view: EncounterParticipantView;
   }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
@@ -34,7 +35,7 @@ export function CombatantPowerControls({
   itemsById,
   requestCast,
   requestPhysicalAttack,
-  requestBodyReinforcementRevive,
+  requestBruteDefiance,
   updateCharacter,
 }: CombatantPowerControlsProps) {
   const castState = useCombatantCastState({
@@ -49,7 +50,7 @@ export function CombatantPowerControls({
   });
   const character = view.character;
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [bodyReinforcementError, setBodyReinforcementError] = useState<string | null>(null);
+  const [bruteDefianceError, setBruteDefianceError] = useState<string | null>(null);
   const actionsPopoverRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -82,11 +83,11 @@ export function CombatantPowerControls({
     return null;
   }
 
-  const bodyReinforcementState = getBodyReinforcementReviveState(character);
+  const bruteDefianceState = getBruteDefianceState(character);
 
-  function handleBodyReinforcementRevive(): void {
-    setBodyReinforcementError(
-      requestBodyReinforcementRevive({
+  function handleBruteDefiance(): void {
+    setBruteDefianceError(
+      requestBruteDefiance({
         view,
       })
     );
@@ -120,22 +121,22 @@ export function CombatantPowerControls({
                 <p className="section-kicker">Cast Power</p>
                 <CombatantCastForm embedded state={castState} />
               </div>
-              {bodyReinforcementState.isAvailable ? (
+              {bruteDefianceState.isAvailable ? (
                 <div className="dm-combatant-tool-subsection">
-                  <p className="section-kicker">Body Reinforcement</p>
-                  <p className="dm-summary-line">{bodyReinforcementState.statusText}</p>
+                  <p className="section-kicker">{BODY_REINFORCEMENT_CANTRIP_SPELL_NAME}</p>
+                  <p className="dm-summary-line">{bruteDefianceState.statusText}</p>
                   <div className="dm-control-row">
                     <button
                       type="button"
                       className="flow-secondary"
-                      onClick={handleBodyReinforcementRevive}
-                      disabled={!bodyReinforcementState.isEligible}
+                      onClick={handleBruteDefiance}
+                      disabled={!bruteDefianceState.isEligible}
                     >
-                      Trigger Body Reinforcement
+                      Trigger {BODY_REINFORCEMENT_CANTRIP_SPELL_NAME}
                     </button>
                   </div>
-                  {bodyReinforcementError ? (
-                    <p className="dm-error">{bodyReinforcementError}</p>
+                  {bruteDefianceError ? (
+                    <p className="dm-error">{bruteDefianceError}</p>
                   ) : null}
                 </div>
               ) : null}

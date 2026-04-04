@@ -115,7 +115,7 @@ export async function runPowerRegistryTests(): Promise<void> {
               governingStat: "STAM" as const,
             },
             spellId: "default" as const,
-            actionName: "BodyReinforcementSpellAction",
+            actionName: "BoostPhysiqueSpellAction",
           },
           {
             power: {

@@ -27,7 +27,7 @@
 - `T08` Completed `Light Support` mana restore and `Expose Darkness`.
   - Added long-rest usage tracking, direct mana restoration, and temporary resistance downgrades for darkness-based defenses.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
-- `T09` Completed `Body Reinforcement` delayed stand-up behavior.
+- `T09` Completed `Brute Defiance` delayed stand-up behavior under `Body Reinforcement`.
   - Added encounter-turn revive scheduling, revive application, and daily usage tracking.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
 - `T10` Completed `Crowd Control`.
@@ -117,7 +117,7 @@
   - Added active tasks:
     - `CS-UI-01` Derived Summary consolidation
     - `CS-RULE-01` automatic loadout-driven physical attacks
-    - `CS-UX-01` manual `Body Reinforcement` encounter trigger
+    - `CS-UX-01` manual `Brute Defiance` encounter trigger
   - Locked user decisions:
     - `Derived Summary` should show all subsections even when empty
     - automatic physical attacks stay single-target in the UI for now
@@ -126,7 +126,7 @@
     - if no weapon is equipped, use brawl/fists
     - if an equipped item is explicitly typed as brawl, use the brawl profile
     - bow occupies both hand slots
-    - `Body Reinforcement` revive becomes a manual encounter action
+    - `Brute Defiance` becomes a manual encounter action
   - Baseline validation before follow-up implementation: `npm run typecheck`, `npm test`, `npm run build`.
 - `CS-UI-01` completed.
   - Moved `Active Effects`, `Utility Traits`, `Combat Flags`, and `Power Tracking` into `CharacterCombatSummary`.
@@ -140,8 +140,8 @@
   - Added dedicated physical-attack regression coverage, including brawl fallback, explicit brawl items, dual one-handed inference, bow hand-slot occupancy, and deterministic auto-resolution.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
 - `CS-UX-01` completed.
-  - Replaced automatic turn-advance `Body Reinforcement` revive scheduling with a manual encounter action.
-  - Added visible BR eligibility text and a `Trigger Body Reinforcement` action inside the encounter `Actions` popover for characters who have the cantrip unlocked.
+  - Replaced automatic turn-advance `Brute Defiance` scheduling with a manual encounter action.
+  - Added visible BR eligibility text and a `Trigger Brute Defiance` action inside the encounter `Actions` popover for characters who have the cantrip unlocked.
   - Kept the trigger window locked to `0` through `-5 HP`, daily-use tracking intact, and revive output at `1 HP` for BR `2-4` and `4 HP` for BR `5`.
   - Added focused regression coverage for unavailable, ineligible, spent, and successful BR revive states in `tests/combatEncounterSpecialActions.test.ts`.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
@@ -155,7 +155,10 @@
   - Added a new `src/engine/` action/effect runtime with action classes, effect classes, and a request-building executor.
   - Added `src/powers/` registries and spell-action modules for all currently supported powers and spells, preserving current spell behavior and `powers.json`-driven metadata.
   - Moved passive power-derived bonuses and utility traits out of `characterRuntime.ts` hardcoded branches and into a passive provider registry.
-  - Replaced the monolithic `prepareCastRequest` spell switch with action lookup plus effect execution, and wired the manual `Body Reinforcement` revive path through the same runtime.
+  - Replaced the monolithic `prepareCastRequest` spell switch with action lookup plus effect execution, and wired the manual `Brute Defiance` path through the same runtime.
+- Added `BR-BD-01` as deferred follow-up work.
+  - Target spec: `Brute Defiance` should become a passive 1/day delayed stand-up again with HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
+  - No implementation or validation was done for that note.
   - Added focused registry coverage in `tests/powerRegistry.test.ts`.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
 - Recorded future knowledge-card architecture notes.

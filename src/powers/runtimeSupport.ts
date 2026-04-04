@@ -28,6 +28,7 @@ import { createTimestampedId } from "../lib/ids.ts";
 import { rollD10Faces } from "../lib/dice.ts";
 import type { CastPowerMode, CastPowerVariantId } from "./spellTypes.ts";
 import type { SharedItemRecord } from "../types/items.ts";
+import { BODY_REINFORCEMENT_BUFF_SPELL_NAME } from "./spellLabels.ts";
 
 export function buildEncounterActivityLogEntry(summary: string) {
   return {
@@ -45,6 +46,10 @@ export function getGenericBuffActionLabel(
   powerId: CastRequestPayload["selectedPower"]["id"],
   powerName: string
 ): string {
+  if (powerId === "body_reinforcement") {
+    return BODY_REINFORCEMENT_BUFF_SPELL_NAME;
+  }
+
   if (powerId === "light_support") {
     return "Light Aura";
   }

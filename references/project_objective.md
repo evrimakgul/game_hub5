@@ -9,7 +9,7 @@ Keep the app as a local-first TTRPG hub and preserve the completed Phase 1 comba
 - Preserve the completed follow-up work for:
   - `Derived Summary` consolidation
   - automatic loadout-driven physical attacks
-  - manual `Body Reinforcement` encounter trigger
+  - manual `Brute Defiance` encounter trigger
 - Leave only explicit deferred reminder or blocked work for later phases.
 - Record the agreed future direction for standalone revisioned knowledge cards without forcing it into the current history-only implementation.
 
