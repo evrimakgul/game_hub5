@@ -42,3 +42,4 @@
 - `CS-UI-02` Expanded the `Derived Summary` card to span the full player-sheet page width.
 - `CS-RULE-01` Replaced manual-assisted physical attacks with automatic loadout-driven resolution, canonical hand-slot inference, automatic hit and damage rolls, DR mitigation, and detailed encounter activity logging.
 - `CS-UX-01` Replaced automatic `Body Reinforcement` cantrip revival with a visible manual encounter trigger, clear eligibility text, and focused regression coverage.
+- `PWR-ARCH-01` Refactored spell preparation and passive derivation into the new `Action` / `Effect` runtime, power registry, and passive provider registry while preserving current powers, spells, local saves, and encounter UI flows.

@@ -148,3 +148,13 @@
 - `CS-UI-02` completed.
   - Expanded the `Derived Summary` card to span the full width of the player-sheet grid by changing the `combat-card` grid-column rule.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
+## 2026-04-04
+
+- `PWR-ARCH-01` completed.
+  - Added a new `src/engine/` action/effect runtime with action classes, effect classes, and a request-building executor.
+  - Added `src/powers/` registries and spell-action modules for all currently supported powers and spells, preserving current spell behavior and `powers.json`-driven metadata.
+  - Moved passive power-derived bonuses and utility traits out of `characterRuntime.ts` hardcoded branches and into a passive provider registry.
+  - Replaced the monolithic `prepareCastRequest` spell switch with action lookup plus effect execution, and wired the manual `Body Reinforcement` revive path through the same runtime.
+  - Added focused registry coverage in `tests/powerRegistry.test.ts`.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.

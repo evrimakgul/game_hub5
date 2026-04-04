@@ -1,7 +1,9 @@
 import { POWER_USAGE_KEYS, getPowerUsageCount } from "./powerUsage.ts";
-import { createTimestampedId } from "./ids.ts";
 import type { CharacterRecord } from "../types/character.ts";
 import type { PreparedCastRequest } from "../types/combatEncounterView.ts";
+import type { ActionContext } from "../engine/context.ts";
+import { executeAction } from "../engine/effectExecutor.ts";
+import { BodyReinforcementReviveSpellAction } from "../powers/bodyReinforcement.ts";
 
 export type BodyReinforcementReviveState = {
   isAvailable: boolean;
@@ -10,35 +12,6 @@ export type BodyReinforcementReviveState = {
   reviveHp: number;
   statusText: string;
 };
-
-function buildPreparedActionRequest(
-  casterCharacterId: string,
-  targetCharacterId: string
-): PreparedCastRequest {
-  return {
-    casterCharacterId,
-    targetCharacterIds: [targetCharacterId],
-    manaCost: 0,
-    effects: [],
-    historyEntries: [],
-    activityLogEntries: [],
-    healingApplications: [],
-    damageApplications: [],
-    resourceChanges: [],
-    statusTagChanges: [],
-    usageCounterChanges: [],
-    summonChanges: [],
-    ongoingStateChanges: [],
-  };
-}
-
-function buildEncounterActivityLogEntry(summary: string) {
-  return {
-    id: createTimestampedId("encounter-log"),
-    createdAt: new Date().toISOString(),
-    summary,
-  };
-}
 
 export function getBodyReinforcementReviveState(
   character: CharacterRecord
@@ -104,30 +77,60 @@ export function prepareBodyReinforcementReviveRequest(payload: {
     return { error: reviveState.statusText };
   }
 
-  const request = buildPreparedActionRequest(payload.character.id, payload.character.id);
-  request.resourceChanges = [
-    {
-      characterId: payload.character.id,
-      field: "currentHp",
-      operation: "set",
-      value: reviveState.reviveHp,
-    },
-  ];
-  request.usageCounterChanges = [
-    {
-      characterId: payload.character.id,
-      operation: "increment",
-      scope: "daily",
-      key: POWER_USAGE_KEYS.bodyReinforcementRevive,
-      targetCharacterId: null,
-      amount: 1,
-    },
-  ];
-  request.activityLogEntries = [
-    buildEncounterActivityLogEntry(
-      `Body Reinforcement revived ${payload.character.sheet.name.trim() || payload.character.id} to ${reviveState.reviveHp} HP.`
-    ),
-  ];
+  const selectedPower =
+    payload.character.sheet.powers.find((power) => power.id === "body_reinforcement") ?? null;
+  if (!selectedPower) {
+    return { error: "Body Reinforcement is not available." };
+  }
 
-  return { request, reviveHp: reviveState.reviveHp };
+  const selfView = {
+    participant: {
+      characterId: payload.character.id,
+      ownerRole: payload.character.ownerRole,
+      displayName: payload.character.sheet.name,
+      initiativePool: 0,
+      initiativeFaces: [],
+      initiativeSuccesses: 0,
+      dex: 0,
+      wits: 0,
+      partyId: null,
+      controllerCharacterId: null,
+      summonTemplateId: null,
+      sourcePowerId: null,
+    },
+    character: payload.character,
+    transientCombatant: null,
+    snapshot: null,
+  };
+  const context: ActionContext = {
+    payload: null,
+    casterCharacter: payload.character,
+    casterName: payload.character.sheet.name.trim() || payload.character.id,
+    selectedPower,
+    selectedSpellId: "default",
+    encounterParticipants: [selfView],
+    itemsById: {},
+    casterView: selfView,
+    validTargetViews: [selfView],
+    selectedTargetViews: [selfView],
+    fallbackTargetViews: [selfView],
+    finalTargetViews: [selfView],
+    finalTargets: [payload.character],
+    attackOutcome: "hit",
+    healingAllocations: {},
+    selectedStatId: null,
+    castMode: "self",
+    selectedDamageType: null,
+    bonusManaSpend: 0,
+    selectedSummonOptionId: null,
+  };
+
+  try {
+    const { request } = executeAction(new BodyReinforcementReviveSpellAction(), context);
+    return { request, reviveHp: reviveState.reviveHp };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Failed to prepare Body Reinforcement revive.",
+    };
+  }
 }

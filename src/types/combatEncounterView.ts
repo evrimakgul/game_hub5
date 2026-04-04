@@ -3,7 +3,7 @@ import type {
   CastPowerMode,
   CastPowerVariantId,
   DamageMitigationChannel,
-} from "../rules/powerEffects";
+} from "../powers/spellTypes";
 import type { DamageTypeId } from "../rules/resistances";
 import type { ActivePowerEffect } from "./activePowerEffects";
 import type { CharacterRecord, StatId } from "./character";

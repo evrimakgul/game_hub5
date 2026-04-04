@@ -3,6 +3,11 @@ import {
   buildCharacterItemModifierSources,
   getCharacterItemUtilityTraits,
 } from "../lib/items.ts";
+import {
+  getPassiveManaBonus,
+  getPassiveSkillSources,
+  getPassiveUtilityTraits,
+} from "../powers/passiveRegistry.ts";
 import type {
   CharacterDraft,
   SkillEntry,
@@ -11,7 +16,6 @@ import type {
 } from "./characterTemplate.ts";
 import type { StatId } from "../types/character.ts";
 import type { DamageTypeId, ResistanceLevel } from "../rules/resistances.ts";
-import { getRuntimePowerCantripLevels } from "../rules/powerData.ts";
 import {
   calculateArmorClass,
   calculateInitiative,
@@ -110,113 +114,6 @@ function getItemSources(
     }));
 }
 
-function getAwarenessAlertnessPassiveSource(sheet: CharacterDraft): StatSource[] {
-  const awarenessPower = sheet.powers.find((power) => power.id === "awareness");
-  if (!awarenessPower || awarenessPower.level <= 0) {
-    return [];
-  }
-
-  return [
-    {
-      label: "Awareness",
-      value: awarenessPower.level,
-    },
-  ];
-}
-
-function getUnlockedCantripMechanics(
-  sheet: CharacterDraft,
-  powerId: string
-): Record<string, unknown> | null {
-  const power = sheet.powers.find((entry) => entry.id === powerId);
-  if (!power || power.level <= 0) {
-    return null;
-  }
-
-  const unlockedLevel =
-    getRuntimePowerCantripLevels(powerId)
-      .filter((level) => level.power_level <= power.level)
-      .at(-1) ?? null;
-
-  return unlockedLevel?.mechanics ?? null;
-}
-
-function getPassiveSkillBonusSources(sheet: CharacterDraft, skillId: string): StatSource[] {
-  const sources: StatSource[] = [];
-  const crowdControlMechanics = getUnlockedCantripMechanics(sheet, "crowd_control");
-  const necromancyMechanics = getUnlockedCantripMechanics(sheet, "necromancy");
-
-  if (crowdControlMechanics) {
-    const crowdControlBonusBySkillId: Record<string, string> = {
-      social: "social_skill_bonus",
-      intimidation: "intimidation_skill_bonus",
-      mechanics: "mechanics_skill_bonus",
-      technology: "technology_skill_bonus",
-    };
-    const mechanicKey = crowdControlBonusBySkillId[skillId];
-    const bonus = mechanicKey ? crowdControlMechanics[mechanicKey] : 0;
-
-    if (typeof bonus === "number" && Number.isFinite(bonus) && bonus > 0) {
-      sources.push({
-        label: "Crowd Control",
-        value: Math.trunc(bonus),
-      });
-    }
-  }
-
-  if (skillId === "melee" && necromancyMechanics) {
-    const bonus = necromancyMechanics.melee_skill_bonus;
-    if (typeof bonus === "number" && Number.isFinite(bonus) && bonus > 0) {
-      sources.push({
-        label: "Necromancy",
-        value: Math.trunc(bonus),
-      });
-    }
-  }
-
-  return sources;
-}
-
-function getPassiveUtilityTraits(sheet: CharacterDraft): string[] {
-  const traits = new Set<string>();
-  const awareness = sheet.powers.find((power) => power.id === "awareness") ?? null;
-  const lightSupport = sheet.powers.find((power) => power.id === "light_support") ?? null;
-  const necromancy = sheet.powers.find((power) => power.id === "necromancy") ?? null;
-  const shadowControl = sheet.powers.find((power) => power.id === "shadow_control") ?? null;
-  const lightSupportMechanics = getUnlockedCantripMechanics(sheet, "light_support");
-  const necromancyMechanics = getUnlockedCantripMechanics(sheet, "necromancy");
-
-  if ((awareness?.level ?? 0) >= 3) {
-    traits.add("Techno-Invisibility Immunity");
-  }
-
-  if (lightSupport && lightSupportMechanics?.nightvision === true) {
-    traits.add("Nightvision");
-  }
-
-  if (necromancy && typeof necromancyMechanics?.hostile_undead_aggro_priority === "string") {
-    traits.add(
-      necromancyMechanics.hostile_undead_aggro_priority === "ignore_unless_attacked"
-        ? "Hostile Undead Ignore Unless Attacked"
-        : "Hostile Undead Aggro Last"
-    );
-  }
-
-  if ((shadowControl?.level ?? 0) >= 2) {
-    traits.add(`Shadow Walk ${25 * shadowControl!.level}m`);
-  }
-
-  if ((shadowControl?.level ?? 0) >= 3) {
-    traits.add("Cosmetic Clothing / Armor Shift");
-  }
-
-  if ((shadowControl?.level ?? 0) >= 5) {
-    traits.add("Minor Body Cosmetics");
-  }
-
-  return [...traits];
-}
-
 export function getStatBreakdown(
   sheet: CharacterDraft,
   statId: StatId,
@@ -250,8 +147,7 @@ export function getSkillBreakdown(
   const buffSources = [
     ...(skill?.buffSources ?? []),
     ...getPowerEffectSources(sheet, "skill", skillId),
-    ...(skillId === "alertness" ? getAwarenessAlertnessPassiveSource(sheet) : []),
-    ...getPassiveSkillBonusSources(sheet, skillId),
+    ...getPassiveSkillSources(sheet, skillId, itemsById),
   ];
   const base = skill?.base ?? 0;
 
@@ -322,19 +218,6 @@ export function getResolvedResistanceLevel(
   return nextLevel as ResistanceLevel;
 }
 
-export function getPassiveManaBonus(sheet: CharacterDraft): number {
-  return sheet.powers.reduce((total, power) => {
-    const applicableBonus = getRuntimePowerCantripLevels(power.id)
-      .filter((level) => level.power_level <= power.level)
-      .reduce((bonus, level) => {
-        const manaBonus = level.mechanics?.mana_bonus;
-        return typeof manaBonus === "number" ? manaBonus : bonus;
-      }, 0);
-
-    return total + applicableBonus;
-  }, 0);
-}
-
 export function calculateT1BaseMana(
   sheet: CharacterDraft,
   currentStats: Record<StatId, number>
@@ -368,7 +251,7 @@ export function buildCharacterDerivedValues(
     PER: getCurrentStatValue(sheet, "PER", itemsById),
   };
   const occultManaBonus = calculateOccultManaBonus(getCurrentSkillValue(sheet, "occultism", itemsById), sheet.xpUsed);
-  const passiveManaBonus = getPassiveManaBonus(sheet);
+  const passiveManaBonus = getPassiveManaBonus(sheet, itemsById);
   const maxMana =
     calculateT1BaseMana(sheet, currentStats) +
     occultManaBonus +
@@ -388,7 +271,12 @@ export function buildCharacterDerivedValues(
     attackDiceBonus +
     getDerivedModifierTotal(sheet, "ranged_attack", itemsById);
   const temporaryInspiration = sheet.temporaryInspiration;
-  const utilityTraits = [...new Set([...getPassiveUtilityTraits(sheet), ...getCharacterItemUtilityTraits(sheet, itemsById)])];
+  const utilityTraits = [
+    ...new Set([
+      ...getPassiveUtilityTraits(sheet, itemsById),
+      ...getCharacterItemUtilityTraits(sheet, itemsById),
+    ]),
+  ];
 
   return {
     currentStats,

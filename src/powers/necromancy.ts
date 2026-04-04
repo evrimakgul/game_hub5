@@ -1,0 +1,274 @@
+import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
+import { buildDirectDamageCastResolution } from "../rules/powerEffects.ts";
+import { buildSummonCastResolution } from "../rules/summons.ts";
+import {
+  AttackSpellAction,
+  RestorationSpellAction,
+  SummonSpellAction,
+} from "../engine/actions.ts";
+import {
+  AuraEffect,
+  DamageEffect,
+  HealingEffect,
+  LogEffect,
+  ResourceEffect,
+  StatusRemovalEffect,
+  SummonEffect,
+} from "../engine/effects.ts";
+import type { ActionContext } from "../engine/context.ts";
+import { createEmptyPassiveProviderResult } from "./passiveSupport.ts";
+import {
+  blocksNecroticTouch,
+  buildEncounterActivityLogEntry,
+  buildInheritedAuraEffectsForSummons,
+  buildStatusRemovalChanges,
+  isLivingEncounterTarget,
+  isUndeadEncounterTarget,
+  joinTargetNames,
+} from "./runtimeSupport.ts";
+import { PowerPassiveProvider, type PowerModule } from "./types.ts";
+
+class EmptyPassiveProvider extends PowerPassiveProvider {
+  override getResult() {
+    return createEmptyPassiveProviderResult();
+  }
+}
+
+class NecroticTouchSpellAction extends AttackSpellAction {
+  override resolve(context: ActionContext) {
+    const selectedPower = context.selectedPower;
+    if (!selectedPower) {
+      throw new Error("Select at least one valid target before casting.");
+    }
+
+    if (context.attackOutcome === "unresolved") {
+      throw new Error("Resolve the touch attack outcome first.");
+    }
+
+    if (context.attackOutcome === "miss") {
+      const runtimeLevel = getRuntimePowerLevelDefinition(selectedPower.id, selectedPower.level);
+      const necroticTouch =
+        runtimeLevel?.mechanics?.necrotic_touch &&
+        typeof runtimeLevel.mechanics.necrotic_touch === "object"
+          ? (runtimeLevel.mechanics.necrotic_touch as Record<string, unknown>)
+          : null;
+
+      this.setManaCost(
+        typeof necroticTouch?.mana_cost === "number"
+          ? necroticTouch.mana_cost
+          : runtimeLevel?.mana_cost ?? 0
+      );
+      this.setTargetCharacterIds(context.finalTargets.map((target) => target.id));
+
+      return [
+        new LogEffect(
+          buildEncounterActivityLogEntry(
+            `Necrotic Touch missed ${joinTargetNames(context.finalTargets)}.`
+          )
+        ),
+      ];
+    }
+
+    const damageResolution = buildDirectDamageCastResolution({
+      casterSheet: context.casterCharacter.sheet,
+      power: selectedPower,
+      variantId: context.selectedSpellId,
+      targetCharacterIds: context.finalTargets.map((targetCharacter) => targetCharacter.id),
+      selectedDamageType: context.selectedDamageType,
+      bonusManaSpend: context.bonusManaSpend,
+      targetMetadata: context.finalTargetViews.map((targetView) => ({
+        characterId: targetView.participant.characterId,
+        isLiving: isLivingEncounterTarget(targetView),
+        isUndead: isUndeadEncounterTarget(targetView),
+        blocksNecroticTouch: blocksNecroticTouch(targetView),
+      })),
+      itemsById: context.itemsById,
+    });
+
+    if ("error" in damageResolution) {
+      throw new Error(damageResolution.error);
+    }
+
+    this.setManaCost(damageResolution.manaCost);
+    this.setTargetCharacterIds(context.finalTargets.map((target) => target.id));
+
+    return [
+      ...damageResolution.applications.map(
+        (application) =>
+          new DamageEffect({
+            ...application,
+            sourceCharacterId: context.casterCharacter.id,
+          })
+      ),
+      new HealingEffect({
+        targetCharacterId: context.casterCharacter.id,
+        amount: selectedPower.level,
+        temporaryHpCap: null,
+      }),
+      ...(damageResolution.healingApplications ?? []).map(
+        (application) =>
+          new HealingEffect({
+            targetCharacterId: application.targetCharacterId,
+            amount: application.amount,
+            temporaryHpCap: null,
+          })
+      ),
+      new LogEffect(
+        buildEncounterActivityLogEntry(
+          `Necrotic Touch: ${context.casterName} targeted ${joinTargetNames(context.finalTargets)}.`
+        )
+      ),
+    ];
+  }
+}
+
+class SummonUndeadSpellAction extends SummonSpellAction {
+  override resolve(context: ActionContext) {
+    const selectedPower = context.selectedPower;
+    if (!selectedPower) {
+      throw new Error("Select at least one valid target before casting.");
+    }
+
+    const activeTransientCombatants = context.encounterParticipants.flatMap((targetView) =>
+      targetView.transientCombatant ? [targetView.transientCombatant] : []
+    );
+
+    if (context.selectedSpellId === "dismiss_summon") {
+      const dismissIds = activeTransientCombatants
+        .filter(
+          (entry) =>
+            entry.controllerCharacterId === context.casterCharacter.id &&
+            entry.sourcePowerId === selectedPower.id
+        )
+        .map((entry) => entry.id);
+
+      if (dismissIds.length === 0) {
+        throw new Error("There is no active summon to remove for this power.");
+      }
+
+      this.setManaCost(0);
+      this.setTargetCharacterIds([context.casterCharacter.id]);
+
+      return [
+        new SummonEffect(
+          dismissIds.map((summonId) => ({
+            operation: "dismiss" as const,
+            summonId,
+          }))
+        ),
+        new LogEffect(
+          buildEncounterActivityLogEntry(
+            `Remove Summon: ${context.casterName} dismissed an active summon.`
+          )
+        ),
+      ];
+    }
+
+    if (!context.casterView) {
+      throw new Error("The casting combatant is no longer present in the encounter.");
+    }
+
+    const summonResolution = buildSummonCastResolution({
+      casterCharacter: context.casterCharacter,
+      casterParticipant: context.casterView.participant,
+      power: selectedPower,
+      selectedSummonOptionId: context.selectedSummonOptionId ?? "",
+      activeTransientCombatants,
+    });
+
+    if ("error" in summonResolution) {
+      throw new Error(summonResolution.error);
+    }
+
+    this.setManaCost(summonResolution.manaCost);
+    this.setTargetCharacterIds([context.casterCharacter.id]);
+
+    const inheritedAuraEffects = buildInheritedAuraEffectsForSummons({
+      casterEffects: context.casterCharacter.sheet.activePowerEffects ?? [],
+      summons: summonResolution.summons,
+    });
+
+    return [
+      new SummonEffect([
+        ...summonResolution.dismissIds.map((summonId) => ({
+          operation: "dismiss" as const,
+          summonId,
+        })),
+        ...summonResolution.summons.map((summon, index) => ({
+          operation: "spawn" as const,
+          summon,
+          participant: summonResolution.participants[index],
+        })),
+      ]),
+      ...(inheritedAuraEffects.length > 0 ? [new AuraEffect(inheritedAuraEffects)] : []),
+      new LogEffect(
+        buildEncounterActivityLogEntry(
+          `Summon Undead: ${context.casterName} created ${summonResolution.summons
+            .map((summon) => summon.sheet.name.trim() || summon.id)
+            .join(", ")}.`
+        )
+      ),
+    ];
+  }
+}
+
+class ResurrectionSpellAction extends RestorationSpellAction {
+  override resolve(context: ActionContext) {
+    const targetView = context.finalTargetViews[0];
+    const targetCharacter = context.finalTargets[0];
+
+    if (!targetView || !targetCharacter) {
+      throw new Error("Select one valid resurrection target.");
+    }
+
+    if (targetView.transientCombatant) {
+      throw new Error("Resurrection only works on loaded character sheets.");
+    }
+
+    this.setManaCost(6);
+    this.setTargetCharacterIds([targetCharacter.id]);
+
+    return [
+      new ResourceEffect({
+        characterId: targetCharacter.id,
+        field: "currentHp",
+        operation: "set",
+        value: 1,
+      }),
+      new StatusRemovalEffect(
+        buildStatusRemovalChanges(targetCharacter, ["bleeding", "dead", "dying", "unconscious"])
+      ),
+      new LogEffect(
+        buildEncounterActivityLogEntry(
+          `Resurrection: ${context.casterName} restored ${
+            targetCharacter.sheet.name.trim() || targetCharacter.id
+          }.`
+        )
+      ),
+    ];
+  }
+}
+
+export const necromancyModule: PowerModule = {
+  powerId: "necromancy",
+  spellIds: ["summon_undead", "dismiss_summon", "necrotic_touch", "resurrection"],
+  passiveProvider: new EmptyPassiveProvider(),
+  createAction(context) {
+    if (context.selectedSpellId === "necrotic_touch") {
+      return new NecroticTouchSpellAction();
+    }
+
+    if (
+      context.selectedSpellId === "summon_undead" ||
+      context.selectedSpellId === "dismiss_summon"
+    ) {
+      return new SummonUndeadSpellAction();
+    }
+
+    if (context.selectedSpellId === "resurrection") {
+      return new ResurrectionSpellAction();
+    }
+
+    return null;
+  },
+};

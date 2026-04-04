@@ -7,7 +7,7 @@ This roadmap is the active implementation source of truth for this branch.
 - Preserve working encounter behavior unless a change is required by an identified defect or this roadmap.
 - Use `Basic_Rules5.txt`, `T1_Supernatural_Powers5.txt`, `json_refs/powers.json`, and `json_refs/item_rules.json` as rule inputs.
 - Damage resolution must not clamp HP at `0`; negative HP stays visible.
-- Prefer minimal coherent engine changes over broad rewrites.
+- Keep the current `Action` / `Effect` spell runtime, power registry, and passive provider registry as the internal direction for future power work.
 - Treat combat, powers, turn upkeep, summons, aura effects, and items as one aligned system.
 
 ## Baseline Already Present
@@ -95,6 +95,12 @@ This roadmap is the active implementation source of truth for this branch.
   - current HP is between `0` and `-5`
   - the daily revive use is still unspent
 
+### 3.4 Power Runtime Refactor
+- Spell preparation now resolves through a light class-based `Action` / `Effect` runtime under `src/engine/`.
+- Power-specific spell dispatch now lives in `src/powers/` modules plus a central power registry instead of the old monolithic `prepareCastRequest` spell switch.
+- Passive power-derived skill bonuses, mana bonuses, and utility traits now come from a passive provider registry instead of hardcoded branches in `characterRuntime.ts`.
+- External UI request shapes, local save compatibility, current powers and spells, and `powers.json` metadata remain intact.
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`
@@ -106,7 +112,7 @@ This roadmap is the active implementation source of truth for this branch.
 - Update this roadmap when implementation reality changes.
 
 ## Deferred
-- `ARCH-REM-01` Later extract an encounter controller/engine layer from `CombatEncounterPage.tsx` so cast execution, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation move out of the route while the route stays focused on state wiring and rendering.
+- `ARCH-REM-01` Continue extracting encounter request application, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation from `CombatEncounterPage.tsx`; spell preparation is already on the new `Action` / `Effect` runtime.
 - Full item-authoring workflow and richer item bonus editors.
 - Full multi-target `AA` knowledge-sharing UI.
 - Encounter persistence and backend sync.

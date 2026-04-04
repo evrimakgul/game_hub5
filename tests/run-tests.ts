@@ -7,6 +7,7 @@ import { runCombatResolutionTests } from "./combatResolution.test.ts";
 import { runCombatEncounterTests } from "./combatEncounter.test.ts";
 import { runLibHelpersTests } from "./libHelpers.test.ts";
 import { runPowerEffectsTests } from "./powerEffects.test.ts";
+import { runPowerRegistryTests } from "./powerRegistry.test.ts";
 import { runStatsTests } from "./stats.test.ts";
 import { runViewModelSelectorTests } from "./viewModelSelectors.test.ts";
 import { runXpTablesTests } from "./xpTables.test.ts";
@@ -23,6 +24,7 @@ async function main(): Promise<void> {
   await runCombatEncounterSpecialActionTests();
   await runCombatEncounterCastingTests();
   await runPowerEffectsTests();
+  await runPowerRegistryTests();
   await runViewModelSelectorTests();
   console.log("ALL TESTS PASSED");
 }
