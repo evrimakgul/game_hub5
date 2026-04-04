@@ -167,3 +167,12 @@
   - Agreed UI direction: add a character-sheet `Knowledge` area and allow history entries to link to the exact revision involved, with hover preview and click/open behavior.
   - Added `references/knowledge_card_design.md` to capture the concrete "how" details for data model, flows, lineage, history links, and character-sheet UI.
   - No code changes or validation were run for this note-only documentation update.
+- Recorded aura-builder architecture discussion.
+  - Current implementation: `buildActivePowerEffect(...)` is shared by both targeted buff spells and aura-source spells.
+  - Alternative noted for discussion: keep targeted buffs there, but move aura-source construction into a dedicated builder such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`.
+  - Added `AURA-ARCH-DISCUSS-01` to TODO as a discussion item, not implementation work.
+  - No code changes or validation were run for this note-only documentation update.
+- Recorded `Crowd Control` passive replacement TODOs.
+  - Added `CC-PASSIVE-01` for `Crowd Management (CM)` with `Social +1 / +2 / +3 / +4 / +5` by `Crowd Control` level.
+  - Added `CC-PASSIVE-02` for `Compulsion Guard (CG)` at `Crowd Control` level `5`, adding `Social` while defending against control effects.
+  - Renamed the active spell label from `Control Target` to `Control Entity`.

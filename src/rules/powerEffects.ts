@@ -456,7 +456,7 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
 
   if (power.id === "crowd_control") {
     return [
-      { id: "crowd_control", label: "Control Target" },
+      { id: "crowd_control", label: "Control Entity" },
       { id: "release_control", label: "Release Target" },
     ];
   }

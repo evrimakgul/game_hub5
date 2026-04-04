@@ -28,6 +28,10 @@ This file tracks active reminders for the current implementation block.
 - Encounter upkeep and cast execution still live mostly in the route layer.
 - Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
 - Knowledge gained from spells is still stored too narrowly as history entries instead of revisioned standalone knowledge records.
+- Aura construction has an unresolved architecture dilemma:
+  - current implementation uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
+  - alternative direction is to split aura construction into a dedicated helper such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`
+  - this is recorded for discussion, not implementation
 
 ## Recorded Knowledge-Card Direction
 - Keep `History` as an event log.
@@ -49,6 +53,9 @@ This file tracks active reminders for the current implementation block.
 ## Deferred But Recorded
 - `ARCH-REM-01` remains as a reminder to extract an encounter controller/engine layer later.
 - `Brute Defiance` is still using the temporary manual-trigger implementation; the recorded follow-up is to restore it as a passive delayed stand-up with HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
+- `Crowd Control` passive follow-up is recorded:
+  - replace the current cantrip-style passive bonuses with `Crowd Management (CM)` scaling `Social +1 / +2 / +3 / +4 / +5` by `Crowd Control` level
+  - add `Compulsion Guard (CG)` at `Crowd Control` level `5` so `Social` is added while defending against control effects
 - Full item-authoring UX and multi-target `AA` knowledge-sharing UI remain deferred.
 - Revisioned knowledge-card storage, character-sheet knowledge browsing, and history-to-card linking are now recorded future work.
 - Backend sync and encounter persistence remain out of scope.

@@ -93,7 +93,7 @@ class ReleaseControlSpellAction extends ControlSpellAction {
   }
 }
 
-class ControlTargetSpellAction extends ControlSpellAction {
+class ControlEntitySpellAction extends ControlSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     if (!selectedPower) {
@@ -241,7 +241,7 @@ export const crowdControlModule: PowerModule = {
     }
 
     if (context.selectedSpellId === "crowd_control") {
-      return new ControlTargetSpellAction();
+      return new ControlEntitySpellAction();
     }
 
     return null;

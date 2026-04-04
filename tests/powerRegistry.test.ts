@@ -125,7 +125,7 @@ export async function runPowerRegistryTests(): Promise<void> {
               governingStat: "CHA" as const,
             },
             spellId: "crowd_control" as const,
-            actionName: "ControlTargetSpellAction",
+            actionName: "ControlEntitySpellAction",
           },
           {
             power: {
