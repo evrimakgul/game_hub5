@@ -28,6 +28,10 @@ import { createTimestampedId } from "../lib/ids.ts";
 import { prependGameHistoryEntry } from "../lib/historyEntries";
 import { buildItemIndex } from "../lib/items.ts";
 import {
+  applyKnowledgeBatch,
+  buildLinkedCharacterKnowledgeBatchFromIntelEntry,
+} from "../lib/knowledge.ts";
+import {
   incrementPerTargetDailyPowerUsageCount,
   incrementPowerUsageCount,
   setLongRestSelection,
@@ -103,7 +107,11 @@ export function CombatEncounterPage() {
     activeCombatEncounter,
     characters,
     items,
+    knowledgeEntities,
+    knowledgeRevisions,
+    knowledgeOwnerships,
     updateCharacter,
+    updateKnowledgeState,
     updateCombatEncounter,
   } = useAppFlow();
   const [pendingCastConfirmation, setPendingCastConfirmation] =
@@ -681,7 +689,55 @@ export function CombatEncounterPage() {
     }
     updateEncounterCharacter(casterCharacter.id, () => spentMana.sheet);
 
-    request.historyEntries.forEach((item) => {
+    let nextKnowledgeState = {
+      knowledgeEntities,
+      knowledgeRevisions,
+      knowledgeOwnerships,
+    };
+    const resolvedHistoryEntries = request.historyEntries.map((item) => {
+      const historyEntry = item.entry;
+      if (historyEntry.type !== "intel_snapshot" || !historyEntry.targetCharacterId) {
+        return item;
+      }
+
+      const targetCharacter =
+        characters.find((entry) => entry.id === historyEntry.targetCharacterId) ??
+        currentEncounter.transientCombatants
+          .filter((entry) => entry.id === historyEntry.targetCharacterId)
+          .map((entry) => ({
+            id: entry.id,
+            ownerRole: entry.ownerRole,
+            sheet: entry.sheet,
+          }))[0] ??
+        null;
+
+      if (!targetCharacter) {
+        return item;
+      }
+
+      const linked = buildLinkedCharacterKnowledgeBatchFromIntelEntry({
+        state: nextKnowledgeState,
+        casterCharacter,
+        targetCharacter,
+        entry: historyEntry,
+      });
+      nextKnowledgeState = applyKnowledgeBatch(nextKnowledgeState, linked.batch);
+
+      return {
+        ...item,
+        entry: linked.entry,
+      };
+    });
+
+    if (
+      nextKnowledgeState.knowledgeEntities !== knowledgeEntities ||
+      nextKnowledgeState.knowledgeRevisions !== knowledgeRevisions ||
+      nextKnowledgeState.knowledgeOwnerships !== knowledgeOwnerships
+    ) {
+      updateKnowledgeState(nextKnowledgeState);
+    }
+
+    resolvedHistoryEntries.forEach((item) => {
       updateEncounterCharacter(item.characterId, (currentSheet) => ({
         ...currentSheet,
         gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], item.entry),

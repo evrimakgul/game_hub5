@@ -16,6 +16,7 @@ import type {
 import type { CharacterEquipmentReference } from "../types/items.ts";
 import { STAT_IDS, isStatId, type CharacterOwnerRole, type StatId } from "../types/character.ts";
 import type { PowerUsageState } from "../types/powerUsage.ts";
+import type { KnowledgeHistoryLink } from "../types/knowledge.ts";
 
 export type { StatId } from "../types/character.ts";
 
@@ -57,6 +58,7 @@ export type GameHistoryNoteEntry = {
   actualDateTime: string;
   gameDateTime: string;
   note: string;
+  knowledgeLink?: KnowledgeHistoryLink | null;
 };
 
 export type IntelSnapshotField = {
@@ -73,6 +75,7 @@ export type GameHistoryIntelSnapshotEntry = {
   targetCharacterId: string | null;
   targetName: string;
   summary: string;
+  knowledgeLink?: KnowledgeHistoryLink | null;
   snapshot: {
     rank: string;
     cr: number;
@@ -606,12 +609,28 @@ function hydrateGameHistory(value: unknown): GameHistoryEntry[] {
     const type = entry.type === "intel_snapshot" ? "intel_snapshot" : "note";
     const actualDateTime = coerceString(entry.actualDateTime, "");
     const gameDateTime = coerceString(entry.gameDateTime, "");
+    const rawKnowledgeLink = isRecord(entry.knowledgeLink) ? entry.knowledgeLink : null;
+    const knowledgeLink =
+      rawKnowledgeLink &&
+      typeof rawKnowledgeLink.knowledgeEntityId === "string" &&
+      typeof rawKnowledgeLink.knowledgeRevisionId === "string" &&
+      typeof rawKnowledgeLink.knowledgeLabel === "string"
+        ? {
+            knowledgeEntityId: rawKnowledgeLink.knowledgeEntityId,
+            knowledgeRevisionId: rawKnowledgeLink.knowledgeRevisionId,
+            knowledgeLabel: rawKnowledgeLink.knowledgeLabel,
+          }
+        : null;
 
     if (!id || !actualDateTime || !gameDateTime) {
       return entries;
     }
 
     if (type === "intel_snapshot") {
+      if (!knowledgeLink) {
+        return entries;
+      }
+
       const snapshot = isRecord(entry.snapshot) ? entry.snapshot : {};
       entries.push({
         id,
@@ -623,6 +642,7 @@ function hydrateGameHistory(value: unknown): GameHistoryEntry[] {
           typeof entry.targetCharacterId === "string" ? entry.targetCharacterId : null,
         targetName: coerceString(entry.targetName, "Unknown Target"),
         summary: coerceString(entry.summary, ""),
+        knowledgeLink,
         snapshot: {
           rank: coerceString(snapshot.rank, ""),
           cr: Math.max(0, Math.trunc(coerceNumber(snapshot.cr, 0))),
@@ -655,6 +675,7 @@ function hydrateGameHistory(value: unknown): GameHistoryEntry[] {
       actualDateTime,
       gameDateTime,
       note: coerceString(entry.note, ""),
+      knowledgeLink,
     });
     return entries;
   }, []);

@@ -6,14 +6,18 @@ import { CharacterHeader } from "../components/player-character/CharacterHeader"
 import { CharacterHistorySection } from "../components/player-character/CharacterHistorySection";
 import { CharacterIdentitySection } from "../components/player-character/CharacterIdentitySection";
 import { CharacterInventorySection } from "../components/player-character/CharacterInventorySection";
+import { CharacterKnowledgeSection } from "../components/player-character/CharacterKnowledgeSection.tsx";
 import { CharacterPowersSection } from "../components/player-character/CharacterPowersSection";
 import { CharacterResources } from "../components/player-character/CharacterResources";
 import { CharacterSkillsSection } from "../components/player-character/CharacterSkillsSection";
 import { CharacterStatsSection } from "../components/player-character/CharacterStatsSection";
+import { KnowledgeRevisionDialog } from "../components/player-character/KnowledgeRevisionDialog.tsx";
 import { RollHelperPopover } from "../components/player-character/RollHelperPopover";
 import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate";
 import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
+import { getKnowledgeEntityById, getKnowledgeGroupsForOwner, getKnowledgeRevisionById } from "../lib/knowledge.ts";
+import { prependGameHistoryEntry } from "../lib/historyEntries.ts";
 import { usePlayerCharacterMutations } from "../hooks/usePlayerCharacterMutations";
 import { buildItemIndex, getCharacterArtifactAppraisalLevel } from "../lib/items.ts";
 import { buildPowerUsageSummary } from "../lib/powerUsage";
@@ -24,7 +28,7 @@ import {
   type PlayerRollTarget,
 } from "../selectors/playerCharacterViewModel";
 import { useAppFlow } from "../state/appFlow";
-import type { StatId } from "../types/character";
+import type { CharacterRecord, StatId } from "../types/character";
 
 type RollResult = {
   labels: string[];
@@ -49,9 +53,13 @@ export function PlayerCharacterPage({
   const {
     characters,
     items,
+    knowledgeEntities,
+    knowledgeRevisions,
+    knowledgeOwnerships,
     activePlayerCharacter,
     activeDmCharacter,
     updateCharacter,
+    updateKnowledgeState,
     createItem,
     updateItem,
     deleteItem,
@@ -75,6 +83,7 @@ export function PlayerCharacterPage({
   const [customRollModifiers, setCustomRollModifiers] = useState<CustomRollModifier[]>([]);
   const [lastRoll, setLastRoll] = useState<RollResult | null>(null);
   const [sessionNotes, setSessionNotes] = useState("");
+  const [openKnowledgeRevisionId, setOpenKnowledgeRevisionId] = useState<string | null>(null);
   const dragRef = useRef<{ active: boolean; moved: boolean; offsetX: number; offsetY: number }>(
     {
       active: false,
@@ -163,6 +172,31 @@ export function PlayerCharacterPage({
   } = buildPlayerCharacterViewModel(sheetState, itemsById);
   const powerUsageSummary = buildPowerUsageSummary(sheetState);
   const artifactAppraisalLevel = getCharacterArtifactAppraisalLevel(sheetState);
+  const knowledgeState = {
+    knowledgeEntities,
+    knowledgeRevisions,
+    knowledgeOwnerships,
+  };
+  const activeKnowledgeOwnerships =
+    activeCharacter
+      ? getKnowledgeGroupsForOwner(knowledgeState, activeCharacter.id).flatMap(
+          (group) => group.revisions
+        )
+      : [];
+  const openKnowledgeRevision =
+    openKnowledgeRevisionId !== null
+      ? getKnowledgeRevisionById(knowledgeState, openKnowledgeRevisionId)
+      : null;
+  const openKnowledgeEntity =
+    openKnowledgeRevision !== null
+      ? getKnowledgeEntityById(knowledgeState, openKnowledgeRevision.entityId)
+      : null;
+  const openKnowledgeOwnership =
+    openKnowledgeRevision !== null
+      ? activeKnowledgeOwnerships.find(
+          (entry) => entry.revision.id === openKnowledgeRevision.id
+        )?.ownership ?? null
+      : null;
   const selectedRollTargets = selectedRollIds
     .map((targetId) => rollTargets.find((target) => target.id === targetId))
     .filter((target): target is PlayerRollTarget => target !== undefined);
@@ -310,6 +344,15 @@ export function PlayerCharacterPage({
     setDmEditMode(false);
     setAdminOverrideMode((current) => !current);
     setAdminOverrideError(null);
+  }
+
+  function appendHistoryEntries(entries: Array<{ characterId: string; entry: CharacterRecord["sheet"]["gameHistory"][number] }>): void {
+    entries.forEach(({ characterId, entry }) => {
+      updateCharacter(characterId, (currentSheet) => ({
+        ...currentSheet,
+        gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], entry),
+      }));
+    });
   }
 
   if (!activeCharacter || !activeSheet) {
@@ -462,11 +505,32 @@ export function PlayerCharacterPage({
             sessionNotes={sessionNotes}
             isReadOnlyView={isReadOnlyView}
             gameHistory={sheetState.gameHistory}
+            knowledgeState={knowledgeState}
             onSessionNotesChange={setSessionNotes}
             onAppendHistory={mutations.handleAppendHistory}
+            onOpenKnowledgeRevision={setOpenKnowledgeRevisionId}
+          />
+
+          <CharacterKnowledgeSection
+            activeCharacter={activeCharacter}
+            characters={characters}
+            itemsById={itemsById}
+            knowledgeState={knowledgeState}
+            isReadOnlyView={isReadOnlyView}
+            isDmEditableView={isDmEditableView}
+            onUpdateKnowledgeState={updateKnowledgeState}
+            onAppendHistoryEntries={appendHistoryEntries}
+            onOpenKnowledgeRevision={setOpenKnowledgeRevisionId}
           />
         </section>
       </section>
+
+      <KnowledgeRevisionDialog
+        entity={openKnowledgeEntity}
+        revision={openKnowledgeRevision}
+        ownership={openKnowledgeOwnership}
+        onClose={() => setOpenKnowledgeRevisionId(null)}
+      />
     </main>
   );
 }

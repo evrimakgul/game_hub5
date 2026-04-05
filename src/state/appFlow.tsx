@@ -14,6 +14,7 @@ import {
   type CharacterDraft,
   normalizeCharacterDraft,
 } from "../config/characterTemplate";
+import { createEmptyKnowledgeState } from "../lib/knowledge.ts";
 import { createSharedItemRecord } from "../lib/items.ts";
 import {
   CHARACTER_STORAGE_KEY,
@@ -28,6 +29,12 @@ import {
 } from "../types/character";
 import type { CombatEncounterState } from "../types/combatEncounter";
 import type { ItemBlueprintId, SharedItemRecord } from "../types/items.ts";
+import type {
+  KnowledgeEntity,
+  KnowledgeOwnership,
+  KnowledgeRevision,
+  KnowledgeState,
+} from "../types/knowledge.ts";
 
 export type { CharacterOwnerRole, CharacterRecord } from "../types/character";
 
@@ -39,6 +46,9 @@ type AppFlowContextValue = {
   roleChoice: RoleChoice;
   characters: CharacterRecord[];
   items: SharedItemRecord[];
+  knowledgeEntities: KnowledgeEntity[];
+  knowledgeRevisions: KnowledgeRevision[];
+  knowledgeOwnerships: KnowledgeOwnership[];
   activePlayerCharacter: CharacterRecord | null;
   activeDmCharacter: CharacterRecord | null;
   activeCombatEncounter: CombatEncounterState | null;
@@ -65,6 +75,9 @@ type AppFlowContextValue = {
     characterId: string,
     updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
   ) => void;
+  updateKnowledgeState: (
+    updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
+  ) => void;
   beginCombatEncounter: (encounter: CombatEncounterState) => void;
   updateCombatEncounter: (
     updater:
@@ -89,6 +102,11 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   const [roleChoice, setRoleChoice] = useState<RoleChoice>(null);
   const [characters, setCharacters] = useState<CharacterRecord[]>(persistedCharacters.characters);
   const [items, setItems] = useState<SharedItemRecord[]>(persistedCharacters.items);
+  const [knowledgeState, setKnowledgeState] = useState<KnowledgeState>({
+    knowledgeEntities: persistedCharacters.knowledgeEntities,
+    knowledgeRevisions: persistedCharacters.knowledgeRevisions,
+    knowledgeOwnerships: persistedCharacters.knowledgeOwnerships,
+  });
   const [activePlayerCharacterId, setActivePlayerCharacterId] = useState<string | null>(
     persistedCharacters.activePlayerCharacterId
   );
@@ -117,11 +135,12 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       {
         characters,
         items,
+        ...knowledgeState,
         activePlayerCharacterId,
         activeDmCharacterId,
       }
     );
-  }, [activeDmCharacterId, activePlayerCharacterId, characters, items]);
+  }, [activeDmCharacterId, activePlayerCharacterId, characters, items, knowledgeState]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -137,6 +156,11 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       skipNextPersistRef.current = true;
       setCharacters(nextState.characters);
       setItems(nextState.items);
+      setKnowledgeState({
+        knowledgeEntities: nextState.knowledgeEntities,
+        knowledgeRevisions: nextState.knowledgeRevisions,
+        knowledgeOwnerships: nextState.knowledgeOwnerships,
+      });
       setActivePlayerCharacterId((currentActiveCharacterId) =>
         currentActiveCharacterId &&
         nextState.characters.some(
@@ -275,6 +299,14 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     );
   }
 
+  function updateKnowledgeState(
+    updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
+  ): void {
+    setKnowledgeState((currentState) =>
+      typeof updater === "function" ? updater(currentState) : updater
+    );
+  }
+
   function beginCombatEncounter(encounter: CombatEncounterState): void {
     setActiveCombatEncounter(encounter);
   }
@@ -304,6 +336,9 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         roleChoice,
         characters,
         items,
+        knowledgeEntities: knowledgeState.knowledgeEntities,
+        knowledgeRevisions: knowledgeState.knowledgeRevisions,
+        knowledgeOwnerships: knowledgeState.knowledgeOwnerships,
         activePlayerCharacter,
         activeDmCharacter,
         activeCombatEncounter,
@@ -316,6 +351,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         selectCharacter,
         deleteCharacter,
         updateCharacter,
+        updateKnowledgeState,
         beginCombatEncounter,
         updateCombatEncounter,
         clearCombatEncounter,

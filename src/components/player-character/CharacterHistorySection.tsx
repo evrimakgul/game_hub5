@@ -1,11 +1,16 @@
 import type { GameHistoryEntry } from "../../config/characterTemplate";
+import type { KnowledgeState } from "../../types/knowledge.ts";
+import { getKnowledgeEntityById, getKnowledgeRevisionById } from "../../lib/knowledge.ts";
+import { KnowledgeCardView } from "./KnowledgeCardView.tsx";
 
 type CharacterHistorySectionProps = {
   sessionNotes: string;
   isReadOnlyView: boolean;
   gameHistory: GameHistoryEntry[];
+  knowledgeState: KnowledgeState;
   onSessionNotesChange: (value: string) => void;
   onAppendHistory: () => void;
+  onOpenKnowledgeRevision: (revisionId: string) => void;
 };
 
 function getHistoryEntryKey(entry: GameHistoryEntry): string {
@@ -16,8 +21,10 @@ export function CharacterHistorySection({
   sessionNotes,
   isReadOnlyView,
   gameHistory,
+  knowledgeState,
   onSessionNotesChange,
   onAppendHistory,
+  onOpenKnowledgeRevision,
 }: CharacterHistorySectionProps) {
   return (
     <>
@@ -45,25 +52,68 @@ export function CharacterHistorySection({
         ) : (
           <div className="history-list">
             {gameHistory.map((entry) => (
-              <section key={getHistoryEntryKey(entry)} className="history-entry">
-                <strong>
-                  {entry.actualDateTime} / {entry.gameDateTime}
-                </strong>
-                {entry.type === "note" ? (
-                  <p>{entry.note}</p>
-                ) : (
-                  <>
-                    <p>
-                      {entry.sourcePower}: {entry.targetName}
-                    </p>
-                    <p>{entry.summary}</p>
-                  </>
-                )}
-              </section>
+              <HistoryEntryRow
+                key={getHistoryEntryKey(entry)}
+                entry={entry}
+                knowledgeState={knowledgeState}
+                onOpenKnowledgeRevision={onOpenKnowledgeRevision}
+              />
             ))}
           </div>
         )}
       </article>
     </>
+  );
+}
+
+function HistoryEntryRow({
+  entry,
+  knowledgeState,
+  onOpenKnowledgeRevision,
+}: {
+  entry: GameHistoryEntry;
+  knowledgeState: KnowledgeState;
+  onOpenKnowledgeRevision: (revisionId: string) => void;
+}) {
+  const knowledgeLink = entry.knowledgeLink ?? null;
+  const knowledgeRevision = knowledgeLink
+    ? getKnowledgeRevisionById(knowledgeState, knowledgeLink.knowledgeRevisionId)
+    : null;
+  const knowledgeEntity =
+    knowledgeRevision !== null
+      ? getKnowledgeEntityById(knowledgeState, knowledgeRevision.entityId)
+      : null;
+
+  return (
+    <section className="history-entry">
+      <strong>
+        {entry.actualDateTime} / {entry.gameDateTime}
+      </strong>
+      {entry.type === "note" ? (
+        <p>{entry.note}</p>
+      ) : (
+        <>
+          <p>
+            {entry.sourcePower}: {entry.targetName}
+          </p>
+          <p>{entry.summary}</p>
+        </>
+      )}
+
+      {knowledgeLink && knowledgeRevision && knowledgeEntity ? (
+        <div className="history-knowledge-link-wrap">
+          <button
+            type="button"
+            className="history-knowledge-link"
+            onClick={() => onOpenKnowledgeRevision(knowledgeRevision.id)}
+          >
+            {knowledgeLink.knowledgeLabel}
+          </button>
+          <div className="history-knowledge-preview">
+            <KnowledgeCardView entity={knowledgeEntity} revision={knowledgeRevision} mode="preview" />
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }

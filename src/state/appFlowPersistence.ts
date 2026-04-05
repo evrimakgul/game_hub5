@@ -11,6 +11,13 @@ import {
 } from "../lib/items.ts";
 import { isCharacterOwnerRole, type CharacterRecord } from "../types/character.ts";
 import type { SharedItemRecord } from "../types/items.ts";
+import type { KnowledgeEntity, KnowledgeOwnership, KnowledgeRevision, KnowledgeState } from "../types/knowledge.ts";
+import {
+  createEmptyKnowledgeState,
+  hydrateKnowledgeEntity,
+  hydrateKnowledgeOwnership,
+  hydrateKnowledgeRevision,
+} from "../lib/knowledge.ts";
 
 export const CHARACTER_STORAGE_KEY = "convergence.local.characters";
 
@@ -18,6 +25,9 @@ type PersistedCharacterEnvelope = {
   version: number;
   characters: Array<{ id: string; ownerRole?: unknown; sheet: unknown }>;
   items?: unknown[];
+  knowledgeEntities?: unknown[];
+  knowledgeRevisions?: unknown[];
+  knowledgeOwnerships?: unknown[];
   activeCharacterId?: string | null;
   activePlayerCharacterId?: string | null;
   activeDmCharacterId?: string | null;
@@ -26,6 +36,9 @@ type PersistedCharacterEnvelope = {
 export type PersistedCharacterState = {
   characters: CharacterRecord[];
   items: SharedItemRecord[];
+  knowledgeEntities: KnowledgeEntity[];
+  knowledgeRevisions: KnowledgeRevision[];
+  knowledgeOwnerships: KnowledgeOwnership[];
   activePlayerCharacterId: string | null;
   activeDmCharacterId: string | null;
 };
@@ -34,6 +47,7 @@ function getEmptyPersistedCharacterState(): PersistedCharacterState {
   return {
     characters: [],
     items: [],
+    ...createEmptyKnowledgeState(),
     activePlayerCharacterId: null,
     activeDmCharacterId: null,
   };
@@ -203,6 +217,21 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
           .map((entry) => hydrateSharedItemRecord(entry))
           .filter((entry): entry is SharedItemRecord => entry !== null)
       : [];
+    const knowledgeEntities = Array.isArray(envelope.knowledgeEntities)
+      ? envelope.knowledgeEntities
+          .map((entry) => hydrateKnowledgeEntity(entry))
+          .filter((entry): entry is KnowledgeEntity => entry !== null)
+      : [];
+    const knowledgeRevisions = Array.isArray(envelope.knowledgeRevisions)
+      ? envelope.knowledgeRevisions
+          .map((entry) => hydrateKnowledgeRevision(entry))
+          .filter((entry): entry is KnowledgeRevision => entry !== null)
+      : [];
+    const knowledgeOwnerships = Array.isArray(envelope.knowledgeOwnerships)
+      ? envelope.knowledgeOwnerships
+          .map((entry) => hydrateKnowledgeOwnership(entry))
+          .filter((entry): entry is KnowledgeOwnership => entry !== null)
+      : [];
     const migratedItems: SharedItemRecord[] = [];
     const characters = Array.isArray(envelope.characters)
       ? envelope.characters.flatMap((entry) => {
@@ -238,6 +267,9 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
     return {
       characters,
       items: [...persistedItems, ...migratedItems],
+      knowledgeEntities,
+      knowledgeRevisions,
+      knowledgeOwnerships,
       activePlayerCharacterId:
         persistedActivePlayerCharacterId &&
         characters.some(
@@ -285,6 +317,9 @@ export function serializePersistedCharacters(
       sheet: character.sheet,
     })),
     items: state.items,
+    knowledgeEntities: state.knowledgeEntities,
+    knowledgeRevisions: state.knowledgeRevisions,
+    knowledgeOwnerships: state.knowledgeOwnerships,
     activePlayerCharacterId: state.activePlayerCharacterId,
     activeDmCharacterId: state.activeDmCharacterId,
   };

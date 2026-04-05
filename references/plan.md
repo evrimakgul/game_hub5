@@ -101,6 +101,39 @@ This roadmap is the active implementation source of truth for this branch.
 - Passive power-derived skill bonuses, mana bonuses, and utility traits now come from a passive provider registry instead of hardcoded branches in `characterRuntime.ts`.
 - External UI request shapes, local save compatibility, current powers and spells, and `powers.json` metadata remain intact.
 
+## Completed Follow-Up: Knowledge System V1
+
+### 4.1 Standalone Knowledge Storage
+- Knowledge now lives in standalone local-first collections:
+  - `KnowledgeEntity`
+  - `KnowledgeRevision`
+  - `KnowledgeOwnership`
+- These collections persist alongside characters and items.
+- Old embedded `intel_snapshot` history rows are discarded during hydration instead of being treated as real long-term storage.
+
+### 4.2 Spell Integration
+- `Assess Character` now creates immutable linked character-card revisions during encounter resolution.
+- The caster receives ownership of the new revision.
+- `History` remains a log, but linked intel rows now point to the exact revision involved.
+
+### 4.3 Character Sheet UI
+- `Game History` now supports linked knowledge rows with hover preview and click/open dialog behavior.
+- Character sheets now expose a full-width inline `Knowledge` section.
+- The Knowledge section supports:
+  - subject grouping
+  - revision browsing
+  - duplicate
+  - edited copy
+  - share
+  - archive
+  - pin
+  - compare
+  - DM snapshot/manual character-card authoring and grant flows
+
+### 4.4 Current V1 Boundary
+- V1 ships character cards only.
+- The architecture remains generic enough for future item, place, faction, story, and custom knowledge cards, but those creation flows remain deferred.
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`
@@ -115,12 +148,8 @@ This roadmap is the active implementation source of truth for this branch.
 - `ARCH-REM-01` Continue extracting encounter request application, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation from `CombatEncounterPage.tsx`; spell preparation is already on the new `Action` / `Effect` runtime.
 - `BR-BD-01` Restore `Brute Defiance` to the intended passive delayed stand-up behavior with 1/day use and HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
 - Future knowledge/intel work should move toward standalone revisioned knowledge cards:
-  - `History` remains a log
-  - knowledge storage should use subject/entity grouping plus immutable revisions
-  - characters may own multiple revisions of the same subject
-  - history entries should be able to link to the exact knowledge revision involved
-  - character sheets should eventually expose a dedicated `Knowledge` area for browsing and sharing owned revisions
-  - implementation details are recorded in `references/knowledge_card_design.md`
+  - V1 now ships the standalone revisioned character-card system described in `references/knowledge_card_design.md`
+  - remaining follow-up is expanding that model beyond character cards to other subject types
 - Full item-authoring workflow and richer item bonus editors.
 - Full multi-target `AA` knowledge-sharing UI.
 - Encounter persistence and backend sync.

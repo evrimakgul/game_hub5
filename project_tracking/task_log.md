@@ -176,3 +176,27 @@
   - Added `CC-PASSIVE-01` for `Crowd Management (CM)` with `Social +1 / +2 / +3 / +4 / +5` by `Crowd Control` level.
   - Added `CC-PASSIVE-02` for `Compulsion Guard (CG)` at `Crowd Control` level `5`, adding `Social` while defending against control effects.
   - Renamed the active spell label from `Control Target` to `Control Entity`.
+- Recorded `Crowd Control` release-direction TODO.
+  - Added `CC-CE-01` so `Release Target` is later folded into `Control Entity` as a contextual control-management action instead of a separate spell.
+- Recorded `Elementalist` spell-separation TODO.
+  - Added `ELM-SPELL-01` to track the future refactor toward separate `Elemental Bolt`, `Elemental Cantrip`, and `Elemental Split` spells instead of the current merged multi-target `Elemental Bolt` structure.
+- Recorded `Healing` spell-structure TODO.
+  - Added `HEAL-SPELL-01` to track the future refactor toward the newer explicit `Heal Living (HL)`, `Holy Purge (HP)`, and `Healing Touch (HT)` model instead of the current mixed `Heal` / `Cure` / `Wound Mend` structure.
+  - Stored the intended replacement details: `Holy Purge` as a separate cleanse spell at `2` mana, `Healing Touch` as a separate `2/day` per-target wound-mending spell, and `Heal Living` as the healing-only spell with the existing regrowth / overheal progression preserved.
+- Recorded `Light Support` spell-structure TODO.
+  - Added `LS-SPELL-01` to track the future refactor toward the newer explicit `Let There Be Light (LTBL)`, `Lunar Bless (LB)`, `Lessen Darkness (LD)`, and `Luminous Restoration (LR)` model instead of the current compressed `Light Aura` / `Mana Restore` structure.
+  - Stored the intended replacement details: `LTBL` level `1` should be `+1 hit, +1 DR`, the later aura levels stay as specified by the newer draft, `Lunar Bless` should scale mana bonus every level, `Lessen Darkness` should be a separate linked level `5` effect that can push `RL0 -> RL-1`, and `Luminous Restoration` should unlock at level `3` with `APP / APP x2 / APP x3` scaling.
+- Recorded `Necromancy` spell-structure TODO.
+  - Added `NECRO-SPELL-01` to track the future refactor toward the newer explicit `Non-Living Warriors (NW)`, `Necrotic Touch (NT)`, `Necromancer's Bless (NB)`, and `Necromancer's Deception (ND)` model instead of the current compressed summon-template structure.
+  - Stored the intended replacement details: `NW` should own child summon types `NS`, `NSK`, and `NZ`; subtype limits should become `1 active fighter per subtype`; summon formulas/resistances/passives should move to the newer draft; `dismiss summon` should remain an internal control under summon management rather than a separate top-level spell concept.
+- Recorded `Shadow Control` spell-structure TODO.
+  - Added `SC-SPELL-01` to track the future refactor toward the newer explicit `Smoldering Shadow (SS)`, `Shadow Walk (SW)`, `Shadow Walk and Attack (SWaA)`, `Shadow Manipulation (SM)`, `Sleek Visage (SV)`, and `Shadow Fighter (SF)` model instead of the current compressed cloak/summon structure.
+  - Stored the intended replacement details: the cloak spell should lose the current intimidation bonus and use the newer duration ladder, `SWaA` should be added as a separate ambush spell, `Sleek Visage` should replace the current cosmetic cantrip naming, and `Shadow Fighter` should replace the current `Shadow Soldier` summon spec.
+- `CS-HIST-01`, `KNOW-ARCH-01`, `KNOW-SPELL-01`, `KNOW-UI-01`, and `KNOW-UI-02` completed together as Knowledge System V1.
+  - Added standalone `KnowledgeEntity`, `KnowledgeRevision`, and `KnowledgeOwnership` collections to local persistence and app state.
+  - Added migration cleanup so old embedded `intel_snapshot` history rows are discarded instead of treated as the source of truth.
+  - `Assess Character` now creates immutable linked character-card revisions during encounter execution and writes history rows that reference the exact revision involved.
+  - Added `Game History` hover preview plus click/open revision dialog behavior for linked knowledge rows.
+  - Added a full-width inline `Knowledge` section on the character sheet with subject grouping, revision browsing, duplicate, edited-copy, share, archive, pin, compare, and DM authoring/grant flows.
+  - V1 boundary: only character cards are implemented end-to-end; item/place/faction/story/custom card creation remains future work.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.

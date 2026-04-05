@@ -71,6 +71,9 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         const payload = serializePersistedCharacters({
           characters: [{ id: "writer-1", ownerRole: "player", sheet }],
           items: [item],
+          knowledgeEntities: [],
+          knowledgeRevisions: [],
+          knowledgeOwnerships: [],
           activePlayerCharacterId: "writer-1",
           activeDmCharacterId: null,
         });
@@ -85,6 +88,9 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           {
             characters: [{ id: "writer-1", ownerRole: "player", sheet }],
             items: [item],
+            knowledgeEntities: [],
+            knowledgeRevisions: [],
+            knowledgeOwnerships: [],
             activePlayerCharacterId: "writer-1",
             activeDmCharacterId: null,
           }
@@ -141,6 +147,106 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(state.characters[0]?.sheet.equipment[0]?.itemId, "item-legacy-1-legacy-equipment-0");
         const itemIndex = buildItemIndex(state.items);
         assert.equal(itemIndex["item-legacy-1-legacy-inventory-0"]?.knowledge.visibleCharacterIds[0], "legacy-1");
+      },
+    },
+    {
+      name: "hydratePersistedCharacters restores knowledge collections and drops legacy intel snapshot rows",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.gameHistory = [
+          {
+            id: "history-intel-1",
+            type: "intel_snapshot",
+            actualDateTime: "04.04.2026 12:00",
+            gameDateTime: "17.09.2124 - 08:00",
+            sourcePower: "Assess Character Lv 3",
+            targetCharacterId: "target-1",
+            targetName: "Ali",
+            summary: "CR 1, Rank F",
+            snapshot: {
+              rank: "F",
+              cr: 1,
+              age: null,
+              karma: "-0 / +0",
+              biographyPrimary: "",
+              resistances: [],
+              combatSummary: [],
+              stats: [],
+              skills: [],
+              powers: [],
+              specials: [],
+              notes: [],
+            },
+          },
+          {
+            id: "history-note-1",
+            type: "note",
+            actualDateTime: "04.04.2026 12:05",
+            gameDateTime: "17.09.2124 - 08:05",
+            note: "Normal note",
+          },
+        ];
+
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [{ id: "player-1", ownerRole: "player", sheet }],
+            knowledgeEntities: [
+              {
+                id: "knowledge-entity-1",
+                type: "character",
+                subjectKey: "target-1",
+                displayName: "Ali",
+                createdAt: "2026-04-04T12:00:00.000Z",
+                updatedAt: "2026-04-04T12:00:00.000Z",
+              },
+            ],
+            knowledgeRevisions: [
+              {
+                id: "knowledge-revision-1",
+                entityId: "knowledge-entity-1",
+                revisionNumber: 1,
+                title: "Ali Card",
+                summary: "CR 1, Rank F",
+                content: [
+                  {
+                    id: "knowledge-section-1",
+                    title: "Summary",
+                    kind: "summary",
+                    entries: [{ id: "knowledge-entry-1", label: "Rank", value: "F" }],
+                  },
+                ],
+                tags: ["character"],
+                createdAt: "2026-04-04T12:00:00.000Z",
+                createdByCharacterId: "player-1",
+                sourceType: "spell",
+                sourceSpellName: "Assess Character Lv 3",
+                sourceHistoryEntryId: "history-intel-1",
+                parentRevisionId: null,
+                lineageMode: "observed",
+                isCanonical: true,
+              },
+            ],
+            knowledgeOwnerships: [
+              {
+                id: "knowledge-ownership-1",
+                ownerCharacterId: "player-1",
+                revisionId: "knowledge-revision-1",
+                acquiredAt: "2026-04-04T12:00:00.000Z",
+                acquiredFromCharacterId: null,
+                localLabel: "",
+                isArchived: false,
+                isPinned: false,
+              },
+            ],
+          })
+        );
+
+        assert.equal(state.characters[0]?.sheet.gameHistory.length, 1);
+        assert.equal(state.characters[0]?.sheet.gameHistory[0]?.type, "note");
+        assert.equal(state.knowledgeEntities.length, 1);
+        assert.equal(state.knowledgeRevisions.length, 1);
+        assert.equal(state.knowledgeOwnerships.length, 1);
       },
     },
   ]);
