@@ -101,6 +101,16 @@ This roadmap is the active implementation source of truth for this branch.
 - Passive power-derived skill bonuses, mana bonuses, and utility traits now come from a passive provider registry instead of hardcoded branches in `characterRuntime.ts`.
 - External UI request shapes, local save compatibility, current powers and spells, and `powers.json` metadata remain intact.
 
+### 3.5 Encounter Execution Engine Refactor
+- Encounter request execution, turn advance, upkeep spending, aura cleanup, summon lifecycle merges, and encounter log generation now run through a dedicated `EncounterExecutionEngine`.
+- `CombatEncounterPage.tsx` now stays focused on UI orchestration:
+  - build requests
+  - handle confirmation UI
+  - call the engine
+  - commit returned state
+- The stable `PreparedCastRequest` boundary remains intact.
+- Aura-builder redesign remains deferred; this refactor only moved post-prepare execution out of the route.
+
 ## Completed Follow-Up: Knowledge System V1
 
 ### 4.1 Standalone Knowledge Storage
@@ -145,7 +155,6 @@ This roadmap is the active implementation source of truth for this branch.
 - Update this roadmap when implementation reality changes.
 
 ## Deferred
-- `ARCH-REM-01` Continue extracting encounter request application, turn advance, upkeep, aura cleanup, summon lifecycle, and encounter log creation from `CombatEncounterPage.tsx`; spell preparation is already on the new `Action` / `Effect` runtime.
 - `BR-BD-01` Restore `Brute Defiance` to the intended passive delayed stand-up behavior with 1/day use and HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
 - Future knowledge/intel work should move toward standalone revisioned knowledge cards:
   - V1 now ships the standalone revisioned character-card system described in `references/knowledge_card_design.md`

@@ -48,3 +48,4 @@
 - `KNOW-SPELL-01` Changed `Assess Character` to mint immutable linked character-card revisions and assign ownership to the caster during encounter resolution.
 - `KNOW-UI-01` Added exact knowledge-revision links in `Game History` with hover preview and click-to-open revision dialogs.
 - `KNOW-UI-02` Added a full-width inline `Knowledge` manager on the character sheet with revision browsing, duplicate, edited-copy, share, archive, pin, compare, and DM authoring/grant flows for character cards.
+- `ARCH-REM-01` Extracted encounter request execution, turn advance, upkeep, aura cleanup, summon lifecycle merges, and linked-knowledge/history application into a dedicated `EncounterExecutionEngine`, leaving `CombatEncounterPage.tsx` as a thin coordinator over request preparation and UI wiring.

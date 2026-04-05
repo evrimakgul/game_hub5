@@ -24,8 +24,6 @@ This file tracks active reminders for the current implementation block.
 - `Brute Defiance` is now a manual encounter action instead of a turn-advance auto trigger.
 
 ## Known Structural Gaps
-- Encounter action resolution is split across cast prep, route execution, and effect builders.
-- Encounter upkeep and cast execution still live mostly in the route layer.
 - Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
 - Aura construction has an unresolved architecture dilemma:
   - current implementation uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
@@ -51,7 +49,6 @@ This file tracks active reminders for the current implementation block.
   - legacy embedded intel history rows are intentionally removed during hydration
 
 ## Deferred But Recorded
-- `ARCH-REM-01` remains as a reminder to extract an encounter controller/engine layer later.
 - `Brute Defiance` is still using the temporary manual-trigger implementation; the recorded follow-up is to restore it as a passive delayed stand-up with HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
 - `Crowd Control` follow-up direction is recorded:
   - `Control Entity (CE)` should remain the user-facing spell

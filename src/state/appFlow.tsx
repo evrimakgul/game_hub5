@@ -75,6 +75,7 @@ type AppFlowContextValue = {
     characterId: string,
     updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
   ) => void;
+  replaceCharacters: (characters: CharacterRecord[]) => void;
   updateKnowledgeState: (
     updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
   ) => void;
@@ -299,6 +300,15 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     );
   }
 
+  function replaceCharacters(nextCharacters: CharacterRecord[]): void {
+    setCharacters(
+      nextCharacters.map((character) => ({
+        ...character,
+        sheet: normalizeCharacterDraft(character.sheet),
+      }))
+    );
+  }
+
   function updateKnowledgeState(
     updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
   ): void {
@@ -351,6 +361,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         selectCharacter,
         deleteCharacter,
         updateCharacter,
+        replaceCharacters,
         updateKnowledgeState,
         beginCombatEncounter,
         updateCombatEncounter,

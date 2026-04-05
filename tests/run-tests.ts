@@ -6,6 +6,7 @@ import { runCombatEncounterSpecialActionTests } from "./combatEncounterSpecialAc
 import { runCombatResolutionTests } from "./combatResolution.test.ts";
 import { runCombatEncounterTests } from "./combatEncounter.test.ts";
 import { runLibHelpersTests } from "./libHelpers.test.ts";
+import { runEncounterExecutionEngineTests } from "./encounterExecutionEngine.test.ts";
 import { runKnowledgeTests } from "./knowledge.test.ts";
 import { runPowerEffectsTests } from "./powerEffects.test.ts";
 import { runPowerRegistryTests } from "./powerRegistry.test.ts";
@@ -22,6 +23,7 @@ async function main(): Promise<void> {
   await runCharacterRuntimeTests();
   await runCombatResolutionTests();
   await runCombatEncounterTests();
+  await runEncounterExecutionEngineTests();
   await runCombatEncounterPhysicalAttackTests();
   await runCombatEncounterSpecialActionTests();
   await runCombatEncounterCastingTests();

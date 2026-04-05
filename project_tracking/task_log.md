@@ -200,3 +200,9 @@
   - Added a full-width inline `Knowledge` section on the character sheet with subject grouping, revision browsing, duplicate, edited-copy, share, archive, pin, compare, and DM authoring/grant flows.
   - V1 boundary: only character cards are implemented end-to-end; item/place/faction/story/custom card creation remains future work.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `ARCH-REM-01` completed.
+  - Added `src/engine/encounterExecutionEngine.ts` as the class-based post-prepare encounter runtime.
+  - Moved prepared-request execution, history + linked-knowledge application, damage/healing/resource/status/usage-counter application, summon + ongoing-state structural merges, turn advancement, upkeep handling, aura cleanup, and encounter log generation out of `CombatEncounterPage.tsx`.
+  - `CombatEncounterPage.tsx` now builds requests, calls the engine, and commits returned state instead of owning the execution rules itself.
+  - Added focused regression coverage in `tests/encounterExecutionEngine.test.ts` for knowledge-link execution, crowd-control break handling, summon spawn/dismiss merging, upkeep drop behavior, and aura cleanup on dead sources.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
