@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import {
   getBruteDefianceState,
-  prepareBruteDefianceRequest,
+  getBruteDefianceReviveHp,
 } from "../src/lib/combatEncounterSpecialActions.ts";
 import { POWER_USAGE_KEYS, incrementPowerUsageCount } from "../src/lib/powerUsage.ts";
 import type { CharacterRecord } from "../src/types/character.ts";
@@ -56,7 +56,7 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
       name: "brute defiance is unavailable below level two",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
-          bodyReinforcementLevel: 1,
+          bodyReinforcementLevel: 0,
           currentHp: 0,
         });
 
@@ -70,7 +70,7 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
       name: "brute defiance is visible but not eligible outside the hp window",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
-          bodyReinforcementLevel: 2,
+          bodyReinforcementLevel: 1,
           currentHp: -6,
         });
 
@@ -98,61 +98,27 @@ export async function runCombatEncounterSpecialActionTests(): Promise<void> {
       },
     },
     {
-      name: "brute defiance prepares a one hp recovery at levels two through four",
+      name: "brute defiance scaling follows 1 2 4 8 16 by power level",
       run: () => {
-        const character = createCharacterRecord("hero", "Hero", {
-          bodyReinforcementLevel: 2,
-          currentHp: -3,
-        });
-
-        const prepared = prepareBruteDefianceRequest({ character });
-
-        assert.ok(!("error" in prepared));
-        if ("error" in prepared) {
-          return;
-        }
-
-        assert.equal(prepared.reviveHp, 1);
-        assert.deepEqual(prepared.request.resourceChanges, [
-          {
-            characterId: character.id,
-            field: "currentHp",
-            operation: "set",
-            value: 1,
-          },
-        ]);
-        assert.deepEqual(prepared.request.usageCounterChanges, [
-          {
-            characterId: character.id,
-            operation: "increment",
-            scope: "daily",
-            key: POWER_USAGE_KEYS.bodyReinforcementRevive,
-            targetCharacterId: null,
-            amount: 1,
-          },
-        ]);
+        assert.equal(getBruteDefianceReviveHp(1), 1);
+        assert.equal(getBruteDefianceReviveHp(2), 2);
+        assert.equal(getBruteDefianceReviveHp(3), 4);
+        assert.equal(getBruteDefianceReviveHp(4), 8);
+        assert.equal(getBruteDefianceReviveHp(5), 16);
       },
     },
     {
-      name: "brute defiance prepares a four hp recovery at level five",
+      name: "brute defiance becomes eligible in the passive hp window",
       run: () => {
         const character = createCharacterRecord("hero", "Hero", {
           bodyReinforcementLevel: 5,
-          currentHp: 0,
+          currentHp: -2,
         });
+        const state = getBruteDefianceState(character);
 
-        const prepared = prepareBruteDefianceRequest({ character });
-
-        assert.ok(!("error" in prepared));
-        if ("error" in prepared) {
-          return;
-        }
-
-        assert.equal(prepared.reviveHp, 4);
-        assert.equal(
-          prepared.request.activityLogEntries[0]?.summary,
-          "Brute Defiance revived Hero to 4 HP."
-        );
+        assert.equal(state.isAvailable, true);
+        assert.equal(state.isEligible, true);
+        assert.equal(state.reviveHp, 16);
       },
     },
   ]);

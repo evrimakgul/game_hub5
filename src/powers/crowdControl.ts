@@ -13,35 +13,21 @@ import {
   normalizeStatusTagText,
   resolveCrowdControlContest,
 } from "./runtimeSupport.ts";
-import { createEmptyPassiveProviderResult, createSkillSource, getUnlockedCantripMechanics } from "./passiveSupport.ts";
+import { createEmptyPassiveProviderResult, createSkillSource } from "./passiveSupport.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 import type { ActionContext } from "../engine/context.ts";
 
 class CrowdControlPassiveProvider extends PowerPassiveProvider {
   override getResult({ power }: Parameters<PowerPassiveProvider["getResult"]>[0]) {
     const result = createEmptyPassiveProviderResult();
-    const mechanics = getUnlockedCantripMechanics(power);
-
-    if (!mechanics) {
-      return result;
-    }
-
-    const bonusBySkillId: Record<string, string> = {
-      social: "social_skill_bonus",
-      intimidation: "intimidation_skill_bonus",
-      mechanics: "mechanics_skill_bonus",
-      technology: "technology_skill_bonus",
-    };
-
-    Object.entries(bonusBySkillId).forEach(([skillId, key]) => {
-      const bonus = mechanics[key];
-      if (typeof bonus === "number" && Number.isFinite(bonus) && bonus > 0) {
-        result.skillSources.push({
-          skillId,
-          source: createSkillSource("Crowd Control", bonus),
-        });
-      }
+    result.skillSources.push({
+      skillId: "social",
+      source: createSkillSource("Crowd Management", power.level),
     });
+
+    if (power.level >= 5) {
+      result.utilityTraits.push("Compulsion Guard");
+    }
 
     return result;
   }

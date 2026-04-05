@@ -1,9 +1,11 @@
-import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
-import { buildActivePowerEffect, buildLinkedAuraEffectForTarget } from "../rules/powerEffects.ts";
+import {
+  buildActivePowerEffect,
+  buildLinkedAuraEffectForTarget,
+  isAuraSourceEffect,
+} from "../rules/powerEffects.ts";
 import { getCurrentStatValue } from "../config/characterRuntime.ts";
-import { POWER_USAGE_KEYS, getPowerUsageCount } from "../lib/powerUsage.ts";
 import { AuraSpellAction, RestorationSpellAction } from "../engine/actions.ts";
-import { AuraEffect, LogEffect, ManaEffect, UsageCounterEffect } from "../engine/effects.ts";
+import { AuraEffect, LogEffect, ManaEffect } from "../engine/effects.ts";
 import type { ActionContext } from "../engine/context.ts";
 import { createEmptyPassiveProviderResult } from "./passiveSupport.ts";
 import {
@@ -15,6 +17,11 @@ import {
   isFriendlyEncounterTarget,
   joinTargetNames,
 } from "./runtimeSupport.ts";
+import {
+  LIGHT_SUPPORT_AURA_SPELL_NAME,
+  LIGHT_SUPPORT_DARKNESS_SPELL_NAME,
+  LIGHT_SUPPORT_RESTORE_SPELL_NAME,
+} from "./spellLabels.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 
 class EmptyPassiveProvider extends PowerPassiveProvider {
@@ -23,7 +30,7 @@ class EmptyPassiveProvider extends PowerPassiveProvider {
   }
 }
 
-class LightAuraSpellAction extends AuraSpellAction {
+class LetThereBeLightSpellAction extends AuraSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     const targetCharacter = context.finalTargets[0];
@@ -37,7 +44,7 @@ class LightAuraSpellAction extends AuraSpellAction {
       targetCharacterId: targetCharacter.id,
       targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
       power: selectedPower,
-      variantId: context.selectedSpellId,
+      variantId: "let_there_be_light",
       selectedStatId: context.selectedStatId,
       castMode: context.castMode,
     });
@@ -62,15 +69,7 @@ class LightAuraSpellAction extends AuraSpellAction {
           canEncounterTargetReceiveGroupBuff(view)
       )
       .map((view) => view.participant.characterId);
-    const enemyTargetIds =
-      sourceEffect.sourceLevel >= 5
-        ? context.encounterParticipants
-            .filter((view) => isEnemyEncounterTarget(context.casterView!.participant, view))
-            .map((view) => view.participant.characterId)
-        : [];
-    const targetIds = Array.from(
-      new Set([sourceEffect.casterCharacterId, ...allyTargetIds, ...enemyTargetIds])
-    );
+    const targetIds = Array.from(new Set([sourceEffect.casterCharacterId, ...allyTargetIds]));
     const updatedSourceEffect = {
       ...sourceEffect,
       sharedTargetCharacterIds: targetIds,
@@ -84,59 +83,75 @@ class LightAuraSpellAction extends AuraSpellAction {
             targetDisposition: "ally",
           })
         ),
-        ...enemyTargetIds.map((targetId) =>
-          buildLinkedAuraEffectForTarget(updatedSourceEffect, targetId, {
-            targetDisposition: "enemy",
-          })
-        ),
       ]),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `${getGenericBuffActionLabel(selectedPower.id, selectedPower.name)}: ${
-            context.casterName
-          } affected ${joinTargetNames(context.finalTargets)}.`
+          `${LIGHT_SUPPORT_AURA_SPELL_NAME}: ${context.casterName} affected ${joinTargetNames(
+            context.finalTargets
+          )}.`
         )
       ),
     ];
   }
 }
 
-class ManaRestoreSpellAction extends RestorationSpellAction {
+class LessenDarknessSpellAction extends AuraSpellAction {
+  override resolve(context: ActionContext) {
+    const selectedPower = context.selectedPower;
+    if (!selectedPower || !context.casterView) {
+      throw new Error("Lessen Darkness requires an active Let There Be Light source.");
+    }
+
+    const sourceEffect =
+      (context.casterCharacter.sheet.activePowerEffects ?? []).find(
+        (effect) =>
+          effect.powerId === "light_support" &&
+          effect.targetCharacterId === context.casterCharacter.id &&
+          isAuraSourceEffect(effect)
+      ) ?? null;
+
+    if (!sourceEffect || selectedPower.level < 5) {
+      throw new Error("Lessen Darkness requires an active Let There Be Light source.");
+    }
+
+    this.setManaCost(0);
+    this.setTargetCharacterIds([context.casterCharacter.id]);
+
+    const enemyTargetIds = context.encounterParticipants
+      .filter((view) => isEnemyEncounterTarget(context.casterView!.participant, view))
+      .map((view) => view.participant.characterId);
+
+    return [
+      new AuraEffect(
+        enemyTargetIds.map((targetId) =>
+          buildLinkedAuraEffectForTarget(sourceEffect, targetId, {
+            targetDisposition: "enemy",
+          })
+        )
+      ),
+      new LogEffect(
+        buildEncounterActivityLogEntry(
+          `${LIGHT_SUPPORT_DARKNESS_SPELL_NAME}: ${context.casterName} weakened ${enemyTargetIds.length} enemy target(s).`
+        )
+      ),
+    ];
+  }
+}
+
+class LuminousRestorationSpellAction extends RestorationSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     const targetCharacter = context.finalTargets[0];
-    const runtimeLevel = selectedPower
-      ? getRuntimePowerLevelDefinition(selectedPower.id, selectedPower.level)
-      : null;
-    const manaRestore =
-      runtimeLevel?.mechanics?.mana_restore &&
-      typeof runtimeLevel.mechanics.mana_restore === "object"
-        ? (runtimeLevel.mechanics.mana_restore as Record<string, unknown>)
-        : null;
 
-    if (!selectedPower || !targetCharacter || !runtimeLevel || !manaRestore) {
-      throw new Error("Mana Restore data is missing for this Light Support level.");
+    if (!selectedPower || !targetCharacter || selectedPower.level < 3) {
+      throw new Error("Luminous Restoration is unavailable at this level.");
     }
 
-    if (
-      getPowerUsageCount(
-        context.casterCharacter.sheet.powerUsageState,
-        "longRest",
-        POWER_USAGE_KEYS.lightSupportManaRestore
-      ) >= 1
-    ) {
-      throw new Error("Light Support mana restore is already spent for this long rest.");
-    }
-
+    const multiplier =
+      selectedPower.level >= 5 ? 3 : selectedPower.level >= 4 ? 2 : 1;
     const restoreAmount = Math.max(
       0,
-      getCurrentStatValue(context.casterCharacter.sheet, "APP", context.itemsById) *
-        Math.max(
-          1,
-          Math.trunc(
-            Number((manaRestore.max_amount_formula as { multiplier?: number })?.multiplier ?? 1)
-          )
-        )
+      getCurrentStatValue(context.casterCharacter.sheet, "APP", context.itemsById) * multiplier
     );
 
     this.setManaCost(0);
@@ -149,17 +164,9 @@ class ManaRestoreSpellAction extends RestorationSpellAction {
         operation: "adjust",
         value: restoreAmount,
       }),
-      new UsageCounterEffect({
-        characterId: context.casterCharacter.id,
-        operation: "increment",
-        scope: "longRest",
-        key: POWER_USAGE_KEYS.lightSupportManaRestore,
-        targetCharacterId: null,
-        amount: 1,
-      }),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Mana Restore: ${context.casterName} restored mana to ${
+          `${LIGHT_SUPPORT_RESTORE_SPELL_NAME}: ${context.casterName} restored mana to ${
             targetCharacter.sheet.name.trim() || targetCharacter.id
           }.`
         )
@@ -170,15 +177,25 @@ class ManaRestoreSpellAction extends RestorationSpellAction {
 
 export const lightSupportModule: PowerModule = {
   powerId: "light_support",
-  spellIds: ["default", "mana_restore"],
+  spellIds: ["let_there_be_light", "lessen_darkness", "luminous_restoration"],
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {
-    if (context.selectedSpellId === "mana_restore") {
-      return new ManaRestoreSpellAction();
+    if (
+      context.selectedSpellId === "luminous_restoration" ||
+      context.selectedSpellId === "mana_restore"
+    ) {
+      return new LuminousRestorationSpellAction();
     }
 
-    if (context.selectedSpellId === "default") {
-      return new LightAuraSpellAction();
+    if (context.selectedSpellId === "lessen_darkness" || context.selectedSpellId === "expose_darkness") {
+      return new LessenDarknessSpellAction();
+    }
+
+    if (
+      context.selectedSpellId === "let_there_be_light" ||
+      context.selectedSpellId === "default"
+    ) {
+      return new LetThereBeLightSpellAction();
     }
 
     return null;

@@ -240,7 +240,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           casterView: views[0],
           encounterParticipants: views,
           selectedPower: caster.sheet.powers[0],
-          selectedVariantId: "default",
+          selectedVariantId: "heal_living",
           castMode: "self",
         });
 
@@ -252,6 +252,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             encounterParticipants: views,
             selectedPower: caster.sheet.powers[0],
             selectedTargetIds: [target.id],
+            variantId: "heal_living",
           })
         );
 
@@ -568,7 +569,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
       },
     },
     {
-      name: "shadow soldier uses the level five summon mana cost",
+      name: "shadow fighter uses the level five summon mana cost",
       run: () => {
         const caster = createCharacterRecord("caster", "Shade", "player", {
           powers: [
@@ -581,7 +582,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           ],
         });
         const power = caster.sheet.powers[0];
-        const summonOption = getCastPowerSummonOptions(power, "shadow_soldier")[0];
+        const summonOption = getCastPowerSummonOptions(power, "shadow_fighter")[0];
 
         assert.ok(summonOption);
         if (!summonOption) {
@@ -596,7 +597,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             encounterParticipants: [createParticipantView(caster)],
             selectedPower: power,
             selectedTargetIds: [caster.id],
-            variantId: "shadow_soldier",
+            variantId: "shadow_fighter",
             selectedSummonOptionId: summonOption.id,
           })
         );
@@ -695,7 +696,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
       },
     },
     {
-      name: "light support mana restore spends the long-rest usage counter",
+      name: "luminous restoration restores mana without a long-rest usage counter",
       run: () => {
         const caster = createCharacterRecord("caster", "Beacon", "player", {
           powers: [
@@ -717,7 +718,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             encounterParticipants: views,
             selectedPower: caster.sheet.powers[0],
             selectedTargetIds: [target.id],
-            variantId: "mana_restore",
+            variantId: "luminous_restoration",
           })
         );
 
@@ -734,20 +735,11 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             value: 8,
           },
         ]);
-        assert.deepEqual(prepared.request.usageCounterChanges, [
-          {
-            characterId: caster.id,
-            operation: "increment",
-            scope: "longRest",
-            key: POWER_USAGE_KEYS.lightSupportManaRestore,
-            targetCharacterId: null,
-            amount: 1,
-          },
-        ]);
+        assert.deepEqual(prepared.request.usageCounterChanges, []);
       },
     },
     {
-      name: "light aura level five automatically buffs allies and debuffs enemy parties",
+      name: "lessen darkness is a separate level five linked aura effect",
       run: () => {
         const caster = createCharacterRecord("caster", "Beacon", "player", {
           powers: [
@@ -768,12 +760,30 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           createParticipantView(enemy, "party-2"),
         ];
 
+        const lightPrepared = prepareCastRequest(
+          preparePayload({
+            casterCharacter: caster,
+            encounterParticipants: views,
+            selectedPower: caster.sheet.powers[0],
+            selectedTargetIds: [caster.id],
+            variantId: "let_there_be_light",
+          })
+        );
+
+        assert.ok(!("error" in lightPrepared));
+        if ("error" in lightPrepared) {
+          return;
+        }
+
+        caster.sheet.activePowerEffects = lightPrepared.request.effects;
+
         const prepared = prepareCastRequest(
           preparePayload({
             casterCharacter: caster,
             encounterParticipants: views,
             selectedPower: caster.sheet.powers[0],
             selectedTargetIds: [caster.id],
+            variantId: "lessen_darkness",
           })
         );
 
@@ -782,10 +792,10 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           return;
         }
 
-        const sourceEffect = prepared.request.effects.find(
+        const sourceEffect = lightPrepared.request.effects.find(
           (effect) => effect.effectKind === "aura_source" && effect.targetCharacterId === caster.id
         );
-        const allyEffect = prepared.request.effects.find(
+        const allyEffect = lightPrepared.request.effects.find(
           (effect) => effect.targetCharacterId === ally.id
         );
         const enemyEffect = prepared.request.effects.find(
@@ -793,14 +803,14 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
         );
 
         assert.ok(sourceEffect);
-        assert.deepEqual(sourceEffect?.sharedTargetCharacterIds, [caster.id, ally.id, enemy.id]);
+        assert.deepEqual(sourceEffect?.sharedTargetCharacterIds, [caster.id, ally.id]);
         assert.equal(allyEffect?.stackKey, "light_support");
         assert.equal(enemyEffect?.stackKey, "light_support:expose_darkness");
-        assert.equal(enemyEffect?.label, "Expose Darkness");
+        assert.equal(enemyEffect?.label, "Lessen Darkness");
       },
     },
     {
-      name: "necromancy summons dismiss old summons and build leveled zombie stats",
+      name: "necromancy zombie replaces only its own subtype and uses the newer stat rules",
       run: () => {
         const caster = createCharacterRecord("caster", "Summoner", "player", {
           powers: [
@@ -814,20 +824,18 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           stats: { APP: 4, DEX: 3, WITS: 3 },
         });
         const power = caster.sheet.powers[0];
-        const summonOption = getCastPowerSummonOptions(power, "summon_undead").find(
-          (option) => option.templateId === "zombie"
-        );
+        const summonOption = getCastPowerSummonOptions(power, "non_living_zombie")[0];
         const existingTransient: EncounterTransientCombatant = {
           id: "old-zombie",
           ownerRole: "player",
           controllerCharacterId: caster.id,
           sourcePowerId: power.id,
           sourcePowerLevel: power.level,
-          summonTemplateId: "simple_skeleton",
+          summonTemplateId: "non_living_zombie",
           buffRules: {
-            canReceiveSingleBuffs: false,
-            canReceiveGroupBuffs: false,
-            canBeHealed: false,
+            canReceiveSingleBuffs: true,
+            canReceiveGroupBuffs: true,
+            canBeHealed: true,
           },
           sheet: PLAYER_CHARACTER_TEMPLATE.createInstance(),
         };
@@ -850,24 +858,24 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           return;
         }
 
-        assert.equal(resolution.manaCost, 4);
+        assert.equal(resolution.manaCost, 3);
         assert.deepEqual(resolution.dismissIds, ["old-zombie"]);
         assert.equal(resolution.summons.length, 1);
         assert.deepEqual(resolution.summons[0]?.sheet.statusTags, [
           { id: "undead", label: "Undead" },
         ]);
-        assert.equal(resolution.summons[0]?.sheet.statState.STR.base, 4);
-        assert.equal(resolution.summons[0]?.sheet.statState.DEX.base, 4);
-        assert.equal(resolution.summons[0]?.sheet.statState.STAM.base, 4);
+        assert.equal(resolution.summons[0]?.sheet.statState.STR.base, 8);
+        assert.equal(resolution.summons[0]?.sheet.statState.DEX.base, 6);
+        assert.equal(resolution.summons[0]?.sheet.statState.STAM.base, 8);
         assert.equal(resolution.summons[0]?.buffRules.canReceiveGroupBuffs, true);
         assert.match(
           resolution.summons[0]?.sheet.activePowerEffects[0]?.summary ?? "",
-          /\+4 hit, \+4 dmg/
+          /DR 7, \+4 hit, \+4 dmg/
         );
       },
     },
     {
-      name: "shadow soldier summons carry a shadow status tag",
+      name: "shadow fighter summons carry a shadow status tag",
       run: () => {
         const caster = createCharacterRecord("caster", "Shade", "player", {
           powers: [
@@ -880,7 +888,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           ],
         });
         const power = caster.sheet.powers[0];
-        const summonOption = getCastPowerSummonOptions(power, "shadow_soldier")[0];
+        const summonOption = getCastPowerSummonOptions(power, "shadow_fighter")[0];
 
         assert.ok(summonOption);
         if (!summonOption) {
@@ -906,7 +914,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
       },
     },
     {
-      name: "shadow soldier inherits an active cloak aura from the caster",
+      name: "shadow fighter inherits an active smoldering shadow aura from the caster",
       run: () => {
         const caster = createCharacterRecord("caster", "Shade", "player", {
           powers: [
@@ -925,7 +933,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
               encounterParticipants: [createParticipantView(caster)],
               selectedPower: caster.sheet.powers[0],
               selectedTargetIds: [caster.id],
-              variantId: "shadow_cloak",
+              variantId: "smoldering_shadow",
               selectedSummonOptionId: null,
             }),
             castMode: "aura",
@@ -939,7 +947,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
 
         caster.sheet.activePowerEffects = cloakEffect.request.effects;
 
-        const summonOption = getCastPowerSummonOptions(caster.sheet.powers[0], "shadow_soldier")[0];
+        const summonOption = getCastPowerSummonOptions(caster.sheet.powers[0], "shadow_fighter")[0];
         assert.ok(summonOption);
         if (!summonOption) {
           return;
@@ -951,7 +959,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             encounterParticipants: [createParticipantView(caster)],
             selectedPower: caster.sheet.powers[0],
             selectedTargetIds: [caster.id],
-            variantId: "shadow_soldier",
+            variantId: "shadow_fighter",
             selectedSummonOptionId: summonOption.id,
           })
         );
@@ -967,20 +975,20 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
         const summonAuraEffect = prepared.request.effects.find(
           (effect) =>
             effect.effectKind === "aura_shared" &&
-            effect.targetCharacterId.startsWith("shadow_soldier")
+            effect.targetCharacterId.startsWith("shadow_fighter")
         );
 
         assert.ok(updatedSourceEffect);
         assert.ok(
           updatedSourceEffect?.sharedTargetCharacterIds?.some((targetId) =>
-            targetId.startsWith("shadow_soldier")
+            targetId.startsWith("shadow_fighter")
           )
         );
         assert.equal(summonAuraEffect?.stackKey, "shadow_control:cloak");
       },
     },
     {
-      name: "resurrection restores a loaded target to one HP and strips death tags",
+      name: "necromancer's bless restores a loaded target to one HP and strips death tags",
       run: () => {
         const caster = createCharacterRecord("caster", "Priest", "player", {
           powers: [
@@ -1008,7 +1016,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             encounterParticipants: views,
             selectedPower: caster.sheet.powers[0],
             selectedTargetIds: [target.id],
-            variantId: "resurrection",
+            variantId: "necromancers_bless",
           })
         );
 

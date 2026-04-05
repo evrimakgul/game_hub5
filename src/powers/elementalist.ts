@@ -11,6 +11,11 @@ import {
   isUndeadEncounterTarget,
   joinTargetNames,
 } from "./runtimeSupport.ts";
+import {
+  ELEMENTALIST_BOLT_SPELL_NAME,
+  ELEMENTALIST_CANTRIP_SPELL_NAME,
+  ELEMENTALIST_SPLIT_SPELL_NAME,
+} from "./spellLabels.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 
 class EmptyPassiveProvider extends PowerPassiveProvider {
@@ -19,14 +24,25 @@ class EmptyPassiveProvider extends PowerPassiveProvider {
   }
 }
 
-class ElementalistSpellAction extends AttackSpellAction {
+abstract class BaseElementalistSpellAction extends AttackSpellAction {
+  protected abstract readonly spellId:
+    | "elemental_bolt"
+    | "elemental_cantrip"
+    | "elemental_split";
+
+  protected abstract readonly spellLabel: string;
+
+  protected allowDamageTypeLock(_context: ActionContext): boolean {
+    return false;
+  }
+
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     if (!selectedPower) {
       throw new Error("Select at least one valid target before casting.");
     }
 
-    if (selectedPower.level <= 2) {
+    if (this.allowDamageTypeLock(context) && selectedPower.level <= 2) {
       const lockedDamageType = getLongRestSelection(
         context.casterCharacter.sheet.powerUsageState,
         POWER_USAGE_KEYS.elementalistLockedDamageType
@@ -40,7 +56,7 @@ class ElementalistSpellAction extends AttackSpellAction {
     const damageResolution = buildDirectDamageCastResolution({
       casterSheet: context.casterCharacter.sheet,
       power: selectedPower,
-      variantId: context.selectedSpellId,
+      variantId: this.spellId,
       targetCharacterIds: context.finalTargets.map((targetCharacter) => targetCharacter.id),
       selectedDamageType: context.selectedDamageType,
       bonusManaSpend: context.bonusManaSpend,
@@ -61,6 +77,7 @@ class ElementalistSpellAction extends AttackSpellAction {
     this.setTargetCharacterIds(context.finalTargets.map((target) => target.id));
 
     const shouldLockDamageType =
+      this.allowDamageTypeLock(context) &&
       selectedPower.level <= 2 &&
       !getLongRestSelection(
         context.casterCharacter.sheet.powerUsageState,
@@ -96,27 +113,49 @@ class ElementalistSpellAction extends AttackSpellAction {
         : []),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `${
-            context.selectedSpellId === "elemental_cantrip"
-              ? "Elemental Cantrip"
-              : "Elemental Bolt"
-          }: ${context.casterName} targeted ${joinTargetNames(context.finalTargets)}.`
+          `${this.spellLabel}: ${context.casterName} targeted ${joinTargetNames(
+            context.finalTargets
+          )}.`
         )
       ),
     ];
   }
 }
 
+class ElementalBoltSpellAction extends BaseElementalistSpellAction {
+  protected readonly spellId = "elemental_bolt" as const;
+  protected readonly spellLabel = ELEMENTALIST_BOLT_SPELL_NAME;
+
+  protected override allowDamageTypeLock(): boolean {
+    return true;
+  }
+}
+
+class ElementalCantripSpellAction extends BaseElementalistSpellAction {
+  protected readonly spellId = "elemental_cantrip" as const;
+  protected readonly spellLabel = ELEMENTALIST_CANTRIP_SPELL_NAME;
+}
+
+class ElementalSplitSpellAction extends BaseElementalistSpellAction {
+  protected readonly spellId = "elemental_split" as const;
+  protected readonly spellLabel = ELEMENTALIST_SPLIT_SPELL_NAME;
+}
+
 export const elementalistModule: PowerModule = {
   powerId: "elementalist",
-  spellIds: ["elemental_bolt", "elemental_cantrip"],
+  spellIds: ["elemental_bolt", "elemental_cantrip", "elemental_split"],
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {
-    if (
-      context.selectedSpellId === "elemental_bolt" ||
-      context.selectedSpellId === "elemental_cantrip"
-    ) {
-      return new ElementalistSpellAction();
+    if (context.selectedSpellId === "elemental_bolt") {
+      return new ElementalBoltSpellAction();
+    }
+
+    if (context.selectedSpellId === "elemental_cantrip") {
+      return new ElementalCantripSpellAction();
+    }
+
+    if (context.selectedSpellId === "elemental_split") {
+      return new ElementalSplitSpellAction();
     }
 
     return null;

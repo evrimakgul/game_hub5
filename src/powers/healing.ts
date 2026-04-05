@@ -19,6 +19,11 @@ import {
   buildStatusRemovalChanges,
   joinTargetNames,
 } from "./runtimeSupport.ts";
+import {
+  HEALING_MAIN_SPELL_NAME,
+  HEALING_PURGE_SPELL_NAME,
+  HEALING_TOUCH_SPELL_NAME,
+} from "./spellLabels.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 
 class EmptyPassiveProvider extends PowerPassiveProvider {
@@ -27,7 +32,10 @@ class EmptyPassiveProvider extends PowerPassiveProvider {
   }
 }
 
-class HealingSpellAction extends RestorationSpellAction {
+abstract class BaseHealingSpellAction extends RestorationSpellAction {
+  protected abstract readonly spellId: "heal_living" | "holy_purge" | "healing_touch";
+  protected abstract readonly spellLabel: string;
+
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     if (!selectedPower) {
@@ -37,7 +45,7 @@ class HealingSpellAction extends RestorationSpellAction {
     const healingResolution = buildHealingCastResolution({
       casterSheet: context.casterCharacter.sheet,
       power: selectedPower,
-      variantId: context.selectedSpellId,
+      variantId: this.spellId,
       targetCharacterIds: context.finalTargets.map((targetCharacter) => targetCharacter.id),
       allocations: context.healingAllocations,
       itemsById: context.itemsById,
@@ -179,30 +187,45 @@ class HealingSpellAction extends RestorationSpellAction {
       ),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `${
-            context.selectedSpellId === "cure"
-              ? "Cure"
-              : context.selectedSpellId === "wound_mend"
-                ? "Wound Mend"
-                : "Heal"
-          }: ${context.casterName} affected ${joinTargetNames(context.finalTargets)}.`
+          `${this.spellLabel}: ${context.casterName} affected ${joinTargetNames(
+            context.finalTargets
+          )}.`
         )
       ),
     ];
   }
 }
 
+class HealLivingSpellAction extends BaseHealingSpellAction {
+  protected readonly spellId = "heal_living" as const;
+  protected readonly spellLabel = HEALING_MAIN_SPELL_NAME;
+}
+
+class HolyPurgeSpellAction extends BaseHealingSpellAction {
+  protected readonly spellId = "holy_purge" as const;
+  protected readonly spellLabel = HEALING_PURGE_SPELL_NAME;
+}
+
+class HealingTouchSpellAction extends BaseHealingSpellAction {
+  protected readonly spellId = "healing_touch" as const;
+  protected readonly spellLabel = HEALING_TOUCH_SPELL_NAME;
+}
+
 export const healingModule: PowerModule = {
   powerId: "healing",
-  spellIds: ["default", "cure", "wound_mend"],
+  spellIds: ["heal_living", "holy_purge", "healing_touch"],
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {
-    if (
-      context.selectedSpellId === "default" ||
-      context.selectedSpellId === "cure" ||
-      context.selectedSpellId === "wound_mend"
-    ) {
-      return new HealingSpellAction();
+    if (context.selectedSpellId === "heal_living") {
+      return new HealLivingSpellAction();
+    }
+
+    if (context.selectedSpellId === "holy_purge") {
+      return new HolyPurgeSpellAction();
+    }
+
+    if (context.selectedSpellId === "healing_touch") {
+      return new HealingTouchSpellAction();
     }
 
     return null;

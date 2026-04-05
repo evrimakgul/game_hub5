@@ -206,3 +206,10 @@
   - `CombatEncounterPage.tsx` now builds requests, calls the engine, and commits returned state instead of owning the execution rules itself.
   - Added focused regression coverage in `tests/encounterExecutionEngine.test.ts` for knowledge-link execution, crowd-control break handling, summon spawn/dismiss merging, upkeep drop behavior, and aura cleanup on dead sources.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `PWR-SPEC-02` completed.
+  - Implemented the remaining staged power TODO rewrite on top of the existing action/effect runtime and `EncounterExecutionEngine`.
+  - Restored passive delayed `Brute Defiance`, folded `Crowd Control` release into a contextual encounter action, and updated `Crowd Control` passives to `Crowd Management` plus `Compulsion Guard`.
+  - Split `Elementalist`, `Healing`, `Light Support`, `Necromancy`, and `Shadow Control` into the newer explicit spell sets and updated passive-provider outputs to the newer spec direction.
+  - Reworked summon option wiring and summon template rules for the new visible `Necromancy` and `Shadow Control` summon spells.
+  - Reconciled `references/plan.md`, `references/current_notes.md`, and `project_tracking/tasks_todo.md` so only deferred items remain open.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.

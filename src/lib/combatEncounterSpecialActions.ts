@@ -1,10 +1,7 @@
 import { POWER_USAGE_KEYS, getPowerUsageCount } from "./powerUsage.ts";
-import type { CharacterRecord } from "../types/character.ts";
-import type { PreparedCastRequest } from "../types/combatEncounterView.ts";
-import type { ActionContext } from "../engine/context.ts";
-import { executeAction } from "../engine/effectExecutor.ts";
-import { BruteDefianceSpellAction } from "../powers/bodyReinforcement.ts";
 import { BODY_REINFORCEMENT_CANTRIP_SPELL_NAME } from "../powers/spellLabels.ts";
+import type { CharacterRecord } from "../types/character.ts";
+import type { EncounterOngoingState } from "../types/combatEncounter.ts";
 
 export type BruteDefianceState = {
   isAvailable: boolean;
@@ -14,11 +11,51 @@ export type BruteDefianceState = {
   statusText: string;
 };
 
+export function getBruteDefianceReviveHp(powerLevel: number): number {
+  if (powerLevel >= 5) {
+    return 16;
+  }
+
+  if (powerLevel === 4) {
+    return 8;
+  }
+
+  if (powerLevel === 3) {
+    return 4;
+  }
+
+  if (powerLevel === 2) {
+    return 2;
+  }
+
+  if (powerLevel === 1) {
+    return 1;
+  }
+
+  return 0;
+}
+
+export function getBodyReinforcementLevel(character: CharacterRecord): number {
+  return (
+    character.sheet.powers.find((power) => power.id === "body_reinforcement")?.level ?? 0
+  );
+}
+
+export function hasPendingBruteDefianceRevive(
+  ongoingStates: EncounterOngoingState[],
+  characterId: string
+): boolean {
+  return ongoingStates.some(
+    (state) => state.kind === "body_reinforcement_revive" && state.characterId === characterId
+  );
+}
+
 export function getBruteDefianceState(
-  character: CharacterRecord
+  character: CharacterRecord,
+  ongoingStates: EncounterOngoingState[] = []
 ): BruteDefianceState {
-  const powerLevel = character.sheet.powers.find((power) => power.id === "body_reinforcement")?.level ?? 0;
-  if (powerLevel < 2) {
+  const powerLevel = getBodyReinforcementLevel(character);
+  if (powerLevel < 1) {
     return {
       isAvailable: false,
       isEligible: false,
@@ -28,14 +65,16 @@ export function getBruteDefianceState(
     };
   }
 
-  const reviveHp = powerLevel >= 5 ? 4 : 1;
+  const reviveHp = getBruteDefianceReviveHp(powerLevel);
   const usageSpent =
     getPowerUsageCount(
       character.sheet.powerUsageState,
       "daily",
       POWER_USAGE_KEYS.bodyReinforcementRevive
     ) >= 1;
-  const isEligible = !usageSpent && character.sheet.currentHp <= 0 && character.sheet.currentHp >= -5;
+  const pending = hasPendingBruteDefianceRevive(ongoingStates, character.id);
+  const isEligible =
+    !usageSpent && !pending && character.sheet.currentHp <= 0 && character.sheet.currentHp >= -5;
 
   if (usageSpent) {
     return {
@@ -47,13 +86,23 @@ export function getBruteDefianceState(
     };
   }
 
+  if (pending) {
+    return {
+      isAvailable: true,
+      isEligible: false,
+      usageSpent: false,
+      reviveHp,
+      statusText: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} is already queued to revive after one turn.`,
+    };
+  }
+
   if (isEligible) {
     return {
       isAvailable: true,
       isEligible: true,
       usageSpent: false,
       reviveHp,
-      statusText: `Eligible while HP is between 0 and -5. Revives to ${reviveHp} HP.`,
+      statusText: `Will revive to ${reviveHp} HP after one turn while HP stays between 0 and -5.`,
     };
   }
 
@@ -62,79 +111,6 @@ export function getBruteDefianceState(
     isEligible: false,
     usageSpent: false,
     reviveHp,
-    statusText: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} becomes available only while HP is between 0 and -5.`,
+    statusText: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} triggers only while HP is between 0 and -5.`,
   };
-}
-
-export function prepareBruteDefianceRequest(payload: {
-  character: CharacterRecord;
-}): { error: string } | { request: PreparedCastRequest; reviveHp: number } {
-  const reviveState = getBruteDefianceState(payload.character);
-  if (!reviveState.isAvailable) {
-    return { error: reviveState.statusText };
-  }
-
-  if (!reviveState.isEligible) {
-    return { error: reviveState.statusText };
-  }
-
-  const selectedPower =
-    payload.character.sheet.powers.find((power) => power.id === "body_reinforcement") ?? null;
-  if (!selectedPower) {
-    return { error: `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} is not available.` };
-  }
-
-  const selfView = {
-    participant: {
-      characterId: payload.character.id,
-      ownerRole: payload.character.ownerRole,
-      displayName: payload.character.sheet.name,
-      initiativePool: 0,
-      initiativeFaces: [],
-      initiativeSuccesses: 0,
-      dex: 0,
-      wits: 0,
-      partyId: null,
-      controllerCharacterId: null,
-      summonTemplateId: null,
-      sourcePowerId: null,
-    },
-    character: payload.character,
-    transientCombatant: null,
-    snapshot: null,
-  };
-  const context: ActionContext = {
-    payload: null,
-    casterCharacter: payload.character,
-    casterName: payload.character.sheet.name.trim() || payload.character.id,
-    selectedPower,
-    selectedSpellId: "default",
-    encounterParticipants: [selfView],
-    itemsById: {},
-    casterView: selfView,
-    validTargetViews: [selfView],
-    selectedTargetViews: [selfView],
-    fallbackTargetViews: [selfView],
-    finalTargetViews: [selfView],
-    finalTargets: [payload.character],
-    attackOutcome: "hit",
-    healingAllocations: {},
-    selectedStatId: null,
-    castMode: "self",
-    selectedDamageType: null,
-    bonusManaSpend: 0,
-    selectedSummonOptionId: null,
-  };
-
-  try {
-    const { request } = executeAction(new BruteDefianceSpellAction(), context);
-    return { request, reviveHp: reviveState.reviveHp };
-  } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : `Failed to prepare ${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME}.`,
-    };
-  }
 }

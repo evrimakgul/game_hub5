@@ -42,29 +42,15 @@ class AwarenessPassiveProvider extends BaseCantripPassiveProvider {
 
 class CrowdControlPassiveProvider extends BaseCantripPassiveProvider {
   override getResult(context: Parameters<PowerPassiveProvider["getResult"]>[0]) {
-    const result = super.getResult(context);
-    const mechanics = getUnlockedCantripMechanics(context.power);
-
-    if (!mechanics) {
-      return result;
-    }
-
-    const bonusBySkillId: Record<string, string> = {
-      social: "social_skill_bonus",
-      intimidation: "intimidation_skill_bonus",
-      mechanics: "mechanics_skill_bonus",
-      technology: "technology_skill_bonus",
-    };
-
-    Object.entries(bonusBySkillId).forEach(([skillId, key]) => {
-      const bonus = mechanics[key];
-      if (typeof bonus === "number" && Number.isFinite(bonus) && bonus > 0) {
-        result.skillSources.push({
-          skillId,
-          source: createSkillSource("Crowd Control", bonus),
-        });
-      }
+    const result = createEmptyPassiveProviderResult();
+    result.skillSources.push({
+      skillId: "social",
+      source: createSkillSource("Crowd Management", context.power.level),
     });
+
+    if (context.power.level >= 5) {
+      result.utilityTraits.push("Compulsion Guard");
+    }
 
     return result;
   }
@@ -72,12 +58,19 @@ class CrowdControlPassiveProvider extends BaseCantripPassiveProvider {
 
 class LightSupportPassiveProvider extends BaseCantripPassiveProvider {
   override getResult(context: Parameters<PowerPassiveProvider["getResult"]>[0]) {
-    const result = super.getResult(context);
-    const mechanics = getUnlockedCantripMechanics(context.power);
+    const result = createEmptyPassiveProviderResult();
+    result.manaBonus = context.power.level;
 
-    if (mechanics?.nightvision === true) {
-      result.utilityTraits.push("Nightvision");
-    }
+    const nightvisionTargetsByLevel: Record<number, string> = {
+      1: "Nightvision: Self",
+      2: "Nightvision: Self + 1",
+      3: "Nightvision: Self + 3",
+      4: "Nightvision: Self + 3",
+      5: "Nightvision: Self + 4",
+    };
+    result.utilityTraits.push(
+      nightvisionTargetsByLevel[context.power.level] ?? "Nightvision: Self"
+    );
 
     return result;
   }
@@ -85,23 +78,27 @@ class LightSupportPassiveProvider extends BaseCantripPassiveProvider {
 
 class NecromancyPassiveProvider extends BaseCantripPassiveProvider {
   override getResult(context: Parameters<PowerPassiveProvider["getResult"]>[0]) {
-    const result = super.getResult(context);
-    const mechanics = getUnlockedCantripMechanics(context.power);
-    const meleeBonus = mechanics?.melee_skill_bonus;
+    const result = createEmptyPassiveProviderResult();
+    const meleeBonus =
+      context.power.level >= 5
+        ? 3
+        : context.power.level >= 3
+          ? 2
+          : context.power.level >= 1
+            ? 1
+            : 0;
 
-    if (typeof meleeBonus === "number" && Number.isFinite(meleeBonus) && meleeBonus > 0) {
+    if (meleeBonus > 0) {
       result.skillSources.push({
         skillId: "melee",
-        source: createSkillSource("Necromancy", meleeBonus),
+        source: createSkillSource("Necromancer's Deception", meleeBonus),
       });
     }
 
-    if (typeof mechanics?.hostile_undead_aggro_priority === "string") {
-      result.utilityTraits.push(
-        mechanics.hostile_undead_aggro_priority === "ignore_unless_attacked"
-          ? "Hostile Undead Ignore Unless Attacked"
-          : "Hostile Undead Aggro Last"
-      );
+    if (context.power.level >= 4) {
+      result.utilityTraits.push("Hostile Undead Ignore Unless Attacked");
+    } else if (context.power.level >= 2) {
+      result.utilityTraits.push("Hostile Undead Aggro Last");
     }
 
     return result;
@@ -110,11 +107,7 @@ class NecromancyPassiveProvider extends BaseCantripPassiveProvider {
 
 class ShadowControlPassiveProvider extends BaseCantripPassiveProvider {
   override getResult(context: Parameters<PowerPassiveProvider["getResult"]>[0]) {
-    const result = super.getResult(context);
-
-    if (context.power.level >= 2) {
-      result.utilityTraits.push(`Shadow Walk ${25 * context.power.level}m`);
-    }
+    const result = createEmptyPassiveProviderResult();
 
     if (context.power.level >= 3) {
       result.utilityTraits.push("Cosmetic Clothing / Armor Shift");

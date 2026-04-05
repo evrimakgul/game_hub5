@@ -44,9 +44,9 @@ export async function runPowerEffectsTests(): Promise<void> {
         const derived = buildCharacterDerivedValues(sheet);
 
         assert.equal(derived.baseMana, 13);
-        assert.equal(derived.passiveManaBonus, 2);
-        assert.equal(derived.maxMana, 15);
-        assert.equal(derived.currentMana, 15);
+        assert.equal(derived.passiveManaBonus, 3);
+        assert.equal(derived.maxMana, 16);
+        assert.equal(derived.currentMana, 16);
       },
     },
     {
@@ -181,7 +181,7 @@ export async function runPowerEffectsTests(): Promise<void> {
         assert.equal(snapshot.highlightedSkills.find((field) => field.id === "stealth")?.value, 4);
         assert.equal(
           snapshot.highlightedSkills.find((field) => field.id === "intimidation")?.value,
-          4
+          0
         );
         assert.equal(derived.activePowerEffects.length, 1);
       },
@@ -201,7 +201,7 @@ export async function runPowerEffectsTests(): Promise<void> {
         const resolution = buildDirectDamageCastResolution({
           casterSheet: caster,
           power,
-          variantId: "elemental_bolt",
+          variantId: "elemental_split",
           targetCharacterIds: ["target-1", "target-2"],
           selectedDamageType: "necrotic",
           bonusManaSpend: 1,
@@ -216,9 +216,9 @@ export async function runPowerEffectsTests(): Promise<void> {
           return;
         }
 
-        assert.equal(resolution.manaCost, 3);
+        assert.equal(resolution.manaCost, 2);
         assert.equal(resolution.applications.length, 2);
-        assert.equal(resolution.applications[0]?.rawAmount, 11);
+        assert.equal(resolution.applications[0]?.rawAmount, 14);
         assert.equal(resolution.applications[0]?.damageType, "necrotic");
       },
     },
@@ -252,19 +252,19 @@ export async function runPowerEffectsTests(): Promise<void> {
         const cantripResolution = buildHealingCastResolution({
           casterSheet: caster,
           power: levelFiveHealing,
-          variantId: "wound_mend",
+          variantId: "healing_touch",
           targetCharacterIds: ["target-1"],
         });
         const healingResolution = buildHealingCastResolution({
           casterSheet: caster,
           power: levelFiveHealing,
-          variantId: "default",
+          variantId: "heal_living",
           targetCharacterIds: ["target-1"],
         });
         const cureResolution = buildHealingCastResolution({
           casterSheet: caster,
           power: levelFiveHealing,
-          variantId: "cure",
+          variantId: "holy_purge",
           targetCharacterIds: ["target-1"],
         });
 
@@ -279,20 +279,20 @@ export async function runPowerEffectsTests(): Promise<void> {
           return;
         }
 
-        assert.equal(cantripResolution.totalAmount, 4);
+        assert.equal(cantripResolution.totalAmount, 5);
         assert.deepEqual(cantripResolution.removedStatuses, ["bleeding"]);
         assert.equal(cantripResolution.perTargetDailyLimit, 2);
         assert.equal(healingResolution.totalAmount, 9);
         assert.equal(healingResolution.manaCost, 2);
         assert.equal(healingResolution.canRegrowLimbs, true);
         assert.equal(healingResolution.overhealCapStat, "STAM");
-        assert.equal(cureResolution.manaCost, 3);
+        assert.equal(cureResolution.manaCost, 2);
         assert.equal(cureResolution.totalAmount, 0);
         assert.deepEqual(cureResolution.removedStatuses, ["poison", "disease", "curse"]);
       },
     },
     {
-      name: "light support level five folds expose darkness into the light aura flow",
+      name: "light support level five keeps lessen darkness as an explicit linked aura effect",
       run: () => {
         const caster = PLAYER_CHARACTER_TEMPLATE.createInstance();
         caster.powers = [
@@ -315,12 +315,12 @@ export async function runPowerEffectsTests(): Promise<void> {
           targetCharacterId: "caster",
           targetName: "Beacon",
           power: caster.powers[0],
-          variantId: "default",
+          variantId: "let_there_be_light",
         });
 
         assert.deepEqual(
           variants.map((variant) => variant.id),
-          ["default", "mana_restore"]
+          ["let_there_be_light", "luminous_restoration", "lessen_darkness"]
         );
         assert.ok(!("error" in builtSource));
         if ("error" in builtSource) {
@@ -333,7 +333,7 @@ export async function runPowerEffectsTests(): Promise<void> {
         const affectedTarget = applyActivePowerEffect(target, enemyAuraEffect);
 
         assert.equal(builtSource.manaCost, 2);
-        assert.equal(enemyAuraEffect.label, "Expose Darkness");
+        assert.equal(enemyAuraEffect.label, "Lessen Darkness");
         assert.equal(getResolvedResistanceLevel(affectedTarget, "physical"), 1);
         assert.equal(getResolvedResistanceLevel(affectedTarget, "fire"), 0);
       },

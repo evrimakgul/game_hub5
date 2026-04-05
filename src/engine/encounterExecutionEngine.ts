@@ -7,9 +7,11 @@ import {
 } from "../lib/knowledge.ts";
 import {
   incrementPerTargetDailyPowerUsageCount,
+  POWER_USAGE_KEYS,
   incrementPowerUsageCount,
   setLongRestSelection,
 } from "../lib/powerUsage.ts";
+import { getBruteDefianceState } from "../lib/combatEncounterSpecialActions.ts";
 import { applyDamageToSheet, applyHealingToSheet } from "../rules/combatResolution.ts";
 import {
   applyActivePowerEffect,
@@ -257,6 +259,14 @@ export class EncounterExecutionEngine {
       );
     });
 
+    const bruteDefianceLogEntries = this.scheduleAutomaticBruteDefiance();
+    if (bruteDefianceLogEntries.length > 0) {
+      this.encounter = {
+        ...this.encounter,
+        activityLog: [...bruteDefianceLogEntries, ...this.encounter.activityLog].slice(0, 200),
+      };
+    }
+
     return { result: this.getResult() };
   }
 
@@ -275,15 +285,42 @@ export class EncounterExecutionEngine {
       nextIndex <= currentIndex ? this.encounter.turnState.round + 1 : this.encounter.turnState.round;
     const nextActiveParticipantId = this.encounter.participants[nextIndex]?.characterId ?? null;
 
-    const nextOngoingStates = this.encounter.ongoingStates.reduce<EncounterOngoingState[]>(
-      (states, state) => {
-        if (state.kind !== "body_reinforcement_revive") {
-          states.push(state);
-        }
-        return states;
-      },
-      []
-    );
+    const nextOngoingStates: EncounterOngoingState[] = [];
+    this.encounter.ongoingStates.forEach((state) => {
+      if (state.kind !== "body_reinforcement_revive") {
+        nextOngoingStates.push(state);
+        return;
+      }
+
+      if (state.remainingTurnAdvances > 1) {
+        nextOngoingStates.push({
+          ...state,
+          remainingTurnAdvances: state.remainingTurnAdvances - 1,
+        });
+        return;
+      }
+
+      const characterSheet = this.resolveEncounterSheet(state.characterId);
+      if (!characterSheet || characterSheet.currentHp > 0) {
+        return;
+      }
+
+      this.updateEncounterCharacter(state.characterId, {
+        ...characterSheet,
+        currentHp: state.reviveHp,
+        statusTags: characterSheet.statusTags.filter(
+          (tag) => !["dead", "dying", "unconscious"].includes(tag.id)
+        ),
+      });
+      turnLogEntries.push(
+        buildEncounterLogEntry(
+          `Brute Defiance revived ${
+            this.encounter.participants.find((participant) => participant.characterId === state.characterId)
+              ?.displayName ?? state.characterId
+          } to ${state.reviveHp} HP.`
+        )
+      );
+    });
 
     const maintainedCrowdControlStates = nextOngoingStates.filter(
       (state): state is Extract<EncounterOngoingState, { kind: "crowd_control" }> =>
@@ -650,5 +687,48 @@ export class EncounterExecutionEngine {
         activeParticipantId,
       },
     };
+  }
+
+  private scheduleAutomaticBruteDefiance(): ReturnType<typeof buildEncounterLogEntry>[] {
+    const logEntries: Array<ReturnType<typeof buildEncounterLogEntry>> = [];
+
+    this.characters.forEach((character) => {
+      const reviveState = getBruteDefianceState(character, this.encounter.ongoingStates);
+      if (!reviveState.isAvailable || !reviveState.isEligible) {
+        return;
+      }
+
+      this.updateEncounterCharacter(character.id, (currentSheet) => ({
+        ...currentSheet,
+        powerUsageState: incrementPowerUsageCount(
+          currentSheet.powerUsageState,
+          "daily",
+          POWER_USAGE_KEYS.bodyReinforcementRevive,
+          1
+        ),
+      }));
+      this.encounter = {
+        ...this.encounter,
+        ongoingStates: [
+          ...this.encounter.ongoingStates,
+          {
+            id: createTimestampedId("body-reinforcement-revive"),
+            kind: "body_reinforcement_revive",
+            characterId: character.id,
+            reviveHp: reviveState.reviveHp,
+            remainingTurnAdvances: 1,
+          },
+        ],
+      };
+      logEntries.push(
+        buildEncounterLogEntry(
+          `Brute Defiance will revive ${character.sheet.name.trim() || character.id} to ${
+            reviveState.reviveHp
+          } HP after one turn.`
+        )
+      );
+    });
+
+    return logEntries;
   }
 }

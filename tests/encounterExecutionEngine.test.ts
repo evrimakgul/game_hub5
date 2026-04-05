@@ -261,6 +261,69 @@ export async function runEncounterExecutionEngineTests(): Promise<void> {
       },
     },
     {
+      name: "executePreparedRequest schedules Brute Defiance and advanceTurn resolves it",
+      run: () => {
+        const hero = createCharacterRecord("hero-1", "Hero", "player", {
+          currentHp: 3,
+        });
+        hero.sheet.powers = [
+          { id: "body_reinforcement", name: "Body Reinforcement", level: 3, governingStat: "STAM" },
+        ];
+        const enemy = createCharacterRecord("enemy-1", "Enemy", "dm");
+        const encounter = createEncounter([
+          createParticipant(hero),
+          createParticipant(enemy, "party-2"),
+        ]);
+        const request = createPreparedRequest(enemy.id, [hero.id]);
+        request.damageApplications = [
+          {
+            targetCharacterId: hero.id,
+            rawAmount: 4,
+            damageType: "physical",
+            mitigationChannel: "dr",
+            sourceCharacterId: enemy.id,
+            sourceLabel: "Attack",
+            sourceSummary: "Attack",
+          },
+        ];
+
+        const engine = new EncounterExecutionEngine({
+          characters: [hero, enemy],
+          encounter,
+          knowledgeState: createEmptyKnowledgeState(),
+          itemsById: {},
+        });
+        const scheduled = engine.executePreparedRequest(request);
+        assert.ok(!("error" in scheduled));
+        if ("error" in scheduled) {
+          return;
+        }
+
+        assert.equal(
+          scheduled.result.encounter.ongoingStates.some(
+            (state) => state.kind === "body_reinforcement_revive" && state.characterId === hero.id
+          ),
+          true
+        );
+
+        const advanced = new EncounterExecutionEngine({
+          characters: scheduled.result.characters,
+          encounter: scheduled.result.encounter,
+          knowledgeState: scheduled.result.knowledgeState,
+          itemsById: {},
+        }).advanceTurn();
+        const revivedHero = advanced.characters.find((entry) => entry.id === hero.id);
+
+        assert.equal(
+          advanced.encounter.ongoingStates.some(
+            (state) => state.kind === "body_reinforcement_revive" && state.characterId === hero.id
+          ),
+          false
+        );
+        assert.equal(revivedHero?.sheet.currentHp, 4);
+      },
+    },
+    {
       name: "executePreparedRequest merges summon spawn and dismiss changes into encounter state",
       run: () => {
         const caster = createCharacterRecord("caster-1", "Necro", "player");

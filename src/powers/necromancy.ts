@@ -26,6 +26,13 @@ import {
   isUndeadEncounterTarget,
   joinTargetNames,
 } from "./runtimeSupport.ts";
+import {
+  NECROMANCY_BLESS_SPELL_NAME,
+  NECROMANCY_SKELETON_KING_SPELL_NAME,
+  NECROMANCY_SKELETON_SPELL_NAME,
+  NECROMANCY_TOUCH_SPELL_NAME,
+  NECROMANCY_ZOMBIE_SPELL_NAME,
+} from "./spellLabels.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 
 class EmptyPassiveProvider extends PowerPassiveProvider {
@@ -63,7 +70,7 @@ class NecroticTouchSpellAction extends AttackSpellAction {
       return [
         new LogEffect(
           buildEncounterActivityLogEntry(
-            `Necrotic Touch missed ${joinTargetNames(context.finalTargets)}.`
+            `${NECROMANCY_TOUCH_SPELL_NAME} missed ${joinTargetNames(context.finalTargets)}.`
           )
         ),
       ];
@@ -115,14 +122,23 @@ class NecroticTouchSpellAction extends AttackSpellAction {
       ),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Necrotic Touch: ${context.casterName} targeted ${joinTargetNames(context.finalTargets)}.`
+          `${NECROMANCY_TOUCH_SPELL_NAME}: ${context.casterName} targeted ${joinTargetNames(
+            context.finalTargets
+          )}.`
         )
       ),
     ];
   }
 }
 
-class SummonUndeadSpellAction extends SummonSpellAction {
+abstract class BaseNecromancySummonSpellAction extends SummonSpellAction {
+  protected abstract readonly summonVariantId:
+    | "non_living_skeleton"
+    | "non_living_skeleton_king"
+    | "non_living_zombie";
+
+  protected abstract readonly spellLabel: string;
+
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     if (!selectedPower) {
@@ -172,7 +188,7 @@ class SummonUndeadSpellAction extends SummonSpellAction {
       casterCharacter: context.casterCharacter,
       casterParticipant: context.casterView.participant,
       power: selectedPower,
-      selectedSummonOptionId: context.selectedSummonOptionId ?? "",
+      selectedSummonOptionId: context.selectedSummonOptionId ?? `${this.summonVariantId}:1:0`,
       activeTransientCombatants,
     });
 
@@ -203,7 +219,7 @@ class SummonUndeadSpellAction extends SummonSpellAction {
       ...(inheritedAuraEffects.length > 0 ? [new AuraEffect(inheritedAuraEffects)] : []),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Summon Undead: ${context.casterName} created ${summonResolution.summons
+          `${this.spellLabel}: ${context.casterName} created ${summonResolution.summons
             .map((summon) => summon.sheet.name.trim() || summon.id)
             .join(", ")}.`
         )
@@ -212,7 +228,22 @@ class SummonUndeadSpellAction extends SummonSpellAction {
   }
 }
 
-class ResurrectionSpellAction extends RestorationSpellAction {
+class NonLivingSkeletonSpellAction extends BaseNecromancySummonSpellAction {
+  protected readonly summonVariantId = "non_living_skeleton" as const;
+  protected readonly spellLabel = NECROMANCY_SKELETON_SPELL_NAME;
+}
+
+class NonLivingSkeletonKingSpellAction extends BaseNecromancySummonSpellAction {
+  protected readonly summonVariantId = "non_living_skeleton_king" as const;
+  protected readonly spellLabel = NECROMANCY_SKELETON_KING_SPELL_NAME;
+}
+
+class NonLivingZombieSpellAction extends BaseNecromancySummonSpellAction {
+  protected readonly summonVariantId = "non_living_zombie" as const;
+  protected readonly spellLabel = NECROMANCY_ZOMBIE_SPELL_NAME;
+}
+
+class NecromancersBlessSpellAction extends RestorationSpellAction {
   override resolve(context: ActionContext) {
     const targetView = context.finalTargetViews[0];
     const targetCharacter = context.finalTargets[0];
@@ -240,7 +271,7 @@ class ResurrectionSpellAction extends RestorationSpellAction {
       ),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Resurrection: ${context.casterName} restored ${
+          `${NECROMANCY_BLESS_SPELL_NAME}: ${context.casterName} restored ${
             targetCharacter.sheet.name.trim() || targetCharacter.id
           }.`
         )
@@ -251,22 +282,40 @@ class ResurrectionSpellAction extends RestorationSpellAction {
 
 export const necromancyModule: PowerModule = {
   powerId: "necromancy",
-  spellIds: ["summon_undead", "dismiss_summon", "necrotic_touch", "resurrection"],
+  spellIds: [
+    "non_living_skeleton",
+    "non_living_skeleton_king",
+    "non_living_zombie",
+    "necrotic_touch",
+    "necromancers_bless",
+  ],
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {
     if (context.selectedSpellId === "necrotic_touch") {
       return new NecroticTouchSpellAction();
     }
 
-    if (
-      context.selectedSpellId === "summon_undead" ||
-      context.selectedSpellId === "dismiss_summon"
-    ) {
-      return new SummonUndeadSpellAction();
+    if (context.selectedSpellId === "non_living_skeleton") {
+      return new NonLivingSkeletonSpellAction();
     }
 
-    if (context.selectedSpellId === "resurrection") {
-      return new ResurrectionSpellAction();
+    if (context.selectedSpellId === "non_living_skeleton_king") {
+      return new NonLivingSkeletonKingSpellAction();
+    }
+
+    if (context.selectedSpellId === "non_living_zombie") {
+      return new NonLivingZombieSpellAction();
+    }
+
+    if (context.selectedSpellId === "dismiss_summon") {
+      return new NonLivingSkeletonSpellAction();
+    }
+
+    if (
+      context.selectedSpellId === "necromancers_bless" ||
+      context.selectedSpellId === "resurrection"
+    ) {
+      return new NecromancersBlessSpellAction();
     }
 
     return null;

@@ -101,16 +101,16 @@ export async function runCharacterRuntimeTests(): Promise<void> {
 
         const derived = buildCharacterDerivedValues(sheet);
 
-        assert.equal(getCurrentSkillValue(sheet, "social"), 1);
-        assert.equal(getCurrentSkillValue(sheet, "intimidation"), 1);
-        assert.equal(getCurrentSkillValue(sheet, "mechanics"), 1);
-        assert.equal(getCurrentSkillValue(sheet, "technology"), 1);
-        assert.equal(getCurrentSkillValue(sheet, "melee"), 2);
+        assert.equal(getCurrentSkillValue(sheet, "social"), 5);
+        assert.equal(getCurrentSkillValue(sheet, "intimidation"), 0);
+        assert.equal(getCurrentSkillValue(sheet, "mechanics"), 0);
+        assert.equal(getCurrentSkillValue(sheet, "technology"), 0);
+        assert.equal(getCurrentSkillValue(sheet, "melee"), 3);
         assert.deepEqual(derived.utilityTraits, [
           "Techno-Invisibility Immunity",
-          "Nightvision",
+          "Compulsion Guard",
+          "Nightvision: Self + 4",
           "Hostile Undead Ignore Unless Attacked",
-          "Shadow Walk 125m",
           "Cosmetic Clothing / Armor Shift",
           "Minor Body Cosmetics",
         ]);

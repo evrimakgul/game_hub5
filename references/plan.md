@@ -144,6 +144,61 @@ This roadmap is the active implementation source of truth for this branch.
 - V1 ships character cards only.
 - The architecture remains generic enough for future item, place, faction, story, and custom knowledge cards, but those creation flows remain deferred.
 
+## Completed Follow-Up: Remaining Power TODO Pass
+
+### 5.1 `Body Reinforcement`
+- `Brute Defiance` is passive again.
+- It now auto-schedules when HP is between `0` and `-5`, resolves after one turn, remains `1/day`, and restores `1 / 2 / 4 / 8 / 16` HP by `Body Reinforcement` level.
+- Manual encounter-trigger UI for `Brute Defiance` has been removed.
+
+### 5.2 `Crowd Control`
+- `Control Entity (CE)` is now the only user-facing spell.
+- Controlled-target release is now a contextual encounter action instead of a second spell option.
+- Passive replacement is complete:
+  - `Crowd Management (CM)` adds `Social` equal to `Crowd Control` level.
+  - `Compulsion Guard (CG)` appears at level `5`.
+
+### 5.3 `Elementalist`
+- `Elemental Bolt`, `Elemental Cantrip`, and `Elemental Split` are now explicit separate spells.
+- The old branchy single-class runtime was replaced with one action class per spell.
+- Split-style multi-target behavior now lives on `Elemental Split` instead of being folded into `Elemental Bolt`.
+
+### 5.4 `Healing`
+- `Healing` now exposes:
+  - `Heal Living (HL)`
+  - `Holy Purge (HP)`
+  - `Healing Touch (HT)`
+- Each spell now resolves through its own action class.
+- `Holy Purge` now costs `2` mana.
+
+### 5.5 `Light Support`
+- `Light Support` now exposes:
+  - `Let There Be Light (LTBL)`
+  - `Luminous Restoration (LR)`
+  - `Lessen Darkness (LD)`
+- Passive `Lunar Bless (LB)` behavior is now reflected through passive mana and utility-trait output.
+- `Lessen Darkness` is now an explicit linked level-five cast instead of being folded into the default aura cast.
+
+### 5.6 `Necromancy`
+- `Necromancy` now exposes:
+  - `Non-Living Skeleton`
+  - `Non-Living Skeleton King`
+  - `Non-Living Zombie`
+  - `Necrotic Touch`
+  - `Necromancer's Bless`
+- Passive `Necromancer's Deception` progression is now reflected in the passive provider.
+- Summon replacement now respects subtype replacement for the new visible necromancy summon variants.
+
+### 5.7 `Shadow Control`
+- `Shadow Control` now exposes:
+  - `Smoldering Shadow`
+  - `Shadow Walk`
+  - `Shadow Walk and Attack`
+  - `Shadow Manipulation`
+  - `Shadow Fighter`
+- Passive `Sleek Visage` cosmetic behavior is reflected through the passive provider.
+- `Smoldering Shadow` now drops the old intimidation bonus and uses the newer stealth + AC progression.
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`
@@ -155,10 +210,12 @@ This roadmap is the active implementation source of truth for this branch.
 - Update this roadmap when implementation reality changes.
 
 ## Deferred
-- `BR-BD-01` Restore `Brute Defiance` to the intended passive delayed stand-up behavior with 1/day use and HP scaling `1 / 2 / 4 / 8 / 16` by `Body Reinforcement` level.
 - Future knowledge/intel work should move toward standalone revisioned knowledge cards:
   - V1 now ships the standalone revisioned character-card system described in `references/knowledge_card_design.md`
   - remaining follow-up is expanding that model beyond character cards to other subject types
+- Aura-builder redesign remains deferred:
+  - current implementation still uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
+  - the recorded alternative is a dedicated aura builder such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`
 - Full item-authoring workflow and richer item bonus editors.
 - Full multi-target `AA` knowledge-sharing UI.
 - Encounter persistence and backend sync.

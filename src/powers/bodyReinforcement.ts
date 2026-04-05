@@ -1,13 +1,10 @@
-import { BuffSpellAction, RestorationSpellAction } from "../engine/actions.ts";
-import { BuffEffect, LogEffect, ResourceEffect, UsageCounterEffect } from "../engine/effects.ts";
+import { BuffSpellAction } from "../engine/actions.ts";
+import { BuffEffect, LogEffect } from "../engine/effects.ts";
 import { createEmptyPassiveProviderResult } from "./passiveSupport.ts";
 import { buildEncounterActivityLogEntry, getGenericBuffActionLabel, getReplacementWarnings, joinTargetNames } from "./runtimeSupport.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 import type { ActionContext } from "../engine/context.ts";
 import { buildActivePowerEffect } from "../rules/powerEffects.ts";
-import { getBruteDefianceState } from "../lib/combatEncounterSpecialActions.ts";
-import { POWER_USAGE_KEYS } from "../lib/powerUsage.ts";
-import { BODY_REINFORCEMENT_CANTRIP_SPELL_NAME } from "./spellLabels.ts";
 
 class EmptyPassiveProvider extends PowerPassiveProvider {
   override getResult() {
@@ -52,51 +49,6 @@ class BoostPhysiqueSpellAction extends BuffSpellAction {
           `${getGenericBuffActionLabel(selectedPower.id, selectedPower.name)}: ${
             context.casterName
           } affected ${joinTargetNames([targetCharacter])}.`
-        )
-      ),
-    ];
-  }
-}
-
-export class BruteDefianceSpellAction extends RestorationSpellAction {
-  override resolve(context: ActionContext) {
-    const selectedPower =
-      context.selectedPower ??
-      context.casterCharacter.sheet.powers.find((power) => power.id === "body_reinforcement") ??
-      null;
-    const reviveState = getBruteDefianceState(context.casterCharacter);
-
-    if (!selectedPower) {
-      throw new Error(`${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} is not available.`);
-    }
-
-    if (!reviveState.isAvailable || !reviveState.isEligible) {
-      throw new Error(reviveState.statusText);
-    }
-
-    this.setManaCost(0);
-    this.setTargetCharacterIds([context.casterCharacter.id]);
-
-    return [
-      new ResourceEffect({
-        characterId: context.casterCharacter.id,
-        field: "currentHp",
-        operation: "set",
-        value: reviveState.reviveHp,
-      }),
-      new UsageCounterEffect({
-        characterId: context.casterCharacter.id,
-        operation: "increment",
-        scope: "daily",
-        key: POWER_USAGE_KEYS.bodyReinforcementRevive,
-        targetCharacterId: null,
-        amount: 1,
-      }),
-      new LogEffect(
-        buildEncounterActivityLogEntry(
-          `${BODY_REINFORCEMENT_CANTRIP_SPELL_NAME} revived ${
-            context.casterCharacter.sheet.name.trim() || context.casterCharacter.id
-          } to ${reviveState.reviveHp} HP.`
         )
       ),
     ];

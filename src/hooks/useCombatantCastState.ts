@@ -186,12 +186,13 @@ export function useCombatantCastState({
           selectedPower,
           resolvedVariantId,
           resolvedTargetIds.length,
+          resolvedDamageTypeId,
           itemsById
         )
       : 0;
   const shouldShowHealingAllocationEditor =
     selectedPower?.id === "healing" &&
-    resolvedVariantId === "default" &&
+    resolvedVariantId === "heal_living" &&
     targetMode === "multiple" &&
     healingTotal !== null &&
     resolvedTargetIds.length > 0;
@@ -454,7 +455,11 @@ export function useCombatantCastState({
     shouldShowTargetField: targetMode !== "self",
     shouldShowModeField:
       selectedPower?.id === "shadow_control" &&
-      (resolvedVariantId === "default" || resolvedVariantId === "shadow_cloak") &&
+      (
+        resolvedVariantId === "default" ||
+        resolvedVariantId === "shadow_cloak" ||
+        resolvedVariantId === "smoldering_shadow"
+      ) &&
       modeOptions.length > 1,
     shouldShowDamageTypeField: damageTypeOptions.length > 0,
     shouldShowSummonOptionField: summonOptions.length > 0,

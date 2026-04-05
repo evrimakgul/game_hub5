@@ -28,7 +28,11 @@ import { createTimestampedId } from "../lib/ids.ts";
 import { rollD10Faces } from "../lib/dice.ts";
 import type { CastPowerMode, CastPowerVariantId } from "./spellTypes.ts";
 import type { SharedItemRecord } from "../types/items.ts";
-import { BODY_REINFORCEMENT_BUFF_SPELL_NAME } from "./spellLabels.ts";
+import {
+  BODY_REINFORCEMENT_BUFF_SPELL_NAME,
+  LIGHT_SUPPORT_AURA_SPELL_NAME,
+  SHADOW_CONTROL_AURA_SPELL_NAME,
+} from "./spellLabels.ts";
 
 export function buildEncounterActivityLogEntry(summary: string) {
   return {
@@ -51,11 +55,11 @@ export function getGenericBuffActionLabel(
   }
 
   if (powerId === "light_support") {
-    return "Light Aura";
+    return LIGHT_SUPPORT_AURA_SPELL_NAME;
   }
 
   if (powerId === "shadow_control") {
-    return "Cloak of Shadow";
+    return SHADOW_CONTROL_AURA_SPELL_NAME;
   }
 
   return powerName;
@@ -82,10 +86,15 @@ export function resolveCrowdControlContest(
     getCurrentStatValue(casterCharacter.sheet, "CHA", itemsById) +
       getCurrentStatValue(casterCharacter.sheet, "INT", itemsById)
   );
+  const compulsionGuardBonus =
+    (targetCharacter.sheet.powers.find((power) => power.id === "crowd_control")?.level ?? 0) >= 5
+      ? Math.max(0, getCurrentSkillValue(targetCharacter.sheet, "social", itemsById))
+      : 0;
   const targetPool = Math.max(
     0,
     getCurrentStatValue(targetCharacter.sheet, "CHA", itemsById) +
-      getCurrentStatValue(targetCharacter.sheet, "WITS", itemsById)
+      getCurrentStatValue(targetCharacter.sheet, "WITS", itemsById) +
+      compulsionGuardBonus
   );
   const casterFaces = rollD10Faces(casterPool);
   const targetFaces = rollD10Faces(targetPool);
@@ -268,7 +277,13 @@ export function getEncounterCastTargetOptions(args: {
 
   if (
     selectedPower.id === "necromancy" &&
-    (selectedVariantId === "summon_undead" || selectedVariantId === "dismiss_summon")
+    (
+      selectedVariantId === "summon_undead" ||
+      selectedVariantId === "dismiss_summon" ||
+      selectedVariantId === "non_living_skeleton" ||
+      selectedVariantId === "non_living_skeleton_king" ||
+      selectedVariantId === "non_living_zombie"
+    )
   ) {
     return encounterParticipants.filter(
       ({ participant }) => participant.characterId === casterParticipant.characterId
@@ -277,14 +292,21 @@ export function getEncounterCastTargetOptions(args: {
 
   if (
     selectedPower.id === "shadow_control" &&
-    (selectedVariantId === "shadow_soldier" || selectedVariantId === "dismiss_summon")
+    (
+      selectedVariantId === "shadow_soldier" ||
+      selectedVariantId === "dismiss_summon" ||
+      selectedVariantId === "shadow_fighter"
+    )
   ) {
     return encounterParticipants.filter(
       ({ participant }) => participant.characterId === casterParticipant.characterId
     );
   }
 
-  if (selectedPower.id === "shadow_control" && selectedVariantId === "shadow_walk") {
+  if (
+    selectedPower.id === "shadow_control" &&
+    (selectedVariantId === "shadow_walk" || selectedVariantId === "shadow_walk_attack")
+  ) {
     return encounterParticipants.filter(
       (view) =>
         view.participant.characterId !== casterParticipant.characterId && isLivingEncounterTarget(view)
@@ -306,7 +328,7 @@ export function getEncounterCastTargetOptions(args: {
     );
   }
 
-  if (selectedPower.id === "light_support" && selectedVariantId === "mana_restore") {
+  if (selectedPower.id === "light_support" && selectedVariantId === "luminous_restoration") {
     return encounterParticipants.filter((view) => isFriendlyEncounterTarget(casterParticipant, view));
   }
 
@@ -319,13 +341,17 @@ export function getEncounterCastTargetOptions(args: {
 
   if (
     selectedPower.id === "elementalist" ||
+    (selectedPower.id === "shadow_control" && selectedVariantId === "shadow_walk_attack") ||
     (selectedPower.id === "shadow_control" && selectedVariantId === "shadow_manipulation") ||
     (selectedPower.id === "necromancy" && selectedVariantId === "necrotic_touch")
   ) {
     return encounterParticipants.filter((view) => isEnemyEncounterTarget(casterParticipant, view));
   }
 
-  if (selectedPower.id === "necromancy" && selectedVariantId === "resurrection") {
+  if (
+    selectedPower.id === "necromancy" &&
+    (selectedVariantId === "resurrection" || selectedVariantId === "necromancers_bless")
+  ) {
     return encounterParticipants.filter(
       (view) => view.transientCombatant === null && view.participant.characterId !== casterParticipant.characterId
     );

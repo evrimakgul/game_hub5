@@ -21,7 +21,29 @@ import {
   type RuntimeSummonOption,
 } from "./summons.ts";
 import type { SharedItemRecord } from "../types/items.ts";
-import { BODY_REINFORCEMENT_BUFF_SPELL_NAME, getBoostPhysiqueSourceLabel } from "../powers/spellLabels.ts";
+import {
+  BODY_REINFORCEMENT_BUFF_SPELL_NAME,
+  ELEMENTALIST_BOLT_SPELL_NAME,
+  ELEMENTALIST_CANTRIP_SPELL_NAME,
+  ELEMENTALIST_SPLIT_SPELL_NAME,
+  HEALING_MAIN_SPELL_NAME,
+  HEALING_PURGE_SPELL_NAME,
+  HEALING_TOUCH_SPELL_NAME,
+  LIGHT_SUPPORT_AURA_SPELL_NAME,
+  LIGHT_SUPPORT_DARKNESS_SPELL_NAME,
+  LIGHT_SUPPORT_RESTORE_SPELL_NAME,
+  NECROMANCY_BLESS_SPELL_NAME,
+  NECROMANCY_SKELETON_KING_SPELL_NAME,
+  NECROMANCY_SKELETON_SPELL_NAME,
+  NECROMANCY_TOUCH_SPELL_NAME,
+  NECROMANCY_ZOMBIE_SPELL_NAME,
+  SHADOW_CONTROL_AURA_SPELL_NAME,
+  SHADOW_CONTROL_FIGHTER_SPELL_NAME,
+  SHADOW_CONTROL_MANIPULATION_SPELL_NAME,
+  SHADOW_CONTROL_WALK_ATTACK_SPELL_NAME,
+  SHADOW_CONTROL_WALK_SPELL_NAME,
+  getBoostPhysiqueSourceLabel,
+} from "../powers/spellLabels.ts";
 export type {
   CastPowerDamageTypeOption,
   CastPowerMode,
@@ -207,20 +229,7 @@ function getElementalistDamageTypeOptions(
   }
 
   if (variantId === "elemental_cantrip") {
-    const cantrip = getUnlockedCantripLevel(power.id, power.level);
-    const cantripDamage =
-      cantrip?.mechanics?.damage && typeof cantrip.mechanics.damage === "object"
-        ? (cantrip.mechanics.damage as Record<string, unknown>)
-        : null;
-    const disallowedTypes = Array.isArray(cantripDamage?.disallowed_damage_types)
-      ? cantripDamage.disallowed_damage_types.filter(
-          (damageType): damageType is DamageTypeId => typeof damageType === "string"
-        )
-      : [];
-
-    return (["fire", "cold", "lightning", "acid", "necrotic"] as DamageTypeId[]).filter(
-      (damageType) => !disallowedTypes.includes(damageType)
-    );
+    return ["fire", "cold", "lightning", "acid"];
   }
 
   return power.level >= 5
@@ -332,7 +341,7 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "healing") {
-    if (variantId === "cure" || variantId === "wound_mend") {
+    if (variantId === "holy_purge" || variantId === "healing_touch") {
       return "single";
     }
 
@@ -340,11 +349,16 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "light_support") {
-    return variantId === "mana_restore" ? "single" : "self";
+    return variantId === "luminous_restoration" ? "single" : "self";
   }
 
   if (power.id === "necromancy") {
-    if (variantId === "summon_undead" || variantId === "dismiss_summon") {
+    if (
+      variantId === "non_living_skeleton" ||
+      variantId === "non_living_skeleton_king" ||
+      variantId === "non_living_zombie" ||
+      variantId === "dismiss_summon"
+    ) {
       return "self";
     }
 
@@ -352,15 +366,19 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "shadow_control") {
-    if (variantId === "shadow_soldier" || variantId === "dismiss_summon") {
+    if (variantId === "shadow_fighter" || variantId === "dismiss_summon") {
       return "self";
     }
 
-    if (variantId === "shadow_manipulation") {
+    if (
+      variantId === "shadow_manipulation" ||
+      variantId === "shadow_walk" ||
+      variantId === "shadow_walk_attack"
+    ) {
       return "single";
     }
 
-    return variantId === "shadow_walk" ? "single" : "self";
+    return "self";
   }
 
   return "single";
@@ -376,37 +394,37 @@ export function getCastPowerTargetLimit(
   }
 
   if (power.id === "elementalist") {
-    if (variantId === "elemental_cantrip") {
-      const cantrip = getUnlockedCantripLevel(power.id, power.level);
-      const damage =
-        cantrip?.mechanics?.damage && typeof cantrip.mechanics.damage === "object"
-          ? (cantrip.mechanics.damage as Record<string, unknown>)
-          : null;
-
-      return Math.max(1, asNumber(damage?.max_targets) || 1);
-    }
-
-    const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
-    const damage =
-      runtimeLevel?.mechanics?.damage && typeof runtimeLevel.mechanics.damage === "object"
-        ? (runtimeLevel.mechanics.damage as Record<string, unknown>)
-        : null;
-
-    return Math.max(1, asNumber(damage?.max_targets) || 1);
-  }
-
-  if (power.id === "healing") {
-    if (variantId === "cure" || variantId === "wound_mend") {
+    if (variantId === "elemental_bolt") {
       return 1;
     }
 
-    const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
-    const healing =
-      runtimeLevel?.mechanics?.healing && typeof runtimeLevel.mechanics.healing === "object"
-        ? (runtimeLevel.mechanics.healing as Record<string, unknown>)
-        : null;
-    const maxTargets = healing ? asNumber(healing.max_targets) : 0;
-    return Math.max(1, maxTargets || 1);
+    if (variantId === "elemental_cantrip") {
+      return power.level >= 5 ? 3 : 1;
+    }
+
+    if (variantId === "elemental_split") {
+      if (power.level >= 5) {
+        return 5;
+      }
+
+      if (power.level >= 4) {
+        return 4;
+      }
+
+      if (power.level >= 3) {
+        return 3;
+      }
+
+      return power.level >= 2 ? 2 : 1;
+    }
+  }
+
+  if (power.id === "healing") {
+    if (variantId === "holy_purge" || variantId === "healing_touch") {
+      return 1;
+    }
+
+    return power.level >= 2 ? 4 : 1;
   }
 
   return 1;
@@ -435,7 +453,11 @@ export function getCastPowerModeOptionsForVariant(
   variantId: CastPowerVariantId
 ): CastPowerMode[] {
   if (power.id === "shadow_control" && power.level >= 4) {
-    if (variantId !== "default" && variantId !== "shadow_cloak") {
+    if (
+      variantId !== "default" &&
+      variantId !== "shadow_cloak" &&
+      variantId !== "smoldering_shadow"
+    ) {
       return ["self"];
     }
 
@@ -455,36 +477,43 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
   }
 
   if (power.id === "crowd_control") {
-    return [
-      { id: "crowd_control", label: "Control Entity" },
-      { id: "release_control", label: "Release Target" },
-    ];
+    return [{ id: "crowd_control", label: "Control Entity" }];
   }
 
   if (power.id === "elementalist") {
     return power.level >= 2
       ? [
-          { id: "elemental_bolt", label: "Elemental Bolt" },
-          { id: "elemental_cantrip", label: "Elemental Cantrip" },
+          { id: "elemental_bolt", label: ELEMENTALIST_BOLT_SPELL_NAME },
+          { id: "elemental_cantrip", label: ELEMENTALIST_CANTRIP_SPELL_NAME },
+          { id: "elemental_split", label: ELEMENTALIST_SPLIT_SPELL_NAME },
         ]
-      : [{ id: "elemental_bolt", label: "Elemental Bolt" }];
+      : [{ id: "elemental_bolt", label: ELEMENTALIST_BOLT_SPELL_NAME }];
   }
 
   if (power.id === "healing") {
     return power.level >= 3
       ? [
-          { id: "default", label: "Heal" },
-          { id: "cure", label: "Cure" },
-          { id: "wound_mend", label: "Wound Mend" },
+          { id: "heal_living", label: HEALING_MAIN_SPELL_NAME },
+          { id: "holy_purge", label: HEALING_PURGE_SPELL_NAME },
+          { id: "healing_touch", label: HEALING_TOUCH_SPELL_NAME },
         ]
-      : [{ id: "default", label: "Heal" }];
+      : [{ id: "heal_living", label: HEALING_MAIN_SPELL_NAME }];
   }
 
   if (power.id === "light_support") {
-    const variants: CastPowerVariantOption[] = [{ id: "default", label: "Light Aura" }];
+    const variants: CastPowerVariantOption[] = [
+      { id: "let_there_be_light", label: LIGHT_SUPPORT_AURA_SPELL_NAME },
+    ];
 
-    if (power.level >= 4) {
-      variants.push({ id: "mana_restore", label: "Mana Restore" });
+    if (power.level >= 3) {
+      variants.push({
+        id: "luminous_restoration",
+        label: LIGHT_SUPPORT_RESTORE_SPELL_NAME,
+      });
+    }
+
+    if (power.level >= 5) {
+      variants.push({ id: "lessen_darkness", label: LIGHT_SUPPORT_DARKNESS_SPELL_NAME });
     }
 
     return variants;
@@ -492,35 +521,53 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
 
   if (power.id === "necromancy") {
     const variants: CastPowerVariantOption[] = [
-      { id: "summon_undead", label: "Summon Undead" },
-      { id: "dismiss_summon", label: "Remove Summon" },
+      { id: "non_living_skeleton", label: NECROMANCY_SKELETON_SPELL_NAME },
     ];
 
+    if (power.level >= 2) {
+      variants.push({ id: "non_living_zombie", label: NECROMANCY_ZOMBIE_SPELL_NAME });
+    }
+
     if (power.level >= 3) {
-      variants.push({ id: "necrotic_touch", label: "Necrotic Touch" });
+      variants.push({ id: "necrotic_touch", label: NECROMANCY_TOUCH_SPELL_NAME });
+    }
+
+    if (power.level >= 4) {
+      variants.push({
+        id: "non_living_skeleton_king",
+        label: NECROMANCY_SKELETON_KING_SPELL_NAME,
+      });
     }
 
     if (power.level >= 5) {
-      variants.push({ id: "resurrection", label: "Resurrection" });
+      variants.push({ id: "necromancers_bless", label: NECROMANCY_BLESS_SPELL_NAME });
     }
 
     return variants;
   }
 
   if (power.id === "shadow_control") {
-    const variants: CastPowerVariantOption[] = [{ id: "shadow_cloak", label: "Cloak of Shadow" }];
+    const variants: CastPowerVariantOption[] = [
+      { id: "smoldering_shadow", label: SHADOW_CONTROL_AURA_SPELL_NAME },
+    ];
 
     if (power.level >= 2) {
-      variants.push({ id: "shadow_walk", label: "Shadow Walk" });
+      variants.push({ id: "shadow_walk", label: SHADOW_CONTROL_WALK_SPELL_NAME });
+      variants.push({
+        id: "shadow_walk_attack",
+        label: SHADOW_CONTROL_WALK_ATTACK_SPELL_NAME,
+      });
     }
 
     if (power.level >= 3) {
-      variants.push({ id: "shadow_manipulation", label: "Shadow Manipulation" });
+      variants.push({
+        id: "shadow_manipulation",
+        label: SHADOW_CONTROL_MANIPULATION_SPELL_NAME,
+      });
     }
 
     if (power.level >= 5) {
-      variants.push({ id: "shadow_soldier", label: "Shadow Soldier" });
-      variants.push({ id: "dismiss_summon", label: "Remove Summon" });
+      variants.push({ id: "shadow_fighter", label: SHADOW_CONTROL_FIGHTER_SPELL_NAME });
     }
 
     return variants;
@@ -543,6 +590,56 @@ export function getCastPowerSummonOptions(
   power: PowerEntry,
   variantId: CastPowerVariantId
 ): RuntimeSummonOption[] {
+  if (power.id === "necromancy") {
+    if (variantId === "non_living_skeleton") {
+      return [
+        {
+          id: "non_living_skeleton:1:2",
+          templateId: "non_living_skeleton",
+          quantity: 1,
+          manaCost: 2,
+          label: `${NECROMANCY_SKELETON_SPELL_NAME} (2 Mana)`,
+        },
+      ];
+    }
+
+    if (variantId === "non_living_skeleton_king" && power.level >= 4) {
+      return [
+        {
+          id: "non_living_skeleton_king:1:4",
+          templateId: "non_living_skeleton_king",
+          quantity: 1,
+          manaCost: 4,
+          label: `${NECROMANCY_SKELETON_KING_SPELL_NAME} (4 Mana)`,
+        },
+      ];
+    }
+
+    if (variantId === "non_living_zombie" && power.level >= 2) {
+      return [
+        {
+          id: "non_living_zombie:1:3",
+          templateId: "non_living_zombie",
+          quantity: 1,
+          manaCost: 3,
+          label: `${NECROMANCY_ZOMBIE_SPELL_NAME} (3 Mana)`,
+        },
+      ];
+    }
+  }
+
+  if (power.id === "shadow_control" && variantId === "shadow_fighter") {
+    return [
+      {
+        id: "shadow_fighter:1:4",
+        templateId: "shadow_fighter",
+        quantity: 1,
+        manaCost: 4,
+        label: `${SHADOW_CONTROL_FIGHTER_SPELL_NAME} (4 Mana)`,
+      },
+    ];
+  }
+
   if (
     (power.id === "necromancy" && variantId === "summon_undead") ||
     (power.id === "shadow_control" && variantId === "shadow_soldier")
@@ -558,35 +655,18 @@ export function getCastPowerMaxBonusManaSpend(
   power: PowerEntry,
   variantId: CastPowerVariantId,
   targetCount: number,
+  selectedDamageType: DamageTypeId | null = null,
   itemsById: Record<string, SharedItemRecord> = {}
 ): number {
-  if (power.id !== "elementalist" || variantId !== "elemental_bolt" || targetCount <= 1) {
+  if (power.id !== "elementalist" || variantId !== "elemental_split" || power.level < 3) {
     return 0;
   }
 
-  const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
-  const damage =
-    runtimeLevel?.mechanics?.damage && typeof runtimeLevel.mechanics.damage === "object"
-      ? (runtimeLevel.mechanics.damage as Record<string, unknown>)
-      : null;
-  if (!damage) {
-    return 0;
-  }
-
-  const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "INT";
-  const totalDamage = Math.max(
-    0,
-    getCurrentStatValue(sheet, baseStat, itemsById) + asNumber(damage.flat_bonus)
-  );
-  const splitAmount = getSplitAmount(
-    totalDamage,
-    Math.max(1, asNumber(damage.split_divisor) || 1),
-    damage.split_round
-  );
+  const totalDamage = Math.max(0, getCurrentStatValue(sheet, "INT", itemsById) + power.level);
+  const splitAmount = Math.ceil(totalDamage / 2);
   const splitBonusPerMana =
-    Math.max(0, asNumber(damage.split_bonus_per_mana)) || (power.level >= 3 ? 2 : 0);
-
-  if (splitBonusPerMana <= 0) {
+    power.level >= 5 && selectedDamageType === "necrotic" ? 4 : 2;
+  if (splitBonusPerMana <= 0 || targetCount <= 0) {
     return 0;
   }
 
@@ -596,42 +676,23 @@ export function getCastPowerMaxBonusManaSpend(
 export function getHealingPowerTotal(
   sheet: CharacterDraft,
   power: PowerEntry,
-  variantId: CastPowerVariantId = "default",
+  variantId: CastPowerVariantId = "heal_living",
   itemsById: Record<string, SharedItemRecord> = {}
 ): number | null {
   if (power.id !== "healing") {
     return null;
   }
 
-  if (variantId === "wound_mend") {
-    const cantrip = getUnlockedCantripLevel(power.id, power.level);
-    const healing =
-      cantrip?.mechanics?.healing && typeof cantrip.mechanics.healing === "object"
-        ? (cantrip.mechanics.healing as Record<string, unknown>)
-        : null;
-
-    return healing ? Math.max(0, asNumber(healing.flat_amount)) : null;
-  }
-
-  if (variantId === "cure") {
+  if (variantId === "holy_purge") {
     return 0;
   }
 
-  const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
-  if (!runtimeLevel) {
-    return null;
+  const baseTotal = Math.max(0, getCurrentStatValue(sheet, "INT", itemsById) + power.level);
+  if (variantId === "healing_touch") {
+    return Math.ceil(baseTotal / 2);
   }
 
-  const healing =
-    runtimeLevel.mechanics?.healing && typeof runtimeLevel.mechanics.healing === "object"
-      ? (runtimeLevel.mechanics.healing as Record<string, unknown>)
-      : null;
-  if (!healing) {
-    return null;
-  }
-
-  const baseStat = isStatId(healing.base_stat) ? healing.base_stat : "INT";
-  return Math.max(0, getCurrentStatValue(sheet, baseStat, itemsById) + asNumber(healing.flat_bonus));
+  return baseTotal;
 }
 
 function splitEvenly(totalAmount: number, targetCount: number): number[] {
@@ -670,50 +731,6 @@ export function buildHealingCastResolution(request: {
     return { error: `${request.power.name} is not a healing power.` };
   }
 
-  if (request.variantId === "wound_mend") {
-    const cantrip = getUnlockedCantripLevel(request.power.id, request.power.level);
-    const mechanics = cantrip?.mechanics ?? {};
-    const healing =
-      mechanics.healing && typeof mechanics.healing === "object"
-        ? (mechanics.healing as Record<string, unknown>)
-        : null;
-    const totalAmount = healing ? Math.max(0, asNumber(healing.flat_amount)) : null;
-    const uniqueTargetIds = Array.from(new Set(request.targetCharacterIds));
-
-    if (totalAmount === null || !cantrip) {
-      return { error: `Healing cantrip data for ${request.power.name} is missing.` };
-    }
-
-    if (uniqueTargetIds.length !== 1) {
-      return { error: "Wound Mend requires exactly one target." };
-    }
-
-    return {
-      manaCost: 0,
-      totalAmount,
-      removedStatuses: mechanics.stops_bleeding === true ? ["bleeding"] : [],
-      canRegrowLimbs: false,
-      overhealCapStat: null,
-      perTargetDailyLimit:
-        typeof mechanics.max_uses_per_target_per_day === "number"
-          ? Math.max(0, Math.trunc(mechanics.max_uses_per_target_per_day))
-          : null,
-      applications: [
-        {
-          targetCharacterId: uniqueTargetIds[0],
-          amount: totalAmount,
-          temporaryHpCap: null,
-        },
-      ],
-    };
-  }
-
-  const runtimeLevel = getRuntimePowerLevelDefinition(request.power.id, request.power.level);
-  if (!runtimeLevel) {
-    return { error: `Power data for ${request.power.name} Lv ${request.power.level} is missing.` };
-  }
-
-  const mechanics = runtimeLevel.mechanics ?? {};
   const totalAmount = getHealingPowerTotal(
     request.casterSheet,
     request.power,
@@ -724,22 +741,17 @@ export function buildHealingCastResolution(request: {
     return { error: `Healing data for ${request.power.name} Lv ${request.power.level} is missing.` };
   }
 
-  const manaCost = request.variantId === "cure" ? 3 : 2;
+  const manaCost =
+    request.variantId === "holy_purge"
+      ? 2
+      : request.variantId === "healing_touch"
+        ? 0
+        : 2;
   const uniqueTargetIds = Array.from(new Set(request.targetCharacterIds));
   const targetLimit = getCastPowerTargetLimit(request.power, request.variantId);
-  const removedStatuses = Array.isArray(mechanics.removes_statuses)
-    ? mechanics.removes_statuses.filter((status): status is string => typeof status === "string")
-    : [];
-  const cureStatuses = removedStatuses.filter((status) => status !== "bleeding");
-  const healStatuses = removedStatuses.includes("bleeding") ? ["bleeding"] : [];
-  const overheal =
-    mechanics.overheal && typeof mechanics.overheal === "object"
-      ? (mechanics.overheal as Record<string, unknown>)
-      : null;
-  const overhealCapStat =
-    overheal && overheal.enabled === true && isStatId(overheal.cap_stat)
-      ? overheal.cap_stat
-      : null;
+  const cureStatuses = ["poison", "disease", "curse"];
+  const healStatuses = ["bleeding"];
+  const overhealCapStat = request.variantId === "heal_living" && request.power.level >= 5 ? "STAM" : null;
 
   if (uniqueTargetIds.length === 0) {
     return { error: "Select at least one valid healing target." };
@@ -749,9 +761,9 @@ export function buildHealingCastResolution(request: {
     return { error: `Healing can affect at most ${targetLimit} target(s) at this level.` };
   }
 
-  if (request.variantId === "cure") {
+  if (request.variantId === "holy_purge") {
     if (request.power.level < 3) {
-      return { error: "Cure is not unlocked for this Healing level." };
+      return { error: "Holy Purge is not unlocked for this Healing level." };
     }
 
     return {
@@ -771,6 +783,28 @@ export function buildHealingCastResolution(request: {
     };
   }
 
+  if (request.variantId === "healing_touch") {
+    if (request.power.level < 3) {
+      return { error: "Healing Touch is not unlocked for this Healing level." };
+    }
+
+    return {
+      manaCost,
+      totalAmount,
+      applications: [
+        {
+          targetCharacterId: uniqueTargetIds[0],
+          amount: totalAmount,
+          temporaryHpCap: null,
+        },
+      ],
+      removedStatuses: healStatuses,
+      canRegrowLimbs: false,
+      overhealCapStat: null,
+      perTargetDailyLimit: 2,
+    };
+  }
+
   if (targetLimit === 1) {
     return {
       manaCost,
@@ -783,7 +817,7 @@ export function buildHealingCastResolution(request: {
         },
       ],
       removedStatuses: healStatuses,
-      canRegrowLimbs: mechanics.can_regrow_limbs === true,
+      canRegrowLimbs: request.power.level >= 4,
       overhealCapStat,
       perTargetDailyLimit: null,
     };
@@ -819,7 +853,7 @@ export function buildHealingCastResolution(request: {
     totalAmount,
     applications: positiveAllocations,
     removedStatuses: healStatuses,
-    canRegrowLimbs: mechanics.can_regrow_limbs === true,
+    canRegrowLimbs: request.power.level >= 4,
     overhealCapStat,
     perTargetDailyLimit: null,
   };
@@ -851,33 +885,22 @@ export function buildDirectDamageCastResolution(request: {
     } {
   if (
     request.power.id === "elementalist" &&
-    (request.variantId === "elemental_bolt" || request.variantId === "elemental_cantrip")
+    (
+      request.variantId === "elemental_bolt" ||
+      request.variantId === "elemental_cantrip" ||
+      request.variantId === "elemental_split"
+    )
   ) {
-    const runtimeEntry =
-      request.variantId === "elemental_cantrip"
-        ? getUnlockedCantripLevel(request.power.id, request.power.level)
-        : getRuntimePowerLevelDefinition(request.power.id, request.power.level);
-    const mechanics = runtimeEntry?.mechanics ?? {};
-    const damage =
-      mechanics.damage && typeof mechanics.damage === "object"
-        ? (mechanics.damage as Record<string, unknown>)
-        : null;
     const allowedDamageTypes = getElementalistDamageTypeOptions(request.power, request.variantId);
     const uniqueTargetIds = Array.from(new Set(request.targetCharacterIds));
 
-    if (!damage || !runtimeEntry) {
-      return {
-        error: `Power data for ${request.power.name} Lv ${request.power.level} is missing elementalist damage data.`,
-      };
-    }
-
     if (uniqueTargetIds.length === 0) {
-      return { error: "Select at least one target for Elemental Bolt." };
+      return { error: "Select at least one target first." };
     }
 
     if (uniqueTargetIds.length > getCastPowerTargetLimit(request.power, request.variantId)) {
       return {
-        error: `Elemental Bolt can affect at most ${getCastPowerTargetLimit(
+        error: `This spell can affect at most ${getCastPowerTargetLimit(
           request.power,
           request.variantId
         )} target(s) at this level.`,
@@ -887,54 +910,33 @@ export function buildDirectDamageCastResolution(request: {
     if (!request.selectedDamageType || !allowedDamageTypes.includes(request.selectedDamageType)) {
       return { error: "Choose a valid damage type first." };
     }
-    const selectedDamageType = request.selectedDamageType;
 
-    const baseStat = isStatId(damage.base_stat) ? damage.base_stat : "INT";
-    const totalAmount = Math.max(
-      0,
-      getCurrentStatValue(request.casterSheet, baseStat, request.itemsById ?? {}) +
-        asNumber(damage.flat_bonus)
-    );
-    const splitAmount = getSplitAmount(
-      totalAmount,
-      Math.max(1, asNumber(damage.split_divisor) || 1),
-      damage.split_round
-    );
-    const splitBonusPerMana =
-      request.variantId === "elemental_bolt"
-        ? Math.max(0, asNumber(damage.split_bonus_per_mana)) || (request.power.level >= 3 ? 2 : 0)
-        : 0;
-    const bonusManaSpend =
-      uniqueTargetIds.length > 1 && request.variantId === "elemental_bolt"
-        ? Math.max(0, Math.trunc(request.bonusManaSpend ?? 0))
-        : 0;
-    const perTargetBaseAmount =
-      uniqueTargetIds.length > 1 && asNumber(damage.split_divisor) > 1
-        ? Math.min(totalAmount, splitAmount + bonusManaSpend * splitBonusPerMana)
-        : totalAmount;
-    const manaCostVariant =
-      Array.isArray(mechanics.mana_cost_variants) && request.variantId === "elemental_bolt"
-        ? mechanics.mana_cost_variants.find(
-            (entry) =>
-              isRecord(entry) && entry.damage_type === request.selectedDamageType
-          )
-        : null;
-    const manaCost =
-      request.variantId === "elemental_cantrip"
-        ? 0
-        : Math.max(
-            0,
-            Math.trunc(
-            (isRecord(manaCostVariant) ? asNumber(manaCostVariant.mana_cost) : 0) ||
-                asNumber((runtimeEntry as { mana_cost?: number | null }).mana_cost)
-            )
-          ) + bonusManaSpend;
-    const vulnerabilityMultiplier =
-      selectedDamageType === "necrotic"
-        ? typeof damage.vulnerability_multiplier === "number"
-          ? damage.vulnerability_multiplier
-          : 1
-        : 1;
+    const selectedDamageType = request.selectedDamageType;
+    const intValue = getCurrentStatValue(request.casterSheet, "INT", request.itemsById ?? {});
+    const boltTotal = Math.max(0, intValue + request.power.level);
+    const cantripTotal = Math.max(0, intValue + (request.power.level >= 4 ? 1 : 0));
+    let manaCost = 0;
+    let perTargetBaseAmount = boltTotal;
+    let sourceLabel = ELEMENTALIST_BOLT_SPELL_NAME;
+
+    if (request.variantId === "elemental_bolt") {
+      manaCost = selectedDamageType === "necrotic" ? 2 : 1;
+      perTargetBaseAmount = boltTotal;
+      sourceLabel = ELEMENTALIST_BOLT_SPELL_NAME;
+    } else if (request.variantId === "elemental_cantrip") {
+      manaCost = 0;
+      perTargetBaseAmount =
+        request.power.level >= 5 ? Math.ceil(cantripTotal / uniqueTargetIds.length) : cantripTotal;
+      sourceLabel = ELEMENTALIST_CANTRIP_SPELL_NAME;
+    } else {
+      const splitBase = Math.ceil(boltTotal / 2);
+      const splitBonusPerMana =
+        request.power.level >= 5 && selectedDamageType === "necrotic" ? 4 : 2;
+      const bonusManaSpend = Math.max(0, Math.trunc(request.bonusManaSpend ?? 0));
+      manaCost = 1 + bonusManaSpend;
+      perTargetBaseAmount = Math.min(boltTotal, splitBase + bonusManaSpend * splitBonusPerMana);
+      sourceLabel = ELEMENTALIST_SPLIT_SPELL_NAME;
+    }
 
     return {
       manaCost,
@@ -945,7 +947,7 @@ export function buildDirectDamageCastResolution(request: {
         const isUndead = targetMetadata?.isUndead === true;
         const rawAmount =
           selectedDamageType === "necrotic" && isLiving
-            ? Math.ceil(perTargetBaseAmount * vulnerabilityMultiplier)
+            ? Math.ceil(perTargetBaseAmount * 1.5)
             : perTargetBaseAmount;
 
         if (selectedDamageType === "necrotic" && isUndead) {
@@ -957,9 +959,9 @@ export function buildDirectDamageCastResolution(request: {
             targetCharacterId,
             rawAmount,
             damageType: selectedDamageType,
-            mitigationChannel: selectedDamageType === "physical" ? "dr" : "soak",
+            mitigationChannel: "soak",
             sourceLabel: `${request.power.name} Lv ${request.power.level}`,
-            sourceSummary: `${request.variantId === "elemental_cantrip" ? "Elemental Cantrip" : "Elemental Bolt"} (${rawAmount} ${selectedDamageType})`,
+            sourceSummary: `${sourceLabel} (${rawAmount} ${selectedDamageType})`,
           },
         ];
       }),
@@ -969,6 +971,7 @@ export function buildDirectDamageCastResolution(request: {
               const isUndead =
                 request.targetMetadata?.find((entry) => entry.characterId === targetCharacterId)
                   ?.isUndead === true;
+
               return isUndead
                 ? [
                     {
@@ -1168,15 +1171,22 @@ export function buildActivePowerEffect(
 
   if (
     request.power.id === "light_support" &&
-    (request.variantId === undefined || request.variantId === "default")
+    (request.variantId === undefined ||
+      request.variantId === "default" ||
+      request.variantId === "let_there_be_light")
   ) {
-    const auraBonuses =
-      mechanics.aura_bonuses && typeof mechanics.aura_bonuses === "object"
-        ? (mechanics.aura_bonuses as Record<string, unknown>)
-        : {};
-    const attackDiceBonus = asNumber(auraBonuses.attack_dice_bonus);
-    const damageReductionBonus = asNumber(auraBonuses.damage_reduction_bonus);
-    const soakBonus = asNumber(auraBonuses.soak_bonus);
+    const attackDiceBonus =
+      request.power.level >= 5
+        ? 4
+        : request.power.level >= 3
+          ? 3
+          : request.power.level >= 2
+            ? 2
+            : 1;
+    const damageReductionBonus =
+      request.power.level >= 4 ? 2 : request.power.level >= 1 ? 1 : 0;
+    const soakBonus =
+      request.power.level >= 5 ? 2 : request.power.level >= 3 ? 1 : 0;
     const modifiers: ActivePowerEffectModifier[] = [];
     const summaryParts: string[] = [];
 
@@ -1219,11 +1229,11 @@ export function buildActivePowerEffect(
     return {
       effect: createEffect(
         request,
-        manaCost,
+        2,
         actionType,
         "light_support",
         effectKind,
-        `${request.power.name} Lv ${request.power.level}`,
+        `${LIGHT_SUPPORT_AURA_SPELL_NAME} Lv ${request.power.level}`,
         joinSummary(summaryParts),
         null,
         modifiers,
@@ -1232,7 +1242,7 @@ export function buildActivePowerEffect(
           sharedTargetCharacterIds: effectKind === "aura_source" ? [request.casterCharacterId] : null,
         }
       ),
-      manaCost,
+      manaCost: 2,
     };
   }
 
@@ -1240,24 +1250,34 @@ export function buildActivePowerEffect(
     request.power.id === "shadow_control" &&
     (request.variantId === undefined ||
       request.variantId === "default" ||
-      request.variantId === "shadow_cloak")
+      request.variantId === "shadow_cloak" ||
+      request.variantId === "smoldering_shadow")
   ) {
-    const cloak =
-      mechanics.cloak_of_shadow && typeof mechanics.cloak_of_shadow === "object"
-        ? (mechanics.cloak_of_shadow as Record<string, unknown>)
-        : {};
     const manaCostVariants =
       mechanics.mana_cost_variants && typeof mechanics.mana_cost_variants === "object"
         ? (mechanics.mana_cost_variants as Record<string, unknown>)
         : {};
-    const stealthBonus = asNumber(cloak.stealth_skill_bonus);
-    const intimidationBonus = asNumber(cloak.intimidation_skill_bonus);
-    const armorClassBonus = asNumber(cloak.armor_class_bonus);
+    const stealthBonus =
+      request.power.level >= 5
+        ? 5
+        : request.power.level >= 4
+          ? 4
+          : request.power.level >= 3
+            ? 3
+            : request.power.level >= 2
+              ? 2
+              : 1;
+    const armorClassBonus =
+      request.power.level >= 5
+        ? 3
+        : request.power.level >= 3
+          ? 2
+          : 1;
     const resolvedShareMode = resolveAuraCastMode(request);
     const resolvedManaCost =
       resolvedShareMode === "aura"
-        ? asNumber(manaCostVariants.shared_with_allies) || manaCost
-        : asNumber(manaCostVariants.self_only) || manaCost;
+        ? asNumber(manaCostVariants.shared_with_allies) || 4
+        : asNumber(manaCostVariants.self_only) || 2;
     const effectKind =
       resolvedShareMode === "aura" && request.targetCharacterId !== request.casterCharacterId
         ? "aura_shared"
@@ -1271,16 +1291,6 @@ export function buildActivePowerEffect(
         targetType: "skill",
         targetId: "stealth",
         value: stealthBonus,
-        sourceLabel: `${request.power.name} Lv ${request.power.level}`,
-      });
-    }
-
-    if (intimidationBonus > 0) {
-      summaryParts.push(`+${intimidationBonus} Intimidation`);
-      modifiers.push({
-        targetType: "skill",
-        targetId: "intimidation",
-        value: intimidationBonus,
         sourceLabel: `${request.power.name} Lv ${request.power.level}`,
       });
     }
@@ -1302,7 +1312,7 @@ export function buildActivePowerEffect(
         actionType,
         "shadow_control:cloak",
         effectKind,
-        `${request.power.name} Lv ${request.power.level}`,
+        `${SHADOW_CONTROL_AURA_SPELL_NAME} Lv ${request.power.level}`,
         joinSummary(summaryParts),
         null,
         modifiers,
@@ -1395,9 +1405,6 @@ export function buildLinkedAuraEffectForTarget(
     options?.targetDisposition === "enemy" &&
     sourceEffect.sourceLevel >= 5
   ) {
-    const exposeDarkness = getLightSupportExposeDarknessMechanics(sourceEffect.sourceLevel);
-    const resistanceLevelDelta = Math.trunc(asNumber(exposeDarkness?.resistance_level_delta));
-
     return {
       ...sourceEffect,
       id: createTimestampedId("power-effect"),
@@ -1405,14 +1412,14 @@ export function buildLinkedAuraEffectForTarget(
       stackKey: "light_support:expose_darkness",
       targetCharacterId,
       sourceEffectId: sourceEffect.id,
-      label: "Expose Darkness",
+      label: LIGHT_SUPPORT_DARKNESS_SPELL_NAME,
       summary: "-1 physical / elemental resistance",
       manaCost: null,
       modifiers: LIGHT_SUPPORT_LEVEL_FIVE_EXPOSE_DARKNESS_TYPES.map((damageType) => ({
         targetType: "resistance" as const,
         targetId: damageType,
-        value: resistanceLevelDelta,
-        sourceLabel: "Expose Darkness",
+        value: -1,
+        sourceLabel: LIGHT_SUPPORT_DARKNESS_SPELL_NAME,
       })),
       appliedAt: getIsoTimestamp(),
     };

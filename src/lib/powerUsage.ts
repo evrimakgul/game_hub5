@@ -4,7 +4,10 @@ import type {
   PowerUsageState,
   PowerUsageSummaryEntry,
 } from "../types/powerUsage";
-import { BODY_REINFORCEMENT_CANTRIP_SPELL_NAME } from "../powers/spellLabels.ts";
+import {
+  BODY_REINFORCEMENT_CANTRIP_SPELL_NAME,
+  HEALING_TOUCH_SPELL_NAME,
+} from "../powers/spellLabels.ts";
 
 export const POWER_USAGE_KEYS = {
   bodyReinforcementRevive: "body_reinforcement:cantrip:revive",
@@ -194,7 +197,7 @@ export function buildPowerUsageSummary(sheet: CharacterDraft): PowerUsageSummary
   const summary: PowerUsageSummaryEntry[] = [];
   const powerLevelById = Object.fromEntries(sheet.powers.map((power) => [power.id, power.level]));
 
-  if ((powerLevelById.body_reinforcement ?? 0) >= 2) {
+  if ((powerLevelById.body_reinforcement ?? 0) >= 1) {
     summary.push({
       id: POWER_USAGE_KEYS.bodyReinforcementRevive,
       label: BODY_REINFORCEMENT_CANTRIP_SPELL_NAME,
@@ -203,20 +206,11 @@ export function buildPowerUsageSummary(sheet: CharacterDraft): PowerUsageSummary
     });
   }
 
-  if ((powerLevelById.light_support ?? 0) >= 4) {
-    summary.push({
-      id: POWER_USAGE_KEYS.lightSupportManaRestore,
-      label: "Light Support Mana Restore",
-      resetLabel: "Long Rest",
-      detail: `${getPowerUsageCount(state, "longRest", POWER_USAGE_KEYS.lightSupportManaRestore)} / 1 used`,
-    });
-  }
-
   if ((powerLevelById.healing ?? 0) >= 3) {
     const woundMendTargets = Object.keys(state.perTargetDaily[POWER_USAGE_KEYS.healingCantrip] ?? {});
     summary.push({
       id: POWER_USAGE_KEYS.healingCantrip,
-      label: "Healing Cantrip Uses",
+      label: `${HEALING_TOUCH_SPELL_NAME} Uses`,
       resetLabel: "Daily",
       detail:
         woundMendTargets.length === 0

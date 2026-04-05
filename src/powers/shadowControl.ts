@@ -8,13 +8,19 @@ import {
   blocksNecroticTouch,
   buildEncounterActivityLogEntry,
   buildInheritedAuraEffectsForSummons,
-  getGenericBuffActionLabel,
   getReplacementWarnings,
   isFriendlyEncounterTarget,
   isLivingEncounterTarget,
   isUndeadEncounterTarget,
   joinTargetNames,
 } from "./runtimeSupport.ts";
+import {
+  SHADOW_CONTROL_AURA_SPELL_NAME,
+  SHADOW_CONTROL_FIGHTER_SPELL_NAME,
+  SHADOW_CONTROL_MANIPULATION_SPELL_NAME,
+  SHADOW_CONTROL_WALK_ATTACK_SPELL_NAME,
+  SHADOW_CONTROL_WALK_SPELL_NAME,
+} from "./spellLabels.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 
 class EmptyPassiveProvider extends PowerPassiveProvider {
@@ -23,7 +29,7 @@ class EmptyPassiveProvider extends PowerPassiveProvider {
   }
 }
 
-class CloakOfShadowSpellAction extends AuraSpellAction {
+class SmolderingShadowSpellAction extends AuraSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     const targetCharacter = context.finalTargets[0];
@@ -37,7 +43,7 @@ class CloakOfShadowSpellAction extends AuraSpellAction {
       targetCharacterId: targetCharacter.id,
       targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
       power: selectedPower,
-      variantId: context.selectedSpellId,
+      variantId: "smoldering_shadow",
       selectedStatId: context.selectedStatId,
       castMode: context.castMode,
     });
@@ -86,9 +92,9 @@ class CloakOfShadowSpellAction extends AuraSpellAction {
       ]),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `${getGenericBuffActionLabel(selectedPower.id, selectedPower.name)}: ${
-            context.casterName
-          } affected ${joinTargetNames(context.finalTargets)}.`
+          `${SHADOW_CONTROL_AURA_SPELL_NAME}: ${context.casterName} affected ${joinTargetNames(
+            context.finalTargets
+          )}.`
         )
       ),
     ];
@@ -108,9 +114,31 @@ class ShadowWalkSpellAction extends UtilitySpellAction {
     return [
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Shadow Walk: ${context.casterName} moved through ${
+          `${SHADOW_CONTROL_WALK_SPELL_NAME}: ${context.casterName} moved through ${
             targetCharacter.sheet.name.trim() || targetCharacter.id
           }'s shadow.`
+        )
+      ),
+    ];
+  }
+}
+
+class ShadowWalkAndAttackSpellAction extends UtilitySpellAction {
+  override resolve(context: ActionContext) {
+    const targetCharacter = context.finalTargets[0];
+    if (!targetCharacter) {
+      throw new Error("Select one living target for Shadow Walk and Attack.");
+    }
+
+    this.setManaCost(2);
+    this.setTargetCharacterIds([targetCharacter.id]);
+
+    return [
+      new LogEffect(
+        buildEncounterActivityLogEntry(
+          `${SHADOW_CONTROL_WALK_ATTACK_SPELL_NAME}: ${context.casterName} ambushed ${
+            targetCharacter.sheet.name.trim() || targetCharacter.id
+          } through their shadow.`
         )
       ),
     ];
@@ -157,7 +185,7 @@ class ShadowManipulationSpellAction extends AttackSpellAction {
       ),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Shadow Manipulation: ${context.casterName} targeted ${joinTargetNames(
+          `${SHADOW_CONTROL_MANIPULATION_SPELL_NAME}: ${context.casterName} targeted ${joinTargetNames(
             context.finalTargets
           )}.`
         )
@@ -166,7 +194,7 @@ class ShadowManipulationSpellAction extends AttackSpellAction {
   }
 }
 
-class ShadowSoldierSpellAction extends SummonSpellAction {
+class ShadowFighterSpellAction extends SummonSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
     if (!selectedPower) {
@@ -216,7 +244,7 @@ class ShadowSoldierSpellAction extends SummonSpellAction {
       casterCharacter: context.casterCharacter,
       casterParticipant: context.casterView.participant,
       power: selectedPower,
-      selectedSummonOptionId: context.selectedSummonOptionId ?? "",
+      selectedSummonOptionId: context.selectedSummonOptionId ?? "shadow_fighter:1:4",
       activeTransientCombatants,
     });
 
@@ -247,7 +275,7 @@ class ShadowSoldierSpellAction extends SummonSpellAction {
       ...(inheritedAuraEffects.length > 0 ? [new AuraEffect(inheritedAuraEffects)] : []),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `Shadow Soldier: ${context.casterName} created ${summonResolution.summons
+          `${SHADOW_CONTROL_FIGHTER_SPELL_NAME}: ${context.casterName} created ${summonResolution.summons
             .map((summon) => summon.sheet.name.trim() || summon.id)
             .join(", ")}.`
         )
@@ -259,12 +287,11 @@ class ShadowSoldierSpellAction extends SummonSpellAction {
 export const shadowControlModule: PowerModule = {
   powerId: "shadow_control",
   spellIds: [
-    "default",
-    "shadow_cloak",
+    "smoldering_shadow",
     "shadow_walk",
+    "shadow_walk_attack",
     "shadow_manipulation",
-    "shadow_soldier",
-    "dismiss_summon",
+    "shadow_fighter",
   ],
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {
@@ -272,19 +299,27 @@ export const shadowControlModule: PowerModule = {
       return new ShadowWalkSpellAction();
     }
 
+    if (context.selectedSpellId === "shadow_walk_attack") {
+      return new ShadowWalkAndAttackSpellAction();
+    }
+
     if (context.selectedSpellId === "shadow_manipulation") {
       return new ShadowManipulationSpellAction();
     }
 
     if (
-      context.selectedSpellId === "shadow_soldier" ||
+      context.selectedSpellId === "shadow_fighter" ||
       context.selectedSpellId === "dismiss_summon"
     ) {
-      return new ShadowSoldierSpellAction();
+      return new ShadowFighterSpellAction();
     }
 
-    if (context.selectedSpellId === "default" || context.selectedSpellId === "shadow_cloak") {
-      return new CloakOfShadowSpellAction();
+    if (
+      context.selectedSpellId === "default" ||
+      context.selectedSpellId === "shadow_cloak" ||
+      context.selectedSpellId === "smoldering_shadow"
+    ) {
+      return new SmolderingShadowSpellAction();
     }
 
     return null;

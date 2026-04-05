@@ -10,8 +10,8 @@ import {
   preparePhysicalAttackRequest,
 } from "../lib/combatEncounterPhysicalAttacks";
 import {
-  prepareBruteDefianceRequest,
-} from "../lib/combatEncounterSpecialActions.ts";
+  isControlledByCaster,
+} from "../powers/runtimeSupport.ts";
 import { rollD10Faces } from "../lib/dice";
 import { buildItemIndex } from "../lib/items.ts";
 import { buildEncounterRollTargets, getEncounterPartyMembers } from "../selectors/encounterViewModel";
@@ -366,22 +366,40 @@ export function CombatEncounterPage() {
     return executePreparedCast(prepared.request);
   }
 
-  function requestBruteDefiance(payload: {
-    view: EncounterParticipantView;
+  function requestControlRelease(payload: {
+    casterView: EncounterParticipantView;
+    targetView: EncounterParticipantView;
   }): string | null {
-    const character = payload.view.character;
-    if (!character) {
-      return "The selected combatant no longer resolves to a character sheet.";
+    const casterCharacter = payload.casterView.character;
+    const targetCharacter = payload.targetView.character;
+    const selectedPower =
+      casterCharacter?.sheet.powers.find((power) => power.id === "crowd_control") ?? null;
+
+    if (!casterCharacter || !targetCharacter || !selectedPower) {
+      return "Crowd Control release is no longer available for this combatant.";
     }
 
-    const prepared = prepareBruteDefianceRequest({
-      character,
+    if (!isControlledByCaster(payload.targetView, casterCharacter.id)) {
+      return "That target is not currently controlled by this caster.";
+    }
+
+    return requestCast({
+      casterCharacter,
+      casterDisplayName: payload.casterView.participant.displayName,
+      selectedPower,
+      selectedVariantId: "release_control",
+      attackOutcome: "unresolved",
+      selectedTargetIds: [targetCharacter.id],
+      fallbackTargetIds: [targetCharacter.id],
+      healingAllocations: {},
+      selectedStatId: null,
+      castMode: "self",
+      selectedDamageType: null,
+      bonusManaSpend: 0,
+      selectedSummonOptionId: null,
+      encounterParticipants,
+      itemsById,
     });
-    if ("error" in prepared) {
-      return prepared.error;
-    }
-
-    return executePreparedCast(prepared.request);
   }
 
   function closePendingCastConfirmation(): void {
@@ -556,7 +574,7 @@ export function CombatEncounterPage() {
               openCharacterSheet={openCharacterSheet}
               requestCast={requestCast}
               requestPhysicalAttack={requestPhysicalAttack}
-              requestBruteDefiance={requestBruteDefiance}
+              requestControlRelease={requestControlRelease}
               updateCharacter={updateEncounterCharacter}
             />
         </section>

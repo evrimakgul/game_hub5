@@ -140,47 +140,62 @@ export async function runPowerRegistryTests(): Promise<void> {
           {
             power: { id: "elementalist", name: "Elementalist", level: 5, governingStat: "INT" as const },
             spellId: "elemental_bolt" as const,
-            actionName: "ElementalistSpellAction",
+            actionName: "ElementalBoltSpellAction",
           },
           {
             power: { id: "elementalist", name: "Elementalist", level: 5, governingStat: "INT" as const },
             spellId: "elemental_cantrip" as const,
-            actionName: "ElementalistSpellAction",
+            actionName: "ElementalCantripSpellAction",
+          },
+          {
+            power: { id: "elementalist", name: "Elementalist", level: 5, governingStat: "INT" as const },
+            spellId: "elemental_split" as const,
+            actionName: "ElementalSplitSpellAction",
           },
           {
             power: { id: "healing", name: "Healing", level: 5, governingStat: "INT" as const },
-            spellId: "default" as const,
-            actionName: "HealingSpellAction",
+            spellId: "heal_living" as const,
+            actionName: "HealLivingSpellAction",
           },
           {
             power: { id: "healing", name: "Healing", level: 5, governingStat: "INT" as const },
-            spellId: "cure" as const,
-            actionName: "HealingSpellAction",
+            spellId: "holy_purge" as const,
+            actionName: "HolyPurgeSpellAction",
           },
           {
             power: { id: "healing", name: "Healing", level: 5, governingStat: "INT" as const },
-            spellId: "wound_mend" as const,
-            actionName: "HealingSpellAction",
+            spellId: "healing_touch" as const,
+            actionName: "HealingTouchSpellAction",
           },
           {
             power: { id: "light_support", name: "Light Support", level: 5, governingStat: "APP" as const },
-            spellId: "default" as const,
-            actionName: "LightAuraSpellAction",
+            spellId: "let_there_be_light" as const,
+            actionName: "LetThereBeLightSpellAction",
           },
           {
             power: { id: "light_support", name: "Light Support", level: 5, governingStat: "APP" as const },
-            spellId: "mana_restore" as const,
-            actionName: "ManaRestoreSpellAction",
+            spellId: "luminous_restoration" as const,
+            actionName: "LuminousRestorationSpellAction",
+          },
+          {
+            power: { id: "light_support", name: "Light Support", level: 5, governingStat: "APP" as const },
+            spellId: "lessen_darkness" as const,
+            actionName: "LessenDarknessSpellAction",
           },
           {
             power: { id: "necromancy", name: "Necromancy", level: 5, governingStat: "APP" as const },
-            spellId: "summon_undead" as const,
-            actionName: "SummonUndeadSpellAction",
+            spellId: "non_living_skeleton" as const,
+            actionName: "NonLivingSkeletonSpellAction",
           },
           {
             power: { id: "necromancy", name: "Necromancy", level: 5, governingStat: "APP" as const },
-            spellId: "dismiss_summon" as const,
-            actionName: "SummonUndeadSpellAction",
+            spellId: "non_living_skeleton_king" as const,
+            actionName: "NonLivingSkeletonKingSpellAction",
+          },
+          {
+            power: { id: "necromancy", name: "Necromancy", level: 5, governingStat: "APP" as const },
+            spellId: "non_living_zombie" as const,
+            actionName: "NonLivingZombieSpellAction",
           },
           {
             power: { id: "necromancy", name: "Necromancy", level: 5, governingStat: "APP" as const },
@@ -189,18 +204,18 @@ export async function runPowerRegistryTests(): Promise<void> {
           },
           {
             power: { id: "necromancy", name: "Necromancy", level: 5, governingStat: "APP" as const },
-            spellId: "resurrection" as const,
-            actionName: "ResurrectionSpellAction",
+            spellId: "necromancers_bless" as const,
+            actionName: "NecromancersBlessSpellAction",
           },
           {
             power: { id: "shadow_control", name: "Shadow Control", level: 5, governingStat: "MAN" as const },
-            spellId: "default" as const,
-            actionName: "CloakOfShadowSpellAction",
+            spellId: "smoldering_shadow" as const,
+            actionName: "SmolderingShadowSpellAction",
           },
           {
             power: { id: "shadow_control", name: "Shadow Control", level: 5, governingStat: "MAN" as const },
-            spellId: "shadow_cloak" as const,
-            actionName: "CloakOfShadowSpellAction",
+            spellId: "shadow_walk_attack" as const,
+            actionName: "ShadowWalkAndAttackSpellAction",
           },
           {
             power: { id: "shadow_control", name: "Shadow Control", level: 5, governingStat: "MAN" as const },
@@ -214,13 +229,8 @@ export async function runPowerRegistryTests(): Promise<void> {
           },
           {
             power: { id: "shadow_control", name: "Shadow Control", level: 5, governingStat: "MAN" as const },
-            spellId: "shadow_soldier" as const,
-            actionName: "ShadowSoldierSpellAction",
-          },
-          {
-            power: { id: "shadow_control", name: "Shadow Control", level: 5, governingStat: "MAN" as const },
-            spellId: "dismiss_summon" as const,
-            actionName: "ShadowSoldierSpellAction",
+            spellId: "shadow_fighter" as const,
+            actionName: "ShadowFighterSpellAction",
           },
         ];
 
@@ -257,17 +267,17 @@ export async function runPowerRegistryTests(): Promise<void> {
         );
         assert.deepEqual(
           getPassiveSkillSources(sheet, "social"),
-          [{ label: "Crowd Control", value: 1 }]
+          [{ label: "Crowd Management", value: 5 }]
         );
         assert.deepEqual(
           getPassiveSkillSources(sheet, "melee"),
-          [{ label: "Necromancy", value: 2 }]
+          [{ label: "Necromancer's Deception", value: 3 }]
         );
         assert.deepEqual(getPassiveUtilityTraits(sheet), [
           "Techno-Invisibility Immunity",
-          "Nightvision",
+          "Compulsion Guard",
+          "Nightvision: Self + 4",
           "Hostile Undead Ignore Unless Attacked",
-          "Shadow Walk 125m",
           "Cosmetic Clothing / Armor Shift",
           "Minor Body Cosmetics",
         ]);

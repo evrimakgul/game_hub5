@@ -82,8 +82,61 @@ function buildSummonStatusTags(powerId: string, templateId: string): CharacterDr
     return [{ id: "undead", label: "Undead" }];
   }
 
-  if (powerId === "shadow_control" && templateId === "shadow_soldier") {
+  if (
+    powerId === "shadow_control" &&
+    (templateId === "shadow_soldier" || templateId === "shadow_fighter")
+  ) {
     return [{ id: "shadow", label: "Shadow" }];
+  }
+
+  return [];
+}
+
+function buildSpecialSummonOptions(power: PowerEntry): RuntimeSummonOption[] {
+  if (power.id === "necromancy") {
+    const options: RuntimeSummonOption[] = [
+      {
+        id: "non_living_skeleton:1:2",
+        templateId: "non_living_skeleton",
+        quantity: 1,
+        manaCost: 2,
+        label: "Non-Living Skeleton (2 Mana)",
+      },
+    ];
+
+    if (power.level >= 2) {
+      options.push({
+        id: "non_living_zombie:1:3",
+        templateId: "non_living_zombie",
+        quantity: 1,
+        manaCost: 3,
+        label: "Non-Living Zombie (3 Mana)",
+      });
+    }
+
+    if (power.level >= 4) {
+      options.push({
+        id: "non_living_skeleton_king:1:4",
+        templateId: "non_living_skeleton_king",
+        quantity: 1,
+        manaCost: 4,
+        label: "Non-Living Skeleton King (4 Mana)",
+      });
+    }
+
+    return options;
+  }
+
+  if (power.id === "shadow_control" && power.level >= 5) {
+    return [
+      {
+        id: "shadow_fighter:1:4",
+        templateId: "shadow_fighter",
+        quantity: 1,
+        manaCost: 4,
+        label: "Shadow Fighter (4 Mana)",
+      },
+    ];
   }
 
   return [];
@@ -124,6 +177,11 @@ function getRawPowerRecord(powerId: string): RuntimePowerRecord | null {
 }
 
 function readSummonOptions(power: PowerEntry): RuntimeSummonOption[] {
+  const specialOptions = buildSpecialSummonOptions(power);
+  if (specialOptions.length > 0) {
+    return specialOptions;
+  }
+
   const runtimeLevel = getRuntimePowerLevelDefinition(power.id, power.level);
   const summoning =
     runtimeLevel?.mechanics?.summoning && typeof runtimeLevel.mechanics.summoning === "object"
@@ -178,6 +236,170 @@ function readTemplateRules(
   templateId: string,
   casterSheet: CharacterDraft
 ): RuntimeTemplateRules | null {
+  if (powerId === "necromancy") {
+    const necromancyLevel = powerLevel;
+    const appValue = getCurrentStatValue(casterSheet, "APP");
+    const halfNecromancy = Math.ceil(necromancyLevel / 2);
+    const halfAppearance = Math.ceil(appValue / 2);
+
+    if (templateId === "non_living_skeleton") {
+      const statValue = halfNecromancy + halfAppearance;
+      return {
+        label: "Non-Living Skeleton",
+        buffRules: {
+          canReceiveSingleBuffs: false,
+          canReceiveGroupBuffs: false,
+          canBeHealed: false,
+        },
+        statusTags: buildSummonStatusTags(powerId, templateId),
+        stats: {
+          STR: statValue,
+          DEX: statValue,
+          STAM: statValue,
+          CHA: 0,
+          APP: 0,
+          MAN: 0,
+          INT: 0,
+          WITS: 0,
+          PER: 0,
+        },
+        naturalDamageReduction: halfNecromancy + 1,
+        meleeSkill: 2 + halfNecromancy,
+        attack: {
+          hitBonus: 3,
+          damageBonus: 2,
+          attacksPerAction: 1,
+          damageTypes: ["physical"],
+        },
+        resistances: {
+          mental: 2,
+          shadow: 2,
+          fire: 1,
+          cold: 1,
+          acid: -1,
+        },
+      };
+    }
+
+    if (templateId === "non_living_skeleton_king") {
+      const statValue = Math.ceil((3 * necromancyLevel) / 2) + halfAppearance;
+      return {
+        label: "Non-Living Skeleton King",
+        buffRules: {
+          canReceiveSingleBuffs: false,
+          canReceiveGroupBuffs: false,
+          canBeHealed: false,
+        },
+        statusTags: buildSummonStatusTags(powerId, templateId),
+        stats: {
+          STR: statValue,
+          DEX: statValue,
+          STAM: statValue,
+          CHA: 0,
+          APP: 0,
+          MAN: 0,
+          INT: 0,
+          WITS: 0,
+          PER: 0,
+        },
+        naturalDamageReduction: necromancyLevel + halfAppearance,
+        meleeSkill: 3 + halfNecromancy,
+        attack: {
+          hitBonus: 2 * necromancyLevel,
+          damageBonus: necromancyLevel,
+          attacksPerAction: 1,
+          damageTypes: ["physical"],
+        },
+        resistances: {
+          mental: 2,
+          shadow: 2,
+          fire: 1,
+          cold: 1,
+          acid: -1,
+        },
+      };
+    }
+
+    if (templateId === "non_living_zombie") {
+      return {
+        label: "Non-Living Zombie",
+        buffRules: {
+          canReceiveSingleBuffs: true,
+          canReceiveGroupBuffs: true,
+          canBeHealed: true,
+        },
+        statusTags: buildSummonStatusTags(powerId, templateId),
+        stats: {
+          STR: necromancyLevel + appValue,
+          DEX: necromancyLevel + halfAppearance,
+          STAM: necromancyLevel + appValue,
+          CHA: 0,
+          APP: 0,
+          MAN: 0,
+          INT: 0,
+          WITS: 0,
+          PER: 0,
+        },
+        naturalDamageReduction: necromancyLevel + 3,
+        meleeSkill: 3 + halfNecromancy,
+        attack: {
+          hitBonus: necromancyLevel,
+          damageBonus: necromancyLevel,
+          attacksPerAction: 1,
+          damageTypes: ["physical"],
+        },
+        resistances: {
+          mental: 2,
+          shadow: 2,
+          fire: 1,
+          cold: 1,
+          acid: -1,
+        },
+      };
+    }
+  }
+
+  if (powerId === "shadow_control" && templateId === "shadow_fighter") {
+    const shadowLevel = powerLevel;
+    const manValue = getCurrentStatValue(casterSheet, "MAN");
+    const statValue = shadowLevel + manValue;
+
+    return {
+      label: "Shadow Fighter",
+      buffRules: {
+        canReceiveSingleBuffs: true,
+        canReceiveGroupBuffs: true,
+        canBeHealed: false,
+      },
+      statusTags: buildSummonStatusTags(powerId, templateId),
+      stats: {
+        STR: statValue,
+        DEX: statValue,
+        STAM: statValue,
+        CHA: 0,
+        APP: 0,
+        MAN: 0,
+        INT: 0,
+        WITS: 0,
+        PER: 0,
+      },
+      naturalDamageReduction: 6,
+      meleeSkill: 5,
+      attack: {
+        hitBonus: 2,
+        damageBonus: 2,
+        attacksPerAction: 1,
+        damageTypes: ["physical", "shadow"],
+      },
+      resistances: {
+        shadow: 2,
+        cold: 2,
+        physical: 1,
+        radiant: -1,
+      },
+    };
+  }
+
   const runtimeLevel = getRuntimePowerLevelDefinition(powerId, powerLevel);
   if (!runtimeLevel) {
     return null;
@@ -433,7 +655,11 @@ export function buildSummonCastResolution({
   const dismissIds = activeTransientCombatants
     .filter(
       (entry) =>
-        entry.controllerCharacterId === casterCharacter.id && entry.sourcePowerId === power.id
+        entry.controllerCharacterId === casterCharacter.id &&
+        entry.sourcePowerId === power.id &&
+        (power.id === "necromancy"
+          ? entry.summonTemplateId === selectedOption.templateId
+          : true)
     )
     .map((entry) => entry.id);
   const summons = Array.from({ length: selectedOption.quantity }, (_, index) => {
