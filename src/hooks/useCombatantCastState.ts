@@ -113,9 +113,15 @@ export function useCombatantCastState({
     variantOptions.find((option) => option.id === selectedVariantId)?.id ??
     variantOptions[0]?.id ??
     "default";
-  const targetMode = selectedPower
+  const rawTargetMode = selectedPower
     ? getCastPowerTargetModeForVariant(selectedPower, resolvedVariantId)
     : "self";
+  const targetMode =
+    selectedPower?.id === "shadow_control" &&
+    resolvedVariantId === "smoldering_shadow" &&
+    selectedCastMode !== "aura"
+      ? "self"
+      : rawTargetMode;
   const targetLimit = selectedPower ? getCastPowerTargetLimit(selectedPower, resolvedVariantId) : 1;
   const modeOptions = selectedPower
     ? getCastPowerModeOptionsForVariant(selectedPower, resolvedVariantId)
@@ -451,7 +457,7 @@ export function useCombatantCastState({
     healingAllocations,
     bonusManaSpend,
     maxBonusManaSpend,
-    shouldShowVariantField: variantOptions.length > 1,
+    shouldShowVariantField: variantOptions.length > 0,
     shouldShowTargetField: targetMode !== "self",
     shouldShowModeField:
       selectedPower?.id === "shadow_control" &&
@@ -460,7 +466,7 @@ export function useCombatantCastState({
         resolvedVariantId === "shadow_cloak" ||
         resolvedVariantId === "smoldering_shadow"
       ) &&
-      modeOptions.length > 1,
+      (modeOptions.length > 1 || resolvedVariantId === "smoldering_shadow"),
     shouldShowDamageTypeField: damageTypeOptions.length > 0,
     shouldShowSummonOptionField: summonOptions.length > 0,
     shouldShowBonusManaField: maxBonusManaSpend > 0,

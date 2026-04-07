@@ -1,0 +1,350 @@
+{
+  "schemaVersion": "power-spell-ui-current-v1",
+  "derivation": {
+    "method": "reverse_engineered_from_current_combat_cast_ui",
+    "sourceFiles": [
+      "src/hooks/useCombatantCastState.ts",
+      "src/components/combat-encounter/CombatantCastForm.tsx",
+      "src/rules/powerEffects.ts",
+      "src/powers/runtimeSupport.ts"
+    ],
+    "scope": "Only fields currently consumed by the combat cast form are included."
+  },
+  "fields": {
+    "power": "Always shown before a cast is prepared.",
+    "spell": "Always shown for active cast-form powers.",
+    "target": "Shown when the selected spell target mode is not self.",
+    "mode": "Shown for Shadow Control / Smoldering Shadow.",
+    "targetWhenAuraMode": "Shown for Shadow Control / Smoldering Shadow only when Aura mode is selected.",
+    "touchAttack": "Shown for Necromancy / Necrotic Touch.",
+    "stat": "Shown when the spell exposes selectable stats.",
+    "damageType": "Shown when the spell exposes damage type options.",
+    "summon": "Shown when the spell exposes summon options.",
+    "extraMana": "Shown when the spell allows bonus mana spend.",
+    "healingAllocation": "Shown for Healing / Heal Living when multiple healing targets are selected."
+  },
+  "powers": [
+    {
+      "id": "awareness",
+      "variantsByLevel": {
+        "1": ["assess_character"],
+        "2": ["assess_character"],
+        "3": ["assess_character"],
+        "4": ["assess_character"],
+        "5": ["assess_character"]
+      },
+      "spells": [
+        {
+          "id": "assess_character",
+          "label": "Assess Character",
+          "flowsByLevel": {
+            "1": ["power", "spell", "target"],
+            "2": ["power", "spell", "target"],
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "body_reinforcement",
+      "variantsByLevel": {
+        "1": ["default"],
+        "2": ["default"],
+        "3": ["default"],
+        "4": ["default"],
+        "5": ["default"]
+      },
+      "spells": [
+        {
+          "id": "default",
+          "label": "Boost Physique",
+          "flowsByLevel": {
+            "1": ["power", "spell", "target", "stat"],
+            "2": ["power", "spell", "target", "stat"],
+            "3": ["power", "spell", "target", "stat"],
+            "4": ["power", "spell", "target", "stat"],
+            "5": ["power", "spell", "target", "stat"]
+          },
+          "statOptions": ["STR", "DEX", "STAM"]
+        }
+      ],
+      "passiveOnly": [
+        {
+          "id": "brute_defiance",
+          "label": "Brute Defiance"
+        }
+      ]
+    },
+    {
+      "id": "crowd_control",
+      "variantsByLevel": {
+        "1": ["crowd_control"],
+        "2": ["crowd_control"],
+        "3": ["crowd_control"],
+        "4": ["crowd_control"],
+        "5": ["crowd_control"]
+      },
+      "spells": [
+        {
+          "id": "crowd_control",
+          "label": "Control Entity",
+          "flowsByLevel": {
+            "1": ["power", "spell", "target"],
+            "2": ["power", "spell", "target"],
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        }
+      ],
+      "contextualActions": [
+        {
+          "id": "release_control",
+          "label": "Release Control",
+          "flow": ["casterActionMenu", "target"]
+        }
+      ]
+    },
+    {
+      "id": "elementalist",
+      "variantsByLevel": {
+        "1": ["elemental_bolt"],
+        "2": ["elemental_bolt", "elemental_cantrip", "elemental_split"],
+        "3": ["elemental_bolt", "elemental_cantrip", "elemental_split"],
+        "4": ["elemental_bolt", "elemental_cantrip", "elemental_split"],
+        "5": ["elemental_bolt", "elemental_cantrip", "elemental_split"]
+      },
+      "spells": [
+        {
+          "id": "elemental_bolt",
+          "label": "Elemental Bolt",
+          "flowsByLevel": {
+            "1": ["power", "spell", "target", "damageType"],
+            "2": ["power", "spell", "target", "damageType"],
+            "3": ["power", "spell", "target", "damageType"],
+            "4": ["power", "spell", "target", "damageType"],
+            "5": ["power", "spell", "target", "damageType"]
+          }
+        },
+        {
+          "id": "elemental_cantrip",
+          "label": "Elemental Cantrip",
+          "flowsByLevel": {
+            "2": ["power", "spell", "target", "damageType"],
+            "3": ["power", "spell", "target", "damageType"],
+            "4": ["power", "spell", "target", "damageType"],
+            "5": ["power", "spell", "target", "damageType"]
+          }
+        },
+        {
+          "id": "elemental_split",
+          "label": "Elemental Split",
+          "flowsByLevel": {
+            "2": ["power", "spell", "target", "damageType"],
+            "3": ["power", "spell", "target", "damageType", "extraMana"],
+            "4": ["power", "spell", "target", "damageType", "extraMana"],
+            "5": ["power", "spell", "target", "damageType", "extraMana"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "healing",
+      "variantsByLevel": {
+        "1": ["heal_living"],
+        "2": ["heal_living"],
+        "3": ["heal_living", "holy_purge", "healing_touch"],
+        "4": ["heal_living", "holy_purge", "healing_touch"],
+        "5": ["heal_living", "holy_purge", "healing_touch"]
+      },
+      "spells": [
+        {
+          "id": "heal_living",
+          "label": "Heal Living",
+          "flowsByLevel": {
+            "1": ["power", "spell", "target"],
+            "2": ["power", "spell", "target", "healingAllocation"],
+            "3": ["power", "spell", "target", "healingAllocation"],
+            "4": ["power", "spell", "target", "healingAllocation"],
+            "5": ["power", "spell", "target", "healingAllocation"]
+          }
+        },
+        {
+          "id": "holy_purge",
+          "label": "Holy Purge",
+          "flowsByLevel": {
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        },
+        {
+          "id": "healing_touch",
+          "label": "Healing Touch",
+          "flowsByLevel": {
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "light_support",
+      "variantsByLevel": {
+        "1": ["let_there_be_light"],
+        "2": ["let_there_be_light"],
+        "3": ["let_there_be_light", "luminous_restoration"],
+        "4": ["let_there_be_light", "luminous_restoration"],
+        "5": ["let_there_be_light", "luminous_restoration", "lessen_darkness"]
+      },
+      "spells": [
+        {
+          "id": "let_there_be_light",
+          "label": "Let There Be Light",
+          "flowsByLevel": {
+            "1": ["power", "spell", "target"],
+            "2": ["power", "spell", "target"],
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        },
+        {
+          "id": "luminous_restoration",
+          "label": "Luminous Restoration",
+          "flowsByLevel": {
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        },
+        {
+          "id": "lessen_darkness",
+          "label": "Lessen Darkness",
+          "flowsByLevel": {
+            "5": ["power", "spell", "target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "necromancy",
+      "variantsByLevel": {
+        "1": ["summon_undead"],
+        "2": ["summon_undead"],
+        "3": ["summon_undead", "necrotic_touch"],
+        "4": ["summon_undead", "necrotic_touch"],
+        "5": ["summon_undead", "necrotic_touch", "necromancers_bless"]
+      },
+      "spells": [
+        {
+          "id": "summon_undead",
+          "label": "Non-Living Warriors",
+          "flowsByLevel": {
+            "1": ["power", "spell", "summon"],
+            "2": ["power", "spell", "summon"],
+            "3": ["power", "spell", "summon"],
+            "4": ["power", "spell", "summon"],
+            "5": ["power", "spell", "summon"]
+          }
+        },
+        {
+          "id": "necrotic_touch",
+          "label": "Necrotic Touch",
+          "flowsByLevel": {
+            "3": ["power", "spell", "target", "touchAttack"],
+            "4": ["power", "spell", "target", "touchAttack"],
+            "5": ["power", "spell", "target", "touchAttack"]
+          }
+        },
+        {
+          "id": "necromancers_bless",
+          "label": "Necromancer's Bless",
+          "flowsByLevel": {
+            "5": ["power", "spell", "target"]
+          }
+        }
+      ],
+      "contextualActions": [
+        {
+          "id": "dismiss_summon",
+          "label": "Dismiss Summon",
+          "flow": ["casterActionMenu", "summon"]
+        }
+      ]
+    },
+    {
+      "id": "shadow_control",
+      "variantsByLevel": {
+        "1": ["smoldering_shadow"],
+        "2": ["smoldering_shadow", "shadow_walk", "shadow_walk_attack"],
+        "3": ["smoldering_shadow", "shadow_walk", "shadow_walk_attack", "shadow_manipulation"],
+        "4": ["smoldering_shadow", "shadow_walk", "shadow_walk_attack", "shadow_manipulation"],
+        "5": ["smoldering_shadow", "shadow_walk", "shadow_walk_attack", "shadow_manipulation", "shadow_fighter"]
+      },
+      "spells": [
+        {
+          "id": "smoldering_shadow",
+          "label": "Smoldering Shadow",
+          "flowsByLevel": {
+            "1": ["power", "spell", "mode"],
+            "2": ["power", "spell", "mode"],
+            "3": ["power", "spell", "mode"],
+            "4": ["power", "spell", "mode", "targetWhenAuraMode"],
+            "5": ["power", "spell", "mode", "targetWhenAuraMode"]
+          }
+        },
+        {
+          "id": "shadow_walk",
+          "label": "Shadow Walk",
+          "flowsByLevel": {
+            "2": ["power", "spell", "target"],
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        },
+        {
+          "id": "shadow_walk_attack",
+          "label": "Shadow Walk and Attack",
+          "flowsByLevel": {
+            "2": ["power", "spell", "target"],
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        },
+        {
+          "id": "shadow_manipulation",
+          "label": "Shadow Manipulation",
+          "flowsByLevel": {
+            "3": ["power", "spell", "target"],
+            "4": ["power", "spell", "target"],
+            "5": ["power", "spell", "target"]
+          }
+        },
+        {
+          "id": "shadow_fighter",
+          "label": "Shadow Fighter",
+          "flowsByLevel": {
+            "5": ["power", "spell", "summon"]
+          }
+        }
+      ],
+      "contextualActions": [
+        {
+          "id": "dismiss_summon",
+          "label": "Dismiss Summon",
+          "flow": ["casterActionMenu", "summon"]
+        }
+      ]
+    }
+  ],
+  "knownCurrentIrregularities": [
+    "Smoldering Shadow target selection is conditional: it appears only when Aura mode is selected.",
+    "Dismiss Summon is contextual in the caster action menu rather than a normal cast-form spell."
+  ]
+}

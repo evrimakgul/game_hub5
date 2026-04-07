@@ -1,0 +1,447 @@
+{
+  "schemaVersion": "power-spell-ingestion-normalized-current-v1",
+  "derivation": {
+    "method": "reverse_engineered_from_mechanics_and_ui_json",
+    "sourceFiles": [
+      "references/power_spell_mechanics_current.json",
+      "references/power_spell_ui_current.json"
+    ],
+    "scope": "Human-readable normalized rule facts needed before deriving mechanics-ready and UI-ready JSON."
+  },
+  "normalizationPrinciples": [
+    "Record rule-facing facts, not TypeScript effect class names.",
+    "Every active spell needs availability, cost, targeting, duration, core effect, scaling, and required player inputs when used.",
+    "Passive and contextual entries are included when current mechanics need them, but they are marked separately from normal active cast-form spells.",
+    "If a field is not used by current mechanics or combat UI, it is omitted."
+  ],
+  "powers": [
+    {
+      "id": "awareness",
+      "name": "Awareness",
+      "governingStat": "PER",
+      "entries": [
+        {
+          "id": "alerted_self",
+          "name": "Alerted Self",
+          "type": "passive",
+          "availability": "level 1+",
+          "rules": ["Alertness skill bonus equals Awareness level."]
+        },
+        {
+          "id": "techno_invisibility_immunity",
+          "name": "Techno-Invisibility Immunity",
+          "type": "passive",
+          "availability": "level 3+",
+          "rules": ["Adds a utility trait for techno-invisibility immunity."]
+        },
+        {
+          "id": "assess_character",
+          "name": "Assess Character",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "bonus action; 0 mana",
+          "targeting": "single character in line of sight",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": [
+            "Allowed CR equals min(caster PER + Awareness level, CR cap by level).",
+            "CR cap by level is 6, 9, 12, 15, 18.",
+            "Target above allowed CR blocks the spell.",
+            "Successful use writes encounter output and linked knowledge/history data."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "body_reinforcement",
+      "name": "Body Reinforcement",
+      "governingStat": "STAM",
+      "entries": [
+        {
+          "id": "brute_defiance",
+          "name": "Brute Defiance",
+          "type": "passive",
+          "availability": "level 1+",
+          "rules": [
+            "Triggers when current HP is between 0 and -5.",
+            "Queues delayed stand-up through body_reinforcement_revive.",
+            "Usable once per day.",
+            "Revive HP by level is 1, 2, 4, 8, 16."
+          ]
+        },
+        {
+          "id": "default",
+          "name": "Boost Physique",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "standard action; mana by level 2, 2, 3, 3, 4",
+          "targeting": "self at level 1; one friendly target at level 2+",
+          "duration": "timed buff",
+          "playerInputs": ["target", "stat"],
+          "rules": [
+            "Chosen stat must be STR, DEX, or STAM.",
+            "Stat bonus by level is +1, +1, +2, +2, +3.",
+            "Damage reduction bonus is +1 at level 4 and +2 at level 5."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crowd_control",
+      "name": "Crowd Control",
+      "governingStat": "CHA",
+      "entries": [
+        {
+          "id": "crowd_management",
+          "name": "Crowd Management",
+          "type": "passive",
+          "availability": "level 1+",
+          "rules": ["Social skill bonus equals Crowd Control level."]
+        },
+        {
+          "id": "compulsion_guard",
+          "name": "Compulsion Guard",
+          "type": "passive",
+          "availability": "level 5",
+          "rules": ["Adds Social skill while defending against control effects."]
+        },
+        {
+          "id": "crowd_control",
+          "name": "Control Entity",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "standard action; 0 mana cast; ongoing upkeep mana",
+          "targeting": "enemy control target count by level 1, 1, 2, 2, 3",
+          "duration": "maintained ongoing control",
+          "playerInputs": ["target"],
+          "rules": [
+            "Caster contest pool is CHA + INT.",
+            "Target contest pool is WITS + CHA.",
+            "Tie fails.",
+            "Pre-level 5 targets must be living.",
+            "Level 5 allows valid non-living targets where supported.",
+            "Controlled target gains paralyzed and controlled status.",
+            "Control can break on damage and grants temporary crowd control immunity."
+          ]
+        },
+        {
+          "id": "release_control",
+          "name": "Release Control",
+          "type": "contextual",
+          "availability": "when caster controls a target",
+          "targeting": "controlled target",
+          "rules": ["Removes controlled/paralyzed state and releases maintained control."]
+        }
+      ]
+    },
+    {
+      "id": "elementalist",
+      "name": "Elementalist",
+      "governingStat": "INT",
+      "entries": [
+        {
+          "id": "elemental_bolt",
+          "name": "Elemental Bolt",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "standard action; 1 mana elemental; 2 mana necrotic at level 5",
+          "targeting": "single target",
+          "duration": "instant",
+          "playerInputs": ["target", "damageType"],
+          "rules": [
+            "Elemental damage is INT + Elementalist level.",
+            "Level 1 chooses one elemental type and keeps it.",
+            "Level 2 locks chosen element until long rest.",
+            "Level 3+ can choose elemental type freely.",
+            "Level 5 unlocks necrotic.",
+            "Necrotic damages living targets with vulnerability rules and heals undead targets."
+          ]
+        },
+        {
+          "id": "elemental_cantrip",
+          "name": "Elemental Cantrip",
+          "type": "active",
+          "availability": "level 2+",
+          "cost": "standard or bonus action by level; 0 mana",
+          "targeting": "single target until level 5; up to 3 targets at level 5",
+          "duration": "instant",
+          "playerInputs": ["target", "damageType"],
+          "rules": [
+            "Elemental only; necrotic is not allowed.",
+            "Damage is INT at levels 2 and 3.",
+            "Damage is INT + 1 at levels 4 and 5.",
+            "Level 4 cannot be cast if another magical or physical attack was made earlier in the same turn."
+          ]
+        },
+        {
+          "id": "elemental_split",
+          "name": "Elemental Split",
+          "type": "active",
+          "availability": "level 2+",
+          "cost": "standard action; 1+ mana",
+          "targeting": "multiple targets; target count by level 2, 3, 4, 5 from levels 2-5",
+          "duration": "instant",
+          "playerInputs": ["target", "damageType", "extraMana"],
+          "rules": [
+            "Base split damage is ceil((INT + Elementalist level) / 2).",
+            "Level 3+ may spend extra mana to increase split damage.",
+            "Level 5 necrotic bonus mana increases damage faster than elemental bonus mana."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "healing",
+      "name": "Healing",
+      "governingStat": "INT",
+      "entries": [
+        {
+          "id": "heal_living",
+          "name": "Heal Living",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "standard action; 2 mana",
+          "targeting": "touch at level 1; up to 4 targets in 25m at level 2+",
+          "duration": "instant",
+          "playerInputs": ["target", "healingAllocation"],
+          "rules": [
+            "Healing equals INT + Healing level.",
+            "Removes bleeding.",
+            "Level 4 can regrow missing limbs.",
+            "Level 5 can overheal once per character per day up to target STAM.",
+            "Against undead, healing becomes radiant damage."
+          ]
+        },
+        {
+          "id": "holy_purge",
+          "name": "Holy Purge",
+          "type": "active",
+          "availability": "level 3+",
+          "cost": "standard action; 2 mana",
+          "targeting": "touch at level 3; 25m at level 4+",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": ["Cures poison, disease, and curse."]
+        },
+        {
+          "id": "healing_touch",
+          "name": "Healing Touch",
+          "type": "active",
+          "availability": "level 3+",
+          "cost": "0 mana",
+          "targeting": "single target",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": [
+            "Heals half of Heal Living, rounded up.",
+            "Stops bleeding.",
+            "A target cannot receive this more than twice per day.",
+            "Against undead, healing becomes radiant damage."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light_support",
+      "name": "Light Support",
+      "governingStat": "APP",
+      "entries": [
+        {
+          "id": "lunar_bless",
+          "name": "Lunar Bless",
+          "type": "passive",
+          "availability": "level 1+",
+          "rules": ["Grants mana bonus and night vision progression by level."]
+        },
+        {
+          "id": "let_there_be_light",
+          "name": "Let There Be Light",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "standard action; 2 mana",
+          "targeting": "explicit selected aura beneficiaries; caster is always included as the source",
+          "duration": "timed aura",
+          "playerInputs": ["target"],
+          "rules": [
+            "Creates a light aura source.",
+            "Selected beneficiaries receive source-linked shared aura effects.",
+            "Applies hit, damage reduction, and soak bonuses by level.",
+            "Range and duration increase by level.",
+            "Removing the source aura removes linked beneficiary effects."
+          ]
+        },
+        {
+          "id": "lessen_darkness",
+          "name": "Lessen Darkness",
+          "type": "active",
+          "availability": "level 5",
+          "cost": "requires active Let There Be Light source",
+          "targeting": "explicit selected linked aura targets from active light aura",
+          "duration": "while linked aura source remains active",
+          "playerInputs": ["target"],
+          "rules": [
+            "Selected targets lose one resistance level.",
+            "The source aura target list is updated so source removal clears the linked effects."
+          ]
+        },
+        {
+          "id": "luminous_restoration",
+          "name": "Luminous Restoration",
+          "type": "active",
+          "availability": "level 3+",
+          "cost": "standard action; 0 mana",
+          "targeting": "friendly target in 25m",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": ["Restores mana equal to APP, APP x2, APP x3 at levels 3, 4, 5."]
+        }
+      ]
+    },
+    {
+      "id": "necromancy",
+      "name": "Necromancy",
+      "governingStat": "APP",
+      "entries": [
+        {
+          "id": "necromancers_deception",
+          "name": "Necromancer's Deception",
+          "type": "passive",
+          "availability": "level 1+",
+          "rules": ["Provides melee bonus and hostile-undead aggro manipulation by level."]
+        },
+        {
+          "id": "summon_undead",
+          "name": "Non-Living Warriors",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "standard action; mana depends on selected summon subtype",
+          "targeting": "summons near caster",
+          "duration": "timed summon",
+          "playerInputs": ["summon"],
+          "rules": [
+            "Summon options are Non-Living Skeleton at level 1+, Non-Living Zombie at level 2+, and Non-Living Skeleton King at level 4+.",
+            "Creates one selected summon using Necromancy level and APP-based scaling.",
+            "Replacing behavior is per summon subtype."
+          ]
+        },
+        {
+          "id": "necrotic_touch",
+          "name": "Necrotic Touch",
+          "type": "active",
+          "availability": "level 3+",
+          "cost": "standard action; 3 mana",
+          "targeting": "single target in 25m",
+          "duration": "instant",
+          "playerInputs": ["target", "touchAttack"],
+          "rules": [
+            "Requires hit/miss touch attack resolution.",
+            "On hit, deals APP + Necromancy level damage at levels 3 and 4.",
+            "On hit, deals APP + 2 x Necromancy level damage at level 5.",
+            "Heals caster by Necromancy level even if damage dealt is zero.",
+            "Heals undead targets instead of damaging them.",
+            "No effect on shadow/incorporeal targets."
+          ]
+        },
+        {
+          "id": "necromancers_bless",
+          "name": "Necromancer's Bless",
+          "type": "active",
+          "availability": "level 5",
+          "cost": "standard action; 6 mana",
+          "targeting": "touch target",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": ["Resurrects a recently fallen living being to 1 HP and removes death-related statuses."]
+        },
+        {
+          "id": "dismiss_summon",
+          "name": "Dismiss Summon",
+          "type": "contextual",
+          "availability": "when caster has an active necromancy summon",
+          "targeting": "owned summon",
+          "rules": ["Dismisses the selected necromancy summon."]
+        }
+      ]
+    },
+    {
+      "id": "shadow_control",
+      "name": "Shadow Control",
+      "governingStat": "MAN",
+      "entries": [
+        {
+          "id": "sleek_visage",
+          "name": "Sleek Visage",
+          "type": "passive",
+          "availability": "level 3+",
+          "rules": ["Cosmetic outfit and armor changes at level 3; minor body cosmetics at level 5."]
+        },
+        {
+          "id": "smoldering_shadow",
+          "name": "Smoldering Shadow",
+          "type": "active",
+          "availability": "level 1+",
+          "cost": "standard action; 2 mana self or 4 mana aura at level 4+",
+          "targeting": "self at lower levels; explicit selected aura beneficiaries when aura mode is selected at level 4+",
+          "duration": "timed aura/buff",
+          "playerInputs": ["mode", "target when aura mode"],
+          "rules": [
+            "Grants stealth and AC bonuses by level.",
+            "Removing the source aura removes linked beneficiary effects."
+          ]
+        },
+        {
+          "id": "shadow_walk",
+          "name": "Shadow Walk",
+          "type": "active",
+          "availability": "level 2+",
+          "cost": "bonus action; 2 mana",
+          "targeting": "one living target; range is 25m x Shadow Control level",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": ["Movement-style shadow relocation; current mechanics log the action."]
+        },
+        {
+          "id": "shadow_walk_attack",
+          "name": "Shadow Walk and Attack",
+          "type": "active",
+          "availability": "level 2+",
+          "cost": "bonus + standard action; 2 mana",
+          "targeting": "one living target; range is 25m x Shadow Control level",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": ["Ambush-style shadow walk; target is surprised and loses AC for that attack."]
+        },
+        {
+          "id": "shadow_manipulation",
+          "name": "Shadow Manipulation",
+          "type": "active",
+          "availability": "level 3+",
+          "cost": "standard action; 2 mana",
+          "targeting": "single target in 25m",
+          "duration": "instant",
+          "playerInputs": ["target"],
+          "rules": ["Deals MAN + Shadow Control level shadow damage; attack is always successful without marginal hit bonus."]
+        },
+        {
+          "id": "shadow_fighter",
+          "name": "Shadow Fighter",
+          "type": "active",
+          "availability": "level 5",
+          "cost": "standard action; 4 mana",
+          "targeting": "summons near caster",
+          "duration": "until destroyed",
+          "playerInputs": ["summon"],
+          "rules": ["Creates one shadow fighter summon using Shadow Control level and MAN-based scaling."]
+        },
+        {
+          "id": "dismiss_summon",
+          "name": "Dismiss Summon",
+          "type": "contextual",
+          "availability": "when caster has an active shadow summon",
+          "targeting": "owned summon",
+          "rules": ["Dismisses the selected shadow summon."]
+        }
+      ]
+    }
+  ]
+}

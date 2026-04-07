@@ -7,6 +7,7 @@ This file tracks active reminders for the current implementation block.
 - The follow-up character-sheet and encounter action-flow pass is also complete.
 - Knowledge System V1 is now implemented for character cards.
 - The remaining power TODO rewrite pass is now complete.
+- The encounter cast UI standardization, aura lifecycle cleanup, summon dismiss UI, and ingestion reference sync pass is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -26,7 +27,10 @@ This file tracks active reminders for the current implementation block.
 
 ## Known Structural Gaps
 - Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
-- Aura construction still has a recorded architecture dilemma about whether it should stay on `buildActivePowerEffect(...)` or move to a dedicated aura builder later.
+- Encounter cast UI now uses a stable `Power > Spell > ...` flow for active casts.
+- Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
+- `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
+- The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
 
 ## Knowledge System V1
 - Keep `History` as an event log.
@@ -49,5 +53,9 @@ This file tracks active reminders for the current implementation block.
 ## Deferred But Recorded
 - Full item-authoring UX and multi-target `AA` knowledge-sharing UI remain deferred.
 - Expansion of the knowledge system beyond character cards remains deferred.
-- Aura-builder redesign remains deferred pending the recorded architecture discussion.
 - Backend sync and encounter persistence remain out of scope.
+
+## Resolved Design Direction
+- Aura spells should stay modeled as dedicated aura spells, not as normal targeted buffs.
+- `AuraSpellAction` remains the right action category.
+- The required follow-up is not a new spell-class introduction; it is a targeting and lifecycle cleanup so aura targets are explicit and source-linked.

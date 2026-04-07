@@ -317,6 +317,49 @@ export function getEncounterCastTargetOptions(args: {
     return encounterParticipants.filter((view) => isControlledByCaster(view, casterParticipant.characterId));
   }
 
+  if (
+    selectedPower.id === "light_support" &&
+    (selectedVariantId === "let_there_be_light" || selectedVariantId === "lessen_darkness")
+  ) {
+    if (selectedVariantId === "lessen_darkness") {
+      return encounterParticipants.filter(
+        (view) =>
+          view.participant.characterId !== casterParticipant.characterId &&
+          view.character !== null
+      );
+    }
+
+    return [
+      ...encounterParticipants.filter(
+        ({ participant }) => participant.characterId === casterParticipant.characterId
+      ),
+      ...encounterParticipants.filter(
+        (view) =>
+          view.participant.characterId !== casterParticipant.characterId &&
+          view.character !== null &&
+          canEncounterTargetReceiveGroupBuff(view)
+      ),
+    ];
+  }
+
+  if (
+    selectedPower.id === "shadow_control" &&
+    selectedVariantId === "smoldering_shadow" &&
+    args.castMode === "aura"
+  ) {
+    return [
+      ...encounterParticipants.filter(
+        ({ participant }) => participant.characterId === casterParticipant.characterId
+      ),
+      ...encounterParticipants.filter(
+        (view) =>
+          view.participant.characterId !== casterParticipant.characterId &&
+          view.character !== null &&
+          canEncounterTargetReceiveGroupBuff(view)
+      ),
+    ];
+  }
+
   if (selectedPower.id === "crowd_control") {
     return encounterParticipants.filter((view) => isEnemyEncounterTarget(casterParticipant, view));
   }
@@ -333,6 +376,12 @@ export function getEncounterCastTargetOptions(args: {
   }
 
   if (selectedPower.id === "body_reinforcement") {
+    if (selectedPower.level === 1) {
+      return encounterParticipants.filter(
+        ({ participant }) => participant.characterId === casterParticipant.characterId
+      );
+    }
+
     return encounterParticipants.filter(
       (view) =>
         isFriendlyEncounterTarget(casterParticipant, view) && canEncounterTargetReceiveSingleBuff(view)

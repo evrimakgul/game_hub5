@@ -782,7 +782,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
             casterCharacter: caster,
             encounterParticipants: views,
             selectedPower: caster.sheet.powers[0],
-            selectedTargetIds: [caster.id],
+            selectedTargetIds: [enemy.id],
             variantId: "lessen_darkness",
           })
         );
@@ -792,7 +792,7 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
           return;
         }
 
-        const sourceEffect = lightPrepared.request.effects.find(
+        const sourceEffect = prepared.request.effects.find(
           (effect) => effect.effectKind === "aura_source" && effect.targetCharacterId === caster.id
         );
         const allyEffect = lightPrepared.request.effects.find(
@@ -803,8 +803,8 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
         );
 
         assert.ok(sourceEffect);
-        assert.deepEqual(sourceEffect?.sharedTargetCharacterIds, [caster.id, ally.id]);
-        assert.equal(allyEffect?.stackKey, "light_support");
+        assert.deepEqual(sourceEffect?.sharedTargetCharacterIds, [caster.id, enemy.id]);
+        assert.equal(allyEffect, undefined);
         assert.equal(enemyEffect?.stackKey, "light_support:expose_darkness");
         assert.equal(enemyEffect?.label, "Lessen Darkness");
       },

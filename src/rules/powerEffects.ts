@@ -329,7 +329,7 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "body_reinforcement") {
-    return power.level === 1 ? "self" : "single";
+    return "single";
   }
 
   if (power.id === "crowd_control") {
@@ -349,11 +349,12 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "light_support") {
-    return variantId === "luminous_restoration" ? "single" : "self";
+    return variantId === "luminous_restoration" ? "single" : "multiple";
   }
 
   if (power.id === "necromancy") {
     if (
+      variantId === "summon_undead" ||
       variantId === "non_living_skeleton" ||
       variantId === "non_living_skeleton_king" ||
       variantId === "non_living_zombie" ||
@@ -366,6 +367,10 @@ export function getCastPowerTargetModeForVariant(
   }
 
   if (power.id === "shadow_control") {
+    if (variantId === "smoldering_shadow" && power.level >= 4) {
+      return "multiple";
+    }
+
     if (variantId === "shadow_fighter" || variantId === "dismiss_summon") {
       return "self";
     }
@@ -425,6 +430,14 @@ export function getCastPowerTargetLimit(
     }
 
     return power.level >= 2 ? 4 : 1;
+  }
+
+  if (
+    (power.id === "light_support" &&
+      (variantId === "let_there_be_light" || variantId === "lessen_darkness")) ||
+    (power.id === "shadow_control" && variantId === "smoldering_shadow" && power.level >= 4)
+  ) {
+    return 99;
   }
 
   return 1;
@@ -521,22 +534,11 @@ export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantO
 
   if (power.id === "necromancy") {
     const variants: CastPowerVariantOption[] = [
-      { id: "non_living_skeleton", label: NECROMANCY_SKELETON_SPELL_NAME },
+      { id: "summon_undead", label: "Non-Living Warriors" },
     ];
-
-    if (power.level >= 2) {
-      variants.push({ id: "non_living_zombie", label: NECROMANCY_ZOMBIE_SPELL_NAME });
-    }
 
     if (power.level >= 3) {
       variants.push({ id: "necrotic_touch", label: NECROMANCY_TOUCH_SPELL_NAME });
-    }
-
-    if (power.level >= 4) {
-      variants.push({
-        id: "non_living_skeleton_king",
-        label: NECROMANCY_SKELETON_KING_SPELL_NAME,
-      });
     }
 
     if (power.level >= 5) {
@@ -591,6 +593,10 @@ export function getCastPowerSummonOptions(
   variantId: CastPowerVariantId
 ): RuntimeSummonOption[] {
   if (power.id === "necromancy") {
+    if (variantId === "summon_undead") {
+      return getSummonOptionList(power);
+    }
+
     if (variantId === "non_living_skeleton") {
       return [
         {

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "power-spell-ingestion-decisions-current-v1",
+  "derivation": {
+    "method": "reverse_engineered_from_mechanics_and_ui_json",
+    "sourceFiles": [
+      "references/power_spell_mechanics_current.json",
+      "references/power_spell_ui_current.json",
+      "references/power_spell_ingestion_normalized_current.json"
+    ],
+    "scope": "Decision and gap log for turning source text into normalized ingestion data."
+  },
+  "resolutionPolicy": {
+    "askUserWhenMissing": [
+      "action cost",
+      "mana cost",
+      "targeting mode or valid target type",
+      "range",
+      "duration",
+      "unlock level",
+      "main mechanical effect",
+      "level scaling that changes mechanics",
+      "aura source ownership or cancel behavior",
+      "summon ownership, limit, or lifecycle behavior",
+      "control upkeep or release behavior",
+      "required combat UI input"
+    ],
+    "doNotAskUserWhenMissing": [
+      "flavor text",
+      "cosmetic-only description",
+      "tags",
+      "theme labels",
+      "implementation class name",
+      "internal effect class name"
+    ]
+  },
+  "layerDecisions": [
+    {
+      "id": "LAYER-01",
+      "decision": "Keep source-normalized ingestion separate from mechanics-ready JSON and UI-ready JSON.",
+      "reason": "The prior combined definition file mixed source normalization, runtime mechanics, and UI flow into one heavy schema."
+    },
+    {
+      "id": "LAYER-02",
+      "decision": "Use source-normalized ingestion for rule facts only, not TypeScript classes.",
+      "reason": "Action and Effect classes are implementation details; source text should normalize to game concepts."
+    },
+    {
+      "id": "LAYER-03",
+      "decision": "Derive mechanics-ready and UI-ready JSON from normalized ingestion plus explicit user decisions.",
+      "reason": "This keeps future power ingestion auditable and prevents hidden assumptions from entering runtime code."
+    }
+  ],
+  "currentInterpretationDecisions": [
+    {
+      "id": "CURRENT-01",
+      "topic": "Boost Physique id",
+      "decision": "Current mechanics still use spell id default for Boost Physique.",
+      "reason": "The runtime already depends on this id. Source-normalized data records the display name separately."
+    },
+    {
+      "id": "CURRENT-02",
+      "topic": "Release Control",
+      "decision": "Release Control is contextual, not a normal cast-form spell.",
+      "reason": "It is only meaningful when the caster already controls a target."
+    },
+    {
+      "id": "CURRENT-03",
+      "topic": "Dismiss Summon",
+      "decision": "Dismiss Summon is contextual for Necromancy and Shadow Control.",
+      "reason": "It is summon-management behavior, not a normal spell cast. The encounter UI exposes it in the caster action menu when the caster controls a matching summon."
+    },
+    {
+      "id": "CURRENT-04",
+      "topic": "Brute Defiance",
+      "decision": "Brute Defiance is passive-only, not a cast-form action.",
+      "reason": "Its current behavior is triggered from HP and daily-use state, then resolved through delayed stand-up."
+    },
+    {
+      "id": "CURRENT-05",
+      "topic": "Summon children",
+      "decision": "Current UI exposes Non-Living Warriors as the parent Necromancy spell, then exposes summon subtypes as the Summon choice.",
+      "reason": "This keeps the active cast flow aligned with Power > Spell > Summon while preserving subtype-specific summon templates."
+    }
+  ],
+  "knownGapsForFollowUp": [
+    {
+      "id": "GAP-01",
+      "topic": "Cast-form standardization",
+      "status": "completed",
+      "trackingTodoId": "CAST-UI-STD-01",
+      "gap": "Resolved: active cast UI now shows the Spell step even when only one spell variant is available.",
+      "desiredResolution": "Power > Spell is the stable active-cast baseline, followed only by spell-specific fields."
+    },
+    {
+      "id": "GAP-02",
+      "topic": "Aura targeting and lifecycle",
+      "status": "completed",
+      "trackingTodoId": "AURA-LIFECYCLE-01",
+      "gap": "Resolved: aura casts explicitly select beneficiaries where needed and linked effects remain tied to the caster-owned source aura.",
+      "desiredResolution": "Removing the source aura clears source-linked beneficiary effects."
+    },
+    {
+      "id": "GAP-03",
+      "topic": "Summon dismiss UI",
+      "status": "completed",
+      "trackingTodoId": "SUMMON-UI-01",
+      "gap": "Resolved: Dismiss Summon is exposed as a contextual caster action for owned Necromancy and Shadow Control summons.",
+      "desiredResolution": "Dismiss Summon remains contextual summon-management UI rather than a normal cast-form spell."
+    },
+    {
+      "id": "GAP-04",
+      "topic": "Necromancy parent summon action",
+      "status": "completed",
+      "gap": "Resolved: Necromancy summon UI now uses Power > Spell: Non-Living Warriors > Summon subtype.",
+      "desiredResolution": "Keep summon subtype choice in the Summon field under the parent spell."
+    }
+  ],
+  "futureIngestionChecklist": [
+    "Normalize each source text spell into active, passive, or contextual.",
+    "Record availability and level progression before deriving mechanics JSON.",
+    "Record mechanics-critical costs, targeting, range, duration, and scaling.",
+    "Record required player inputs before deriving UI JSON.",
+    "Record source ambiguities in this decision log instead of silently choosing defaults.",
+    "Ask the user only for blocking gaps."
+  ]
+}

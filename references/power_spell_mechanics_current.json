@@ -1,0 +1,362 @@
+{
+  "schemaVersion": "power-spell-mechanics-current-v1",
+  "derivation": {
+    "method": "reverse_engineered_from_current_runtime",
+    "sourceFiles": [
+      "src/powers/*.ts",
+      "src/rules/powerEffects.ts",
+      "src/rules/summons.ts",
+      "src/lib/combatEncounterSpecialActions.ts",
+      "src/engine/actions.ts",
+      "src/engine/effects.ts"
+    ],
+    "scope": "Only fields currently consumed by mechanics/runtime code are included."
+  },
+  "powers": [
+    {
+      "id": "awareness",
+      "stat": "PER",
+      "passives": [
+        {
+          "id": "alerted_self",
+          "effect": "alertness_skill_bonus",
+          "value": "powerLevel"
+        },
+        {
+          "id": "techno_invisibility_immunity",
+          "unlockLevel": 3,
+          "effect": "utility_trait"
+        }
+      ],
+      "spells": [
+        {
+          "id": "assess_character",
+          "name": "Assess Character",
+          "kind": "knowledge",
+          "actionCost": "bonus",
+          "manaCost": 0,
+          "target": { "mode": "single", "type": "character", "range": "line_of_sight" },
+          "effects": ["LogEffect", "HistoryEffect"],
+          "rules": [
+            "allowedCr = min(caster PER + powerLevel, crCapByLevel)",
+            "crCapByLevel = {1:6,2:9,3:12,4:15,5:18}",
+            "target CR above allowedCr blocks the spell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "body_reinforcement",
+      "stat": "STAM",
+      "passives": [
+        {
+          "id": "brute_defiance",
+          "name": "Brute Defiance",
+          "trigger": "currentHp between 0 and -5",
+          "pendingState": "body_reinforcement_revive",
+          "uses": { "scope": "daily", "max": 1 },
+          "reviveHpByLevel": { "1": 1, "2": 2, "3": 4, "4": 8, "5": 16 }
+        }
+      ],
+      "spells": [
+        {
+          "id": "default",
+          "name": "Boost Physique",
+          "kind": "buff",
+          "actionCost": "standard",
+          "manaCostByLevel": { "1": 2, "2": 2, "3": 3, "4": 3, "5": 4 },
+          "target": { "mode": "single", "level1Targets": "self_only", "level2PlusTargets": "friendly_single_buff_target" },
+          "inputs": { "stat": ["STR", "DEX", "STAM"] },
+          "effects": ["BuffEffect", "LogEffect"],
+          "buff": {
+            "statBonusByLevel": { "1": 1, "2": 1, "3": 2, "4": 2, "5": 3 },
+            "damageReductionByLevel": { "4": 1, "5": 2 },
+            "stackKey": "body_reinforcement:selectedStat"
+          }
+        }
+      ]
+    },
+    {
+      "id": "crowd_control",
+      "stat": "CHA",
+      "passives": [
+        { "id": "crowd_management", "effect": "social_skill_bonus", "value": "powerLevel" },
+        { "id": "compulsion_guard", "unlockLevel": 5, "effect": "utility_trait" }
+      ],
+      "spells": [
+        {
+          "id": "crowd_control",
+          "name": "Control Entity",
+          "kind": "control",
+          "manaCost": 0,
+          "actionCostByLevel": { "1": "standard", "2": "standard", "3": "standard", "4": "bonus", "5": "bonus" },
+          "target": {
+            "mode": "single_or_multiple",
+            "limitByLevel": { "1": 1, "2": 1, "3": 2, "4": 2, "5": 3 },
+            "typeByLevel": { "1": ["living"], "5": ["living", "non_living_except_other_occult_summons"] },
+            "disposition": "enemy"
+          },
+          "effects": ["StatusEffect", "OngoingStateEffect", "LogEffect"],
+          "rules": [
+            "contest caster CHA + INT vs target WITS + CHA; tie fails",
+            "adds Paralyzed and Controlled by caster status on success",
+            "creates crowd_control ongoing state with maintenance mana",
+            "blocks targets with crowd_control_immunity"
+          ]
+        },
+        {
+          "id": "release_control",
+          "name": "Release Control",
+          "kind": "contextual_control",
+          "manaCost": 0,
+          "target": { "mode": "multiple", "type": "targets_controlled_by_caster" },
+          "effects": ["StatusRemovalEffect", "OngoingStateEffect", "LogEffect"]
+        }
+      ]
+    },
+    {
+      "id": "elementalist",
+      "stat": "INT",
+      "spells": [
+        {
+          "id": "elemental_bolt",
+          "name": "Elemental Bolt",
+          "kind": "attack",
+          "actionCost": "standard",
+          "target": { "mode": "single", "disposition": "enemy", "rangeMeters": 25 },
+          "inputs": { "damageType": "elemental_or_necrotic_by_level" },
+          "effects": ["DamageEffect", "HealingEffect", "UsageCounterEffect", "LogEffect"],
+          "damage": "INT + powerLevel",
+          "manaCost": "1, or 2 for necrotic",
+          "rules": ["levels 1-2 lock first selected damage type until long rest", "necrotic heals undead instead of damaging them"]
+        },
+        {
+          "id": "elemental_cantrip",
+          "name": "Elemental Cantrip",
+          "kind": "attack",
+          "unlockLevel": 2,
+          "manaCost": 0,
+          "target": { "mode": "single_or_multiple", "limitByLevel": { "2": 1, "3": 1, "4": 1, "5": 3 }, "disposition": "enemy", "rangeMeters": 25 },
+          "inputs": { "damageType": ["fire", "cold", "lightning", "acid"] },
+          "effects": ["DamageEffect", "HealingEffect", "LogEffect"],
+          "damage": "INT, or INT + 1 at level 4+"
+        },
+        {
+          "id": "elemental_split",
+          "name": "Elemental Split",
+          "kind": "attack",
+          "unlockLevel": 2,
+          "actionCost": "standard",
+          "manaCost": "1 + bonusManaSpend",
+          "target": { "mode": "multiple", "limitByLevel": { "2": 2, "3": 3, "4": 4, "5": 5 }, "disposition": "enemy", "rangeMeters": 25 },
+          "inputs": { "damageType": "elemental_or_necrotic_by_level", "bonusManaSpend": "level 3+" },
+          "effects": ["DamageEffect", "HealingEffect", "LogEffect"],
+          "damage": "min(INT + powerLevel, ceil((INT + powerLevel) / 2) + bonusManaSpend * bonusPerMana)"
+        }
+      ]
+    },
+    {
+      "id": "healing",
+      "stat": "INT",
+      "spells": [
+        {
+          "id": "heal_living",
+          "name": "Heal Living",
+          "kind": "restoration",
+          "actionCost": "standard",
+          "manaCostByLevel": { "1": 2, "2": 2, "3": 2, "4": 2, "5": 2 },
+          "target": { "mode": "single_or_multiple", "limitByLevel": { "1": 1, "2": 4, "3": 4, "4": 4, "5": 4 }, "disposition": "friendly_healable" },
+          "inputs": { "healingAllocations": "required when multiple targets" },
+          "effects": ["HealingEffect", "DamageEffect", "StatusRemovalEffect", "HistoryEffect", "UsageCounterEffect", "LogEffect"],
+          "healing": "INT + powerLevel",
+          "rules": ["removes bleeding", "level 4+ logs limb-regrowth note", "level 5 overheal uses per-target daily counter", "undead targets take radiant damage instead of healing"]
+        },
+        {
+          "id": "holy_purge",
+          "name": "Holy Purge",
+          "kind": "restoration",
+          "unlockLevel": 3,
+          "actionCost": "standard",
+          "manaCost": 2,
+          "target": { "mode": "single", "disposition": "friendly_healable" },
+          "effects": ["StatusRemovalEffect", "LogEffect"],
+          "rules": ["removes poison, disease, and curse"]
+        },
+        {
+          "id": "healing_touch",
+          "name": "Healing Touch",
+          "kind": "restoration",
+          "unlockLevel": 3,
+          "actionCost": "standard",
+          "manaCost": 0,
+          "target": { "mode": "single", "disposition": "friendly_healable" },
+          "effects": ["HealingEffect", "DamageEffect", "StatusRemovalEffect", "UsageCounterEffect", "LogEffect"],
+          "healing": "ceil((INT + powerLevel) / 2)",
+          "uses": { "scope": "perTargetDaily", "max": 2 },
+          "rules": ["removes bleeding", "undead targets take radiant damage instead of healing"]
+        }
+      ]
+    },
+    {
+      "id": "light_support",
+      "stat": "APP",
+      "spells": [
+        {
+          "id": "let_there_be_light",
+          "name": "Let There Be Light",
+          "kind": "aura",
+          "actionCost": "standard",
+          "manaCost": 2,
+          "target": { "mode": "multiple", "explicitSelectedTargets": true, "validTargets": "caster plus any group-buff-capable combatants" },
+          "effects": ["AuraEffect", "LogEffect"],
+          "aura": { "sourceLinked": true, "stackKey": "light_support", "shareMode": "aura" },
+          "bonusesByLevel": {
+            "1": { "hit": 1, "damageReduction": 1, "soak": 0 },
+            "2": { "hit": 2, "damageReduction": 1, "soak": 0 },
+            "3": { "hit": 3, "damageReduction": 1, "soak": 1 },
+            "4": { "hit": 3, "damageReduction": 2, "soak": 1 },
+            "5": { "hit": 4, "damageReduction": 2, "soak": 2 }
+          }
+        },
+        {
+          "id": "lessen_darkness",
+          "name": "Lessen Darkness",
+          "kind": "aura",
+          "unlockLevel": 5,
+          "manaCost": 0,
+          "target": { "mode": "multiple", "explicitSelectedTargets": true, "validTargets": "non-caster combatants" },
+          "requires": "active let_there_be_light aura source",
+          "effects": ["AuraEffect", "LogEffect"],
+          "rules": ["selected linked targets apply -1 physical/elemental resistance", "updates the source aura target list so source removal clears linked effects"]
+        },
+        {
+          "id": "luminous_restoration",
+          "name": "Luminous Restoration",
+          "kind": "restoration",
+          "unlockLevel": 3,
+          "manaCost": 0,
+          "target": { "mode": "single", "disposition": "friendly" },
+          "effects": ["ManaEffect", "LogEffect"],
+          "manaRestored": "APP * multiplierByLevel",
+          "multiplierByLevel": { "3": 1, "4": 2, "5": 3 }
+        }
+      ]
+    },
+    {
+      "id": "necromancy",
+      "stat": "APP",
+      "spells": [
+        {
+          "id": "summon_undead",
+          "name": "Non-Living Warriors",
+          "kind": "summon",
+          "manaCost": "selected summon option",
+          "target": { "mode": "self" },
+          "inputs": { "summonOption": ["non_living_skeleton", "non_living_zombie", "non_living_skeleton_king"] },
+          "effects": ["SummonEffect", "AuraEffect", "LogEffect"],
+          "summon": { "templatesByLevel": { "1": ["non_living_skeleton"], "2": ["non_living_skeleton", "non_living_zombie"], "3": ["non_living_skeleton", "non_living_zombie"], "4": ["non_living_skeleton", "non_living_zombie", "non_living_skeleton_king"], "5": ["non_living_skeleton", "non_living_zombie", "non_living_skeleton_king"] }, "replacesSameTemplate": true }
+        },
+        {
+          "id": "necrotic_touch",
+          "name": "Necrotic Touch",
+          "kind": "attack",
+          "unlockLevel": 3,
+          "manaCost": 3,
+          "target": { "mode": "single", "disposition": "enemy", "rangeMeters": 25 },
+          "inputs": { "attackOutcome": ["hit", "miss"] },
+          "effects": ["DamageEffect", "HealingEffect", "LogEffect"],
+          "damage": "APP + powerLevel, or APP + 2 * powerLevel at level 5",
+          "rules": ["living targets take 1.5x necrotic damage", "undead targets are healed", "shadow/incorporeal targets are blocked", "caster heals by powerLevel on hit"]
+        },
+        {
+          "id": "necromancers_bless",
+          "name": "Necromancer's Bless",
+          "kind": "restoration",
+          "unlockLevel": 5,
+          "manaCost": 6,
+          "target": { "mode": "single", "type": "loaded_character_not_self" },
+          "effects": ["ResourceEffect", "StatusRemovalEffect", "LogEffect"],
+          "rules": ["sets target HP to 1", "removes bleeding, dead, dying, unconscious"]
+        },
+        {
+          "id": "dismiss_summon",
+          "name": "Dismiss Summon",
+          "kind": "contextual_summon",
+          "manaCost": 0,
+          "target": { "mode": "self" },
+          "effects": ["SummonEffect", "LogEffect"],
+          "rules": ["dismisses the selected active summon controlled by caster from this power"]
+        }
+      ]
+    },
+    {
+      "id": "shadow_control",
+      "stat": "MAN",
+      "spells": [
+        {
+          "id": "smoldering_shadow",
+          "name": "Smoldering Shadow",
+          "kind": "aura",
+          "manaCost": "2 self, 4 aura",
+          "target": { "mode": "self or multiple", "explicitSelectedTargetsWhenAuraMode": true, "validAuraTargets": "caster plus any group-buff-capable combatants" },
+          "inputs": { "castMode": ["self", "aura"] },
+          "effects": ["AuraEffect", "LogEffect"],
+          "bonusesByLevel": {
+            "1": { "stealth": 1, "armorClass": 1 },
+            "2": { "stealth": 2, "armorClass": 1 },
+            "3": { "stealth": 3, "armorClass": 2 },
+            "4": { "stealth": 4, "armorClass": 2 },
+            "5": { "stealth": 5, "armorClass": 3 }
+          }
+        },
+        {
+          "id": "shadow_walk",
+          "name": "Shadow Walk",
+          "kind": "utility",
+          "unlockLevel": 2,
+          "manaCost": 2,
+          "target": { "mode": "single", "type": "living_not_self", "range": "25m * powerLevel" },
+          "effects": ["LogEffect"]
+        },
+        {
+          "id": "shadow_walk_attack",
+          "name": "Shadow Walk and Attack",
+          "kind": "utility",
+          "unlockLevel": 2,
+          "manaCost": 2,
+          "target": { "mode": "single", "type": "living_enemy", "range": "25m * powerLevel" },
+          "effects": ["LogEffect"]
+        },
+        {
+          "id": "shadow_manipulation",
+          "name": "Shadow Manipulation",
+          "kind": "attack",
+          "unlockLevel": 3,
+          "manaCost": 2,
+          "target": { "mode": "single", "disposition": "enemy", "rangeMeters": 25 },
+          "effects": ["DamageEffect", "LogEffect"],
+          "damage": "MAN + powerLevel shadow damage, soak mitigation"
+        },
+        {
+          "id": "shadow_fighter",
+          "name": "Shadow Fighter",
+          "kind": "summon",
+          "unlockLevel": 5,
+          "manaCost": 4,
+          "target": { "mode": "self" },
+          "effects": ["SummonEffect", "AuraEffect", "LogEffect"],
+          "summon": { "templateId": "shadow_fighter", "quantity": 1, "replacesAnySamePowerSummon": true }
+        },
+        {
+          "id": "dismiss_summon",
+          "name": "Dismiss Summon",
+          "kind": "contextual_summon",
+          "manaCost": 0,
+          "target": { "mode": "self" },
+          "effects": ["SummonEffect", "LogEffect"],
+          "rules": ["dismisses the selected active summon controlled by caster from this power"]
+        }
+      ]
+    }
+  ]
+}

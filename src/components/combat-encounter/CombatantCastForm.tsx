@@ -34,7 +34,7 @@ export function CombatantCastForm({ state, embedded = false }: CombatantCastForm
 
             {state.shouldShowVariantField ? (
               <label className="dm-field">
-                <span>Action</span>
+                <span>Spell</span>
                 <select
                   value={state.resolvedVariantId}
                   onChange={(event) => state.selectVariant(event.target.value as CastPowerVariantId)}
@@ -42,6 +42,26 @@ export function CombatantCastForm({ state, embedded = false }: CombatantCastForm
                   {state.variantOptions.map((option) => (
                     <option key={option.id} value={option.id}>
                       {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {state.shouldShowModeField ? (
+              <label className="dm-field">
+                <span>Mode</span>
+                <select
+                  value={state.resolvedCastMode}
+                  onChange={(event) =>
+                    state.selectCastMode(
+                      event.target.value === "aura" ? "aura" : ("self" as CastPowerMode)
+                    )
+                  }
+                >
+                  {state.modeOptions.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {mode === "aura" ? "Aura" : "Self"}
                     </option>
                   ))}
                 </select>
@@ -70,7 +90,9 @@ export function CombatantCastForm({ state, embedded = false }: CombatantCastForm
                       })}
                     </div>
                     <small className="dm-field-hint">
-                      Up to {state.targetLimit} target{state.targetLimit === 1 ? "" : "s"}.
+                      {state.targetLimit >= state.targetOptions.length
+                        ? "Select affected targets."
+                        : `Up to ${state.targetLimit} target${state.targetLimit === 1 ? "" : "s"}.`}
                     </small>
                   </>
                 ) : (
@@ -85,23 +107,6 @@ export function CombatantCastForm({ state, embedded = false }: CombatantCastForm
                     ))}
                   </select>
                 )}
-              </label>
-            ) : null}
-
-            {state.shouldShowModeField ? (
-              <label className="dm-field">
-                <span>Mode</span>
-                <select
-                  value={state.resolvedCastMode}
-                  onChange={(event) =>
-                    state.selectCastMode(
-                      event.target.value === "aura" ? "aura" : ("self" as CastPowerMode)
-                    )
-                  }
-                >
-                  <option value="self">Self</option>
-                  <option value="aura">Aura</option>
-                </select>
               </label>
             ) : null}
 

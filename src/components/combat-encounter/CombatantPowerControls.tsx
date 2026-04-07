@@ -27,6 +27,10 @@ type CombatantPowerControlsProps = {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
   }) => string | null;
+  requestSummonDismiss: (payload: {
+    casterView: EncounterParticipantView;
+    summonView: EncounterParticipantView;
+  }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
 
@@ -37,6 +41,7 @@ export function CombatantPowerControls({
   requestCast,
   requestPhysicalAttack,
   requestControlRelease,
+  requestSummonDismiss,
   updateCharacter,
 }: CombatantPowerControlsProps) {
   const castState = useCombatantCastState({
@@ -52,6 +57,7 @@ export function CombatantPowerControls({
   const character = view.character;
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [releaseControlError, setReleaseControlError] = useState<string | null>(null);
+  const [summonDismissError, setSummonDismissError] = useState<string | null>(null);
   const actionsPopoverRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -89,12 +95,30 @@ export function CombatantPowerControls({
   const controlledTargets = crowdControlPower
     ? encounterParticipants.filter((targetView) => isControlledByCaster(targetView, character.id))
     : [];
+  const dismissibleSummons = encounterParticipants.filter(
+    (targetView) =>
+      targetView.transientCombatant !== null &&
+      targetView.transientCombatant.controllerCharacterId === character.id &&
+      (
+        targetView.transientCombatant.sourcePowerId === "necromancy" ||
+        targetView.transientCombatant.sourcePowerId === "shadow_control"
+      )
+  );
 
   function handleReleaseControl(targetView: EncounterParticipantView): void {
     setReleaseControlError(
       requestControlRelease({
         casterView: view,
         targetView,
+      })
+    );
+  }
+
+  function handleDismissSummon(summonView: EncounterParticipantView): void {
+    setSummonDismissError(
+      requestSummonDismiss({
+        casterView: view,
+        summonView,
       })
     );
   }
@@ -145,6 +169,27 @@ export function CombatantPowerControls({
                   </div>
                   {releaseControlError ? (
                     <p className="dm-error">{releaseControlError}</p>
+                  ) : null}
+                </div>
+              ) : null}
+              {dismissibleSummons.length > 0 ? (
+                <div className="dm-combatant-tool-subsection">
+                  <p className="section-kicker">Summons</p>
+                  <p className="dm-summary-line">Dismiss currently controlled summons here.</p>
+                  <div className="dm-target-multi-grid">
+                    {dismissibleSummons.map((summonView) => (
+                      <button
+                        key={summonView.participant.characterId}
+                        type="button"
+                        className="dm-target-chip"
+                        onClick={() => handleDismissSummon(summonView)}
+                      >
+                        Dismiss {summonView.participant.displayName}
+                      </button>
+                    ))}
+                  </div>
+                  {summonDismissError ? (
+                    <p className="dm-error">{summonDismissError}</p>
                   ) : null}
                 </div>
               ) : null}

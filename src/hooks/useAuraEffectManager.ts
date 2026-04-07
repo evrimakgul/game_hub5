@@ -80,28 +80,6 @@ export function useAuraEffectManager({
     return (character.sheet.activePowerEffects ?? []).find((effect) => effect.id === sourceEffect.id) ?? sourceEffect;
   }
 
-  function getCasterPartyId(sourceEffect: ActivePowerEffect): string | null {
-    return (
-      encounterParticipants.find(
-        ({ participant }) => participant.characterId === sourceEffect.casterCharacterId
-      )?.participant.partyId ?? null
-    );
-  }
-
-  function isEnemyLightAuraTarget(
-    sourceEffect: ActivePowerEffect,
-    targetView: EncounterParticipantView
-  ): boolean {
-    const casterPartyId = getCasterPartyId(sourceEffect);
-    return (
-      sourceEffect.powerId === "light_support" &&
-      sourceEffect.sourceLevel >= 5 &&
-      targetView.participant.partyId !== null &&
-      casterPartyId !== null &&
-      targetView.participant.partyId !== casterPartyId
-    );
-  }
-
   function canSelectAuraTarget(
     sourceEffect: ActivePowerEffect,
     targetView: EncounterParticipantView
@@ -114,10 +92,7 @@ export function useAuraEffectManager({
       return true;
     }
 
-    return (
-      canEncounterTargetReceiveGroupBuff(targetView) ||
-      isEnemyLightAuraTarget(sourceEffect, targetView)
-    );
+    return canEncounterTargetReceiveGroupBuff(targetView);
   }
 
   function applyAuraTargets(sourceEffect: ActivePowerEffect, rawTargetIds: string[]): void {
@@ -177,7 +152,7 @@ export function useAuraEffectManager({
       }
 
       const nextSharedEffect = buildLinkedAuraEffectForTarget(latestSourceEffect, targetId, {
-        targetDisposition: isEnemyLightAuraTarget(latestSourceEffect, targetView) ? "enemy" : "ally",
+        targetDisposition: "ally",
       });
       const conflictingAura = (targetCharacter.sheet.activePowerEffects ?? []).find(
         (candidate) =>

@@ -402,6 +402,48 @@ export function CombatEncounterPage() {
     });
   }
 
+  function requestSummonDismiss(payload: {
+    casterView: EncounterParticipantView;
+    summonView: EncounterParticipantView;
+  }): string | null {
+    const casterCharacter = payload.casterView.character;
+    const summon = payload.summonView.transientCombatant;
+    if (!casterCharacter || !summon) {
+      return "Summon dismissal is no longer available for this combatant.";
+    }
+
+    if (summon.controllerCharacterId !== casterCharacter.id) {
+      return "That summon is not controlled by this caster.";
+    }
+
+    const selectedPower =
+      casterCharacter.sheet.powers.find((power) => power.id === summon.sourcePowerId) ?? null;
+    if (
+      !selectedPower ||
+      (selectedPower.id !== "necromancy" && selectedPower.id !== "shadow_control")
+    ) {
+      return "That summon does not resolve to a dismissible power.";
+    }
+
+    return requestCast({
+      casterCharacter,
+      casterDisplayName: payload.casterView.participant.displayName,
+      selectedPower,
+      selectedVariantId: "dismiss_summon",
+      attackOutcome: "unresolved",
+      selectedTargetIds: [casterCharacter.id],
+      fallbackTargetIds: [casterCharacter.id],
+      healingAllocations: {},
+      selectedStatId: null,
+      castMode: "self",
+      selectedDamageType: null,
+      bonusManaSpend: 0,
+      selectedSummonOptionId: summon.id,
+      encounterParticipants,
+      itemsById,
+    });
+  }
+
   function closePendingCastConfirmation(): void {
     setPendingCastConfirmation(null);
     setPendingCastError(null);
@@ -575,6 +617,7 @@ export function CombatEncounterPage() {
               requestCast={requestCast}
               requestPhysicalAttack={requestPhysicalAttack}
               requestControlRelease={requestControlRelease}
+              requestSummonDismiss={requestSummonDismiss}
               updateCharacter={updateEncounterCharacter}
             />
         </section>

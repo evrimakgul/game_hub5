@@ -181,9 +181,7 @@ This roadmap is the active implementation source of truth for this branch.
 
 ### 5.6 `Necromancy`
 - `Necromancy` now exposes:
-  - `Non-Living Skeleton`
-  - `Non-Living Skeleton King`
-  - `Non-Living Zombie`
+  - `Non-Living Warriors` as the parent summon spell, with `Non-Living Skeleton`, `Non-Living Skeleton King`, and `Non-Living Zombie` selected through the `Summon` field.
   - `Necrotic Touch`
   - `Necromancer's Bless`
 - Passive `Necromancer's Deception` progression is now reflected in the passive provider.
@@ -198,6 +196,30 @@ This roadmap is the active implementation source of truth for this branch.
   - `Shadow Fighter`
 - Passive `Sleek Visage` cosmetic behavior is reflected through the passive provider.
 - `Smoldering Shadow` now drops the old intimidation bonus and uses the newer stealth + AC progression.
+
+## Completed Follow-Up: Encounter Cast UI, Aura Lifecycle, And Summon Dismiss
+
+### 6.1 Cast Form Standardization
+- Active cast forms now consistently expose the `Spell` step, including powers that currently have only one visible spell.
+- Spell-specific fields remain conditional after the spell step, such as target, stat, mode, damage type, summon, attack resolution, extra mana, and healing allocation.
+- `Necromancy` summon casting now uses `Power > Spell: Non-Living Warriors > Summon subtype`.
+
+### 6.2 Aura Lifecycle
+- Aura spells remain dedicated aura spells.
+- Aura beneficiary selection is explicit where the aura can affect other combatants.
+- Linked aura effects remain tied to the caster-owned source aura, so removing the source aura clears beneficiary effects.
+- `Lessen Darkness` updates the source aura target list so its linked debuffs are cleaned up with the source.
+
+### 6.3 Summon Dismiss UI
+- `Necromancy` and `Shadow Control` summons now expose contextual `Dismiss Summon` actions in the caster action menu.
+- Dismiss remains summon-management behavior, not a normal cast-form spell.
+
+### 6.4 Ingestion Reference Sync
+- The reverse-engineered ingestion reference files now describe the updated cast UI, aura lifecycle, and summon dismiss behavior:
+  - `references/power_spell_ingestion_normalized_current.json`
+  - `references/power_spell_ingestion_decisions_current.json`
+  - `references/power_spell_mechanics_current.json`
+  - `references/power_spell_ui_current.json`
 
 ## Validation
 - After each meaningful task group run:

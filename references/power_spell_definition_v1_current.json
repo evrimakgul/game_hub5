@@ -1,0 +1,3191 @@
+{
+  "schemaVersion": "power-spell-definition-v1",
+  "notes": [
+    "This file maps the current branch powers and spells into the v1 definition structure.",
+    "It is intentionally verbose so the team can judge whether the structure is too decorated.",
+    "Unnamed cantrips/passives are flagged in validation warnings."
+  ],
+  "powerDefinitions": [
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/awareness.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "awareness",
+        "name": "Awareness",
+        "abbreviation": "AW",
+        "governingStat": "PER",
+        "theme": "",
+        "summary": "Perception-based passive alertness and information gathering.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Active Awareness spells are bonus action, 0 mana, and instant in source data."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": "bonus",
+        "defaultManaCost": 0,
+        "defaultRange": "line_of_sight_or_touch",
+        "defaultDuration": "instant"
+      },
+      "spells": [
+        {
+          "id": "alerted_self",
+          "name": "Alerted Self",
+          "abbreviation": "AS",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Passive alertness bonus equal to Awareness level.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "passive"
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Alertness bonus equals current Awareness level."
+            ],
+            "implementationNotes": [
+              "Implemented by AwarenessPassiveProvider."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Passive alertness bonus begins."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Bonus continues scaling by level."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Bonus continues scaling by level."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Bonus continues scaling by level."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Bonus continues scaling by level."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "awakened_insight",
+          "name": "Awakened Insight",
+          "abbreviation": "AI",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Temporary inspiration support passive.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "passive"
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Source JSON: 1 temporary inspiration per session, non-stacking, blocked by uninspired."
+            ],
+            "implementationNotes": [
+              "Not implemented in current passive provider."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Source-defined from level 1."
+              ]
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": false,
+              "ruleText": []
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Current runtime does not implement Awakened Insight."
+            ]
+          }
+        },
+        {
+          "id": "assess_character",
+          "name": "Assess Character",
+          "abbreviation": "AC",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "knowledge",
+          "summary": "Read a target character and record identified information.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "ally",
+              "enemy",
+              "neutral"
+            ],
+            "canTargetAllies": true,
+            "canTargetEnemies": true,
+            "requiresLineOfSight": true,
+            "range": {
+              "type": "line_of_sight"
+            }
+          },
+          "costs": {
+            "actionCost": "bonus",
+            "manaCost": 0
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "LogEffect",
+              "HistoryEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime writes a history entry, not a standalone knowledge card.",
+              "Target CR must not exceed the caster threshold."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Reveals stats and skills. CR limit PER + 1 capped at 6."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Adds powers and specials. CR limit PER + 2 capped at 9."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "CR limit PER + 3 capped at 12. Ignores techno-invisibility devices."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "CR limit PER + 4 capped at 15."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "CR limit PER + 5 capped at 18. Source says results may be shared with party members."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "artifact_appraisal",
+          "name": "Artifact Appraisal",
+          "abbreviation": "AA",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "knowledge",
+          "summary": "Identify an item quality band by touch.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "item"
+            ],
+            "range": {
+              "type": "touch"
+            }
+          },
+          "costs": {
+            "actionCost": "bonus",
+            "manaCost": 0
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Source JSON identifies item quality up to a level-specific maximum."
+            ],
+            "implementationNotes": [
+              "Present in source JSON, not wired in current runtime module."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Identifies common/uncommon/masterwork."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Identifies rare or lesser."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Identifies epic or lesser."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Identifies legendary or lesser."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Identifies demonic/celestial/mythical or lesser."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Current awarenessModule only exposes assess_character."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/bodyReinforcement.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "body_reinforcement",
+        "name": "Body Reinforcement",
+        "abbreviation": "BR",
+        "governingStat": "STAM",
+        "theme": "",
+        "summary": "Physical reinforcement buff plus revive cantrip/passive.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Main buff spell is standard action with a timed duration."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": "standard",
+        "defaultManaCost": null,
+        "defaultRange": null,
+        "defaultDuration": "timed"
+      },
+      "spells": [
+        {
+          "id": "default",
+          "name": "Boost Physique",
+          "abbreviation": "BP",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "buff",
+          "summary": "Increase STR, DEX, or STAM and later add damage reduction.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": true,
+            "showStatStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "self",
+              "ally"
+            ],
+            "canTargetSelf": true,
+            "canTargetAllies": true,
+            "range": {
+              "type": "self_or_touch"
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 2,
+            "manaCostByLevel": {
+              "1": 2,
+              "2": 2,
+              "3": 3,
+              "4": 3,
+              "5": 4
+            }
+          },
+          "duration": {
+            "type": "timed",
+            "durationByLevel": {
+              "1": "10 minutes or 1 portal duration",
+              "2": "10 minutes or 1 portal duration",
+              "3": "10 minutes or 1 portal duration",
+              "4": "30 minutes outside portals or 1 portal duration",
+              "5": "8 hours outside portals or 1 portal duration"
+            }
+          },
+          "mechanics": {
+            "effects": [
+              "BuffEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime spell id is still default.",
+              "User picks one stat from STR / DEX / STAM."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Self target only. +1 to one physical stat."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Touch target. Still +1."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "+2 to one physical stat."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "+2 to one physical stat and +1 DR."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "+3 to one physical stat and +2 DR."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "brute_defiance",
+          "name": "Brute Defiance",
+          "abbreviation": "BD",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Source cantrip/passive that stands the caster back up after incapacitation.",
+          "flavorText": "",
+          "unlockLevel": 2,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "triggered_passive"
+          },
+          "mechanics": {
+            "effects": [
+              "ResourceEffect"
+            ],
+            "resourceChanges": [
+              "currentHp"
+            ],
+            "specialRulesText": [
+              "Source cantrip trigger is incapacitated, usable once per day."
+            ],
+            "implementationNotes": [
+              "Source JSON stores this under cantrip, not as a named level spell."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Stand up with 1 HP after a turn. 1/day."
+              ]
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Stand up with 4 HP after a turn. 1/day."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Current runtime module does not expose a dedicated brute_defiance spell id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/crowdControl.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "crowd_control",
+        "name": "Crowd Control",
+        "abbreviation": "CC",
+        "governingStat": "CHA",
+        "theme": "",
+        "summary": "Control contest power with contextual release and passive social bonuses.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Main control spell costs 0 mana and is maintained over time.",
+          "Control uses a CHA + INT vs WITS + CHA contest."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": null,
+        "defaultManaCost": 0,
+        "defaultRange": null,
+        "defaultDuration": null
+      },
+      "spells": [
+        {
+          "id": "crowd_management",
+          "name": "Crowd Management",
+          "abbreviation": "CM",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Passive social skill bonus.",
+          "flavorText": "",
+          "unlockLevel": 2,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "passive"
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Current passive provider gives Social + power level."
+            ],
+            "implementationNotes": [
+              "Implemented by CrowdControlPassiveProvider."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Social + current Crowd Control level."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Social + current Crowd Control level."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Social + current Crowd Control level."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Social + current Crowd Control level."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "compulsion_guard",
+          "name": "Compulsion Guard",
+          "abbreviation": "CG",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Utility trait granted at level 5 by the passive provider.",
+          "flavorText": "",
+          "unlockLevel": 5,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "passive"
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Current runtime exposes this as a utility trait only."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Compulsion Guard trait appears at level 5."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "crowd_control",
+          "name": "Control Entity",
+          "abbreviation": "CE",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "control",
+          "summary": "Contest-based paralysis and control effect with upkeep.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "multiple",
+            "targetCount": 1,
+            "targetCountByLevel": {
+              "1": 1,
+              "2": 1,
+              "3": 2,
+              "4": 2,
+              "5": 3
+            },
+            "validTargetTypes": [
+              "living",
+              "non_living_except_other_occult_summons"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0
+          },
+          "duration": {
+            "type": "maintained",
+            "requiresUpkeep": true,
+            "upkeepCost": "1 mana per turn or per target per turn by level",
+            "endsOnCasterCancel": true,
+            "endsOnCasterLoss": true
+          },
+          "mechanics": {
+            "effects": [
+              "StatusEffect",
+              "OngoingStateEffect",
+              "LogEffect"
+            ],
+            "statusChanges": [
+              "Paralyzed",
+              "Controlled by caster"
+            ],
+            "specialRulesText": [
+              "Current runtime checks crowd_control_immunity before allowing the cast.",
+              "Break rules vary by level and are stored in ongoing state."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "1 target. Breaks on damage from anyone. Maintain 1 mana/turn."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Simple commands allowed with bonus action."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "2 targets. Breaks on caster damage only."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Cast becomes bonus action. Commands become free. Damage no longer breaks control."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "3 targets. May target non-living except other occult summons."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "release_control",
+          "name": "Release Control",
+          "abbreviation": "RC",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "control",
+          "summary": "Contextual release action for already controlled targets.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": true,
+            "contextualActionOnly": true
+          },
+          "targeting": {
+            "targetMode": "multiple",
+            "validTargetTypes": [
+              "controlled_character"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "contextual"
+            }
+          },
+          "costs": {
+            "actionCost": "free",
+            "manaCost": 0
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "StatusRemovalEffect",
+              "OngoingStateEffect",
+              "LogEffect"
+            ],
+            "statusChanges": [
+              "Remove Paralyzed",
+              "Remove Controlled by caster"
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Available as a contextual release for controlled targets."
+              ]
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": false,
+              "ruleText": []
+            }
+          },
+          "validation": {
+            "warnings": [
+              "This is a runtime/contextual action, not a source-defined spell in powers.json."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/elementalist.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "elementalist",
+        "name": "Elementalist",
+        "abbreviation": "",
+        "governingStat": "INT",
+        "theme": "",
+        "summary": "Direct elemental damage power with a cantrip and split variant.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Elementalist attack range is standard (25m) in source JSON."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": "standard",
+        "defaultManaCost": null,
+        "defaultRange": "25m",
+        "defaultDuration": null
+      },
+      "spells": [
+        {
+          "id": "elemental_bolt",
+          "name": "Elemental Bolt",
+          "abbreviation": "EB",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "attack",
+          "summary": "Main elemental damage spell with damage-type selection and split scaling.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true,
+            "showDamageTypeStep": true
+          },
+          "targeting": {
+            "targetMode": "multiple",
+            "targetCount": 1,
+            "targetCountByLevel": {
+              "1": 1,
+              "2": 2,
+              "3": 2,
+              "4": 3,
+              "5": 4
+            },
+            "validTargetTypes": [
+              "character",
+              "transient_combatant"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 1,
+            "bonusManaAllowed": true,
+            "bonusManaScalingText": "Split bonus rules appear at level 3+ and necrotic cost variant at level 5."
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "DamageEffect",
+              "HealingEffect",
+              "UsageCounterEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime locks the damage type at low level until long rest.",
+              "Necrotic can heal undead instead of damaging them."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 1 damage, 1 target, locked element until long rest."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 2 damage, split between up to 2 targets."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 3 damage, can change elemental type at will."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 4 damage, split between up to 3 targets."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 5 damage, split between up to 4 targets. Necrotic costs more mana."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "elemental_cantrip",
+          "name": "Elemental Cantrip",
+          "abbreviation": "EC",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "attack",
+          "summary": "0-mana elemental damage cantrip.",
+          "flavorText": "",
+          "unlockLevel": 2,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true,
+            "showDamageTypeStep": true
+          },
+          "targeting": {
+            "targetMode": "multiple",
+            "targetCount": 1,
+            "targetCountByLevel": {
+              "2": 1,
+              "4": 1,
+              "5": 2
+            },
+            "validTargetTypes": [
+              "character",
+              "transient_combatant"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "DamageEffect",
+              "HealingEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Source cantrip disallows necrotic damage."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "INT damage, 1 target, standard action."
+              ]
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 1 damage, bonus action if no other harming spell was cast."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 1 damage, may split across 2 targets."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "elemental_split",
+          "name": "Elemental Split",
+          "abbreviation": "ES",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "attack",
+          "summary": "Current runtime explicit split variant.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true,
+            "showDamageTypeStep": true
+          },
+          "targeting": {
+            "targetMode": "multiple",
+            "targetCount": 2,
+            "validTargetTypes": [
+              "character",
+              "transient_combatant"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 1,
+            "bonusManaAllowed": true
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "DamageEffect",
+              "HealingEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "This explicit spell exists in runtime even though source JSON folds split into Elemental Bolt."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Runtime exposes a separate split spell id."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Runtime exposes a separate split spell id."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Runtime exposes a separate split spell id."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Runtime exposes a separate split spell id."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Runtime exposes a separate split spell id."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "elemental_split is a runtime separation; source JSON does not define it as a separate spell."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/healing.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "healing",
+        "name": "Healing",
+        "abbreviation": "",
+        "governingStat": "INT",
+        "theme": "",
+        "summary": "Restoration power with main healing, purge, and cantrip healing touch.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Healing uses INT-based restoration in the source JSON."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": "standard",
+        "defaultManaCost": null,
+        "defaultRange": null,
+        "defaultDuration": null
+      },
+      "spells": [
+        {
+          "id": "heal_living",
+          "name": "Heal Living",
+          "abbreviation": "HL",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "restoration",
+          "summary": "Primary healing spell for living targets.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true,
+            "showAllocationStep": true
+          },
+          "targeting": {
+            "targetMode": "multiple",
+            "targetCount": 1,
+            "targetCountByLevel": {
+              "1": 1,
+              "2": 4,
+              "3": 1,
+              "4": 1,
+              "5": 1
+            },
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "self",
+              "ally"
+            ],
+            "canTargetSelf": true,
+            "canTargetAllies": true,
+            "range": {
+              "type": "touch_or_standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 2,
+            "manaCostByLevel": {
+              "1": 2,
+              "2": 2,
+              "3": 3,
+              "4": 3,
+              "5": 3
+            }
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "HealingEffect",
+              "DamageEffect",
+              "StatusRemovalEffect",
+              "HistoryEffect",
+              "UsageCounterEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime converts healing into radiant damage against undead.",
+              "Overheal and cantrip usage are tracked through usage counters."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 1 healing. Removes bleeding. Touch."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 2 healing. Can distribute across up to 4 friendly targets."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 3 healing. Source JSON also folds cure effects into the main entry here."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 4 healing. Can regrow missing limbs."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "INT + 5 healing. May overheal up to target STAM once per day."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "holy_purge",
+          "name": "Holy Purge",
+          "abbreviation": "HP",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "restoration",
+          "summary": "Current runtime-separated cleansing spell.",
+          "flavorText": "",
+          "unlockLevel": 3,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "self",
+              "ally"
+            ],
+            "canTargetSelf": true,
+            "canTargetAllies": true,
+            "range": {
+              "type": "touch_or_standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 3
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "HealingEffect",
+              "DamageEffect",
+              "StatusRemovalEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime separates purge logic into its own spell id even though source JSON folds cure into Healing."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Touch-range cleanse of poison, disease, and curse."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Range increases to standard (25m)."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Range remains standard (25m)."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "holy_purge is a runtime separation; source JSON does not define it as a separate spell name."
+            ]
+          }
+        },
+        {
+          "id": "healing_touch",
+          "name": "Healing Touch",
+          "abbreviation": "HT",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "restoration",
+          "summary": "0-mana healing cantrip with per-target daily cap.",
+          "flavorText": "",
+          "unlockLevel": 3,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "self",
+              "ally"
+            ],
+            "canTargetSelf": true,
+            "canTargetAllies": true,
+            "range": {
+              "type": "touch_or_standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "usageLimits": [
+              "2 uses per target per day"
+            ]
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "HealingEffect",
+              "DamageEffect",
+              "StatusRemovalEffect",
+              "UsageCounterEffect",
+              "LogEffect"
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Heal 2 HP or stop bleeding. 2 uses per target per day."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Heal 3 HP. 2 uses per target per day."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Heal 4 HP. 2 uses per target per day."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        }
+      ]
+    },
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/lightSupport.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "light_support",
+        "name": "Light Support",
+        "abbreviation": "LS",
+        "governingStat": "APP",
+        "theme": "",
+        "summary": "Aura support power with light aura, darkness weakening, mana restoration, and a passive cantrip.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Core Light Support aura originates from the caster in the source JSON."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": "standard",
+        "defaultManaCost": null,
+        "defaultRange": null,
+        "defaultDuration": null
+      },
+      "spells": [
+        {
+          "id": "light_support_cantrip",
+          "name": "Light Support Cantrip (unnamed in source)",
+          "abbreviation": "",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Nightvision plus mana bonus cantrip from source JSON.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "passive"
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Nightvision true and mana bonus scales 1 -> 2 -> 3 in source JSON."
+            ],
+            "implementationNotes": [
+              "Current lightSupportModule passive provider is empty."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Gain nightvision and +1 mana bonus."
+              ]
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Gain nightvision and +2 mana bonus."
+              ]
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Gain nightvision and +3 mana bonus."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Source JSON defines this cantrip but gives no formal spell name.",
+              "Current runtime passive provider does not implement it."
+            ]
+          }
+        },
+        {
+          "id": "let_there_be_light",
+          "name": "Let There Be Light",
+          "abbreviation": "LTBL",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "aura",
+          "summary": "Primary light aura source spell.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "self",
+              "ally"
+            ],
+            "canTargetSelf": true,
+            "canTargetAllies": true,
+            "range": {
+              "type": "self_aura",
+              "value": 50
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 2
+          },
+          "duration": {
+            "type": "timed_aura",
+            "endsOnCasterCancel": true,
+            "endsOnCasterLoss": true,
+            "durationByLevel": {
+              "1": "10 minutes or 1 portal duration",
+              "2": "30 minutes outside portals or 1 portal duration",
+              "3": "1 hour outside portals or 1 portal duration",
+              "4": "3 hours outside portals or 1 portal duration",
+              "5": "8 hours outside portals or 1 portal duration"
+            }
+          },
+          "mechanics": {
+            "sourceLinked": true,
+            "createsAuraSource": true,
+            "effects": [
+              "AuraEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime auto-shares the aura to friendly participants rather than using explicit include/exclude targeting."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "+2 attack dice bonus in a 50m aura."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Hostiles cannot see the light source. Aura adds +1 DR."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Aura becomes +3 attack dice, +1 DR, +1 Soak."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Aura radius becomes 100m and bonuses become +3 attack dice, +2 DR, +1 Soak."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Aura becomes +4 attack dice, +2 DR, +2 Soak."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "lessen_darkness",
+          "name": "Lessen Darkness",
+          "abbreviation": "LD",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "aura",
+          "summary": "Level 5 linked darkness-weakening aura effect.",
+          "flavorText": "",
+          "unlockLevel": 5,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false,
+            "range": {
+              "type": "linked_to_active_aura"
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0
+          },
+          "duration": {
+            "type": "linked_aura",
+            "endsOnCasterCancel": true,
+            "endsOnCasterLoss": true
+          },
+          "mechanics": {
+            "sourceLinked": true,
+            "effects": [
+              "AuraEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Requires an active Let There Be Light source in current runtime.",
+              "Current runtime applies enemy debuffs automatically."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Reduce darkness-based resistance level by 1 while maintained with the active light source."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "luminous_restoration",
+          "name": "Luminous Restoration",
+          "abbreviation": "LR",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "restoration",
+          "summary": "Restore mana to a target.",
+          "flavorText": "",
+          "unlockLevel": 4,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "self",
+              "ally"
+            ],
+            "canTargetSelf": true,
+            "canTargetAllies": true,
+            "range": {
+              "type": "standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "usageLimits": [
+              "Source JSON: 1 use per long rest from level 4 onward"
+            ]
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "ManaEffect",
+              "LogEffect"
+            ],
+            "resourceChanges": [
+              "currentMana"
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Restore APP x 2 mana."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Current runtime restores APP x 3 mana."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Current runtime unlocks this at level 3; source JSON enables mana_restore at level 4."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/necromancy.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "necromancy",
+        "name": "Necromancy",
+        "abbreviation": "NE",
+        "governingStat": "APP",
+        "theme": "",
+        "summary": "Undead summoning, necrotic touch, resurrection, and passive undead affinity.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Current source folds summon options under one summoning mechanic, while runtime exposes separate summon spell ids."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": "standard",
+        "defaultManaCost": null,
+        "defaultRange": null,
+        "defaultDuration": null
+      },
+      "spells": [
+        {
+          "id": "necromancy_cantrip",
+          "name": "Necromancy Cantrip (unnamed in source)",
+          "abbreviation": "",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Hostile undead aggro manipulation plus melee bonus.",
+          "flavorText": "",
+          "unlockLevel": 2,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "passive"
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Source JSON: hostile undead aggro priority changes and melee bonus scales over the cantrip levels."
+            ],
+            "implementationNotes": [
+              "Current necromancyModule passive provider is empty."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Hostile undead aggro priority last; melee +1."
+              ]
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Hostile undead aggro priority last; melee +2."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Hostile undead ignore unless attacked first; melee +2."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Source JSON defines this cantrip but gives no formal spell name.",
+              "Current runtime passive provider does not implement it."
+            ]
+          }
+        },
+        {
+          "id": "non_living_skeleton",
+          "name": "Non-Living Skeleton",
+          "abbreviation": "NS",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "summon",
+          "summary": "Current runtime explicit skeleton summon option.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false,
+            "range": {
+              "type": "near_caster"
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 2
+          },
+          "duration": {
+            "type": "timed_summon",
+            "endsOnCasterLoss": true
+          },
+          "mechanics": {
+            "createsSummon": true,
+            "effects": [
+              "SummonEffect",
+              "AuraEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime inherits aura effects onto summons when relevant."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Summon 1 simple skeleton."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Still available as an explicit summon option."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Still available as an explicit summon option."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Summon duration increases and summon bonuses improve globally."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Summon bonuses increase further."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Source JSON models summon choices under a shared summoning mechanic rather than as separate named spells."
+            ]
+          }
+        },
+        {
+          "id": "non_living_skeleton_king",
+          "name": "Non-Living Skeleton King",
+          "abbreviation": "NSK",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "summon",
+          "summary": "Current runtime explicit skeleton king summon option.",
+          "flavorText": "",
+          "unlockLevel": 2,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false,
+            "range": {
+              "type": "near_caster"
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 3
+          },
+          "duration": {
+            "type": "timed_summon",
+            "endsOnCasterLoss": true
+          },
+          "mechanics": {
+            "createsSummon": true,
+            "effects": [
+              "SummonEffect",
+              "AuraEffect",
+              "LogEffect"
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "May summon 1 skeleton king instead of multiple simple skeletons."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Still available."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Still available with stronger global summon bonuses."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Still available with stronger global summon bonuses."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Source JSON models summon choices under a shared summoning mechanic rather than as separate named spells."
+            ]
+          }
+        },
+        {
+          "id": "non_living_zombie",
+          "name": "Non-Living Zombie",
+          "abbreviation": "NZ",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "summon",
+          "summary": "Current runtime explicit zombie summon option.",
+          "flavorText": "",
+          "unlockLevel": 4,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false,
+            "range": {
+              "type": "near_caster"
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 4
+          },
+          "duration": {
+            "type": "timed_summon",
+            "endsOnCasterLoss": true
+          },
+          "mechanics": {
+            "createsSummon": true,
+            "effects": [
+              "SummonEffect",
+              "AuraEffect",
+              "LogEffect"
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Zombie summon option unlocks."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Zombie remains available with stronger global summon bonuses."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Source JSON models summon choices under a shared summoning mechanic rather than as separate named spells."
+            ]
+          }
+        },
+        {
+          "id": "necrotic_touch",
+          "name": "Necrotic Touch",
+          "abbreviation": "NT",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "attack",
+          "summary": "Necrotic attack that heals the caster and can heal undead.",
+          "flavorText": "",
+          "unlockLevel": 3,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true,
+            "showAttackResolutionStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 3
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "DamageEffect",
+              "HealingEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime requires attackOutcome resolution first.",
+              "Shadow and incorporeal targets are blocked."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "APP + Necromancy level necrotic damage. Living targets take 1.5x. Caster heals by power level."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Same damage profile."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "APP + 2 x Necromancy level damage. Caster still heals by power level."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "necromancers_bless",
+          "name": "Necromancer's Bless",
+          "abbreviation": "NB",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "restoration",
+          "summary": "Current runtime resurrection spell.",
+          "flavorText": "",
+          "unlockLevel": 5,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "ally",
+              "neutral"
+            ],
+            "canTargetAllies": true,
+            "range": {
+              "type": "touch_or_recent_dead"
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 6
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "ResourceEffect",
+              "StatusRemovalEffect",
+              "LogEffect"
+            ],
+            "resourceChanges": [
+              "currentHp"
+            ],
+            "specialRulesText": [
+              "Current runtime sets HP to 1 and removes bleeding/dead/dying/unconscious."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Resurrect a recently fallen target within the source resurrection window."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        }
+      ]
+    },
+    {
+      "definitionStatus": {
+        "state": "reference-example",
+        "readyForImplementation": false,
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "assumptions": [],
+        "notes": [
+          "Mapped from current source JSON and runtime modules.",
+          "Discussion/reference only."
+        ]
+      },
+      "source": {
+        "documents": [
+          "json_refs/powers.json",
+          "src/powers/shadowControl.ts"
+        ],
+        "sourceTextVersion": "schema_version:5",
+        "ingestedAt": "2026-04-05",
+        "author": "Codex"
+      },
+      "power": {
+        "id": "shadow_control",
+        "name": "Shadow Control",
+        "abbreviation": "SC",
+        "governingStat": "MAN",
+        "theme": "",
+        "summary": "Shadow cloak, movement, damage, summon, and cosmetic cantrip power.",
+        "tags": [],
+        "combatEnabled": true,
+        "supportsPassives": true,
+        "supportsActiveSpells": true,
+        "notes": []
+      },
+      "globalRules": {
+        "sharedRulesText": [
+          "Shadow Walk range scales by 25 meters x Shadow Control level in source JSON."
+        ],
+        "sharedConstraints": [],
+        "sharedKeywords": [],
+        "defaultActionCost": null,
+        "defaultManaCost": null,
+        "defaultRange": null,
+        "defaultDuration": null
+      },
+      "spells": [
+        {
+          "id": "shadow_control_cantrip",
+          "name": "Shadow Control Cantrip (unnamed in source)",
+          "abbreviation": "",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "passive",
+          "category": "passive",
+          "summary": "Cosmetic changes to clothing/armor and later minor body cosmetics.",
+          "flavorText": "",
+          "unlockLevel": 3,
+          "visibleInCombatUI": false,
+          "combatUI": {
+            "showSpellStep": false,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 0,
+            "manaCostByLevel": {},
+            "bonusManaAllowed": false,
+            "bonusManaScalingText": "",
+            "usageLimits": []
+          },
+          "duration": {
+            "type": "passive"
+          },
+          "mechanics": {
+            "specialRulesText": [
+              "Purely cosmetic according to the source JSON."
+            ],
+            "implementationNotes": [
+              "Current shadowControlModule passive provider is empty."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Cosmetic changes on clothes or armor."
+              ]
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Also allows minor cosmetic appearance modifications on the body."
+              ]
+            }
+          },
+          "validation": {
+            "warnings": [
+              "Source JSON defines this cantrip but gives no formal spell name.",
+              "Current runtime passive provider does not implement it."
+            ]
+          }
+        },
+        {
+          "id": "smoldering_shadow",
+          "name": "Smoldering Shadow",
+          "abbreviation": "SS",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "aura",
+          "summary": "Shadow cloak buff with optional ally sharing at higher levels.",
+          "flavorText": "",
+          "unlockLevel": 1,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true,
+            "showModeStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "self",
+              "ally"
+            ],
+            "canTargetSelf": true,
+            "canTargetAllies": true,
+            "range": {
+              "type": "self_or_shared",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 2,
+            "manaCostByLevel": {
+              "1": 2,
+              "2": 2,
+              "3": 2,
+              "4": 2,
+              "5": 4
+            }
+          },
+          "duration": {
+            "type": "timed_aura",
+            "endsOnCasterCancel": true,
+            "endsOnCasterLoss": true,
+            "durationByLevel": {
+              "1": "10 minutes outside portals or 1 portal duration",
+              "2": "10 minutes outside portals or 1 portal duration",
+              "3": "10 minutes outside portals or 1 portal duration",
+              "4": "60 minutes outside portals or 1 portal duration",
+              "5": "60 minutes outside portals or 1 portal duration"
+            }
+          },
+          "mechanics": {
+            "sourceLinked": true,
+            "createsAuraSource": true,
+            "effects": [
+              "AuraEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime uses castMode self vs aura.",
+              "Current runtime auto-selects friendly recipients in aura mode instead of explicit include/exclude targeting."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": true,
+              "ruleText": [
+                "Stealth +1, Intimidation +1, AC +1."
+              ]
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Stealth +2, Intimidation +2, AC +1. Shadow Walk unlocks."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Stealth +3, Intimidation +3, AC +2. Shadow Manipulation unlocks."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Stealth +4, Intimidation +4, AC +2. May be shared with allies."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Stealth +5, Intimidation +5, AC +3. Shared mode costs more mana."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "shadow_walk",
+          "name": "Shadow Walk",
+          "abbreviation": "SW",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "utility",
+          "summary": "Move through shadows to a living target shadow.",
+          "flavorText": "",
+          "unlockLevel": 2,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "living_character"
+            ],
+            "validDispositions": [
+              "ally",
+              "enemy",
+              "neutral"
+            ],
+            "canTargetAllies": true,
+            "canTargetEnemies": true,
+            "range": {
+              "type": "per_level",
+              "perLevelMultiplier": 25,
+              "unit": "m"
+            }
+          },
+          "costs": {
+            "actionCost": "bonus",
+            "manaCost": 2
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "LogEffect"
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Range 50m."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Range 75m."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Range 100m."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Range 125m."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "shadow_walk_attack",
+          "name": "Shadow Walk and Attack",
+          "abbreviation": "SWaA",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "utility",
+          "summary": "Current runtime ambush action logged as a separate utility spell.",
+          "flavorText": "",
+          "unlockLevel": 2,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "living_character"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "per_level",
+              "perLevelMultiplier": 25,
+              "unit": "m"
+            }
+          },
+          "costs": {
+            "actionCost": "bonus_plus_standard",
+            "manaCost": 2
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Current runtime logs the ambush but does not auto-resolve the follow-up attack in this action."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": true,
+              "ruleText": [
+                "Ambush through shadow at 50m."
+              ]
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "Ambush through shadow at 75m."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Ambush through shadow at 100m."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Ambush through shadow at 125m."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "shadow_manipulation",
+          "name": "Shadow Manipulation",
+          "abbreviation": "SM",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "attack",
+          "summary": "Use a target own shadow to attack them.",
+          "flavorText": "",
+          "unlockLevel": 3,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": true
+          },
+          "targeting": {
+            "targetMode": "single",
+            "validTargetTypes": [
+              "character"
+            ],
+            "validDispositions": [
+              "enemy"
+            ],
+            "canTargetEnemies": true,
+            "range": {
+              "type": "standard",
+              "value": 25
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 2
+          },
+          "duration": {
+            "type": "instant",
+            "value": null,
+            "unit": "turn",
+            "durationByLevel": {},
+            "requiresUpkeep": false,
+            "upkeepCost": null,
+            "endsOnCasterCancel": false,
+            "endsOnCasterLoss": false
+          },
+          "mechanics": {
+            "effects": [
+              "DamageEffect",
+              "LogEffect"
+            ],
+            "specialRulesText": [
+              "Source JSON marks this as auto-hit with shadow damage soakable by STAM."
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": true,
+              "ruleText": [
+                "MAN + SC level shadow damage."
+              ]
+            },
+            "4": {
+              "enabled": true,
+              "ruleText": [
+                "Same damage formula."
+              ]
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Same damage formula."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        },
+        {
+          "id": "shadow_fighter",
+          "name": "Shadow Fighter",
+          "abbreviation": "SF",
+          "parentSpellId": null,
+          "spellRole": "standalone",
+          "mode": "active",
+          "category": "summon",
+          "summary": "Summon a shadow soldier/fighter.",
+          "flavorText": "",
+          "unlockLevel": 5,
+          "visibleInCombatUI": true,
+          "combatUI": {
+            "showSpellStep": true,
+            "showTargetStep": false
+          },
+          "targeting": {
+            "targetMode": "self",
+            "targetCount": 0,
+            "canTargetSelf": true,
+            "requiresExplicitTargetSelection": false,
+            "range": {
+              "type": "near_caster"
+            }
+          },
+          "costs": {
+            "actionCost": "standard",
+            "manaCost": 4
+          },
+          "duration": {
+            "type": "timed_summon",
+            "endsOnCasterLoss": true
+          },
+          "mechanics": {
+            "createsSummon": true,
+            "effects": [
+              "SummonEffect",
+              "AuraEffect",
+              "LogEffect"
+            ]
+          },
+          "levelProgression": {
+            "1": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "2": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "3": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "4": {
+              "enabled": false,
+              "ruleText": []
+            },
+            "5": {
+              "enabled": true,
+              "ruleText": [
+                "Summon 1 shadow fighter at 4 mana."
+              ]
+            }
+          },
+          "validation": {
+            "blockingMissingFields": [],
+            "nonBlockingMissingFields": [],
+            "warnings": [],
+            "openQuestions": []
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -10,11 +10,8 @@ import type { ActionContext } from "../engine/context.ts";
 import { createEmptyPassiveProviderResult } from "./passiveSupport.ts";
 import {
   buildEncounterActivityLogEntry,
-  canEncounterTargetReceiveGroupBuff,
   getGenericBuffActionLabel,
   getReplacementWarnings,
-  isEnemyEncounterTarget,
-  isFriendlyEncounterTarget,
   joinTargetNames,
 } from "./runtimeSupport.ts";
 import {
@@ -33,20 +30,19 @@ class EmptyPassiveProvider extends PowerPassiveProvider {
 class LetThereBeLightSpellAction extends AuraSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
-    const targetCharacter = context.finalTargets[0];
-    if (!selectedPower || !targetCharacter || !context.casterView) {
+    if (!selectedPower || !context.casterView) {
       throw new Error("Select at least one valid target before casting.");
     }
 
     const builtEffect = buildActivePowerEffect({
       casterCharacterId: context.casterCharacter.id,
       casterName: context.casterName,
-      targetCharacterId: targetCharacter.id,
-      targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
+      targetCharacterId: context.casterCharacter.id,
+      targetName: context.casterCharacter.sheet.name.trim() || context.casterCharacter.id,
       power: selectedPower,
       variantId: "let_there_be_light",
       selectedStatId: context.selectedStatId,
-      castMode: context.castMode,
+      castMode: "aura",
     });
 
     if ("error" in builtEffect) {
@@ -54,21 +50,22 @@ class LetThereBeLightSpellAction extends AuraSpellAction {
     }
 
     this.setManaCost(builtEffect.manaCost);
-    this.setTargetCharacterIds([targetCharacter.id]);
+    const selectedTargetIds = Array.from(
+      new Set([
+        context.casterCharacter.id,
+        ...context.finalTargetViews.map((targetView) => targetView.participant.characterId),
+      ])
+    );
+    this.setTargetCharacterIds(selectedTargetIds);
 
-    getReplacementWarnings([targetCharacter], [builtEffect.effect]).forEach((warning) =>
+    getReplacementWarnings([context.casterCharacter], [builtEffect.effect]).forEach((warning) =>
       this.addWarning(warning)
     );
 
     const sourceEffect = builtEffect.effect;
-    const allyTargetIds = context.encounterParticipants
-      .filter(
-        (view) =>
-          view.participant.characterId !== sourceEffect.casterCharacterId &&
-          isFriendlyEncounterTarget(context.casterView!.participant, view) &&
-          canEncounterTargetReceiveGroupBuff(view)
-      )
-      .map((view) => view.participant.characterId);
+    const allyTargetIds = selectedTargetIds.filter(
+      (targetId) => targetId !== sourceEffect.casterCharacterId
+    );
     const targetIds = Array.from(new Set([sourceEffect.casterCharacterId, ...allyTargetIds]));
     const updatedSourceEffect = {
       ...sourceEffect,
@@ -86,9 +83,9 @@ class LetThereBeLightSpellAction extends AuraSpellAction {
       ]),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `${LIGHT_SUPPORT_AURA_SPELL_NAME}: ${context.casterName} affected ${joinTargetNames(
-            context.finalTargets
-          )}.`
+          `${LIGHT_SUPPORT_AURA_SPELL_NAME}: ${context.casterName} affected ${
+            joinTargetNames(context.finalTargets) || context.casterName
+          }.`
         )
       ),
     ];
@@ -114,24 +111,39 @@ class LessenDarknessSpellAction extends AuraSpellAction {
       throw new Error("Lessen Darkness requires an active Let There Be Light source.");
     }
 
-    this.setManaCost(0);
-    this.setTargetCharacterIds([context.casterCharacter.id]);
+    const selectedTargetIds = Array.from(
+      new Set(context.finalTargetViews.map((view) => view.participant.characterId))
+    ).filter((targetId) => targetId !== context.casterCharacter.id);
+    if (selectedTargetIds.length === 0) {
+      throw new Error("Select at least one target for Lessen Darkness.");
+    }
 
-    const enemyTargetIds = context.encounterParticipants
-      .filter((view) => isEnemyEncounterTarget(context.casterView!.participant, view))
-      .map((view) => view.participant.characterId);
+    this.setManaCost(0);
+    this.setTargetCharacterIds(selectedTargetIds);
+
+    const existingTargetIds = sourceEffect.sharedTargetCharacterIds ?? [sourceEffect.casterCharacterId];
+    const updatedSourceEffect = {
+      ...sourceEffect,
+      sharedTargetCharacterIds: Array.from(
+        new Set([sourceEffect.casterCharacterId, ...existingTargetIds, ...selectedTargetIds])
+      ),
+    };
+    const selectedTargetSet = new Set(selectedTargetIds);
 
     return [
-      new AuraEffect(
-        enemyTargetIds.map((targetId) =>
-          buildLinkedAuraEffectForTarget(sourceEffect, targetId, {
-            targetDisposition: "enemy",
-          })
-        )
-      ),
+      new AuraEffect([
+        updatedSourceEffect,
+        ...updatedSourceEffect.sharedTargetCharacterIds
+          .filter((targetId) => targetId !== updatedSourceEffect.casterCharacterId)
+          .map((targetId) =>
+            buildLinkedAuraEffectForTarget(updatedSourceEffect, targetId, {
+              targetDisposition: selectedTargetSet.has(targetId) ? "enemy" : "ally",
+            })
+          ),
+      ]),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `${LIGHT_SUPPORT_DARKNESS_SPELL_NAME}: ${context.casterName} weakened ${enemyTargetIds.length} enemy target(s).`
+          `${LIGHT_SUPPORT_DARKNESS_SPELL_NAME}: ${context.casterName} weakened ${selectedTargetIds.length} target(s).`
         )
       ),
     ];

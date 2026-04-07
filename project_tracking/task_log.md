@@ -213,3 +213,24 @@
   - Reworked summon option wiring and summon template rules for the new visible `Necromancy` and `Shadow Control` summon spells.
   - Reconciled `references/plan.md`, `references/current_notes.md`, and `project_tracking/tasks_todo.md` so only deferred items remain open.
   - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
+## 2026-04-05
+
+- Added new encounter-UX follow-up TODOs after reviewing visible combat action flow.
+  - `CAST-UI-STD-01` now tracks cast-form normalization so active powers consistently present `Power > Spell > ...` before any spell-specific fields.
+  - `SUMMON-UI-01` now tracks visible contextual `Dismiss Summon` actions for `Necromancy` and `Shadow Control`, since runtime support exists but the encounter UI does not expose it.
+  - `AURA-LIFECYCLE-01` now tracks the chosen aura design direction:
+    - keep dedicated aura-spell handling
+    - require explicit target selection in the cast UI
+    - keep beneficiary effects linked to the caster-owned source
+    - remove linked beneficiary effects when the source aura is canceled or lost
+  - The old deferred aura discussion note was resolved into this concrete active follow-up direction.
+- Added `INGEST-REF-01`.
+  - After cast UI standardization, aura lifecycle, and summon dismiss UI changes are implemented, update the four reverse-engineered ingestion reference JSON files so they reflect the new behavior.
+  - No implementation or validation was run for this tracking-only update.
+- `CAST-UI-STD-01`, `SUMMON-UI-01`, `AURA-LIFECYCLE-01`, and `INGEST-REF-01` completed.
+  - Active cast forms now consistently expose the `Spell` step, including single-spell powers.
+  - `Necromancy` summon casting now uses `Non-Living Warriors` as the parent spell and summon subtype selection in the `Summon` field.
+  - `Necromancy` and `Shadow Control` now expose contextual `Dismiss Summon` actions from the caster action menu.
+  - Aura casts now use explicit beneficiary selection where needed and keep linked effects source-owned so source removal clears beneficiaries.
+  - Updated the four reverse-engineered ingestion reference JSON files to match the new behavior.

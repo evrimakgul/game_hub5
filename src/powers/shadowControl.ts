@@ -9,7 +9,6 @@ import {
   buildEncounterActivityLogEntry,
   buildInheritedAuraEffectsForSummons,
   getReplacementWarnings,
-  isFriendlyEncounterTarget,
   isLivingEncounterTarget,
   isUndeadEncounterTarget,
   joinTargetNames,
@@ -32,16 +31,15 @@ class EmptyPassiveProvider extends PowerPassiveProvider {
 class SmolderingShadowSpellAction extends AuraSpellAction {
   override resolve(context: ActionContext) {
     const selectedPower = context.selectedPower;
-    const targetCharacter = context.finalTargets[0];
-    if (!selectedPower || !targetCharacter || !context.casterView) {
+    if (!selectedPower || !context.casterView) {
       throw new Error("Select at least one valid target before casting.");
     }
 
     const builtEffect = buildActivePowerEffect({
       casterCharacterId: context.casterCharacter.id,
       casterName: context.casterName,
-      targetCharacterId: targetCharacter.id,
-      targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
+      targetCharacterId: context.casterCharacter.id,
+      targetName: context.casterCharacter.sheet.name.trim() || context.casterCharacter.id,
       power: selectedPower,
       variantId: "smoldering_shadow",
       selectedStatId: context.selectedStatId,
@@ -53,25 +51,22 @@ class SmolderingShadowSpellAction extends AuraSpellAction {
     }
 
     this.setManaCost(builtEffect.manaCost);
-    this.setTargetCharacterIds([targetCharacter.id]);
+    const selectedTargetIds = Array.from(
+      new Set([
+        context.casterCharacter.id,
+        ...context.finalTargetViews.map((targetView) => targetView.participant.characterId),
+      ])
+    );
+    this.setTargetCharacterIds(selectedTargetIds);
 
-    getReplacementWarnings([targetCharacter], [builtEffect.effect]).forEach((warning) =>
+    getReplacementWarnings([context.casterCharacter], [builtEffect.effect]).forEach((warning) =>
       this.addWarning(warning)
     );
 
     const sourceEffect = builtEffect.effect;
     const allyTargetIds =
       context.castMode === "aura"
-        ? context.encounterParticipants
-            .filter(
-              (view) =>
-                view.participant.characterId !== sourceEffect.casterCharacterId &&
-                isFriendlyEncounterTarget(context.casterView!.participant, view) &&
-                (view.transientCombatant
-                  ? view.transientCombatant.buffRules.canReceiveGroupBuffs
-                  : true)
-            )
-            .map((view) => view.participant.characterId)
+        ? selectedTargetIds.filter((targetId) => targetId !== sourceEffect.casterCharacterId)
         : [];
     const updatedSourceEffect =
       allyTargetIds.length > 0
@@ -92,9 +87,9 @@ class SmolderingShadowSpellAction extends AuraSpellAction {
       ]),
       new LogEffect(
         buildEncounterActivityLogEntry(
-          `${SHADOW_CONTROL_AURA_SPELL_NAME}: ${context.casterName} affected ${joinTargetNames(
-            context.finalTargets
-          )}.`
+          `${SHADOW_CONTROL_AURA_SPELL_NAME}: ${context.casterName} affected ${
+            joinTargetNames(context.finalTargets) || context.casterName
+          }.`
         )
       ),
     ];
@@ -210,7 +205,8 @@ class ShadowFighterSpellAction extends SummonSpellAction {
         .filter(
           (entry) =>
             entry.controllerCharacterId === context.casterCharacter.id &&
-            entry.sourcePowerId === selectedPower.id
+            entry.sourcePowerId === selectedPower.id &&
+            (!context.selectedSummonOptionId || entry.id === context.selectedSummonOptionId)
         )
         .map((entry) => entry.id);
 
@@ -292,6 +288,7 @@ export const shadowControlModule: PowerModule = {
     "shadow_walk_attack",
     "shadow_manipulation",
     "shadow_fighter",
+    "dismiss_summon",
   ],
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {

@@ -23,6 +23,10 @@ type EncounterCombatantCardProps = {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
   }) => string | null;
+  requestSummonDismiss: (payload: {
+    casterView: EncounterParticipantView;
+    summonView: EncounterParticipantView;
+  }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
 
@@ -35,6 +39,7 @@ export function EncounterCombatantCard({
   requestCast,
   requestPhysicalAttack,
   requestControlRelease,
+  requestSummonDismiss,
   updateCharacter,
 }: EncounterCombatantCardProps) {
   const combatant = buildEncounterCombatantViewModel(view);
@@ -85,6 +90,7 @@ export function EncounterCombatantCard({
                 requestCast={requestCast}
                 requestPhysicalAttack={requestPhysicalAttack}
                 requestControlRelease={requestControlRelease}
+                requestSummonDismiss={requestSummonDismiss}
                 updateCharacter={updateCharacter}
               />
             </div>

@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "power-spell-definition-v1",
+  "definitionStatus": {
+    "state": "draft",
+    "readyForImplementation": false,
+    "blockingMissingFields": [],
+    "nonBlockingMissingFields": [],
+    "assumptions": [],
+    "notes": []
+  },
+  "source": {
+    "documents": [],
+    "sourceTextVersion": "",
+    "ingestedAt": "",
+    "author": ""
+  },
+  "power": {
+    "id": "power_id",
+    "name": "Power Name",
+    "abbreviation": "PW",
+    "governingStat": "STAT_ID",
+    "theme": "",
+    "summary": "",
+    "tags": [],
+    "combatEnabled": true,
+    "supportsPassives": true,
+    "supportsActiveSpells": true,
+    "notes": []
+  },
+  "globalRules": {
+    "sharedRulesText": [],
+    "sharedConstraints": [],
+    "sharedKeywords": [],
+    "defaultActionCost": null,
+    "defaultManaCost": null,
+    "defaultRange": null,
+    "defaultDuration": null
+  },
+  "spells": [
+    {
+      "id": "spell_id",
+      "name": "Spell Name",
+      "abbreviation": "SP",
+      "parentSpellId": null,
+      "spellRole": "standalone",
+      "mode": "active",
+      "category": "attack",
+      "summary": "",
+      "flavorText": "",
+      "unlockLevel": 1,
+      "visibleInCombatUI": true,
+      "combatUI": {
+        "showSpellStep": true,
+        "showTargetStep": true,
+        "showModeStep": false,
+        "showStatStep": false,
+        "showDamageTypeStep": false,
+        "showSummonStep": false,
+        "showAttackResolutionStep": false,
+        "showAllocationStep": false,
+        "contextualActionOnly": false
+      },
+      "targeting": {
+        "targetMode": "single",
+        "targetCount": 1,
+        "targetCountByLevel": {},
+        "validTargetTypes": [],
+        "validDispositions": [],
+        "canTargetSelf": false,
+        "canTargetAllies": false,
+        "canTargetEnemies": false,
+        "requiresExplicitTargetSelection": true,
+        "allowsTargetInclusionExclusion": false,
+        "requiresLineOfSight": false,
+        "range": {
+          "type": "touch",
+          "value": null,
+          "unit": "m",
+          "perLevelMultiplier": null
+        }
+      },
+      "costs": {
+        "actionCost": "standard",
+        "manaCost": 0,
+        "manaCostByLevel": {},
+        "bonusManaAllowed": false,
+        "bonusManaScalingText": "",
+        "usageLimits": []
+      },
+      "duration": {
+        "type": "instant",
+        "value": null,
+        "unit": "turn",
+        "durationByLevel": {},
+        "requiresUpkeep": false,
+        "upkeepCost": null,
+        "endsOnCasterCancel": false,
+        "endsOnCasterLoss": false
+      },
+      "mechanics": {
+        "sourceLinked": false,
+        "createsAuraSource": false,
+        "createsSummon": false,
+        "createsKnowledgeCard": false,
+        "writesHistoryLink": false,
+        "effects": [],
+        "statusChanges": [],
+        "resourceChanges": [],
+        "scalingRulesText": [],
+        "specialRulesText": [],
+        "implementationNotes": []
+      },
+      "levelProgression": {
+        "1": {
+          "enabled": true,
+          "ruleText": []
+        },
+        "2": {
+          "enabled": false,
+          "ruleText": []
+        },
+        "3": {
+          "enabled": false,
+          "ruleText": []
+        },
+        "4": {
+          "enabled": false,
+          "ruleText": []
+        },
+        "5": {
+          "enabled": false,
+          "ruleText": []
+        }
+      },
+      "validation": {
+        "blockingMissingFields": [],
+        "nonBlockingMissingFields": [],
+        "warnings": [],
+        "openQuestions": []
+      }
+    }
+  ]
+}

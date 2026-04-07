@@ -19,6 +19,10 @@ type EncounterInitiativePanelProps = {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
   }) => string | null;
+  requestSummonDismiss: (payload: {
+    casterView: EncounterParticipantView;
+    summonView: EncounterParticipantView;
+  }) => string | null;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
 };
 
@@ -29,6 +33,7 @@ export function EncounterInitiativePanel({
   requestCast,
   requestPhysicalAttack,
   requestControlRelease,
+  requestSummonDismiss,
   updateCharacter,
 }: EncounterInitiativePanelProps) {
   return (
@@ -47,6 +52,7 @@ export function EncounterInitiativePanel({
             requestCast={requestCast}
             requestPhysicalAttack={requestPhysicalAttack}
             requestControlRelease={requestControlRelease}
+            requestSummonDismiss={requestSummonDismiss}
             updateCharacter={updateCharacter}
           />
         ))}

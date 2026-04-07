@@ -154,7 +154,8 @@ abstract class BaseNecromancySummonSpellAction extends SummonSpellAction {
         .filter(
           (entry) =>
             entry.controllerCharacterId === context.casterCharacter.id &&
-            entry.sourcePowerId === selectedPower.id
+            entry.sourcePowerId === selectedPower.id &&
+            (!context.selectedSummonOptionId || entry.id === context.selectedSummonOptionId)
         )
         .map((entry) => entry.id);
 
@@ -243,6 +244,11 @@ class NonLivingZombieSpellAction extends BaseNecromancySummonSpellAction {
   protected readonly spellLabel = NECROMANCY_ZOMBIE_SPELL_NAME;
 }
 
+class NonLivingWarriorsSpellAction extends BaseNecromancySummonSpellAction {
+  protected readonly summonVariantId = "non_living_skeleton" as const;
+  protected readonly spellLabel = "Non-Living Warriors";
+}
+
 class NecromancersBlessSpellAction extends RestorationSpellAction {
   override resolve(context: ActionContext) {
     const targetView = context.finalTargetViews[0];
@@ -283,11 +289,13 @@ class NecromancersBlessSpellAction extends RestorationSpellAction {
 export const necromancyModule: PowerModule = {
   powerId: "necromancy",
   spellIds: [
+    "summon_undead",
     "non_living_skeleton",
     "non_living_skeleton_king",
     "non_living_zombie",
     "necrotic_touch",
     "necromancers_bless",
+    "dismiss_summon",
   ],
   passiveProvider: new EmptyPassiveProvider(),
   createAction(context) {
@@ -307,8 +315,12 @@ export const necromancyModule: PowerModule = {
       return new NonLivingZombieSpellAction();
     }
 
+    if (context.selectedSpellId === "summon_undead") {
+      return new NonLivingWarriorsSpellAction();
+    }
+
     if (context.selectedSpellId === "dismiss_summon") {
-      return new NonLivingSkeletonSpellAction();
+      return new NonLivingWarriorsSpellAction();
     }
 
     if (
