@@ -17,3 +17,4 @@ No active TODOs.
 ### Deferred Group D1: Future Expansion
 - `B01` Expand the shared item UI into a full item-authoring and multi-target knowledge-sharing flow.
 - `KNOW-V2-01` Expand the new knowledge-card system beyond character cards so item, place, faction, story, and custom subjects get first-class creation flows and sheet/browser surfaces.
+- `AA-01` Defer full `Artifact Appraisal (AA)` integration until item mechanics and item UI are ready.

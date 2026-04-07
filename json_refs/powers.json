@@ -410,7 +410,7 @@
           "mana_cost": 0,
           "mechanics": {
             "contest": {
-              "caster_pool": "CHA + INT",
+              "caster_pool": "CHA + INT + CC",
               "target_pool": "WITS + CHA"
             },
             "max_controlled_targets": 2,
@@ -432,7 +432,7 @@
           "mana_cost": 0,
           "mechanics": {
             "contest": {
-              "caster_pool": "CHA + INT",
+              "caster_pool": "CHA + INT + CC",
               "target_pool": "WITS + CHA"
             },
             "max_controlled_targets": 3,

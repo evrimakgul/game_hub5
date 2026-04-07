@@ -28,6 +28,17 @@
           "rules": ["Alertness skill bonus equals Awareness level."]
         },
         {
+          "id": "awakened_insight",
+          "name": "Awakened Insight",
+          "type": "passive",
+          "availability": "level 1+",
+          "rules": [
+            "Grants +1 temporary inspiration per session.",
+            "Temporary inspiration does not stack.",
+            "The source's uninspired-status interaction is not modeled because the current sheet/runtime has no uninspired status mechanic."
+          ]
+        },
+        {
           "id": "techno_invisibility_immunity",
           "name": "Techno-Invisibility Immunity",
           "type": "passive",
@@ -115,7 +126,8 @@
           "duration": "maintained ongoing control",
           "playerInputs": ["target"],
           "rules": [
-            "Caster contest pool is CHA + INT.",
+            "Caster contest pool is CHA + INT at levels 1-3.",
+            "Caster contest pool is CHA + INT + Crowd Control level at levels 4-5.",
             "Target contest pool is WITS + CHA.",
             "Tie fails.",
             "Pre-level 5 targets must be living.",

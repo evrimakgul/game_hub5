@@ -80,6 +80,18 @@
       "topic": "Summon children",
       "decision": "Current UI exposes Non-Living Warriors as the parent Necromancy spell, then exposes summon subtypes as the Summon choice.",
       "reason": "This keeps the active cast flow aligned with Power > Spell > Summon while preserving subtype-specific summon templates."
+    },
+    {
+      "id": "CURRENT-06",
+      "topic": "Artifact Appraisal",
+      "decision": "Keep Artifact Appraisal deferred until item mechanics and item UI are ready.",
+      "reason": "The source defines Artifact Appraisal, but the current power/spell ingestion references are focused on implemented combat and runtime behavior."
+    },
+    {
+      "id": "CURRENT-07",
+      "topic": "Awakened Insight",
+      "decision": "Record the implemented temporary-inspiration behavior, but defer the source's uninspired-status interaction.",
+      "reason": "The current sheet/runtime has temporary inspiration but no explicit uninspired status mechanic to clear."
     }
   ],
   "knownGapsForFollowUp": [

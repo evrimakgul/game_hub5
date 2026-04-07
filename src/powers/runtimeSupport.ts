@@ -81,10 +81,15 @@ export function resolveCrowdControlContest(
   targetCharacter: CharacterRecord,
   itemsById: Record<string, SharedItemRecord> = {}
 ): CrowdControlContestResult {
+  const casterCrowdControlLevel =
+    casterCharacter.sheet.powers.find((power) => power.id === "crowd_control")?.level ?? 0;
+  const casterCrowdControlBonus =
+    casterCrowdControlLevel >= 4 ? Math.max(0, casterCrowdControlLevel) : 0;
   const casterPool = Math.max(
     0,
     getCurrentStatValue(casterCharacter.sheet, "CHA", itemsById) +
-      getCurrentStatValue(casterCharacter.sheet, "INT", itemsById)
+      getCurrentStatValue(casterCharacter.sheet, "INT", itemsById) +
+      casterCrowdControlBonus
   );
   const compulsionGuardBonus =
     (targetCharacter.sheet.powers.find((power) => power.id === "crowd_control")?.level ?? 0) >= 5

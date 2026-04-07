@@ -16,7 +16,7 @@ This file tracks active reminders for the current implementation block.
 - `Holy Purge (HP)` unlocks at level `3` and mana cost is always `2`.
 - `Healing Touch (HT)` stays at `2 uses per target per day`.
 - `Crowd Control` initial cast costs `0`; upkeep only spends mana.
-- `Crowd Control` auto-resolves in-system using caster `CHA + INT` vs target `CHA + WITS`, and ties fail.
+- `Crowd Control` auto-resolves in-system using caster `CHA + INT` at levels `1-3`, caster `CHA + INT + CC level` at levels `4-5`, vs target `CHA + WITS`; ties fail.
 - Encounter-visible `Crowd Control` exposes `Control Entity (CE)` only; release is contextual.
 - `Shadow Walk` is an encounter mobility action with no direct numeric damage effect.
 - Healing damages undead; necrotic heals undead.

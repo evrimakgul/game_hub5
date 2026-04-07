@@ -234,3 +234,8 @@
   - `Necromancy` and `Shadow Control` now expose contextual `Dismiss Summon` actions from the caster action menu.
   - Aura casts now use explicit beneficiary selection where needed and keep linked effects source-owned so source removal clears beneficiaries.
   - Updated the four reverse-engineered ingestion reference JSON files to match the new behavior.
+- Reconciled source notes from `T1 Supernatural Powers v1.1`.
+  - Updated `Control Entity` so level `4+` caster contests use `CHA + INT + CC level`.
+  - Kept `Assess Character` CR caps `6 / 9 / 12 / 15 / 18` and renamed the source reference file to `references/originals/T1 Supernatural Powers_v1.1.txt`.
+  - Recorded `Awakened Insight` as implemented for temporary inspiration while deferring its uninspired-status interaction because that status mechanic does not exist yet.
+  - Deferred full `Artifact Appraisal` integration until item mechanics and item UI are ready.

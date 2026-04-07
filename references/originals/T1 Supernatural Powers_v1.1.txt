@@ -1,4 +1,4 @@
-T1 Supernatural Powers
+T1 Supernatural Powers v1.1
 
 GLOBAL RULE
 - Every power is explicitly categorized as one of:
@@ -31,6 +31,7 @@ Duration: Passive
 
 Level 1: You can identify stats and skills of characters.
 CR Limit = Per + 1
+CR Cap = 6
 Action: Bonus
 Mana Cost: 0
 Range: Line of Sight
@@ -38,6 +39,7 @@ Duration: Instant
 
 Level 2: AC gets stronger. You can now identify powers and specials of characters, as well.
 CR Limit = Per + 2
+CR Cap = 9
 Action: Bonus
 Mana Cost: 0
 Range: Line of Sight
@@ -45,6 +47,7 @@ Duration: Instant
 
 Level 3: AC gets stronger. Techno-infused invisibility devices do not work on you. 
 CR Limit = Per + 3
+CR Cap = 12
 Action: Bonus
 Mana Cost: 0
 Range: Line of Sight
@@ -52,6 +55,7 @@ Duration: Instant
 
 Level 4: AC gets stronger.
 CR Limit = Per + 4
+CR Cap = 15
 Action: Bonus
 Mana Cost: 0
 Range: Line of Sight
@@ -60,6 +64,7 @@ Duration: Instant
 Level 5: AC gets stronger. You can now identify all living, not-living, and non-living NPCs (except supreme beings: CR 33+).
 Note: You can inform other players/NPCs in your party about AC results.
 CR Limit = Per + 5
+CR Cap = 18
 Action: Bonus
 Mana Cost: 0
 Range: Line of Sight

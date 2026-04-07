@@ -170,7 +170,7 @@
               "Source JSON: 1 temporary inspiration per session, non-stacking, blocked by uninspired."
             ],
             "implementationNotes": [
-              "Not implemented in current passive provider."
+              "Implemented by character template normalization using temporaryInspiration and awarenessInsightGranted."
             ]
           },
           "levelProgression": {
@@ -198,9 +198,7 @@
             }
           },
           "validation": {
-            "warnings": [
-              "Current runtime does not implement Awakened Insight."
-            ]
+            "warnings": []
           }
         },
         {
@@ -652,7 +650,7 @@
       "globalRules": {
         "sharedRulesText": [
           "Main control spell costs 0 mana and is maintained over time.",
-          "Control uses a CHA + INT vs WITS + CHA contest."
+          "Control uses CHA + INT at levels 1-3, or CHA + INT + CC level at levels 4-5, vs WITS + CHA."
         ],
         "sharedConstraints": [],
         "sharedKeywords": [],
@@ -871,6 +869,7 @@
             ],
             "specialRulesText": [
               "Current runtime checks crowd_control_immunity before allowing the cast.",
+              "Caster contest pool adds Crowd Control level at levels 4 and 5.",
               "Break rules vary by level and are stored in ongoing state."
             ]
           },
@@ -896,13 +895,13 @@
             "4": {
               "enabled": true,
               "ruleText": [
-                "Cast becomes bonus action. Commands become free. Damage no longer breaks control."
+                "Adds Crowd Control level to the caster contest pool. Cast becomes bonus action. Commands become free. Damage no longer breaks control."
               ]
             },
             "5": {
               "enabled": true,
               "ruleText": [
-                "3 targets. May target non-living except other occult summons."
+                "Adds Crowd Control level to the caster contest pool. 3 targets. May target non-living except other occult summons."
               ]
             }
           },

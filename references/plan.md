@@ -30,7 +30,7 @@ This roadmap is the active implementation source of truth for this branch.
 ### 1.1 Completed Fixes
 - Encounter log labels for generic buff casts now use the real power or action name.
 - `Shadow Soldier` summon actions now consume mana correctly.
-- `Crowd Control` casting now auto-resolves in-system using `CHA + INT` for the caster and `CHA + WITS` for each target.
+- `Crowd Control` casting now auto-resolves in-system using `CHA + INT` for caster levels `1-3`, `CHA + INT + CC level` for caster levels `4-5`, and `CHA + WITS` for each target.
 - Undead handling now inverts healing and necrotic effects: healing damages undead and necrotic heals undead.
 
 ### 1.2 Completed Aura and Summon Rules

@@ -449,6 +449,50 @@ export async function runCombatEncounterCastingTests(): Promise<void> {
       },
     },
     {
+      name: "crowd control adds CC level to the caster contest pool at level four and above",
+      run: () => {
+        const caster = createCharacterRecord("caster", "Controller", "player", {
+          powers: [
+            {
+              id: "crowd_control",
+              name: "Crowd Control",
+              level: 4,
+              governingStat: "CHA",
+            },
+          ],
+          stats: { CHA: 0, INT: 0 },
+        });
+        const target = createCharacterRecord("target", "Guard", "dm", {
+          stats: { CHA: 0, WITS: 0 },
+        });
+
+        withMockedRollFaces([6, 6, 6, 6], () => {
+          const prepared = prepareCastRequest(
+            preparePayload({
+              casterCharacter: caster,
+              encounterParticipants: [
+                createParticipantView(caster),
+                createParticipantView(target, "party-2"),
+              ],
+              selectedPower: caster.sheet.powers[0],
+              selectedTargetIds: [target.id],
+              variantId: "crowd_control",
+            })
+          );
+
+          assert.ok(!("error" in prepared));
+          if ("error" in prepared) {
+            return;
+          }
+
+          assert.equal(
+            prepared.request.activityLogEntries[0]?.summary,
+            "Crowd Control: Controller 4 vs Guard 0 (success)."
+          );
+        });
+      },
+    },
+    {
       name: "crowd control ties fail",
       run: () => {
         const caster = createCharacterRecord("caster", "Controller", "player", {
