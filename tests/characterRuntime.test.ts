@@ -130,6 +130,7 @@ export async function runCharacterRuntimeTests(): Promise<void> {
             utilityTraits: ["Low-Light Lens"],
             notes: ["+2 stealth"],
             powerBonuses: {},
+            spellBonuses: {},
           },
         });
         const charm = createSharedItemRecord("jewel:jewel", {
@@ -143,6 +144,7 @@ export async function runCharacterRuntimeTests(): Promise<void> {
             utilityTraits: [],
             notes: [],
             powerBonuses: {},
+            spellBonuses: {},
           },
         });
         const itemsById = buildItemIndex([armor, charm]);
@@ -157,10 +159,62 @@ export async function runCharacterRuntimeTests(): Promise<void> {
         assert.equal(derived.currentStats.DEX, 3);
         assert.equal(getCurrentSkillValue(sheet, "stealth", itemsById), 2);
         assert.equal(derived.maxMana, 3);
-        assert.equal(derived.armorClass, 5);
+        assert.equal(derived.armorClass, 3);
         assert.equal(derived.damageReduction, 1);
         assert.equal(derived.meleeDamage, 4);
         assert.ok(derived.utilityTraits.includes("Low-Light Lens"));
+      },
+    },
+    {
+      name: "shield blueprint grants its base defense when equipped in a normal slot",
+      run: () => {
+        const shield = createSharedItemRecord("armor:shield_light", {
+          id: "shield-1",
+          name: "Guard Shield",
+        });
+        const itemsById = buildItemIndex([shield]);
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.ownedItemIds = ["shield-1"];
+        sheet.inventoryItemIds = ["shield-1"];
+        sheet.equipment = [{ slot: "Shield", itemId: "shield-1" }];
+
+        const derived = buildCharacterDerivedValues(sheet, itemsById);
+
+        assert.equal(derived.damageReduction, 1);
+      },
+    },
+    {
+      name: "medium and heavy armor blueprints follow the authoritative stealth and DR baselines",
+      run: () => {
+        const mediumArmor = createSharedItemRecord("armor:medium", {
+          id: "armor-medium-1",
+          name: "Medium Armor",
+        });
+        const heavyArmor = createSharedItemRecord("armor:heavy", {
+          id: "armor-heavy-1",
+          name: "Heavy Armor",
+        });
+
+        const mediumSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        mediumSheet.ownedItemIds = [mediumArmor.id];
+        mediumSheet.inventoryItemIds = [mediumArmor.id];
+        mediumSheet.equipment = [{ slot: "Armor", itemId: mediumArmor.id }];
+
+        const heavySheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        heavySheet.ownedItemIds = [heavyArmor.id];
+        heavySheet.inventoryItemIds = [heavyArmor.id];
+        heavySheet.equipment = [{ slot: "Armor", itemId: heavyArmor.id }];
+
+        const mediumItems = buildItemIndex([mediumArmor]);
+        const heavyItems = buildItemIndex([heavyArmor]);
+        const mediumDerived = buildCharacterDerivedValues(mediumSheet, mediumItems);
+        const heavyDerived = buildCharacterDerivedValues(heavySheet, heavyItems);
+
+        assert.equal(getCurrentSkillValue(mediumSheet, "stealth", mediumItems), -1);
+        assert.equal(mediumDerived.damageReduction, 2);
+        assert.equal(getCurrentSkillValue(heavySheet, "stealth", heavyItems), -2);
+        assert.equal(heavyDerived.initiative, 3);
+        assert.equal(heavyDerived.damageReduction, 3);
       },
     },
   ]);

@@ -1,5 +1,6 @@
 import {
   createDefaultResistances,
+  LIGHT_SUPPORT_LEVEL_FIVE_EXPOSE_DARKNESS_TYPES,
   type DamageTypeId,
   type ResistanceLevel,
 } from "../rules/resistances.ts";
@@ -8,6 +9,7 @@ import {
   normalizePowerUsageState,
 } from "../lib/powerUsage.ts";
 import { getRuntimePowerLevelDefinition } from "../rules/powerData.ts";
+import { getRuntimePowerCantripLevels } from "../rules/powerData.ts";
 import { calculateMaxHP } from "../rules/stats.ts";
 import type {
   ActivePowerEffect,
@@ -148,6 +150,11 @@ export type PowerTemplate = {
   name: string;
   governingStat: StatId;
   levelBenefits: Record<number, string[]>;
+};
+
+export type PowerBenefitSection = {
+  title: string;
+  bullets: string[];
 };
 
 export const CHARACTER_DRAFT_SCHEMA_VERSION = 6;
@@ -405,9 +412,443 @@ export function getPowerTemplate(powerId: string): PowerTemplate | undefined {
   return powerLibrary.find((power) => power.id === powerId);
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function asBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function getLatestCantripLevel(powerId: string, currentLevel: number): Record<string, unknown> | null {
+  const latestEntry = getRuntimePowerCantripLevels(powerId)
+    .filter((entry) => entry.power_level <= currentLevel)
+    .at(-1);
+
+  return asRecord(latestEntry?.mechanics);
+}
+
+function joinList(values: string[]): string {
+  if (values.length <= 1) {
+    return values[0] ?? "";
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} and ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
+}
+
+function getAwarenessSections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("awareness", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+  const assessCharacter = asRecord(mechanics?.assess_character);
+  const crLimitFormula = asRecord(assessCharacter?.cr_limit_formula);
+  const artifactAppraisalSummaryByLevel: Record<number, string> = {
+    1: "Identifies masterwork or lesser items.",
+    2: "Identifies rare or lesser items.",
+    3: "Identifies epic or lesser items.",
+    4: "Identifies legendary or lesser items.",
+    5: "Identifies demonic, celestial, mythical, or lesser items.",
+  };
+
+  return [
+    {
+      title: "Alerted Self",
+      bullets: ["Alertness skill bonus equals Awareness level."],
+    },
+    {
+      title: "Awakened Insight",
+      bullets: ["Gain +1 temporary inspiration per session."],
+    },
+    {
+      title: "Assess Character",
+      bullets: [
+        level >= 2 ? "Reveal stats, skills, powers, and specials." : "Reveal stats and skills.",
+        `Allowed CR equals min(PER + ${asNumber(crLimitFormula?.flat_bonus) ?? level}, ${asNumber(assessCharacter?.cr_cap) ?? 0}).`,
+        ...(level >= 3 ? ["Ignores techno-infused invisibility."] : []),
+        ...(level >= 5 ? ["May share results with the party."] : []),
+      ],
+    },
+    {
+      title: "Artifact Appraisal",
+      bullets: [artifactAppraisalSummaryByLevel[level] ?? "Item appraisal details pending."],
+    },
+  ];
+}
+
+function getBodyReinforcementSections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("body_reinforcement", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+
+  return [
+    {
+      title: "Boost Physique",
+      bullets: [
+        `Increase one physical stat by +${asNumber(mechanics?.stat_bonus) ?? 0}.`,
+        ...(level >= 4
+          ? [`Also grants +${asNumber(mechanics?.damage_reduction_bonus) ?? 0} DR.`]
+          : []),
+        ...(level >= 2 ? ["Can target one friendly character by touch."] : []),
+      ],
+    },
+    ...(level >= 2
+      ? [
+          {
+            title: "Brute Defiance",
+            bullets: ["Revive HP by level is 1, 2, 4, 8, 16."],
+          },
+        ]
+      : []),
+  ];
+}
+
+function getCrowdControlSections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("crowd_control", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+  const allowedTargetTypes = (Array.isArray(mechanics?.allowed_target_types)
+    ? mechanics?.allowed_target_types.filter((entry): entry is string => typeof entry === "string")
+    : []) ?? [];
+  const cantripMechanics = getLatestCantripLevel("crowd_control", level);
+  const socialBonus = asNumber(cantripMechanics?.social_skill_bonus);
+  const intimidationBonus = asNumber(cantripMechanics?.intimidation_skill_bonus);
+  const mechanicsBonus = asNumber(cantripMechanics?.mechanics_skill_bonus);
+  const technologyBonus = asNumber(cantripMechanics?.technology_skill_bonus);
+
+  return [
+    {
+      title: "Control Entity",
+      bullets: [
+        `Control up to ${asNumber(mechanics?.max_controlled_targets) ?? 1} target(s) at once.`,
+        allowedTargetTypes.includes("non_living_except_other_occult_summons")
+          ? "Can affect living and non-living targets except other occult summons."
+          : "Affects living targets.",
+        ...(level >= 2
+          ? [
+              asString(mechanics?.command_action_type) === "free"
+                ? "Issue commands for free."
+                : "Issue commands as a bonus action.",
+            ]
+          : []),
+        ...((asBoolean(mechanics?.breaks_on_damage_from_caster) === false &&
+        asBoolean(mechanics?.breaks_on_damage_from_others) === false)
+          ? ["Damage no longer breaks control."]
+          : asBoolean(mechanics?.breaks_on_damage_from_others) === false
+            ? ["Damage from others no longer breaks control."]
+            : []),
+      ],
+    },
+    ...(level >= 2
+      ? [
+          {
+            title: "Cantrip",
+            bullets: [
+              ...(socialBonus !== null && intimidationBonus !== null
+                ? [`Gain +${socialBonus} Social and +${intimidationBonus} Intimidation.`]
+                : []),
+              ...(mechanicsBonus !== null &&
+              technologyBonus !== null &&
+              (mechanicsBonus > 0 || technologyBonus > 0)
+                ? [`Also gain +${mechanicsBonus} Mechanics and +${technologyBonus} Technology.`]
+                : []),
+            ],
+          },
+        ]
+      : []),
+  ];
+}
+
+function getElementalistSections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("elementalist", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+  const damage = asRecord(mechanics?.damage);
+  const damageTypes = (Array.isArray(damage?.damage_types)
+    ? damage?.damage_types.filter((entry): entry is string => typeof entry === "string")
+    : []) ?? [];
+
+  return [
+    {
+      title: "Elemental Bolt",
+      bullets: [
+        `Deal INT + ${asNumber(damage?.flat_bonus) ?? 0} damage.`,
+        `Can affect up to ${asNumber(damage?.max_targets) ?? 1} target(s).`,
+        ...(damageTypes.length > 0
+          ? [`Available damage types: ${joinList(damageTypes)}.`]
+          : ["Available damage type: fire."]),
+      ],
+    },
+  ];
+}
+
+function getHealingSections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("healing", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+  const healing = asRecord(mechanics?.healing);
+
+  return [
+    {
+      title: "Heal Living",
+      bullets: [
+        `Heal INT + ${asNumber(healing?.flat_bonus) ?? level}.`,
+        ...(level >= 2 ? ["May spread the healing across up to 4 targets within 25m."] : []),
+        "Removes bleeding.",
+        ...(level >= 4 ? ["Can regrow missing limbs."] : []),
+        ...(level >= 5 ? ["Can overheal once per character per day up to target STAM."] : []),
+        "Against undead, healing becomes radiant damage.",
+      ],
+    },
+    ...(level >= 3
+      ? [
+          {
+            title: "Holy Purge",
+            bullets: ["Cures poison, disease, and curse."],
+          },
+          {
+            title: "Healing Touch",
+            bullets: [
+              "Heals half of Heal Living, rounded up.",
+              "Stops bleeding.",
+              "A target can receive it at most twice per day.",
+              "Against undead, healing becomes radiant damage.",
+            ],
+          },
+        ]
+      : []),
+  ];
+}
+
+function getLightSupportSections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("light_support", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+  const auraBonuses = asRecord(mechanics?.aura_bonuses);
+  const adjudication = asRecord(levelDefinition?.adjudication);
+  const cantripMechanics = getLatestCantripLevel("light_support", level);
+  const manaBonus = asNumber(cantripMechanics?.mana_bonus) ?? 0;
+
+  return [
+    {
+      title: "Lunar Bless",
+      bullets: [`Gain nightvision and +${manaBonus} mana.`],
+    },
+    {
+      title: "Let There Be Light",
+      bullets: [
+        `Aura grants +${asNumber(auraBonuses?.attack_dice_bonus) ?? 0} Hit, +${asNumber(auraBonuses?.damage_reduction_bonus) ?? 0} DR, and +${asNumber(auraBonuses?.soak_bonus) ?? 0} Soak.`,
+        `Range ${asString(adjudication?.radius) ?? "self"} for ${asString(adjudication?.duration) ?? "the current duration"}.`,
+        ...(level >= 2 ? ["Hostile targets cannot see the light source."] : []),
+      ],
+    },
+    ...(level >= 4
+      ? [
+          {
+            title: "Luminous Restoration",
+            bullets: ["Restore up to APP x 2 mana once per long rest."],
+          },
+        ]
+      : []),
+    ...(level >= 5
+      ? [
+          {
+            title: "Lessen Darkness",
+            bullets: ["While concentrating, reduce darkness-based resistances and immunities by 1."],
+          },
+        ]
+      : []),
+  ];
+}
+
+function getNecromancySections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("necromancy", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+  const summoning = asRecord(mechanics?.summoning);
+  const cantripMechanics = getLatestCantripLevel("necromancy", level);
+  const meleeSkillBonus = asNumber(cantripMechanics?.melee_skill_bonus) ?? 0;
+  const aggroPriority = asString(cantripMechanics?.hostile_undead_aggro_priority);
+  const summonOptions = (Array.isArray(summoning?.options)
+    ? summoning?.options
+        .map((entry) => asRecord(entry))
+        .filter((entry): entry is Record<string, unknown> => entry !== null)
+        .map((entry) => {
+          const templateId = asString(entry.template_id);
+          const quantity = asNumber(entry.quantity) ?? 1;
+          if (templateId === "simple_skeleton") {
+            return quantity > 1 ? `${quantity} simple skeletons` : "1 simple skeleton";
+          }
+
+          if (templateId === "skeleton_king") {
+            return "1 skeleton king";
+          }
+
+          if (templateId === "zombie") {
+            return "1 zombie";
+          }
+
+          return null;
+        })
+        .filter((entry): entry is string => entry !== null)
+    : []) ?? [];
+  const necroticTouch = asRecord(mechanics?.necrotic_touch);
+  const necroticDamage = asRecord(necroticTouch?.damage);
+  const attackBonus = asNumber(summoning?.attack_bonus);
+  const damageBonus = asNumber(summoning?.damage_bonus);
+
+  return [
+    {
+      title: "Necromancer's Deception",
+      bullets: [
+        ...(meleeSkillBonus > 0 ? [`Gain +${meleeSkillBonus} Melee.`] : []),
+        ...(aggroPriority === "ignore_unless_attacked"
+          ? ["Hostile undead ignore you unless you attack first."]
+          : aggroPriority === "last"
+            ? ["Hostile undead place you last on their aggro list."]
+            : []),
+      ],
+    },
+    {
+      title: "Non-Living Warriors",
+      bullets: [
+        ...(summonOptions.length > 0 ? [`Available summons: ${joinList(summonOptions)}.`] : []),
+        `Max active summons: ${asNumber(summoning?.max_active) ?? 1}.`,
+        ...(attackBonus !== null && damageBonus !== null
+          ? [`Summons gain +${attackBonus} attack and +${damageBonus} damage.`]
+          : []),
+      ],
+    },
+    ...(level >= 3
+      ? [
+          {
+            title: "Necrotic Touch",
+            bullets: [
+              `On hit, deal APP + ${asNumber(necroticDamage?.power_level_multiplier) === 2 ? "2 x Necromancy level" : "Necromancy level"} necrotic damage.`,
+              "Heals the caster by Necromancy level.",
+              "Heals undead instead of damaging them.",
+            ],
+          },
+        ]
+      : []),
+    ...(level >= 5
+      ? [
+          {
+            title: "Necromancer's Bless",
+            bullets: ["Resurrects a recently fallen living being to 1 HP."],
+          },
+        ]
+      : []),
+  ];
+}
+
+function getShadowControlSections(level: number): PowerBenefitSection[] {
+  const levelDefinition = getRuntimePowerLevelDefinition("shadow_control", level);
+  const mechanics = asRecord(levelDefinition?.mechanics);
+  const cloak = asRecord(mechanics?.cloak_of_shadow);
+  const shadowWalk = asRecord(mechanics?.shadow_walk);
+
+  return [
+    ...(level >= 3
+      ? [
+          {
+            title: "Sleek Visage",
+            bullets: [
+              ...(level >= 3 ? ["Can make cosmetic outfit and armor changes."] : []),
+              ...(level >= 5 ? ["Can also make minor body appearance changes."] : []),
+            ],
+          },
+        ]
+      : []),
+    {
+      title: "Smoldering Shadow",
+      bullets: [
+        `Gain +${asNumber(cloak?.stealth_skill_bonus) ?? 0} Stealth, +${asNumber(cloak?.intimidation_skill_bonus) ?? 0} Intimidation, and +${asNumber(cloak?.armor_class_bonus) ?? 0} AC.`,
+        ...(level >= 4 ? ["Can be shared with selected allies in aura mode."] : []),
+      ],
+    },
+    ...(level >= 2
+      ? [
+          {
+            title: "Shadow Walk",
+            bullets: [`Relocate through shadow up to ${(asNumber(shadowWalk?.range_per_power_level_meters) ?? 25) * level}m.`],
+          },
+          {
+            title: "Shadow Walk and Attack",
+            bullets: ["Ambush the target; they lose AC for that attack."],
+          },
+        ]
+      : []),
+    ...(level >= 3
+      ? [
+          {
+            title: "Shadow Manipulation",
+            bullets: ["Deals MAN + Shadow Control level shadow damage and auto-hits."],
+          },
+        ]
+      : []),
+    ...(level >= 5
+      ? [
+          {
+            title: "Shadow Fighter",
+            bullets: ["Creates one shadow fighter summon using MAN and Shadow Control scaling."],
+          },
+        ]
+      : []),
+  ];
+}
+
+export function getPowerBenefitSections(powerId: string, level: number): PowerBenefitSection[] {
+  let sections: PowerBenefitSection[];
+
+  switch (powerId) {
+    case "awareness":
+      sections = getAwarenessSections(level);
+      break;
+    case "body_reinforcement":
+      sections = getBodyReinforcementSections(level);
+      break;
+    case "crowd_control":
+      sections = getCrowdControlSections(level);
+      break;
+    case "elementalist":
+      sections = getElementalistSections(level);
+      break;
+    case "healing":
+      sections = getHealingSections(level);
+      break;
+    case "light_support":
+      sections = getLightSupportSections(level);
+      break;
+    case "necromancy":
+      sections = getNecromancySections(level);
+      break;
+    case "shadow_control":
+      sections = getShadowControlSections(level);
+      break;
+    default: {
+      const template = getPowerTemplate(powerId);
+      sections = [
+        {
+          title: "Current Benefits",
+          bullets: template?.levelBenefits[level] ?? [`Level ${level} details pending in draft.`],
+        },
+      ];
+      break;
+    }
+  }
+
+  return sections.filter((section) => section.bullets.length > 0);
+}
+
 export function getPowerBenefits(powerId: string, level: number): string[] {
-  const template = getPowerTemplate(powerId);
-  return template?.levelBenefits[level] ?? [`Level ${level} details pending in draft.`];
+  return getPowerBenefitSections(powerId, level).flatMap((section) => section.bullets);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -768,6 +1209,43 @@ function hydrateActivePowerEffectModifier(value: unknown): ActivePowerEffectModi
   };
 }
 
+function backfillHydratedActivePowerEffectModifiers(
+  powerId: string,
+  stackKey: string,
+  label: string,
+  summary: string,
+  sourceLevel: number,
+  casterCharacterId: string,
+  targetCharacterId: string,
+  modifiers: ActivePowerEffectModifier[]
+): ActivePowerEffectModifier[] {
+  if (modifiers.length > 0) {
+    return modifiers;
+  }
+
+  if (powerId !== "light_support" || sourceLevel < 5 || targetCharacterId === casterCharacterId) {
+    return modifiers;
+  }
+
+  const normalizedLabel = label.trim().toLowerCase();
+  const normalizedSummary = summary.trim().toLowerCase();
+  const looksLikeExposeDarkness =
+    stackKey === "light_support:expose_darkness" ||
+    normalizedLabel === "lessen darkness" ||
+    normalizedSummary.includes("physical / elemental resistance");
+
+  if (!looksLikeExposeDarkness) {
+    return modifiers;
+  }
+
+  return LIGHT_SUPPORT_LEVEL_FIVE_EXPOSE_DARKNESS_TYPES.map((damageType) => ({
+    targetType: "resistance",
+    targetId: damageType,
+    value: -1,
+    sourceLabel: "Lessen Darkness",
+  }));
+}
+
 function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
   if (!Array.isArray(value)) {
     return [];
@@ -778,7 +1256,7 @@ function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
       return [];
     }
 
-    const modifiers = Array.isArray(entry.modifiers)
+    const parsedModifiers = Array.isArray(entry.modifiers)
       ? entry.modifiers
           .map((modifier) => hydrateActivePowerEffectModifier(modifier))
           .filter((modifier): modifier is ActivePowerEffectModifier => modifier !== null)
@@ -800,6 +1278,8 @@ function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
           ? "shadow_control:cloak"
           : persistedStackKey;
     const sourceLevel = Math.max(0, Math.trunc(coerceNumber(entry.sourceLevel, 0)));
+    const label = coerceString(entry.label, powerId);
+    const summary = coerceString(entry.summary, "");
     const inferredEffectKind =
       entry.effectKind === "aura_source" || entry.effectKind === "aura_shared"
         ? entry.effectKind
@@ -861,6 +1341,17 @@ function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
       return [];
     }
 
+    const modifiers = backfillHydratedActivePowerEffectModifiers(
+      powerId,
+      normalizedStackKey,
+      label,
+      summary,
+      sourceLevel,
+      casterCharacterId,
+      targetCharacterId,
+      parsedModifiers
+    );
+
     return [
       {
         id: effectId,
@@ -876,8 +1367,8 @@ function hydrateActivePowerEffects(value: unknown): ActivePowerEffect[] {
           typeof entry.sourceEffectId === "string" ? entry.sourceEffectId : null,
         shareMode: inferredShareMode,
         sharedTargetCharacterIds: persistedSharedTargetCharacterIds,
-        label: coerceString(entry.label, powerId),
-        summary: coerceString(entry.summary, ""),
+        label,
+        summary,
         actionType: typeof entry.actionType === "string" ? entry.actionType : null,
         manaCost: persistedManaCost,
         selectedStatId: isStatId(entry.selectedStatId) ? entry.selectedStatId : null,

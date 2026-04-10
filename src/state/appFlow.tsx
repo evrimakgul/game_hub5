@@ -15,7 +15,13 @@ import {
   normalizeCharacterDraft,
 } from "../config/characterTemplate";
 import { createEmptyKnowledgeState } from "../lib/knowledge.ts";
-import { createSharedItemRecord } from "../lib/items.ts";
+import {
+  createItemBlueprintRecord,
+  createSharedItemRecord,
+  syncItemsWithBlueprint,
+  syncSharedItemRecordWithBlueprint,
+  updateBlueprintOverrideList,
+} from "../lib/items.ts";
 import {
   CHARACTER_STORAGE_KEY,
   readPersistedCharactersFromStorage,
@@ -28,7 +34,7 @@ import {
   type CharacterRecord,
 } from "../types/character";
 import type { CombatEncounterState } from "../types/combatEncounter";
-import type { ItemBlueprintId, SharedItemRecord } from "../types/items.ts";
+import type { ItemBlueprintId, ItemBlueprintRecord, SharedItemRecord } from "../types/items.ts";
 import type {
   KnowledgeEntity,
   KnowledgeOwnership,
@@ -45,6 +51,7 @@ type AppFlowContextValue = {
   authChoice: AuthChoice;
   roleChoice: RoleChoice;
   characters: CharacterRecord[];
+  itemBlueprints: ItemBlueprintRecord[];
   items: SharedItemRecord[];
   knowledgeEntities: KnowledgeEntity[];
   knowledgeRevisions: KnowledgeRevision[];
@@ -60,7 +67,14 @@ type AppFlowContextValue = {
     overrides?: Partial<
       Pick<
         SharedItemRecord,
-        "name" | "itemLevel" | "qualityTier" | "baseDescription" | "bonusProfile" | "knowledge"
+        | "name"
+        | "isArtifact"
+        | "baseDescription"
+        | "baseOverrides"
+        | "bonusProfile"
+        | "customProperties"
+        | "knowledge"
+        | "assignedCharacterId"
       >
     >
   ) => string;
@@ -69,6 +83,13 @@ type AppFlowContextValue = {
     updater: SharedItemRecord | ((current: SharedItemRecord) => SharedItemRecord)
   ) => void;
   deleteItem: (itemId: string) => void;
+  createItemBlueprint: (overrides?: Partial<ItemBlueprintRecord>) => string;
+  updateItemBlueprint: (
+    blueprintId: string,
+    updater: ItemBlueprintRecord | ((current: ItemBlueprintRecord) => ItemBlueprintRecord)
+  ) => void;
+  deleteItemBlueprint: (blueprintId: string) => void;
+  assignItemToCharacter: (itemId: string, characterId: string | null) => void;
   selectCharacter: (characterId: string) => void;
   deleteCharacter: (characterId: string) => void;
   updateCharacter: (
@@ -102,7 +123,9 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   const [authChoice, setAuthChoice] = useState<AuthChoice>(null);
   const [roleChoice, setRoleChoice] = useState<RoleChoice>(null);
   const [characters, setCharacters] = useState<CharacterRecord[]>(persistedCharacters.characters);
+  const [itemBlueprints, setItemBlueprints] = useState<ItemBlueprintRecord[]>(persistedCharacters.itemBlueprints);
   const [items, setItems] = useState<SharedItemRecord[]>(persistedCharacters.items);
+  const [starterItemsInitialized] = useState<boolean>(persistedCharacters.starterItemsInitialized);
   const [knowledgeState, setKnowledgeState] = useState<KnowledgeState>({
     knowledgeEntities: persistedCharacters.knowledgeEntities,
     knowledgeRevisions: persistedCharacters.knowledgeRevisions,
@@ -135,13 +158,15 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       typeof window === "undefined" ? null : window.localStorage,
       {
         characters,
+        itemBlueprints,
         items,
         ...knowledgeState,
+        starterItemsInitialized,
         activePlayerCharacterId,
         activeDmCharacterId,
       }
     );
-  }, [activeDmCharacterId, activePlayerCharacterId, characters, items, knowledgeState]);
+  }, [activeDmCharacterId, activePlayerCharacterId, characters, itemBlueprints, items, knowledgeState, starterItemsInitialized]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -156,6 +181,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       const nextState = readPersistedCharactersFromStorage(window.localStorage);
       skipNextPersistRef.current = true;
       setCharacters(nextState.characters);
+      setItemBlueprints(nextState.itemBlueprints);
       setItems(nextState.items);
       setKnowledgeState({
         knowledgeEntities: nextState.knowledgeEntities,
@@ -206,16 +232,47 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     return characterId;
   }
 
+  function appendUnique(values: string[], nextValue: string): string[] {
+    return values.includes(nextValue) ? values : [...values, nextValue];
+  }
+
+  function stripItemReferencesFromSheet(sheet: CharacterDraft, itemId: string): CharacterDraft {
+    return normalizeCharacterDraft({
+      ...sheet,
+      ownedItemIds: sheet.ownedItemIds.filter((entry) => entry !== itemId),
+      inventoryItemIds: sheet.inventoryItemIds.filter((entry) => entry !== itemId),
+      activeItemIds: sheet.activeItemIds.filter((entry) => entry !== itemId),
+      equipment: sheet.equipment.map((entry) =>
+        entry.itemId === itemId ? { ...entry, itemId: null } : entry
+      ),
+    });
+  }
+
+  function assignItemReferencesToSheet(sheet: CharacterDraft, itemId: string): CharacterDraft {
+    return normalizeCharacterDraft({
+      ...sheet,
+      ownedItemIds: appendUnique(sheet.ownedItemIds, itemId),
+      inventoryItemIds: appendUnique(sheet.inventoryItemIds, itemId),
+    });
+  }
+
   function createItem(
     blueprintId: ItemBlueprintId,
     overrides: Partial<
       Pick<
         SharedItemRecord,
-        "name" | "itemLevel" | "qualityTier" | "baseDescription" | "bonusProfile" | "knowledge"
+        | "name"
+        | "isArtifact"
+        | "baseDescription"
+        | "baseOverrides"
+        | "bonusProfile"
+        | "customProperties"
+        | "knowledge"
+        | "assignedCharacterId"
       >
     > = {}
   ): string {
-    const nextItem = createSharedItemRecord(blueprintId, overrides);
+    const nextItem = createSharedItemRecord(blueprintId, overrides, itemBlueprints);
     setItems((currentItems) => [...currentItems, nextItem]);
     return nextItem.id;
   }
@@ -230,26 +287,105 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
           return item;
         }
 
-        return typeof updater === "function" ? updater(item) : updater;
+        const nextItem = typeof updater === "function" ? updater(item) : updater;
+        const blueprint = itemBlueprints.find((entry) => entry.id === nextItem.blueprintId);
+        return blueprint ? syncSharedItemRecordWithBlueprint(nextItem, blueprint) : nextItem;
       })
     );
   }
 
   function deleteItem(itemId: string): void {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== itemId));
+    setItems((currentItems) => {
+      const nextItems = currentItems.filter((item) => item.id !== itemId);
+      setItemBlueprints((currentBlueprints) =>
+        currentBlueprints.map((blueprint) => updateBlueprintOverrideList(blueprint, nextItems))
+      );
+      return nextItems;
+    });
     setCharacters((currentCharacters) =>
       currentCharacters.map((character) => ({
         ...character,
-        sheet: normalizeCharacterDraft({
-          ...character.sheet,
-          ownedItemIds: character.sheet.ownedItemIds.filter((entry) => entry !== itemId),
-          inventoryItemIds: character.sheet.inventoryItemIds.filter((entry) => entry !== itemId),
-          activeItemIds: character.sheet.activeItemIds.filter((entry) => entry !== itemId),
-          equipment: character.sheet.equipment.map((entry) =>
-            entry.itemId === itemId ? { ...entry, itemId: null } : entry
-          ),
-        }),
+        sheet: stripItemReferencesFromSheet(character.sheet, itemId),
       }))
+    );
+  }
+
+  function createItemBlueprint(overrides: Partial<ItemBlueprintRecord> = {}): string {
+    const nextBlueprint = createItemBlueprintRecord(overrides);
+    setItemBlueprints((currentBlueprints) => [...currentBlueprints, nextBlueprint]);
+    return nextBlueprint.id;
+  }
+
+  function updateItemBlueprint(
+    blueprintId: string,
+    updater: ItemBlueprintRecord | ((current: ItemBlueprintRecord) => ItemBlueprintRecord)
+  ): void {
+    let nextBlueprint: ItemBlueprintRecord | null = null;
+
+    setItemBlueprints((currentBlueprints) =>
+      currentBlueprints.map((blueprint) => {
+        if (blueprint.id !== blueprintId) {
+          return blueprint;
+        }
+
+        nextBlueprint = typeof updater === "function" ? updater(blueprint) : updater;
+        return nextBlueprint;
+      })
+    );
+
+    if (!nextBlueprint) {
+      return;
+    }
+
+    setItems((currentItems) => {
+      const syncedItems = syncItemsWithBlueprint(currentItems, nextBlueprint!);
+      const normalizedBlueprint = updateBlueprintOverrideList(nextBlueprint!, syncedItems);
+      setItemBlueprints((currentBlueprints) =>
+        currentBlueprints.map((blueprint) =>
+          blueprint.id === blueprintId ? normalizedBlueprint : blueprint
+        )
+      );
+      return syncedItems;
+    });
+  }
+
+  function deleteItemBlueprint(blueprintId: string): void {
+    if (items.some((item) => item.blueprintId === blueprintId)) {
+      return;
+    }
+
+    setItemBlueprints((currentBlueprints) =>
+      currentBlueprints.filter((blueprint) => blueprint.id !== blueprintId)
+    );
+  }
+
+  function assignItemToCharacter(itemId: string, characterId: string | null): void {
+    setCharacters((currentCharacters) =>
+      currentCharacters.map((character) => {
+        const strippedSheet = stripItemReferencesFromSheet(character.sheet, itemId);
+
+        if (characterId && character.id === characterId) {
+          return {
+            ...character,
+            sheet: assignItemReferencesToSheet(strippedSheet, itemId),
+          };
+        }
+
+        return {
+          ...character,
+          sheet: strippedSheet,
+        };
+      })
+    );
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              assignedCharacterId: characterId,
+            }
+          : item
+      )
     );
   }
 
@@ -270,6 +406,16 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   function deleteCharacter(characterId: string): void {
     setCharacters((currentCharacters) =>
       currentCharacters.filter((character) => character.id !== characterId)
+    );
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.assignedCharacterId === characterId
+          ? {
+              ...item,
+              assignedCharacterId: null,
+            }
+          : item
+      )
     );
     setActivePlayerCharacterId((currentActiveCharacterId) =>
       currentActiveCharacterId === characterId ? null : currentActiveCharacterId
@@ -345,6 +491,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         authChoice,
         roleChoice,
         characters,
+        itemBlueprints,
         items,
         knowledgeEntities: knowledgeState.knowledgeEntities,
         knowledgeRevisions: knowledgeState.knowledgeRevisions,
@@ -358,6 +505,10 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         createItem,
         updateItem,
         deleteItem,
+        createItemBlueprint,
+        updateItemBlueprint,
+        deleteItemBlueprint,
+        assignItemToCharacter,
         selectCharacter,
         deleteCharacter,
         updateCharacter,

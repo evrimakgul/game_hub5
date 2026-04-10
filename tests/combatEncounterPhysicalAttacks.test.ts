@@ -47,7 +47,7 @@ function withMockedRollFaces(faces: number[], run: () => void): void {
 export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
   await runTestSuite("combatEncounterPhysicalAttacks", [
     {
-      name: "no equipped weapon falls back to brawl or fists",
+      name: "no equipped weapon falls back to unarmed",
       run: () => {
         const character = createCharacterRecord("fighter", "Fighter", "player", {
           stats: { STR: 3, DEX: 3 },
@@ -55,8 +55,8 @@ export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
 
         const profile = getResolvedPhysicalAttackProfile(character.sheet, {});
 
-        assert.equal(profile.id, "brawl");
-        assert.equal(profile.label, "Brawl / Fists");
+        assert.equal(profile.id, "unarmed");
+        assert.equal(profile.label, "Unarmed");
         assert.equal(profile.attacksPerAction, 2);
         assert.equal(profile.baseDamagePool, 3);
       },
@@ -84,7 +84,86 @@ export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
 
         assert.equal(profile.id, "brawl");
         assert.equal(profile.label, "Shock Knuckles");
-        assert.equal(profile.baseDamagePool, 4);
+        assert.equal(profile.baseDamagePool, 5);
+      },
+    },
+    {
+      name: "two-handed and oversized melee weapons use the new baseline damage values",
+      run: () => {
+        const twoHandedUser = createCharacterRecord("fighter-2h", "Fighter", "player", {
+          stats: { STR: 4, DEX: 3 },
+        });
+        const oversizedUser = createCharacterRecord("fighter-oversized", "Fighter", "player", {
+          stats: { STR: 6, DEX: 3 },
+        });
+        const greatsword = createSharedItemRecord("weapon:two_handed", {
+          id: "item-greatsword",
+          name: "Greatsword",
+        });
+        const oversized = createSharedItemRecord("weapon:oversized", {
+          id: "item-oversized",
+          name: "Oversized Blade",
+        });
+
+        twoHandedUser.sheet = setCharacterWeaponHandSlotItem(
+          twoHandedUser.sheet,
+          "weapon_primary",
+          greatsword.id,
+          buildItemIndex([greatsword])
+        );
+        oversizedUser.sheet = setCharacterWeaponHandSlotItem(
+          oversizedUser.sheet,
+          "weapon_primary",
+          oversized.id,
+          buildItemIndex([oversized])
+        );
+
+        const twoHandedProfile = getResolvedPhysicalAttackProfile(
+          twoHandedUser.sheet,
+          buildItemIndex([greatsword])
+        );
+        const oversizedProfile = getResolvedPhysicalAttackProfile(
+          oversizedUser.sheet,
+          buildItemIndex([oversized])
+        );
+
+        assert.equal(twoHandedProfile.id, "two_handed");
+        assert.equal(twoHandedProfile.baseDamagePool, 10);
+        assert.equal(oversizedProfile.id, "oversized");
+        assert.equal(oversizedProfile.baseDamagePool, 15);
+      },
+    },
+    {
+      name: "ranged blueprint classes use their authoritative base damage values",
+      run: () => {
+        const cases = [
+          { blueprintId: "weapon:ranged_light", itemId: "item-ranged-light", expected: 5 },
+          { blueprintId: "weapon:pistol", itemId: "item-pistol", expected: 6 },
+          { blueprintId: "weapon:bow_long", itemId: "item-bow-long", expected: 6 },
+          { blueprintId: "weapon:rifle", itemId: "item-rifle", expected: 7 },
+          { blueprintId: "weapon:crossbow_heavy", itemId: "item-crossbow-heavy", expected: 8 },
+          { blueprintId: "weapon:shotgun", itemId: "item-shotgun", expected: 10 },
+          { blueprintId: "weapon:chaingun", itemId: "item-chaingun", expected: 12 },
+          { blueprintId: "weapon:rocket_launcher", itemId: "item-rocket", expected: 20 },
+        ] as const;
+
+        cases.forEach(({ blueprintId, itemId, expected }) => {
+          const item = createSharedItemRecord(blueprintId, {
+            id: itemId,
+            name: itemId,
+          });
+          const itemsById = buildItemIndex([item]);
+          const equipped = setCharacterWeaponHandSlotItem(
+            PLAYER_CHARACTER_TEMPLATE.createInstance(),
+            "weapon_primary",
+            item.id,
+            itemsById
+          );
+          const profile = getResolvedPhysicalAttackProfile(equipped, itemsById);
+
+          assert.equal(profile.id, "ranged");
+          assert.equal(profile.baseDamagePool, expected);
+        });
       },
     },
     {
@@ -121,7 +200,7 @@ export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
         assert.equal(profile.id, "dual_one_handed");
         assert.equal(profile.successDc, 7);
         assert.equal(profile.attacksPerAction, 2);
-        assert.equal(profile.baseDamagePool, 5);
+        assert.equal(profile.baseDamagePool, 6);
       },
     },
     {

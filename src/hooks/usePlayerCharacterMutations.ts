@@ -35,8 +35,10 @@ import {
 import {
   addEquipmentReference,
   linkSharedItemToCharacter,
+  removeCharacterItemFromEquipment,
   removeEquipmentReference,
   setCharacterActiveItemState,
+  setCharacterEquipmentSlotItem,
   setCharacterInventoryItemState,
   setCharacterOwnedItemState,
   setCharacterWeaponHandSlotItem,
@@ -81,7 +83,7 @@ type UsePlayerCharacterMutationsParams = {
     overrides?: Partial<
       Pick<
         SharedItemRecord,
-        "name" | "itemLevel" | "qualityTier" | "baseDescription" | "bonusProfile" | "knowledge"
+        "name" | "baseDescription" | "bonusProfile" | "customProperties" | "knowledge" | "isArtifact"
       >
     >
   ) => string;
@@ -104,7 +106,7 @@ export type PlayerCharacterMutations = {
   createSharedItem: (blueprintId: ItemBlueprintId) => void;
   updateSharedItemField: (
     itemId: string,
-    field: "name" | "itemLevel" | "qualityTier" | "baseDescription",
+    field: "name" | "baseDescription",
     value: string
   ) => void;
   updateSharedItemBlueprint: (itemId: string, blueprintId: ItemBlueprintId) => void;
@@ -121,6 +123,8 @@ export type PlayerCharacterMutations = {
   identifySharedItem: (itemId: string) => void;
   maskSharedItem: (itemId: string) => void;
   deleteSharedItem: (itemId: string) => void;
+  equipSharedItem: (itemId: string, slot?: string) => void;
+  unequipSharedItem: (itemId: string) => void;
   updateWeaponHandSlotItem: (slot: WeaponHandSlotId, itemId: string) => void;
   updateEquipmentEntry: (index: number, field: EquipmentReferenceField, value: string) => void;
   addEquipmentEntry: () => void;
@@ -386,17 +390,12 @@ export function usePlayerCharacterMutations({
 
   function updateSharedItemField(
     itemId: string,
-    field: "name" | "itemLevel" | "qualityTier" | "baseDescription",
+    field: "name" | "baseDescription",
     value: string
   ): void {
     setItemState(itemId, (currentItem) => ({
       ...currentItem,
-      [field]:
-        field === "itemLevel"
-          ? Math.max(1, Number.parseInt(value, 10) || currentItem.itemLevel)
-          : field === "qualityTier"
-            ? value.trim() || null
-            : value,
+      [field]: value,
     }));
   }
 
@@ -508,6 +507,104 @@ export function usePlayerCharacterMutations({
 
   function deleteSharedItemHandler(itemId: string): void {
     deleteItem(itemId);
+  }
+
+  function resolveDefaultEquipmentSlot(item: SharedItemRecord): string {
+    if (item.category === "armor") {
+      return item.subtype === "shield_light" || item.subtype === "shield_heavy"
+        ? "Shield"
+        : "Armor";
+    }
+
+    if (item.category === "mystic") {
+      return "Focus";
+    }
+
+    if (item.category === "jewel") {
+      return "Accessory";
+    }
+
+    return item.combatSpec?.slotKey?.trim() || "Equipment";
+  }
+
+  function chooseWeaponEquipSlot(currentSheet: CharacterDraft, item: SharedItemRecord): WeaponHandSlotId {
+    const primaryItemId =
+      currentSheet.equipment.find((entry) => entry.slot === "weapon_primary")?.itemId ?? null;
+    const secondaryItemId =
+      currentSheet.equipment.find((entry) => entry.slot === "weapon_secondary")?.itemId ?? null;
+
+    if (item.combatSpec?.handsRequired === 2) {
+      return "weapon_primary";
+    }
+
+    if (!primaryItemId) {
+      return "weapon_primary";
+    }
+
+    if (!secondaryItemId) {
+      return "weapon_secondary";
+    }
+
+    return "weapon_primary";
+  }
+
+  function equipSharedItem(itemId: string, slot?: string): void {
+    const item = itemsById[itemId];
+    if (!item) {
+      return;
+    }
+
+    setSheetState((currentSheet) => {
+      const baseSheet = removeCharacterItemFromEquipment(currentSheet, itemId);
+      const nextSheet =
+        item.category === "weapon"
+          ? setCharacterWeaponHandSlotItem(
+              baseSheet,
+              slot === "weapon_primary" || slot === "weapon_secondary"
+                ? slot
+                : chooseWeaponEquipSlot(baseSheet, item),
+              itemId,
+              itemsById
+            )
+          : setCharacterEquipmentSlotItem(baseSheet, slot?.trim() || resolveDefaultEquipmentSlot(item), itemId);
+
+      if (!isDmView) {
+        return nextSheet;
+      }
+
+      return appendDmAuditEntry(
+        nextSheet,
+        createDmAuditEntry(
+          "sheet",
+          "equipment",
+          JSON.stringify(currentSheet.equipment),
+          JSON.stringify(nextSheet.equipment),
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
+  }
+
+  function unequipSharedItem(itemId: string): void {
+    setSheetState((currentSheet) => {
+      const nextSheet = removeCharacterItemFromEquipment(currentSheet, itemId);
+      if (!isDmView) {
+        return nextSheet;
+      }
+
+      return appendDmAuditEntry(
+        nextSheet,
+        createDmAuditEntry(
+          "sheet",
+          "equipment",
+          JSON.stringify(currentSheet.equipment),
+          JSON.stringify(nextSheet.equipment),
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
   }
 
   function updateWeaponHandSlotItem(slot: WeaponHandSlotId, itemId: string): void {
@@ -702,6 +799,8 @@ export function usePlayerCharacterMutations({
     identifySharedItem,
     maskSharedItem,
     deleteSharedItem: deleteSharedItemHandler,
+    equipSharedItem,
+    unequipSharedItem,
     updateWeaponHandSlotItem,
     updateEquipmentEntry,
     addEquipmentEntry: addEquipmentEntryHandler,

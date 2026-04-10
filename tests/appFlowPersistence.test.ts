@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import {
   CHARACTER_DRAFT_SCHEMA_VERSION,
   PLAYER_CHARACTER_TEMPLATE,
+  hydrateCharacterDraft,
 } from "../src/config/characterTemplate.ts";
-import { buildItemIndex, createSharedItemRecord } from "../src/lib/items.ts";
+import { getResolvedResistanceLevel } from "../src/config/characterRuntime.ts";
+import { buildItemIndex, createDefaultItemBlueprints, createSharedItemRecord } from "../src/lib/items.ts";
 import {
   CHARACTER_STORAGE_KEY,
   hydratePersistedCharacters,
@@ -15,6 +17,15 @@ import { runTestSuite } from "./harness.ts";
 
 export async function runAppFlowPersistenceTests(): Promise<void> {
   await runTestSuite("appFlowPersistence", [
+    {
+      name: "empty persisted state seeds starter items once",
+      run: () => {
+        const state = hydratePersistedCharacters(null);
+
+        assert.equal(state.items.length, 5);
+        assert.equal(state.starterItemsInitialized, true);
+      },
+    },
     {
       name: "hydratePersistedCharacters restores characters and legacy active ids",
       run: () => {
@@ -35,7 +46,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         );
 
         assert.equal(state.characters.length, 2);
-        assert.equal(state.items.length, 0);
+        assert.equal(state.items.length, 5);
         assert.equal(state.activePlayerCharacterId, null);
         assert.equal(state.activeDmCharacterId, "dm-1");
       },
@@ -70,10 +81,12 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         });
         const payload = serializePersistedCharacters({
           characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+          itemBlueprints: createDefaultItemBlueprints(),
           items: [item],
           knowledgeEntities: [],
           knowledgeRevisions: [],
           knowledgeOwnerships: [],
+          starterItemsInitialized: true,
           activePlayerCharacterId: "writer-1",
           activeDmCharacterId: null,
         });
@@ -87,23 +100,58 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           },
           {
             characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+            itemBlueprints: createDefaultItemBlueprints(),
             items: [item],
             knowledgeEntities: [],
             knowledgeRevisions: [],
             knowledgeOwnerships: [],
+            starterItemsInitialized: true,
             activePlayerCharacterId: "writer-1",
             activeDmCharacterId: null,
           }
         );
 
         assert.equal(payload.version, CHARACTER_DRAFT_SCHEMA_VERSION);
-        assert.equal(payload.items?.length, 1);
+        assert.equal(payload.itemBlueprints?.length, createDefaultItemBlueprints().length);
+        assert.equal(payload.itemInstances?.length, 1);
+        assert.equal(payload.starterItemsInitialized, true);
         assert.equal(payload.activePlayerCharacterId, "writer-1");
         assert.equal(payload.characters[0]?.ownerRole, "player");
         assert.equal(
           JSON.parse(writes.get(CHARACTER_STORAGE_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"
         );
+      },
+    },
+    {
+      name: "hydratePersistedCharacters seeds starter items when legacy saves have no bootstrap flag",
+      run: () => {
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [],
+            items: [],
+          })
+        );
+
+        assert.equal(state.items.length, 5);
+        assert.equal(state.starterItemsInitialized, true);
+      },
+    },
+    {
+      name: "hydratePersistedCharacters does not recreate deleted starter items after bootstrap completes",
+      run: () => {
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [],
+            items: [],
+            starterItemsInitialized: true,
+          })
+        );
+
+        assert.equal(state.items.length, 0);
+        assert.equal(state.starterItemsInitialized, true);
       },
     },
     {
@@ -141,7 +189,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           })
         );
 
-        assert.equal(state.items.length, 2);
+        assert.equal(state.items.length, 7);
         assert.equal(state.characters[0]?.sheet.ownedItemIds.length, 2);
         assert.equal(state.characters[0]?.sheet.inventoryItemIds.length, 2);
         assert.equal(state.characters[0]?.sheet.equipment[0]?.itemId, "item-legacy-1-legacy-equipment-0");
@@ -247,6 +295,104 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(state.knowledgeEntities.length, 1);
         assert.equal(state.knowledgeRevisions.length, 1);
         assert.equal(state.knowledgeOwnerships.length, 1);
+      },
+    },
+    {
+      name: "hydratePersistedCharacters preserves spell bonuses on shared items",
+      run: () => {
+        const item = createSharedItemRecord("mystic:mystic", {
+          id: "spell-item-1",
+          name: "Mystic Focus",
+          bonusProfile: {
+            ...createSharedItemRecord("mystic:mystic").bonusProfile,
+            spellBonuses: {
+              "awareness:assess_character": 1,
+            },
+          },
+        });
+
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [],
+            items: [item],
+            starterItemsInitialized: true,
+          })
+        );
+
+        assert.equal(
+          buildItemIndex(state.items)["spell-item-1"]?.bonusProfile.spellBonuses["awareness:assess_character"],
+          1
+        );
+      },
+    },
+    {
+      name: "hydratePersistedCharacters normalizes legacy blueprint ids to the new authoritative catalog",
+      run: () => {
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [],
+            starterItemsInitialized: true,
+            items: [
+              createSharedItemRecord("weapon:bow", { id: "legacy-bow" }),
+              createSharedItemRecord("armor:shield", { id: "legacy-shield" }),
+              createSharedItemRecord("mystic:mystic", { id: "legacy-focus" }),
+            ],
+          })
+        );
+        const itemIndex = buildItemIndex(state.items);
+
+        assert.equal(itemIndex["legacy-bow"]?.blueprintId, "weapon:ranged_light");
+        assert.equal(itemIndex["legacy-shield"]?.blueprintId, "armor:shield_light");
+        assert.equal(itemIndex["legacy-focus"]?.blueprintId, "mystic:focus");
+      },
+    },
+    {
+      name: "starter item instances are backed by persisted blueprints",
+      run: () => {
+        const state = hydratePersistedCharacters(null);
+        const blueprintIds = new Set(state.itemBlueprints.map((blueprint) => blueprint.id));
+
+        assert.ok(state.items.every((item) => blueprintIds.has(item.blueprintId)));
+      },
+    },
+    {
+      name: "hydratePersistedCharacters backfills legacy lessen darkness resistance modifiers",
+      run: () => {
+        const hydratedSheet = hydrateCharacterDraft({
+          ...PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          activePowerEffects: [
+          {
+            id: "effect-1",
+            stackKey: "light_support:expose_darkness",
+            effectKind: "aura_shared",
+            powerId: "light_support",
+            powerName: "Light Support",
+            sourceLevel: 5,
+            casterCharacterId: "caster-1",
+            casterName: "Beacon",
+            targetCharacterId: "target-1",
+            sourceEffectId: "source-1",
+            shareMode: null,
+            sharedTargetCharacterIds: null,
+            label: "Lessen Darkness",
+            summary: "-1 physical / elemental resistance",
+            actionType: "standard",
+            manaCost: null,
+            selectedStatId: null,
+            modifiers: [],
+            appliedAt: new Date(0).toISOString(),
+          },
+          ],
+          resistances: {
+            ...PLAYER_CHARACTER_TEMPLATE.createInstance().resistances,
+            fire: 1,
+          },
+        });
+
+        assert.equal(hydratedSheet.activePowerEffects[0]?.modifiers.length, 6);
+        assert.equal(getResolvedResistanceLevel(hydratedSheet, "fire"), 0);
       },
     },
   ]);

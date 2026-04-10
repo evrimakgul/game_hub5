@@ -281,6 +281,10 @@
   grid-column: span 2;
 }
 
+.power-card {
+  grid-column: 1 / -1;
+}
+
 .combat-card {
   grid-column: 1 / 1;
 }
@@ -383,6 +387,12 @@
   gap: 10px;
 }
 
+.power-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  margin-top: 18px;
+}
+
 .stat-row,
 .skill-row,
 .power-row,
@@ -401,6 +411,23 @@
 .equipment-row:first-child {
   border-top: 0;
   padding-top: 0;
+}
+
+.power-list > .empty-block-copy {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+.power-row,
+.power-row:first-child {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid rgba(84, 57, 37, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
 }
 
 .stat-row strong,
@@ -489,7 +516,24 @@
 }
 
 .power-benefits li + li {
-  margin-top: 6px;
+  margin-top: 4px;
+}
+
+.power-benefit-groups {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.power-benefit-group {
+  display: grid;
+  gap: 4px;
+}
+
+.power-benefit-title {
+  display: block;
+  color: #2a1a10;
+  font-size: 0.98rem;
 }
 
 .history-card {
@@ -625,6 +669,190 @@
 .power-add-row button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.equipment-card {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 16px;
+}
+
+.equipment-subsection {
+  display: grid;
+  gap: 10px;
+}
+
+.equipment-subsection-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.equipment-subsection-head h3 {
+  font-size: 1rem;
+  color: #2a1a10;
+}
+
+.equipment-money-row {
+  min-width: 130px;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+
+.equipment-money-input {
+  margin-top: 0;
+  max-width: 92px;
+}
+
+.equipment-compact-list,
+.equipment-item-edit-list {
+  display: grid;
+  gap: 0;
+}
+
+.equipment-compact-row,
+.equipment-item-edit-row {
+  padding: 8px 0;
+  border-top: 1px solid rgba(84, 57, 37, 0.1);
+}
+
+.equipment-compact-row:first-child,
+.equipment-item-edit-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.equipment-compact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.equipment-compact-main,
+.equipment-read-meta,
+.equipment-item-edit-row {
+  min-width: 0;
+}
+
+.equipment-line-detail,
+.equipment-state-line {
+  display: block;
+  margin-top: 3px;
+  color: #745745;
+}
+
+.equipment-line-detail {
+  font-size: 0.8rem;
+}
+
+.equipment-state-line {
+  font-size: 0.74rem;
+}
+
+.equipment-read-meta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  text-align: right;
+}
+
+.equipment-read-meta em {
+  font-style: normal;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.82rem;
+  color: #7e4122;
+}
+
+.equipment-inline-controls,
+.equipment-add-row,
+.equipment-inline-actions,
+.equipment-item-edit-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.equipment-inline-controls {
+  justify-content: flex-end;
+}
+
+.equipment-inline-controls-wide,
+.equipment-item-edit-grid-secondary {
+  justify-content: flex-start;
+}
+
+.equipment-inline-actions {
+  justify-content: flex-end;
+}
+
+.equipment-inline-button {
+  padding: 8px 12px;
+  border: 1px solid rgba(109, 64, 33, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #6d4021;
+  font: inherit;
+  cursor: pointer;
+}
+
+.equipment-inline-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.equipment-item-edit-row {
+  display: grid;
+  gap: 8px;
+}
+
+.equipment-item-edit-grid-primary > * {
+  flex: 1 1 180px;
+}
+
+.equipment-item-edit-grid-secondary > :first-child {
+  flex: 1 1 280px;
+}
+
+.equipment-toggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: #564232;
+  font-size: 0.85rem;
+}
+
+.equipment-notes-input {
+  min-height: 60px;
+}
+
+.equipment-bonus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: 8px;
+}
+
+.equipment-derived-grid {
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+}
+
+.equipment-bonus-field {
+  display: grid;
+  gap: 4px;
+}
+
+.equipment-bonus-field span {
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #88654d;
+}
+
+.equipment-bonus-field .badge-input {
+  margin-top: 0;
 }
 
 .notes-input {

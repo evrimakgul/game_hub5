@@ -52,6 +52,11 @@ This file tracks active reminders for the current implementation block.
 
 ## Deferred But Recorded
 - Full item-authoring UX and multi-target `AA` knowledge-sharing UI remain deferred.
+- Future creation/template work should distinguish humanoid apparel logic from mobs/animals:
+  - humanoids can use default clothing and naked-state initiative rules
+  - beasts/mobs can intentionally have no clothing baseline
+  - both should still be able to equip armor/weapons when explicitly assigned
+  - recommended implementation hint: per-character/template flag such as `apparelMode: humanoid | none`
 - Expansion of the knowledge system beyond character cards remains deferred.
 - Backend sync and encounter persistence remain out of scope.
 

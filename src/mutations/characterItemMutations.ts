@@ -1,5 +1,5 @@
 import type { CharacterDraft } from "../config/characterTemplate";
-import type { SharedItemRecord, WeaponHandSlotId } from "../types/items.ts";
+import { isWeaponHandSlotId, type SharedItemRecord, type WeaponHandSlotId } from "../types/items.ts";
 
 type LinkItemOptions = {
   owned?: boolean;
@@ -32,16 +32,20 @@ function upsertEquipmentSlotValue(
   };
 }
 
+export function setCharacterEquipmentSlotItem(
+  sheet: CharacterDraft,
+  slot: string,
+  itemId: string
+): CharacterDraft {
+  return upsertEquipmentSlotValue(sheet, slot, itemId);
+}
+
 function clearWeaponHandSlot(sheet: CharacterDraft, slot: WeaponHandSlotId): CharacterDraft {
   return upsertEquipmentSlotValue(sheet, slot, null);
 }
 
 function itemOccupiesBothWeaponHands(item: SharedItemRecord | null | undefined): boolean {
-  return (
-    !!item &&
-    item.category === "weapon" &&
-    (item.subtype === "two_handed" || item.subtype === "oversized" || item.subtype === "bow")
-  );
+  return !!item && item.category === "weapon" && item.combatSpec?.handsRequired === 2;
 }
 
 export function setCharacterWeaponHandSlotItem(
@@ -121,6 +125,22 @@ export function removeSharedItemFromCharacter(
     equipment: sheet.equipment.map((entry) =>
       entry.itemId === itemId ? { ...entry, itemId: null } : entry
     ),
+  };
+}
+
+export function removeCharacterItemFromEquipment(
+  sheet: CharacterDraft,
+  itemId: string
+): CharacterDraft {
+  return {
+    ...sheet,
+    equipment: sheet.equipment.flatMap((entry) => {
+      if (entry.itemId !== itemId) {
+        return [entry];
+      }
+
+      return isWeaponHandSlotId(entry.slot) ? [{ ...entry, itemId: null }] : [];
+    }),
   };
 }
 

@@ -3,7 +3,7 @@
 -	All supplemental, magical, or advanced item modifiers are budgeted using the Property Point (PP) system.
 
 1.	CORE PRINCIPLES OF ITEM PROPERTIES
--	Base Item Stats: Mundane/base item properties (e.g., a standard one-handed weapon dealing STR + 2 damage, or a standard Kevlar vest granting 2 DR) cost 0 PP.
+-	Base Item Stats: Mundane/base item properties (e.g., a standard one-handed weapon dealing STR + 3 damage, or a light armor granting Initiative +1 and DR +1) cost 0 PP.
 -	The PP budget applies exclusively to the magical, advanced, or supplementary bonuses placed on the item above its mundane baseline.
 -	An item's total PP cost is the sum of all its positive properties minus the sum of all its drawbacks/curses.
 
@@ -15,6 +15,7 @@
 -	+1 Maximum HP
 -	+1 Maximum Mana
 -	+1 Initiative
+-   +1 Inspiration
 
 2.2. TIER 2: COMBAT AND SKILL MODIFIERS
 -	Cost: 2 PP per point
@@ -23,30 +24,39 @@
 -	+1 Damage (adds directly to Damage Dice Pool)
 -	+1 Armor Class (AC)
 -	+1 Damage Reduction (DR)
+-   +1 Soak
 
 2.3. TIER 3: CORE STATS
 -	Cost: 3 PP per point
 -	+1 to any single Core Stat (STR, DEX, STAM, INT, WITS, PER, CHA, MAN, APP)
--	+1 Hit (adds directly to Attack Resolution)
--	+1 Damage (adds directly to Damage Resolution)
+-	+1 Pure Hit (adds directly to Attack Resolution)
+-	+1 Pure Damage (adds directly to Damage Resolution)
 -	+1 Success to any types of roll
 
 2.4. SPECIAL PROPERTIES
 -	Variable PP Cost
 -	Minor Utility (e.g., night vision, minor cosmetic changes, glowing, basic portal utility): 1 to 3 PP
 -	+1 to a selected spell: 4 PP
+-	+1 Resistance Level to any single damage type (e.g., half damage taken from one specific element): 4 PP
 -	+1 to a supernatural power: 6 PP
 -	Major Effect (e.g., AoE damage, lifesteal/vampirism, ignoring up to 3 enemy DR): 6 to 10 PP
--	Elemental Resistance (e.g., half damage taken from one specific element): 8 PP
 -	Bundle: +1 to All Stats (discounted flat cost for global stat increase): 12 PP
--	Immunity (e.g., total immunity to one specific element or crowd control type): 15 PP
+-	Bundle: +1 to All Skills (discounted flat cost for global skill increase): 8 PP
+-	Bundle: +1 to combat values (+1 Initiative, +1 to all attacks [ranged and melee], +1 to all damages [ranged and melee]): 3 PP
+-	Bundle: +1 to combat defenses (+1 to AC, +1 to DR, +1 Soak): 4 PP
+-	Bundle: +1 Resistance Level to any 3 damage types (e.g., half damage taken from one specific element): 8 PP
+-	Bundle: +1 Resistance Level to any 6 damage types (e.g., half damage taken from one specific element): 12 PP
+-	Bundle: +1 Resistance Level to all damage types (e.g., half damage taken from one specific element): 18 PP
 -	Game-Altering Effect (e.g., granting an extra Standard Action, reality-bending mechanics): 15 to 20+ PP
 
 3.	DRAWBACKS AND CURSES (PP REFUNDS)
 -	Applying a permanent penalty to an item refunds PP, increasing the item's available PP budget for stronger positive effects.
+-	Refund math is symmetric with PP cost: a permanent drawback refunds the same PP value that the equivalent positive property would cost.
 -	-1 Maximum HP, Maximum Mana, or Initiative: Refunds 1 PP
--	-1 to any specific Skill, Hit, Damage, AC, or DR: Refunds 2 PP
+-	-1 Inspiration refunds 1 PP.
+-	-1 to any specific Skill, Hit, Damage, AC, DR, or Soak: Refunds 2 PP
 -	-1 to any single Core Stat: Refunds 3 PP
+-	-1 Resistance Level to any single damage type refunds 4 PP.
 
 4.	ITEM QUALITY SYSTEM (PP BUDGETS)
 -	An item's Quality is strictly defined by its total net PP capacity (Total Positive PP - Total Refunded PP).
@@ -68,7 +78,8 @@ Item Quality Tiers and PP Budget Capacities:
 
 5.1. MELEE WEAPONS
 -	Unarmed / Brawl: Damage = STR. (Hands: 1)
--	Standard 1-Handed Weapon (Sword, Mace, Baton): Damage = STR + 2. (Hands: 1)
+-   Brawl Weapon: Damage = STR + 1. (Hands: 1)
+-	Standard 1-Handed Weapon (Sword, Mace, Baton): Damage = STR + 3. (Hands: 1)
 -	Standard 2-Handed Weapon (Greatsword, Spear): Damage = STR + 6. (Hands: 2). Requirement: Minimum STR 4 to wield.
 -	3-Handed Weapon (Oversized): Damage = STR + 9. (Hands: 2). Requirement: Minimum STR 6 to wield.
 
@@ -82,14 +93,16 @@ Item Quality Tiers and PP Budget Capacities:
 -	Chaingun: Damage = 12d10. Range = 50m. (Hands: 2). Requirement: Minimum STR 8 to wield.
 -	Rocket Launcher: Damage = 20d10 (AoE). Range = 100m. (Hands: 2). Special: Deals Area of Effect damage.
 
-5.3. ARMOR AND SHIELDS
+5.3. SHIELDS
+-	Light Shields: DR +1. (Slot: Hand: 1)
+-	Heavy Shields: DR +2. (Slot: Hand: 1)
+
+5.4. ARMOR
 -	No Armor / Clothing / Robes: Initiative +2, DR +0. (Slot: Chest)
 -	Light Armors: Initiative +1, DR +1. (Slot: Chest)
 -	Medium Armors: Stealth -1, DR +2. (Slot: Chest)
 -	Heavy Armors: Initiative -1, Stealth -2, DR +3. (Slot: Chest)
--	Light Shields: DR +1. (Slot: Hand: 1)
--	Heavy Shields: DR +2. (Slot: Hand: 1)
 
-5.4. OCCULT ITEMS
+5.5. OCCULT ITEMS
 -	Occult Focus (Orb, Wand, Staff, etc.): Allows the user to cast spells while holding this item. (Slot: Hand). Base Mana Bonus: +0. 
 

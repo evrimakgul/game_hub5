@@ -434,6 +434,7 @@ export function PlayerCharacterPage({
           <CharacterCombatSummary
             sheetState={sheetState}
             derived={derived}
+            itemsById={itemsById}
             isDmRuntimeEditMode={isDmRuntimeEditMode}
             canManagePowerUsage={!isReadOnlyView}
             powerUsageSummary={powerUsageSummary}
@@ -494,6 +495,8 @@ export function PlayerCharacterPage({
             onIdentifySharedItem={mutations.identifySharedItem}
             onMaskSharedItem={mutations.maskSharedItem}
             onDeleteSharedItem={mutations.deleteSharedItem}
+            onEquipSharedItem={mutations.equipSharedItem}
+            onUnequipSharedItem={mutations.unequipSharedItem}
             onUpdateWeaponHandSlotItem={mutations.updateWeaponHandSlotItem}
             onUpdateEquipmentEntry={mutations.updateEquipmentEntry}
             onAddEquipmentEntry={mutations.addEquipmentEntry}

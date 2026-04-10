@@ -26,6 +26,36 @@
   .dm-combatant-values {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .dm-item-edit-layout,
+  .dm-items-list-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-item-edit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dm-item-line-grid,
+  .dm-field-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-item-edit-grid-paired {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-item-edit-grid-paired-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dm-item-edit-grid-paired-stats .dm-field-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .power-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -116,7 +146,35 @@
   .dm-parameter-grid,
   .dm-two-up,
   .dm-inline-controls,
-  .dm-inline-controls-two-up {
+  .dm-inline-controls-two-up,
+  .dm-item-edit-grid,
+  .dm-item-edit-grid-two-up,
+  .dm-items-list-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-item-line-toggle,
+  .dm-item-line-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dm-item-line-side {
+    justify-items: start;
+  }
+
+  .dm-item-line-grid,
+  .dm-field-pair,
+  .dm-item-base-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-item-edit-grid-paired,
+  .dm-item-edit-grid-paired-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-item-edit-grid-paired-stats .dm-field-pair {
     grid-template-columns: 1fr;
   }
 

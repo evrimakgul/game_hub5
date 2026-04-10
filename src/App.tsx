@@ -3,6 +3,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { CombatDashboardPage } from "./routes/CombatDashboardPage";
 import { CombatEncounterPage } from "./routes/CombatEncounterPage";
 import { DmCharacterHubPage } from "./routes/DmCharacterHubPage";
+import { DmBlueprintManagementPage } from "./routes/DmBlueprintManagementPage";
+import { DmItemEditPage } from "./routes/DmItemEditPage";
+import { DmItemsListPage } from "./routes/DmItemsListPage";
 import { DmNpcCreatorPage } from "./routes/DmNpcCreatorPage";
 import { DmPage } from "./routes/DmPage";
 import { LoginPage } from "./routes/LoginPage";
@@ -23,6 +26,9 @@ export default function App() {
       <Route path="/dm/character" element={<PlayerCharacterPage viewMode="dm-readonly" />} />
       <Route path="/dm/npc-creator" element={<DmNpcCreatorPage />} />
       <Route path="/dm/npc-character" element={<PlayerCharacterPage viewMode="dm-editable" />} />
+      <Route path="/dm/items" element={<DmItemsListPage />} />
+      <Route path="/dm/items/edit" element={<DmItemEditPage />} />
+      <Route path="/dm/items/blueprints" element={<DmBlueprintManagementPage />} />
       <Route path="/dm/combat" element={<CombatDashboardPage />} />
       <Route path="/dm/combat/encounter" element={<CombatEncounterPage />} />
       <Route path="*" element={<NotFoundPage />} />

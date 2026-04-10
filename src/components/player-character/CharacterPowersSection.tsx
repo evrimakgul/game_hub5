@@ -1,4 +1,4 @@
-import { getPowerBenefits } from "../../config/characterTemplate";
+import { getPowerBenefitSections } from "../../config/characterTemplate";
 import type { CharacterDraft } from "../../config/characterTemplate";
 import { T1_POWER_XP_BY_LEVEL } from "../../rules/xpTables";
 import { getIncrementCost } from "../../lib/progressionCosts";
@@ -70,6 +70,7 @@ export function CharacterPowersSection({
             const canDecrease = adminOverrideMode
               ? power.level > 0
               : isProgressionEditMode && power.level > 0;
+            const benefitSections = getPowerBenefitSections(power.id, power.level);
 
             return (
               <div key={power.id} className="power-row">
@@ -77,11 +78,18 @@ export function CharacterPowersSection({
                   <strong>
                     {power.name} Lv {power.level}
                   </strong>
-                  <ul className="power-benefits">
-                    {getPowerBenefits(power.id, power.level).map((benefit) => (
-                      <li key={benefit}>{benefit}</li>
+                  <div className="power-benefit-groups">
+                    {benefitSections.map((section) => (
+                      <section key={`${power.id}:${section.title}`} className="power-benefit-group">
+                        <strong className="power-benefit-title">{section.title}</strong>
+                        <ul className="power-benefits">
+                          {section.bullets.map((benefit) => (
+                            <li key={`${section.title}:${benefit}`}>{benefit}</li>
+                          ))}
+                        </ul>
+                      </section>
                     ))}
-                  </ul>
+                  </div>
                 </div>
                 {isProgressionEditMode || adminOverrideMode ? (
                   <div className="row-actions">

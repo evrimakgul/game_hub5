@@ -73,6 +73,35 @@ export function DmPage() {
               Open Combat Dashboard
             </button>
           </article>
+
+          <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Item Management</p>
+            <h2>Item Management</h2>
+            <p className="dm-summary-line">
+              Browse item instances, edit them in detail, and manage blueprint classes.
+            </p>
+            <button
+              type="button"
+              className="flow-primary"
+              onClick={() => navigate("/dm/items/edit")}
+            >
+              Item Editting
+            </button>
+            <button
+              type="button"
+              className="flow-secondary"
+              onClick={() => navigate("/dm/items")}
+            >
+              Items List
+            </button>
+            <button
+              type="button"
+              className="flow-secondary"
+              onClick={() => navigate("/dm/items/blueprints")}
+            >
+              Blueprint Management
+            </button>
+          </article>
         </section>
       </section>
     </main>

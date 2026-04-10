@@ -270,6 +270,7 @@ export function buildCharacterDerivedValues(
     calculateRangedBonusDice(currentStats.PER) +
     attackDiceBonus +
     getDerivedModifierTotal(sheet, "ranged_attack", itemsById);
+  const inspirationBonus = getDerivedModifierTotal(sheet, "inspiration", itemsById);
   const temporaryInspiration = sheet.temporaryInspiration;
   const utilityTraits = [
     ...new Set([
@@ -285,12 +286,14 @@ export function buildCharacterDerivedValues(
     baseMana: calculateT1BaseMana(sheet, currentStats),
     passiveManaBonus,
     occultManaBonus,
-    maxHp: calculateMaxHP(currentStats.STAM),
+    maxHp: calculateMaxHP(currentStats.STAM) + getDerivedModifierTotal(sheet, "max_hp", itemsById),
     temporaryHp: Math.max(0, sheet.temporaryHp),
-    permanentInspiration: sheet.inspiration,
+    permanentInspiration: sheet.inspiration + inspirationBonus,
     temporaryInspiration,
-    totalInspiration: sheet.inspiration + temporaryInspiration,
-    initiative: calculateInitiative(currentStats.DEX, currentStats.WITS),
+    totalInspiration: sheet.inspiration + inspirationBonus + temporaryInspiration,
+    initiative:
+      calculateInitiative(currentStats.DEX, currentStats.WITS) +
+      getDerivedModifierTotal(sheet, "initiative", itemsById),
     movement: "20 + 5",
     movementSelectable: 25,
     armorClass: calculateArmorClass(

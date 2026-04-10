@@ -4,13 +4,17 @@ import {
 } from "../config/characterTemplate.ts";
 import {
   createEmptyBonusProfile,
+  createDefaultItemBlueprints,
+  createLegacyTierImportProperty,
   createSharedItemRecord,
+  createStarterItemRecords,
+  ensureStarterItems,
+  hydrateItemBlueprintRecord,
   hydrateSharedItemRecord,
   inferItemBlueprintId,
-  inferItemLevelFromQualityTier,
 } from "../lib/items.ts";
 import { isCharacterOwnerRole, type CharacterRecord } from "../types/character.ts";
-import type { SharedItemRecord } from "../types/items.ts";
+import type { ItemBlueprintRecord, SharedItemRecord } from "../types/items.ts";
 import type { KnowledgeEntity, KnowledgeOwnership, KnowledgeRevision, KnowledgeState } from "../types/knowledge.ts";
 import {
   createEmptyKnowledgeState,
@@ -24,10 +28,13 @@ export const CHARACTER_STORAGE_KEY = "convergence.local.characters";
 type PersistedCharacterEnvelope = {
   version: number;
   characters: Array<{ id: string; ownerRole?: unknown; sheet: unknown }>;
+  itemBlueprints?: unknown[];
+  itemInstances?: unknown[];
   items?: unknown[];
   knowledgeEntities?: unknown[];
   knowledgeRevisions?: unknown[];
   knowledgeOwnerships?: unknown[];
+  starterItemsInitialized?: boolean;
   activeCharacterId?: string | null;
   activePlayerCharacterId?: string | null;
   activeDmCharacterId?: string | null;
@@ -35,19 +42,24 @@ type PersistedCharacterEnvelope = {
 
 export type PersistedCharacterState = {
   characters: CharacterRecord[];
+  itemBlueprints: ItemBlueprintRecord[];
   items: SharedItemRecord[];
   knowledgeEntities: KnowledgeEntity[];
   knowledgeRevisions: KnowledgeRevision[];
   knowledgeOwnerships: KnowledgeOwnership[];
+  starterItemsInitialized: boolean;
   activePlayerCharacterId: string | null;
   activeDmCharacterId: string | null;
 };
 
 function getEmptyPersistedCharacterState(): PersistedCharacterState {
+  const itemBlueprints = createDefaultItemBlueprints();
   return {
     characters: [],
-    items: [],
+    itemBlueprints,
+    items: createStarterItemRecords(itemBlueprints),
     ...createEmptyKnowledgeState(),
+    starterItemsInitialized: true,
     activePlayerCharacterId: null,
     activeDmCharacterId: null,
   };
@@ -57,8 +69,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function inferAssignedCharacterId(
+  itemId: string,
+  characters: CharacterRecord[]
+): string | null {
+  const owners = characters
+    .filter((character) => {
+      const sheet = character.sheet;
+      return (
+        sheet.ownedItemIds.includes(itemId) ||
+        sheet.inventoryItemIds.includes(itemId) ||
+        sheet.activeItemIds.includes(itemId) ||
+        sheet.equipment.some((entry) => entry.itemId === itemId)
+      );
+    })
+    .map((character) => character.id);
+
+  return owners.length === 1 ? owners[0] : null;
+}
+
 function normalizeOwnerRole(value: unknown): CharacterRecord["ownerRole"] {
   return isCharacterOwnerRole(value) ? value : "player";
+}
+
+function safeHydrateEntry<T>(factory: () => T | null): T | null {
+  try {
+    return factory();
+  } catch {
+    return null;
+  }
 }
 
 function buildLegacyItemKnowledge(
@@ -80,7 +119,8 @@ function buildLegacyItemKnowledge(
 
 function migrateLegacySheetItems(
   rawSheet: unknown,
-  characterId: string
+  characterId: string,
+  itemBlueprints: ItemBlueprintRecord[]
 ): {
   nextSheet: unknown;
   migratedItems: SharedItemRecord[];
@@ -131,6 +171,11 @@ function migrateLegacySheetItems(
         : typeof entry.hiddenSpec === "string"
           ? entry.hiddenSpec
           : "";
+    const legacyCustomProperty = createLegacyTierImportProperty(
+      qualityTier,
+      null,
+      createEmptyBonusProfile()
+    );
 
     migratedItems.push(
       createSharedItemRecord(
@@ -138,15 +183,17 @@ function migrateLegacySheetItems(
         {
           id: itemId,
           name: itemName,
-          itemLevel: inferItemLevelFromQualityTier(qualityTier),
-          qualityTier,
           baseDescription: typeof entry.effect === "string" ? entry.effect : "",
           bonusProfile: {
             ...createEmptyBonusProfile(),
             notes: bonusText.trim().length > 0 ? [bonusText.trim()] : [],
           },
+          customProperties: legacyCustomProperty ? [legacyCustomProperty] : [],
+          isArtifact: (qualityTier?.trim().toLowerCase() ?? "").includes("artifact"),
           knowledge: buildLegacyItemKnowledge(entry.identified, characterId),
-        }
+          assignedCharacterId: characterId,
+        },
+        itemBlueprints
       )
     );
     ownedItemIds.push(itemId);
@@ -169,20 +216,30 @@ function migrateLegacySheetItems(
         : typeof entry.hiddenSpec === "string"
           ? entry.hiddenSpec
           : "";
+    const legacyCustomProperty = createLegacyTierImportProperty(
+      qualityTier,
+      null,
+      createEmptyBonusProfile()
+    );
 
     migratedItems.push(
-      createSharedItemRecord(inferItemBlueprintId(itemName, typeof entry.category === "string" ? entry.category : ""), {
-        id: itemId,
-        name: itemName,
-        itemLevel: inferItemLevelFromQualityTier(qualityTier),
-        qualityTier,
-        baseDescription: typeof entry.note === "string" ? entry.note : "",
-        bonusProfile: {
-          ...createEmptyBonusProfile(),
-          notes: bonusText.trim().length > 0 ? [bonusText.trim()] : [],
+      createSharedItemRecord(
+        inferItemBlueprintId(itemName, typeof entry.category === "string" ? entry.category : ""),
+        {
+          id: itemId,
+          name: itemName,
+          baseDescription: typeof entry.note === "string" ? entry.note : "",
+          bonusProfile: {
+            ...createEmptyBonusProfile(),
+            notes: bonusText.trim().length > 0 ? [bonusText.trim()] : [],
+          },
+          customProperties: legacyCustomProperty ? [legacyCustomProperty] : [],
+          isArtifact: (qualityTier?.trim().toLowerCase() ?? "").includes("artifact"),
+          knowledge: buildLegacyItemKnowledge(entry.identified, characterId),
+          assignedCharacterId: characterId,
         },
-        knowledge: buildLegacyItemKnowledge(entry.identified, characterId),
-      })
+        itemBlueprints
+      )
     );
     ownedItemIds.push(itemId);
     inventoryItemIds.push(itemId);
@@ -212,24 +269,32 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
     }
 
     const envelope = parsed as Partial<PersistedCharacterEnvelope>;
-    const persistedItems = Array.isArray(envelope.items)
-      ? envelope.items
-          .map((entry) => hydrateSharedItemRecord(entry))
-          .filter((entry): entry is SharedItemRecord => entry !== null)
-      : [];
+    const itemBlueprints = Array.isArray(envelope.itemBlueprints)
+      ? envelope.itemBlueprints
+          .map((entry) => safeHydrateEntry(() => hydrateItemBlueprintRecord(entry)))
+          .filter((entry): entry is ItemBlueprintRecord => entry !== null)
+      : createDefaultItemBlueprints();
+    const rawItemEntries = Array.isArray(envelope.itemInstances)
+      ? envelope.itemInstances
+      : Array.isArray(envelope.items)
+        ? envelope.items
+        : [];
+    const hydratedItems = rawItemEntries
+      .map((entry) => safeHydrateEntry(() => hydrateSharedItemRecord(entry, itemBlueprints)))
+      .filter((entry): entry is SharedItemRecord => entry !== null);
     const knowledgeEntities = Array.isArray(envelope.knowledgeEntities)
       ? envelope.knowledgeEntities
-          .map((entry) => hydrateKnowledgeEntity(entry))
+          .map((entry) => safeHydrateEntry(() => hydrateKnowledgeEntity(entry)))
           .filter((entry): entry is KnowledgeEntity => entry !== null)
       : [];
     const knowledgeRevisions = Array.isArray(envelope.knowledgeRevisions)
       ? envelope.knowledgeRevisions
-          .map((entry) => hydrateKnowledgeRevision(entry))
+          .map((entry) => safeHydrateEntry(() => hydrateKnowledgeRevision(entry)))
           .filter((entry): entry is KnowledgeRevision => entry !== null)
       : [];
     const knowledgeOwnerships = Array.isArray(envelope.knowledgeOwnerships)
       ? envelope.knowledgeOwnerships
-          .map((entry) => hydrateKnowledgeOwnership(entry))
+          .map((entry) => safeHydrateEntry(() => hydrateKnowledgeOwnership(entry)))
           .filter((entry): entry is KnowledgeOwnership => entry !== null)
       : [];
     const migratedItems: SharedItemRecord[] = [];
@@ -239,16 +304,18 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
             return [];
           }
 
-          const migrated = migrateLegacySheetItems(entry.sheet, entry.id);
-          migratedItems.push(...migrated.migratedItems);
+          const hydratedCharacter = safeHydrateEntry(() => {
+            const migrated = migrateLegacySheetItems(entry.sheet, entry.id, itemBlueprints);
+            migratedItems.push(...migrated.migratedItems);
 
-          return [
-            {
+            return {
               id: entry.id,
               ownerRole: normalizeOwnerRole(entry.ownerRole),
               sheet: hydrateCharacterDraft(migrated.nextSheet),
-            },
-          ];
+            };
+          });
+
+          return hydratedCharacter ? [hydratedCharacter] : [];
         })
       : [];
     const persistedActivePlayerCharacterId =
@@ -264,12 +331,27 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
         ? characters.find((character) => character.id === legacyActiveCharacterId) ?? null
         : null;
 
+    const persistedStarterItemsInitialized = envelope.starterItemsInitialized === true;
+    const items = persistedStarterItemsInitialized
+      ? hydratedItems
+      : ensureStarterItems([...hydratedItems, ...migratedItems], itemBlueprints);
+    const normalizedItems = items.map((item) =>
+      item.assignedCharacterId
+        ? item
+        : {
+            ...item,
+            assignedCharacterId: inferAssignedCharacterId(item.id, characters),
+          }
+    );
+
     return {
       characters,
-      items: [...persistedItems, ...migratedItems],
+      itemBlueprints,
+      items: normalizedItems,
       knowledgeEntities,
       knowledgeRevisions,
       knowledgeOwnerships,
+      starterItemsInitialized: true,
       activePlayerCharacterId:
         persistedActivePlayerCharacterId &&
         characters.some(
@@ -316,10 +398,12 @@ export function serializePersistedCharacters(
       ownerRole: character.ownerRole,
       sheet: character.sheet,
     })),
-    items: state.items,
+    itemBlueprints: state.itemBlueprints,
+    itemInstances: state.items,
     knowledgeEntities: state.knowledgeEntities,
     knowledgeRevisions: state.knowledgeRevisions,
     knowledgeOwnerships: state.knowledgeOwnerships,
+    starterItemsInitialized: state.starterItemsInitialized,
     activePlayerCharacterId: state.activePlayerCharacterId,
     activeDmCharacterId: state.activeDmCharacterId,
   };

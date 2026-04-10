@@ -5,21 +5,37 @@ export const ITEM_CATEGORIES = ["weapon", "armor", "jewel", "mystic"] as const;
 export type ItemCategory = (typeof ITEM_CATEGORIES)[number];
 
 export const WEAPON_SUBTYPES = [
+  "unarmed",
   "brawl",
   "one_handed",
   "two_handed",
   "oversized",
-  "bow",
+  "ranged_light",
+  "pistol",
+  "bow_long",
+  "rifle",
+  "crossbow_heavy",
+  "shotgun",
+  "chaingun",
+  "rocket_launcher",
 ] as const;
 export type WeaponSubtype = (typeof WEAPON_SUBTYPES)[number];
 
-export const ARMOR_SUBTYPES = ["light", "heavy"] as const;
+export const ARMOR_SUBTYPES = [
+  "clothing",
+  "light",
+  "medium",
+  "heavy",
+  "shield_light",
+  "shield_heavy",
+] as const;
 export type ArmorSubtype = (typeof ARMOR_SUBTYPES)[number];
 
 export const ITEM_DERIVED_MODIFIER_IDS = [
   "max_hp",
   "max_mana",
   "initiative",
+  "inspiration",
   "attack_dice_bonus",
   "melee_attack",
   "ranged_attack",
@@ -31,7 +47,31 @@ export const ITEM_DERIVED_MODIFIER_IDS = [
 ] as const;
 export type ItemDerivedModifierId = (typeof ITEM_DERIVED_MODIFIER_IDS)[number];
 
-export type ItemSubtype = WeaponSubtype | ArmorSubtype | "jewel" | "mystic";
+export type ItemSubtype = WeaponSubtype | ArmorSubtype | "jewel" | "focus";
+
+export const ITEM_CUSTOM_PROPERTY_TARGET_TYPES = [
+  "stat",
+  "skill",
+  "derived",
+  "resistance",
+  "power",
+  "spell",
+] as const;
+export type ItemCustomPropertyTargetType = (typeof ITEM_CUSTOM_PROPERTY_TARGET_TYPES)[number];
+
+export type ItemCustomPropertyTarget = {
+  type: ItemCustomPropertyTargetType;
+  id: string;
+};
+
+export type ItemCustomPropertyRecord = {
+  id: string;
+  label: string;
+  notes: string;
+  ppCost: number;
+  value: number;
+  targets: ItemCustomPropertyTarget[];
+};
 
 export type BonusProfile = {
   statBonuses: Partial<Record<StatId, number>>;
@@ -41,6 +81,18 @@ export type BonusProfile = {
   utilityTraits: string[];
   notes: string[];
   powerBonuses: Record<string, number>;
+  spellBonuses: Record<string, number>;
+};
+
+export type ItemBaseOverrideProfile = {
+  statBonuses?: Partial<Record<StatId, number>>;
+  skillBonuses?: Record<string, number>;
+  derivedBonuses?: Partial<Record<ItemDerivedModifierId, number>>;
+  resistanceBonuses?: Partial<Record<DamageTypeId, number>>;
+  utilityTraits?: string[];
+  notes?: string[];
+  powerBonuses?: Record<string, number>;
+  spellBonuses?: Record<string, number>;
 };
 
 export type ItemKnowledgeState = {
@@ -48,17 +100,64 @@ export type ItemKnowledgeState = {
   visibleCharacterIds: string[];
 };
 
+export type ItemAttackKind = "melee" | "ranged";
+export type ItemPhysicalProfileKind =
+  | "unarmed"
+  | "brawl"
+  | "one_handed"
+  | "two_handed"
+  | "oversized"
+  | "ranged";
+
+export type ItemCombatSpec = {
+  attackKind?: ItemAttackKind;
+  physicalProfileKind?: ItemPhysicalProfileKind;
+  handsRequired?: 1 | 2;
+  attacksPerAction?: number;
+  meleeDamageBonus?: number;
+  rangedDamageBase?: number;
+  rangeMeters?: number;
+  minimumStrength?: number;
+  isAreaOfEffect?: boolean;
+  slotKey?: string;
+};
+
+export type ItemBlueprintId = string;
+
+export type ItemBlueprintRecord = {
+  id: ItemBlueprintId;
+  category: ItemCategory;
+  subtype: ItemSubtype;
+  label: string;
+  defaultName: string;
+  baseProfile: BonusProfile;
+  combatSpec: ItemCombatSpec | null;
+  visibleNotes: string[];
+  requirements: string[];
+  overrideItemIds: string[];
+  isLegacy?: boolean;
+};
+
 export type SharedItemRecord = {
   id: string;
+  blueprintId: ItemBlueprintId;
   name: string;
-  itemLevel: number;
-  qualityTier: string | null;
+  isArtifact: boolean;
   category: ItemCategory;
   subtype: ItemSubtype;
   baseDescription: string;
+  combatSpec: ItemCombatSpec | null;
+  visibleNotes: string[];
+  requirements: string[];
+  baseProfile: BonusProfile;
+  baseOverrides: ItemBaseOverrideProfile;
   bonusProfile: BonusProfile;
+  customProperties: ItemCustomPropertyRecord[];
   knowledge: ItemKnowledgeState;
+  assignedCharacterId: string | null;
 };
+
+export type ItemInstanceRecord = SharedItemRecord;
 
 export type CharacterEquipmentReference = {
   slot: string;
@@ -84,17 +183,6 @@ export type ItemModifierSource = {
   sourceLabel: string;
 };
 
-export type ItemBlueprintId =
-  | "weapon:brawl"
-  | "weapon:one_handed"
-  | "weapon:two_handed"
-  | "weapon:oversized"
-  | "weapon:bow"
-  | "armor:light"
-  | "armor:heavy"
-  | "jewel:jewel"
-  | "mystic:mystic";
-
 export function isItemCategory(value: unknown): value is ItemCategory {
   return typeof value === "string" && ITEM_CATEGORIES.includes(value as ItemCategory);
 }
@@ -108,10 +196,5 @@ export function isArmorSubtype(value: unknown): value is ArmorSubtype {
 }
 
 export function isItemSubtype(value: unknown): value is ItemSubtype {
-  return (
-    value === "jewel" ||
-    value === "mystic" ||
-    isWeaponSubtype(value) ||
-    isArmorSubtype(value)
-  );
+  return value === "jewel" || value === "focus" || isWeaponSubtype(value) || isArmorSubtype(value);
 }

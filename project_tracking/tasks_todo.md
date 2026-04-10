@@ -16,5 +16,6 @@ No active TODOs.
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion
 - `B01` Expand the shared item UI into a full item-authoring and multi-target knowledge-sharing flow.
+- `CHAR-APPAREL-01` During future character-creation / encounter-creation work, add an `unarmored humanoid baseline` rule so humanoid characters can receive `+3 Initiative` to their naked-state baseline when no chest armor is equipped, while mobs/animals can intentionally have no clothing-based baseline but still optionally equip armor or weapons. Implement with a per-character/template flag such as `apparelMode: humanoid | none`.
 - `KNOW-V2-01` Expand the new knowledge-card system beyond character cards so item, place, faction, story, and custom subjects get first-class creation flows and sheet/browser surfaces.
 - `AA-01` Defer full `Artifact Appraisal (AA)` integration until item mechanics and item UI are ready.

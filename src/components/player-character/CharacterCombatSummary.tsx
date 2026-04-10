@@ -2,8 +2,10 @@ import {
   DAMAGE_TYPES,
   RESISTANCE_LEVELS,
 } from "../../rules/resistances";
+import { getResolvedResistanceLevel } from "../../config/characterRuntime";
 import type { CharacterDerivedValues } from "../../config/characterRuntime";
 import type { CharacterDraft } from "../../config/characterTemplate";
+import type { SharedItemRecord } from "../../types/items";
 import type { PowerUsageResetScope, PowerUsageSummaryEntry } from "../../types/powerUsage";
 
 type RuntimeEditableField =
@@ -16,6 +18,7 @@ type RuntimeEditableField =
 type CharacterCombatSummaryProps = {
   sheetState: CharacterDraft;
   derived: CharacterDerivedValues;
+  itemsById: Record<string, SharedItemRecord>;
   isDmRuntimeEditMode: boolean;
   canManagePowerUsage: boolean;
   powerUsageSummary: PowerUsageSummaryEntry[];
@@ -26,6 +29,7 @@ type CharacterCombatSummaryProps = {
 export function CharacterCombatSummary({
   sheetState,
   derived,
+  itemsById,
   isDmRuntimeEditMode,
   canManagePowerUsage,
   powerUsageSummary,
@@ -148,7 +152,7 @@ export function CharacterCombatSummary({
           <p className="section-kicker">Combat Flags</p>
           <div className="resistance-grid">
             {DAMAGE_TYPES.map((damageType) => {
-              const level = sheetState.resistances[damageType.id];
+              const level = getResolvedResistanceLevel(sheetState, damageType.id, itemsById);
               const rule = RESISTANCE_LEVELS[level];
 
               return (

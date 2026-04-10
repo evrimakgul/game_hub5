@@ -16,12 +16,13 @@ import type { PreparedCastRequest } from "../types/combatEncounterView.ts";
 import type { SharedItemRecord } from "../types/items.ts";
 
 export type PhysicalAttackProfileId =
+  | "unarmed"
   | "brawl"
   | "one_handed"
   | "dual_one_handed"
   | "two_handed"
   | "oversized"
-  | "bow";
+  | "ranged";
 
 export type PhysicalAttackProfile = {
   id: PhysicalAttackProfileId;
@@ -125,11 +126,26 @@ export function getResolvedPhysicalAttackProfile(
   const derived = buildCharacterDerivedValues(sheet, itemsById);
   const rangedDamageBonus = getDerivedModifierTotal(sheet, "ranged_damage", itemsById);
   const weaponCandidates = getResolvedWeaponCandidates(sheet, itemsById);
+  const primaryWeapon = weaponCandidates[0] ?? null;
   const occupyingBothHandsWeapon = weaponCandidates.find((item) => itemOccupiesBothWeaponHands(item));
-  const oneHandedWeapons = weaponCandidates.filter((item) => item.subtype === "one_handed");
+  const oneHandedWeapons = weaponCandidates.filter(
+    (item) => item.subtype === "one_handed" && item.combatSpec?.attackKind === "melee"
+  );
   const brawlWeapons = weaponCandidates.filter((item) => item.subtype === "brawl");
 
   if (occupyingBothHandsWeapon) {
+    if (occupyingBothHandsWeapon.combatSpec?.attackKind === "ranged") {
+      return {
+        id: "ranged",
+        label: occupyingBothHandsWeapon.name || "Ranged Weapon",
+        attacksPerAction: occupyingBothHandsWeapon.combatSpec.attacksPerAction ?? 1,
+        attackPool: derived.rangedAttack,
+        successDc: 6,
+        baseDamagePool:
+          (occupyingBothHandsWeapon.combatSpec.rangedDamageBase ?? 0) + rangedDamageBonus,
+      };
+    }
+
     if (occupyingBothHandsWeapon.subtype === "oversized") {
       return {
         id: "oversized",
@@ -138,17 +154,6 @@ export function getResolvedPhysicalAttackProfile(
         attackPool: derived.meleeAttack,
         successDc: 6,
         baseDamagePool: derived.meleeDamage + 9,
-      };
-    }
-
-    if (occupyingBothHandsWeapon.subtype === "bow") {
-      return {
-        id: "bow",
-        label: occupyingBothHandsWeapon.name || "Bow",
-        attacksPerAction: 1,
-        attackPool: derived.rangedAttack,
-        successDc: 6,
-        baseDamagePool: 5 + rangedDamageBonus,
       };
     }
 
@@ -162,6 +167,17 @@ export function getResolvedPhysicalAttackProfile(
     };
   }
 
+  if (primaryWeapon?.combatSpec?.attackKind === "ranged") {
+    return {
+      id: "ranged",
+      label: primaryWeapon.name || "Ranged Weapon",
+      attacksPerAction: primaryWeapon.combatSpec.attacksPerAction ?? 1,
+      attackPool: derived.rangedAttack,
+      successDc: 6,
+      baseDamagePool: (primaryWeapon.combatSpec.rangedDamageBase ?? 0) + rangedDamageBonus,
+    };
+  }
+
   if (oneHandedWeapons.length >= 2) {
     return {
       id: "dual_one_handed",
@@ -169,7 +185,7 @@ export function getResolvedPhysicalAttackProfile(
       attacksPerAction: 2,
       attackPool: derived.meleeAttack,
       successDc: 7,
-      baseDamagePool: derived.meleeDamage + 2,
+      baseDamagePool: derived.meleeDamage + 3,
     };
   }
 
@@ -180,7 +196,7 @@ export function getResolvedPhysicalAttackProfile(
       attacksPerAction: 1,
       attackPool: derived.meleeAttack,
       successDc: 6,
-      baseDamagePool: derived.meleeDamage + 2,
+      baseDamagePool: derived.meleeDamage + 3,
     };
   }
 
@@ -191,13 +207,13 @@ export function getResolvedPhysicalAttackProfile(
       attacksPerAction: 2,
       attackPool: derived.meleeAttack,
       successDc: 6,
-      baseDamagePool: derived.meleeDamage,
+      baseDamagePool: derived.meleeDamage + 1,
     };
   }
 
   return {
-    id: "brawl",
-    label: "Brawl / Fists",
+    id: "unarmed",
+    label: "Unarmed",
     attacksPerAction: 2,
     attackPool: derived.meleeAttack,
     successDc: 6,
