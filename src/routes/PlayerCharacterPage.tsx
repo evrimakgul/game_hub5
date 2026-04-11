@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { CharacterCombatSummary } from "../components/player-character/CharacterCombatSummary";
@@ -19,7 +19,11 @@ import { rollD10Faces } from "../lib/dice";
 import { getKnowledgeEntityById, getKnowledgeGroupsForOwner, getKnowledgeRevisionById } from "../lib/knowledge.ts";
 import { prependGameHistoryEntry } from "../lib/historyEntries.ts";
 import { usePlayerCharacterMutations } from "../hooks/usePlayerCharacterMutations";
-import { buildItemIndex, getCharacterArtifactAppraisalLevel } from "../lib/items.ts";
+import {
+  buildItemIndex,
+  getCharacterArtifactAppraisalLevel,
+  getItemBlueprintOptions,
+} from "../lib/items.ts";
 import { buildPowerUsageSummary } from "../lib/powerUsage";
 import { resolveDicePool } from "../rules/combat";
 import {
@@ -52,6 +56,9 @@ export function PlayerCharacterPage({
 }) {
   const {
     characters,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+    itemBlueprints,
     items,
     knowledgeEntities,
     knowledgeRevisions,
@@ -161,6 +168,10 @@ export function PlayerCharacterPage({
   const isProgressionEditMode = isEditMode || (isDmEditableView && dmEditMode);
   const actualDate = formatDateDayMonthYear(new Date());
   const itemsById = buildItemIndex(items);
+  const itemBlueprintOptions = useMemo(
+    () => getItemBlueprintOptions(itemBlueprints).filter((option) => option.isLegacy !== true),
+    [itemBlueprints]
+  );
   const {
     derived,
     progression,
@@ -219,6 +230,9 @@ export function PlayerCharacterPage({
     pendingPowerId,
     sessionNotes,
     updateCharacter,
+    itemBlueprints,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
     createItem,
     updateItem,
     deleteItem,
@@ -481,6 +495,10 @@ export function PlayerCharacterPage({
             characterId={activeCharacter.id}
             sheetState={sheetState}
             itemsById={itemsById}
+            itemBlueprints={itemBlueprints}
+            itemCategoryDefinitions={itemCategoryDefinitions}
+            itemSubcategoryDefinitions={itemSubcategoryDefinitions}
+            blueprintOptions={itemBlueprintOptions}
             artifactAppraisalLevel={artifactAppraisalLevel}
             isSheetEditMode={isSheetEditMode}
             onCreateSharedItem={mutations.createSharedItem}

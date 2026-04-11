@@ -1,5 +1,15 @@
 # Task Log
 
+## 2026-04-10
+
+- `ITEM-REFAC-01` completed.
+  - Added persisted `ItemCategoryDefinition` and `ItemSubcategoryDefinition` records, seeded defaults, and stored them in app-flow persistence.
+  - Moved item blueprint persistence onto `categoryDefinitionId` and `subcategoryDefinitionId` while keeping legacy category/subtype inputs readable during hydration and migration.
+  - Reworked equip validation, summary labels, compact item rendering, and combat physical-attack profile resolution to use definition-driven helpers instead of hardcoded item category/subtype branches.
+  - Added DM definition-management UI and switched blueprint management to persisted category/subcategory selection.
+  - Preserved current visible behavior for shields, one-handed hand-slot fallback, rings, and existing save compatibility.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
 ## 2026-03-14
 
 - `T01` Completed roadmap/doc audit and initialized task tracking.

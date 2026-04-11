@@ -8,12 +8,19 @@ import { createTimestampedId } from "./ids.ts";
 import { rollD10Faces } from "./dice.ts";
 import {
   getEquippedWeaponHandItems,
+  getItemMechanicalRole,
+  getItemSubcategoryDefinitionRecord,
   getLegacyEquippedWeaponItems,
   itemOccupiesBothWeaponHands,
 } from "./items.ts";
 import type { CharacterRecord } from "../types/character.ts";
 import type { PreparedCastRequest } from "../types/combatEncounterView.ts";
-import type { SharedItemRecord } from "../types/items.ts";
+import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+  SharedItemRecord,
+} from "../types/items.ts";
 
 export type PhysicalAttackProfileId =
   | "unarmed"
@@ -42,6 +49,12 @@ type PhysicalAttackSequenceResult = {
   targetDamageReduction: number;
   appliedDamage: number;
   missed: boolean;
+};
+
+type ItemRulesContext = {
+  itemBlueprints?: ItemBlueprintRecord[];
+  itemCategoryDefinitions?: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions?: ItemSubcategoryDefinition[];
 };
 
 function buildPreparedActionRequest(
@@ -101,11 +114,15 @@ function getPhysicalAttackProfileSuccesses(
 
 function getResolvedWeaponCandidates(
   sheet: CharacterRecord["sheet"],
-  itemsById: Record<string, SharedItemRecord>
+  itemsById: Record<string, SharedItemRecord>,
+  itemRulesContext: ItemRulesContext = {}
 ): SharedItemRecord[] {
   const weaponHands = getEquippedWeaponHandItems(sheet, itemsById);
   const handWeapons = [weaponHands.weapon_primary, weaponHands.weapon_secondary]
-    .filter((item): item is SharedItemRecord => item !== null && (item.category === "melee" || item.category === "range"))
+    .filter(
+      (item): item is SharedItemRecord =>
+        item !== null && ["melee", "range"].includes(getItemMechanicalRole(item, itemRulesContext))
+    )
     .filter(
       (item, index, entries) => entries.findIndex((candidate) => candidate.id === item.id) === index
     );
@@ -114,24 +131,34 @@ function getResolvedWeaponCandidates(
     return handWeapons;
   }
 
-  return getLegacyEquippedWeaponItems(sheet, itemsById).filter(
+  return getLegacyEquippedWeaponItems(sheet, itemsById, itemRulesContext).filter(
     (item, index, entries) => entries.findIndex((candidate) => candidate.id === item.id) === index
   );
 }
 
 export function getResolvedPhysicalAttackProfile(
   sheet: CharacterRecord["sheet"],
-  itemsById: Record<string, SharedItemRecord> = {}
+  itemsById: Record<string, SharedItemRecord> = {},
+  itemRulesContext: ItemRulesContext = {}
 ): PhysicalAttackProfile {
   const derived = buildCharacterDerivedValues(sheet, itemsById);
   const rangedDamageBonus = getDerivedModifierTotal(sheet, "ranged_damage", itemsById);
-  const weaponCandidates = getResolvedWeaponCandidates(sheet, itemsById);
+  const weaponCandidates = getResolvedWeaponCandidates(sheet, itemsById, itemRulesContext);
   const primaryWeapon = weaponCandidates[0] ?? null;
-  const occupyingBothHandsWeapon = weaponCandidates.find((item) => itemOccupiesBothWeaponHands(item));
-  const oneHandedWeapons = weaponCandidates.filter(
-    (item) => item.category === "melee" && item.subtype === "one_handed" && item.combatSpec?.attackKind === "melee"
+  const occupyingBothHandsWeapon = weaponCandidates.find((item) =>
+    itemOccupiesBothWeaponHands(item, itemRulesContext)
   );
-  const brawlWeapons = weaponCandidates.filter((item) => item.category === "melee" && item.subtype === "brawl");
+  const oneHandedWeapons = weaponCandidates.filter(
+    (item) =>
+      getItemMechanicalRole(item, itemRulesContext) === "melee" &&
+      getItemSubcategoryDefinitionRecord(item, itemRulesContext)?.id === "melee:one_handed" &&
+      item.combatSpec?.attackKind === "melee"
+  );
+  const brawlWeapons = weaponCandidates.filter(
+    (item) =>
+      getItemMechanicalRole(item, itemRulesContext) === "melee" &&
+      getItemSubcategoryDefinitionRecord(item, itemRulesContext)?.id === "melee:brawl"
+  );
 
   if (occupyingBothHandsWeapon) {
     if (occupyingBothHandsWeapon.combatSpec?.attackKind === "ranged") {
@@ -146,7 +173,10 @@ export function getResolvedPhysicalAttackProfile(
       };
     }
 
-    if (occupyingBothHandsWeapon.subtype === "oversized") {
+    if (
+      getItemSubcategoryDefinitionRecord(occupyingBothHandsWeapon, itemRulesContext)?.id ===
+      "melee:oversized"
+    ) {
       return {
         id: "oversized",
         label: occupyingBothHandsWeapon.name || "Oversized Weapon",
@@ -233,13 +263,25 @@ export function preparePhysicalAttackRequest(payload: {
   casterCharacter: CharacterRecord;
   targetCharacter: CharacterRecord;
   itemsById?: Record<string, SharedItemRecord>;
+  itemBlueprints?: ItemBlueprintRecord[];
+  itemCategoryDefinitions?: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions?: ItemSubcategoryDefinition[];
 }): { error: string } | { request: PreparedCastRequest; profile: PhysicalAttackProfile } {
   if (payload.casterCharacter.id === payload.targetCharacter.id) {
     return { error: "Choose another target for a physical attack." };
   }
 
   const itemsById = payload.itemsById ?? {};
-  const profile = getResolvedPhysicalAttackProfile(payload.casterCharacter.sheet, itemsById);
+  const itemRulesContext = {
+    itemBlueprints: payload.itemBlueprints,
+    itemCategoryDefinitions: payload.itemCategoryDefinitions,
+    itemSubcategoryDefinitions: payload.itemSubcategoryDefinitions,
+  };
+  const profile = getResolvedPhysicalAttackProfile(
+    payload.casterCharacter.sheet,
+    itemsById,
+    itemRulesContext
+  );
   const request = buildPreparedActionRequest(payload.casterCharacter.id, payload.targetCharacter.id);
   const sequenceResults: PhysicalAttackSequenceResult[] = [];
   let previewTargetSheet = payload.targetCharacter.sheet;

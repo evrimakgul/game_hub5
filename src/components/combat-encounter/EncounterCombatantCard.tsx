@@ -4,7 +4,12 @@ import type {
   CharacterSheetUpdater,
   EncounterParticipantView,
 } from "../../types/combatEncounterView";
-import type { SharedItemRecord } from "../../types/items";
+import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+  SharedItemRecord,
+} from "../../types/items";
 import { CombatantPowerControls } from "./CombatantPowerControls";
 import { CombatantRuntimeAdjustments } from "./CombatantRuntimeAdjustments";
 
@@ -13,6 +18,9 @@ type EncounterCombatantCardProps = {
   view: EncounterParticipantView;
   encounterParticipants: EncounterParticipantView[];
   itemsById: Record<string, SharedItemRecord>;
+  itemBlueprints: ItemBlueprintRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   openCharacterSheet: (characterId: string, ownerRole: "player" | "dm") => void;
   requestCast: (payload: CastRequestPayload) => string | null;
   requestPhysicalAttack: (payload: {
@@ -35,6 +43,9 @@ export function EncounterCombatantCard({
   view,
   encounterParticipants,
   itemsById,
+  itemBlueprints,
+  itemCategoryDefinitions,
+  itemSubcategoryDefinitions,
   openCharacterSheet,
   requestCast,
   requestPhysicalAttack,
@@ -87,6 +98,9 @@ export function EncounterCombatantCard({
                 view={view}
                 encounterParticipants={encounterParticipants}
                 itemsById={itemsById}
+                itemBlueprints={itemBlueprints}
+                itemCategoryDefinitions={itemCategoryDefinitions}
+                itemSubcategoryDefinitions={itemSubcategoryDefinitions}
                 requestCast={requestCast}
                 requestPhysicalAttack={requestPhysicalAttack}
                 requestControlRelease={requestControlRelease}

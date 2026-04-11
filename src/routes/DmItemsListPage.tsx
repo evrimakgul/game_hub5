@@ -69,9 +69,23 @@ export function DmItemsListPage() {
   const navigate = useNavigate();
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-  const { roleChoice, characters, itemBlueprints, items, assignItemToCharacter, deleteItem } = useAppFlow();
+  const {
+    roleChoice,
+    characters,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+    itemBlueprints,
+    items,
+    assignItemToCharacter,
+    deleteItem,
+  } = useAppFlow();
   const sortedItems = useMemo(() => sortItems(items), [items]);
   const sortedCharacters = useMemo(() => sortCharacters(characters), [characters]);
+  const itemRulesContext = {
+    itemBlueprints,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+  };
   const accidentalNewItems = useMemo(
     () => sortedItems.filter((item) => isAccidentalNewItem(item)),
     [sortedItems]
@@ -131,6 +145,9 @@ export function DmItemsListPage() {
           <button type="button" className="flow-secondary" onClick={() => navigate("/dm/items/blueprints")}>
             Blueprint Management
           </button>
+          <button type="button" className="flow-secondary" onClick={() => navigate("/dm/items/definitions")}>
+            Definition Management
+          </button>
           <button type="button" className="flow-secondary" onClick={() => navigate("/dm")}>
             Back To DM Dashboard
           </button>
@@ -157,7 +174,7 @@ export function DmItemsListPage() {
                     <span className="dm-item-line-main">
                       <strong>{item.name}</strong>
                       <small>{getItemBlueprintLabel(item, itemBlueprints)}</small>
-                      <small>{getItemCompactHeaderSummary(item)}</small>
+                      <small>{getItemCompactHeaderSummary(item, itemRulesContext)}</small>
                     </span>
                     <span className="dm-item-line-side">
                       <span>PP {getItemPropertyPoints(item)}</span>
@@ -171,7 +188,7 @@ export function DmItemsListPage() {
                       <div className="dm-item-line-grid">
                         <div>
                           <strong>Base Visible Stats</strong>
-                          <p>{formatSummary(getItemBaseVisibleStats(item))}</p>
+                          <p>{formatSummary(getItemBaseVisibleStats(item, itemRulesContext))}</p>
                         </div>
                         <div>
                           <strong>Base Character Effects</strong>

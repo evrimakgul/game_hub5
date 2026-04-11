@@ -73,6 +73,9 @@ export function CombatEncounterPage() {
     roleChoice,
     activeCombatEncounter,
     characters,
+    itemBlueprints,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
     items,
     knowledgeEntities,
     knowledgeRevisions,
@@ -358,6 +361,9 @@ export function CombatEncounterPage() {
       casterCharacter,
       targetCharacter,
       itemsById,
+      itemBlueprints,
+      itemCategoryDefinitions,
+      itemSubcategoryDefinitions,
     });
     if ("error" in prepared) {
       return prepared.error;
@@ -613,6 +619,9 @@ export function CombatEncounterPage() {
           <EncounterInitiativePanel
               encounterParticipants={encounterParticipants}
               itemsById={itemsById}
+              itemBlueprints={itemBlueprints}
+              itemCategoryDefinitions={itemCategoryDefinitions}
+              itemSubcategoryDefinitions={itemSubcategoryDefinitions}
               openCharacterSheet={openCharacterSheet}
               requestCast={requestCast}
               requestPhysicalAttack={requestPhysicalAttack}

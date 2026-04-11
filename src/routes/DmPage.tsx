@@ -101,6 +101,13 @@ export function DmPage() {
             >
               Blueprint Management
             </button>
+            <button
+              type="button"
+              className="flow-secondary"
+              onClick={() => navigate("/dm/items/definitions")}
+            >
+              Definition Management
+            </button>
           </article>
         </section>
       </section>

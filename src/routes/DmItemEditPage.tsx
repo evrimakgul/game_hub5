@@ -116,6 +116,8 @@ export function DmItemEditPage() {
   const createRequestHandledRef = useRef(false);
   const {
     roleChoice,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
     itemBlueprints,
     items,
     createItem,
@@ -126,6 +128,11 @@ export function DmItemEditPage() {
 
   const sortedItems = useMemo(() => sortItems(items), [items]);
   const blueprintOptions = useMemo(() => getItemBlueprintOptions(itemBlueprints), [itemBlueprints]);
+  const itemRulesContext = {
+    itemBlueprints,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+  };
   const powerBonusOptions = useMemo(() => getItemPowerBonusOptions(), []);
   const spellBonusOptions = useMemo(() => getItemSpellBonusOptions(), []);
   const customPropertyTargetGroups = useMemo(
@@ -325,6 +332,9 @@ export function DmItemEditPage() {
             <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items/blueprints")}>
               Blueprints
             </button>
+            <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items/definitions")}>
+              Definitions
+            </button>
           </div>
         </header>
 
@@ -364,7 +374,7 @@ export function DmItemEditPage() {
                 >
                   <strong>{item.name}</strong>
                   <span>{getItemBlueprintLabel(item, itemBlueprints)}</span>
-                  <small>{getItemCompactHeaderSummary(item)}</small>
+                  <small>{getItemCompactHeaderSummary(item, itemRulesContext)}</small>
                 </button>
               ))}
             </div>
@@ -452,7 +462,7 @@ export function DmItemEditPage() {
                       />
                     </label>
                     <p className="dm-summary-line">
-                      Base Visible Stats: {getItemBaseVisibleStats(selectedItem).join(" | ") || "None"}
+                      Base Visible Stats: {getItemBaseVisibleStats(selectedItem, itemRulesContext).join(" | ") || "None"}
                     </p>
                     {selectedItem.customProperties.length > 0 ? (
                       <p className="dm-summary-line">

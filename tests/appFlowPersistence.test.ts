@@ -6,7 +6,13 @@ import {
   hydrateCharacterDraft,
 } from "../src/config/characterTemplate.ts";
 import { getResolvedResistanceLevel } from "../src/config/characterRuntime.ts";
-import { buildItemIndex, createDefaultItemBlueprints, createSharedItemRecord } from "../src/lib/items.ts";
+import {
+  buildItemIndex,
+  createDefaultItemBlueprints,
+  createDefaultItemCategoryDefinitions,
+  createDefaultItemSubcategoryDefinitions,
+  createSharedItemRecord,
+} from "../src/lib/items.ts";
 import {
   CHARACTER_STORAGE_BACKUP_KEY,
   CHARACTER_STORAGE_KEY,
@@ -83,6 +89,8 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         });
         const payload = serializePersistedCharacters({
           characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+          itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+          itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
           itemBlueprints: createDefaultItemBlueprints(),
           items: [item],
           knowledgeEntities: [],
@@ -102,6 +110,8 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           },
           {
             characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+            itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+            itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
             itemBlueprints: createDefaultItemBlueprints(),
             items: [item],
             knowledgeEntities: [],

@@ -16,7 +16,9 @@ import {
 } from "../config/characterTemplate";
 import { createEmptyKnowledgeState } from "../lib/knowledge.ts";
 import {
+  createItemCategoryDefinitionRecord,
   createItemBlueprintRecord,
+  createItemSubcategoryDefinitionRecord,
   createSharedItemRecord,
   syncItemsWithBlueprint,
   syncSharedItemRecordWithBlueprint,
@@ -34,7 +36,13 @@ import {
   type CharacterRecord,
 } from "../types/character";
 import type { CombatEncounterState } from "../types/combatEncounter";
-import type { ItemBlueprintId, ItemBlueprintRecord, SharedItemRecord } from "../types/items.ts";
+import type {
+  ItemBlueprintId,
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+  SharedItemRecord,
+} from "../types/items.ts";
 import type {
   KnowledgeEntity,
   KnowledgeOwnership,
@@ -51,6 +59,8 @@ type AppFlowContextValue = {
   authChoice: AuthChoice;
   roleChoice: RoleChoice;
   characters: CharacterRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   itemBlueprints: ItemBlueprintRecord[];
   items: SharedItemRecord[];
   knowledgeEntities: KnowledgeEntity[];
@@ -83,6 +93,24 @@ type AppFlowContextValue = {
     updater: SharedItemRecord | ((current: SharedItemRecord) => SharedItemRecord)
   ) => void;
   deleteItem: (itemId: string) => void;
+  createItemCategoryDefinition: (overrides?: Partial<ItemCategoryDefinition>) => string;
+  updateItemCategoryDefinition: (
+    categoryDefinitionId: string,
+    updater:
+      | ItemCategoryDefinition
+      | ((current: ItemCategoryDefinition) => ItemCategoryDefinition)
+  ) => void;
+  deleteItemCategoryDefinition: (categoryDefinitionId: string) => void;
+  createItemSubcategoryDefinition: (
+    overrides?: Partial<ItemSubcategoryDefinition>
+  ) => string;
+  updateItemSubcategoryDefinition: (
+    subcategoryDefinitionId: string,
+    updater:
+      | ItemSubcategoryDefinition
+      | ((current: ItemSubcategoryDefinition) => ItemSubcategoryDefinition)
+  ) => void;
+  deleteItemSubcategoryDefinition: (subcategoryDefinitionId: string) => void;
   createItemBlueprint: (overrides?: Partial<ItemBlueprintRecord>) => string;
   updateItemBlueprint: (
     blueprintId: string,
@@ -123,6 +151,12 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   const [authChoice, setAuthChoice] = useState<AuthChoice>(null);
   const [roleChoice, setRoleChoice] = useState<RoleChoice>(null);
   const [characters, setCharacters] = useState<CharacterRecord[]>(persistedCharacters.characters);
+  const [itemCategoryDefinitions, setItemCategoryDefinitions] = useState<ItemCategoryDefinition[]>(
+    persistedCharacters.itemCategoryDefinitions
+  );
+  const [itemSubcategoryDefinitions, setItemSubcategoryDefinitions] = useState<ItemSubcategoryDefinition[]>(
+    persistedCharacters.itemSubcategoryDefinitions
+  );
   const [itemBlueprints, setItemBlueprints] = useState<ItemBlueprintRecord[]>(persistedCharacters.itemBlueprints);
   const [items, setItems] = useState<SharedItemRecord[]>(persistedCharacters.items);
   const [starterItemsInitialized] = useState<boolean>(persistedCharacters.starterItemsInitialized);
@@ -158,6 +192,8 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       typeof window === "undefined" ? null : window.localStorage,
       {
         characters,
+        itemCategoryDefinitions,
+        itemSubcategoryDefinitions,
         itemBlueprints,
         items,
         ...knowledgeState,
@@ -166,7 +202,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         activeDmCharacterId,
       }
     );
-  }, [activeDmCharacterId, activePlayerCharacterId, characters, itemBlueprints, items, knowledgeState, starterItemsInitialized]);
+  }, [activeDmCharacterId, activePlayerCharacterId, characters, itemBlueprints, itemCategoryDefinitions, itemSubcategoryDefinitions, items, knowledgeState, starterItemsInitialized]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -181,6 +217,8 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       const nextState = readPersistedCharactersFromStorage(window.localStorage);
       skipNextPersistRef.current = true;
       setCharacters(nextState.characters);
+      setItemCategoryDefinitions(nextState.itemCategoryDefinitions);
+      setItemSubcategoryDefinitions(nextState.itemSubcategoryDefinitions);
       setItemBlueprints(nextState.itemBlueprints);
       setItems(nextState.items);
       setKnowledgeState({
@@ -277,6 +315,128 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     return nextItem.id;
   }
 
+  function createItemCategoryDefinition(
+    overrides: Partial<ItemCategoryDefinition> = {}
+  ): string {
+    const nextDefinition = createItemCategoryDefinitionRecord(overrides);
+    setItemCategoryDefinitions((currentDefinitions) => [...currentDefinitions, nextDefinition]);
+    return nextDefinition.id;
+  }
+
+  function updateItemCategoryDefinition(
+    categoryDefinitionId: string,
+    updater:
+      | ItemCategoryDefinition
+      | ((current: ItemCategoryDefinition) => ItemCategoryDefinition)
+  ): void {
+    setItemCategoryDefinitions((currentDefinitions) =>
+      currentDefinitions.map((definition) => {
+        if (definition.id !== categoryDefinitionId) {
+          return definition;
+        }
+
+        const nextDefinition =
+          typeof updater === "function" ? updater(definition) : updater;
+        return {
+          ...nextDefinition,
+          id: definition.id,
+        };
+      })
+    );
+  }
+
+  function deleteItemCategoryDefinition(categoryDefinitionId: string): void {
+    if (
+      itemSubcategoryDefinitions.some(
+        (definition) => definition.categoryId === categoryDefinitionId
+      ) ||
+      itemBlueprints.some(
+        (blueprint) => blueprint.categoryDefinitionId === categoryDefinitionId
+      )
+    ) {
+      return;
+    }
+
+    setItemCategoryDefinitions((currentDefinitions) =>
+      currentDefinitions.filter((definition) => definition.id !== categoryDefinitionId)
+    );
+  }
+
+  function createItemSubcategoryDefinition(
+    overrides: Partial<ItemSubcategoryDefinition> = {}
+  ): string {
+    const nextDefinition = createItemSubcategoryDefinitionRecord(overrides);
+    setItemSubcategoryDefinitions((currentDefinitions) => [
+      ...currentDefinitions,
+      nextDefinition,
+    ]);
+    return nextDefinition.id;
+  }
+
+  function updateItemSubcategoryDefinition(
+    subcategoryDefinitionId: string,
+    updater:
+      | ItemSubcategoryDefinition
+      | ((current: ItemSubcategoryDefinition) => ItemSubcategoryDefinition)
+  ): void {
+    let nextDefinition: ItemSubcategoryDefinition | null = null;
+
+    setItemSubcategoryDefinitions((currentDefinitions) =>
+      currentDefinitions.map((definition) => {
+        if (definition.id !== subcategoryDefinitionId) {
+          return definition;
+        }
+
+        const updated =
+          typeof updater === "function" ? updater(definition) : updater;
+        nextDefinition = {
+          ...updated,
+          id: definition.id,
+        };
+        return nextDefinition;
+      })
+    );
+
+    if (!nextDefinition) {
+      return;
+    }
+
+    setItemBlueprints((currentBlueprints) => {
+      const updatedBlueprints = currentBlueprints.map((blueprint) =>
+        blueprint.subcategoryDefinitionId === subcategoryDefinitionId
+          ? createItemBlueprintRecord({
+              ...blueprint,
+              categoryDefinitionId: nextDefinition!.categoryId,
+              subcategoryDefinitionId: nextDefinition!.id,
+            })
+          : blueprint
+      );
+
+      setItems((currentItems) =>
+        updatedBlueprints.reduce(
+          (nextItems, blueprint) => syncItemsWithBlueprint(nextItems, blueprint),
+          currentItems
+        )
+      );
+
+      return updatedBlueprints;
+    });
+  }
+
+  function deleteItemSubcategoryDefinition(subcategoryDefinitionId: string): void {
+    if (
+      itemBlueprints.some(
+        (blueprint) => blueprint.subcategoryDefinitionId === subcategoryDefinitionId
+      )
+    ) {
+      return;
+    }
+
+    setItemSubcategoryDefinitions((currentDefinitions) =>
+      currentDefinitions.filter((definition) => definition.id !== subcategoryDefinitionId)
+    );
+  }
+
   function updateItem(
     itemId: string,
     updater: SharedItemRecord | ((current: SharedItemRecord) => SharedItemRecord)
@@ -328,7 +488,12 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
           return blueprint;
         }
 
-        nextBlueprint = typeof updater === "function" ? updater(blueprint) : updater;
+        const updatedBlueprint =
+          typeof updater === "function" ? updater(blueprint) : updater;
+        nextBlueprint = createItemBlueprintRecord({
+          ...updatedBlueprint,
+          id: blueprint.id,
+        });
         return nextBlueprint;
       })
     );
@@ -491,6 +656,8 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         authChoice,
         roleChoice,
         characters,
+        itemCategoryDefinitions,
+        itemSubcategoryDefinitions,
         itemBlueprints,
         items,
         knowledgeEntities: knowledgeState.knowledgeEntities,
@@ -505,6 +672,12 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         createItem,
         updateItem,
         deleteItem,
+        createItemCategoryDefinition,
+        updateItemCategoryDefinition,
+        deleteItemCategoryDefinition,
+        createItemSubcategoryDefinition,
+        updateItemSubcategoryDefinition,
+        deleteItemSubcategoryDefinition,
         createItemBlueprint,
         updateItemBlueprint,
         deleteItemBlueprint,

@@ -6,16 +6,25 @@ import {
 import {
   createEmptyBonusProfile,
   createDefaultItemBlueprints,
+  createDefaultItemCategoryDefinitions,
+  createDefaultItemSubcategoryDefinitions,
   createLegacyTierImportProperty,
   createSharedItemRecord,
   createStarterItemRecords,
   ensureStarterItems,
+  hydrateItemCategoryDefinitionRecord,
   hydrateItemBlueprintRecord,
+  hydrateItemSubcategoryDefinitionRecord,
   hydrateSharedItemRecord,
   inferItemBlueprintId,
 } from "../lib/items.ts";
 import { isCharacterOwnerRole, type CharacterRecord } from "../types/character.ts";
-import type { ItemBlueprintRecord, SharedItemRecord } from "../types/items.ts";
+import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+  SharedItemRecord,
+} from "../types/items.ts";
 import type { KnowledgeEntity, KnowledgeOwnership, KnowledgeRevision, KnowledgeState } from "../types/knowledge.ts";
 import {
   createEmptyKnowledgeState,
@@ -30,6 +39,8 @@ export const CHARACTER_STORAGE_BACKUP_KEY = "convergence.local.characters.backup
 type PersistedCharacterEnvelope = {
   version: number;
   characters: Array<{ id: string; ownerRole?: unknown; sheet: unknown }>;
+  itemCategoryDefinitions?: unknown[];
+  itemSubcategoryDefinitions?: unknown[];
   itemBlueprints?: unknown[];
   itemInstances?: unknown[];
   items?: unknown[];
@@ -44,6 +55,8 @@ type PersistedCharacterEnvelope = {
 
 export type PersistedCharacterState = {
   characters: CharacterRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   itemBlueprints: ItemBlueprintRecord[];
   items: SharedItemRecord[];
   knowledgeEntities: KnowledgeEntity[];
@@ -55,9 +68,13 @@ export type PersistedCharacterState = {
 };
 
 function getEmptyPersistedCharacterState(): PersistedCharacterState {
+  const itemCategoryDefinitions = createDefaultItemCategoryDefinitions();
+  const itemSubcategoryDefinitions = createDefaultItemSubcategoryDefinitions();
   const itemBlueprints = createDefaultItemBlueprints();
   return {
     characters: [],
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
     itemBlueprints,
     items: createStarterItemRecords(itemBlueprints),
     ...createEmptyKnowledgeState(),
@@ -367,6 +384,16 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
     }
 
     const envelope = parsed as Partial<PersistedCharacterEnvelope>;
+    const itemCategoryDefinitions = Array.isArray(envelope.itemCategoryDefinitions)
+      ? envelope.itemCategoryDefinitions
+          .map((entry) => safeHydrateEntry(() => hydrateItemCategoryDefinitionRecord(entry)))
+          .filter((entry): entry is ItemCategoryDefinition => entry !== null)
+      : createDefaultItemCategoryDefinitions();
+    const itemSubcategoryDefinitions = Array.isArray(envelope.itemSubcategoryDefinitions)
+      ? envelope.itemSubcategoryDefinitions
+          .map((entry) => safeHydrateEntry(() => hydrateItemSubcategoryDefinitionRecord(entry)))
+          .filter((entry): entry is ItemSubcategoryDefinition => entry !== null)
+      : createDefaultItemSubcategoryDefinitions();
     const itemBlueprints = Array.isArray(envelope.itemBlueprints)
       ? envelope.itemBlueprints
           .map((entry) => safeHydrateEntry(() => hydrateItemBlueprintRecord(entry)))
@@ -441,6 +468,14 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
 
     return {
       characters,
+      itemCategoryDefinitions:
+        itemCategoryDefinitions.length > 0
+          ? itemCategoryDefinitions
+          : createDefaultItemCategoryDefinitions(),
+      itemSubcategoryDefinitions:
+        itemSubcategoryDefinitions.length > 0
+          ? itemSubcategoryDefinitions
+          : createDefaultItemSubcategoryDefinitions(),
       itemBlueprints,
       items: normalizedItems,
       knowledgeEntities,
@@ -498,6 +533,8 @@ export function serializePersistedCharacters(
       ownerRole: character.ownerRole,
       sheet: character.sheet,
     })),
+    itemCategoryDefinitions: state.itemCategoryDefinitions,
+    itemSubcategoryDefinitions: state.itemSubcategoryDefinitions,
     itemBlueprints: state.itemBlueprints,
     itemInstances: state.items,
     knowledgeEntities: state.knowledgeEntities,

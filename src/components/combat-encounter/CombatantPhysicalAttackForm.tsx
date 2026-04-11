@@ -4,12 +4,20 @@ import {
   getResolvedPhysicalAttackProfile,
 } from "../../lib/combatEncounterPhysicalAttacks";
 import type { EncounterParticipantView } from "../../types/combatEncounterView";
-import type { SharedItemRecord } from "../../types/items";
+import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+  SharedItemRecord,
+} from "../../types/items";
 
 type CombatantPhysicalAttackFormProps = {
   view: EncounterParticipantView;
   encounterParticipants: EncounterParticipantView[];
   itemsById: Record<string, SharedItemRecord>;
+  itemBlueprints: ItemBlueprintRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   requestPhysicalAttack: (payload: {
     casterView: EncounterParticipantView;
     targetView: EncounterParticipantView;
@@ -21,6 +29,9 @@ export function CombatantPhysicalAttackForm({
   view,
   encounterParticipants,
   itemsById,
+  itemBlueprints,
+  itemCategoryDefinitions,
+  itemSubcategoryDefinitions,
   requestPhysicalAttack,
   embedded = false,
 }: CombatantPhysicalAttackFormProps) {
@@ -31,7 +42,11 @@ export function CombatantPhysicalAttackForm({
     return null;
   }
 
-  const resolvedProfile = getResolvedPhysicalAttackProfile(view.character.sheet, itemsById);
+  const resolvedProfile = getResolvedPhysicalAttackProfile(view.character.sheet, itemsById, {
+    itemBlueprints,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+  });
   const targetOptions = encounterParticipants.filter(
     (candidate) =>
       candidate.character !== null &&

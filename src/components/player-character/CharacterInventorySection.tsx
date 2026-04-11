@@ -1,10 +1,11 @@
 import type { CharacterDraft } from "../../config/characterTemplate";
 import {
-  ITEM_BLUEPRINT_OPTIONS,
   canCharacterIdentifyItem,
   getEquipmentSlotLabel,
   getEquipmentEntryBySlot,
+  getItemAllowedEquipSlots,
   getItemCompactHeaderSummary,
+  getItemMechanicalRole,
   getItemPropertyPoints,
   getItemTierLabel,
   getWeaponHandSlotLabel,
@@ -15,8 +16,11 @@ import {
 } from "../../lib/items.ts";
 import type {
   ItemBlueprintId,
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
   ItemDerivedModifierId,
   MainEquipmentSlotId,
+  ItemSubcategoryDefinition,
   SharedItemRecord,
   WeaponHandSlotId,
 } from "../../types/items.ts";
@@ -54,20 +58,45 @@ function getItemStateSummary(
   ].join(" | ");
 }
 
-function isShieldItem(item: SharedItemRecord): boolean {
-  return item.category === "shield";
+function isShieldItem(
+  item: SharedItemRecord,
+  itemRulesContext: {
+    itemBlueprints: ItemBlueprintRecord[];
+    itemCategoryDefinitions: ItemCategoryDefinition[];
+    itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
+  }
+): boolean {
+  return getItemMechanicalRole(item, itemRulesContext) === "shield";
 }
 
-function isHandEquippableItem(item: SharedItemRecord): boolean {
-  return item.category === "melee" || item.category === "range" || item.category === "occult" || isShieldItem(item);
+function isHandEquippableItem(
+  item: SharedItemRecord,
+  itemRulesContext: {
+    itemBlueprints: ItemBlueprintRecord[];
+    itemCategoryDefinitions: ItemCategoryDefinition[];
+    itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
+  }
+): boolean {
+  return getItemAllowedEquipSlots(item, itemRulesContext).some(
+    (slot) => slot === "weapon_primary" || slot === "weapon_secondary"
+  );
 }
 
-function isMainSlotEquipItem(item: SharedItemRecord): boolean {
-  return (
-    item.category === "body_armor" ||
-    item.category === "neck" ||
-    item.category === "head" ||
-    (item.category === "rings" && item.subtype === "ring")
+function isMainSlotEquipItem(
+  item: SharedItemRecord,
+  itemRulesContext: {
+    itemBlueprints: ItemBlueprintRecord[];
+    itemCategoryDefinitions: ItemCategoryDefinition[];
+    itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
+  }
+): boolean {
+  return getItemAllowedEquipSlots(item, itemRulesContext).some(
+    (slot) =>
+      slot === "body" ||
+      slot === "neck" ||
+      slot === "head" ||
+      slot === "ring_left" ||
+      slot === "ring_right"
   );
 }
 
@@ -75,6 +104,18 @@ type CharacterInventorySectionProps = {
   characterId: string;
   sheetState: CharacterDraft;
   itemsById: Record<string, SharedItemRecord>;
+  itemBlueprints: ItemBlueprintRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
+  blueprintOptions: Array<{
+    id: ItemBlueprintId;
+    category: string;
+    subtype: string;
+    categoryDefinitionId: string;
+    subcategoryDefinitionId: string;
+    label: string;
+    isLegacy?: boolean;
+  }>;
   artifactAppraisalLevel: number;
   isSheetEditMode: boolean;
   onCreateSharedItem: (blueprintId: ItemBlueprintId) => void;
@@ -108,6 +149,10 @@ export function CharacterInventorySection({
   characterId,
   sheetState,
   itemsById,
+  itemBlueprints,
+  itemCategoryDefinitions,
+  itemSubcategoryDefinitions,
+  blueprintOptions,
   artifactAppraisalLevel,
   isSheetEditMode,
   onCreateSharedItem,
@@ -128,6 +173,11 @@ export function CharacterInventorySection({
   onUpdateMainEquipmentSlotItem,
   onUpdateMoney,
 }: CharacterInventorySectionProps) {
+  const itemRulesContext = {
+    itemBlueprints,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+  };
   const referencedItemIds = [...new Set([
     ...(sheetState.ownedItemIds ?? []),
     ...(sheetState.inventoryItemIds ?? []),
@@ -192,13 +242,13 @@ export function CharacterInventorySection({
             ) : (
               <div key={slotId} className="equipment-compact-row">
                 <div className="equipment-compact-main">
-                  <strong>{label}</strong>
-                  <span className="equipment-line-detail">{item?.name ?? "Open Slot"}</span>
+                      <strong>{label}</strong>
+                      <span className="equipment-line-detail">{item?.name ?? "Open Slot"}</span>
                 </div>
                 <div className="equipment-read-meta">
                   {item ? (
                     <>
-                      <em>{getItemCompactHeaderSummary(item)}</em>
+                      <em>{getItemCompactHeaderSummary(item, itemRulesContext)}</em>
                       <div className="equipment-inline-actions">
                         <button
                           type="button"
@@ -266,7 +316,7 @@ export function CharacterInventorySection({
         {isSheetEditMode ? (
           <>
             <div className="equipment-add-row">
-              {ITEM_BLUEPRINT_OPTIONS.map((option) => (
+              {blueprintOptions.map((option) => (
                 <button
                   key={option.id}
                   type="button"
@@ -298,7 +348,7 @@ export function CharacterInventorySection({
                           onUpdateSharedItemBlueprint(item.id, event.target.value as ItemBlueprintId)
                         }
                       >
-                        {ITEM_BLUEPRINT_OPTIONS.map((option) => (
+                        {blueprintOptions.map((option) => (
                           <option key={option.id} value={option.id}>
                             {option.label}
                           </option>
@@ -427,7 +477,9 @@ export function CharacterInventorySection({
                 <div key={item.id} className="equipment-compact-row">
                   <div className="equipment-compact-main">
                     <strong>{item.name}</strong>
-                    <span className="equipment-line-detail">{getItemCompactHeaderSummary(item)}</span>
+                    <span className="equipment-line-detail">
+                      {getItemCompactHeaderSummary(item, itemRulesContext)}
+                    </span>
                     <small className="equipment-state-line">
                       {[
                         getItemStateSummary(
@@ -446,7 +498,10 @@ export function CharacterInventorySection({
                       <em>Bonus details hidden.</em>
                     ) : null}
                     <div className="equipment-inline-actions">
-                      {isCarried && !isEquipped && isHandEquippableItem(item) && !isShieldItem(item) ? (
+                      {isCarried &&
+                      !isEquipped &&
+                      isHandEquippableItem(item, itemRulesContext) &&
+                      !isShieldItem(item, itemRulesContext) ? (
                         <>
                           <button
                             type="button"
@@ -466,7 +521,7 @@ export function CharacterInventorySection({
                           ) : null}
                         </>
                       ) : null}
-                      {isCarried && !isEquipped && isShieldItem(item) ? (
+                      {isCarried && !isEquipped && isShieldItem(item, itemRulesContext) ? (
                         <button
                           type="button"
                           className="equipment-inline-button"
@@ -475,7 +530,7 @@ export function CharacterInventorySection({
                           Equip
                         </button>
                       ) : null}
-                      {isCarried && !isEquipped && isMainSlotEquipItem(item) ? (
+                      {isCarried && !isEquipped && isMainSlotEquipItem(item, itemRulesContext) ? (
                         <button
                           type="button"
                           className="equipment-inline-button"

@@ -5,6 +5,8 @@ import {
   buildItemIndex,
   canCharacterIdentifyItem,
   getCharacterArtifactAppraisalLevel,
+  getItemAllowedEquipSlots,
+  getItemMechanicalRole,
   identifyItemForCharacter,
   maskItemForCharacter,
   retypeSharedItemRecord,
@@ -48,8 +50,11 @@ import {
 import type { CharacterRecord, StatId } from "../types/character";
 import type {
   ItemBlueprintId,
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
   ItemDerivedModifierId,
   MainEquipmentSlotId,
+  ItemSubcategoryDefinition,
   SharedItemRecord,
   WeaponHandSlotId,
 } from "../types/items.ts";
@@ -66,6 +71,9 @@ type SharedItemUpdater =
 type UsePlayerCharacterMutationsParams = {
   activeCharacter: CharacterRecord | null;
   sheetState: CharacterDraft;
+  itemBlueprints: ItemBlueprintRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   items: SharedItemRecord[];
   xpLeftOver: number;
   isReadOnlyView: boolean;
@@ -140,6 +148,9 @@ export type PlayerCharacterMutations = {
 export function usePlayerCharacterMutations({
   activeCharacter,
   sheetState,
+  itemBlueprints,
+  itemCategoryDefinitions,
+  itemSubcategoryDefinitions,
   items,
   xpLeftOver,
   isReadOnlyView,
@@ -161,6 +172,11 @@ export function usePlayerCharacterMutations({
   setAdminOverrideError,
 }: UsePlayerCharacterMutationsParams): PlayerCharacterMutations {
   const itemsById = buildItemIndex(items);
+  const itemRulesContext = {
+    itemBlueprints,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+  };
 
   function setSheetState(updater: CharacterSheetUpdater): void {
     if (!activeCharacter) {
@@ -512,72 +528,54 @@ export function usePlayerCharacterMutations({
   }
 
   function isShieldItem(item: SharedItemRecord): boolean {
-    return item.category === "shield";
+    return getItemMechanicalRole(item, itemRulesContext) === "shield";
   }
 
   function resolveDefaultEquipmentSlot(currentSheet: CharacterDraft, item: SharedItemRecord): string {
-    if (item.category === "body_armor") {
-      return "body";
+    const allowedSlots = getItemAllowedEquipSlots(item, itemRulesContext);
+    if (allowedSlots.includes("weapon_primary") || allowedSlots.includes("weapon_secondary")) {
+      return chooseWeaponEquipSlot(currentSheet, item);
     }
 
-    if (item.category === "neck") {
-      return "neck";
-    }
-
-    if (item.category === "head") {
-      return "head";
-    }
-
-    if (item.category === "rings") {
-      if (item.subtype === "earring") {
-        return "earring";
-      }
-
-      const leftRingItemId = currentSheet.equipment.find((entry) => entry.slot === "ring_left")?.itemId ?? null;
-      const rightRingItemId = currentSheet.equipment.find((entry) => entry.slot === "ring_right")?.itemId ?? null;
-      if (!leftRingItemId) {
+    if (allowedSlots.includes("ring_left") || allowedSlots.includes("ring_right")) {
+      const leftRingItemId =
+        currentSheet.equipment.find((entry) => entry.slot === "ring_left")?.itemId ?? null;
+      const rightRingItemId =
+        currentSheet.equipment.find((entry) => entry.slot === "ring_right")?.itemId ?? null;
+      if (allowedSlots.includes("ring_left") && !leftRingItemId) {
         return "ring_left";
       }
-      if (!rightRingItemId) {
+      if (allowedSlots.includes("ring_right") && !rightRingItemId) {
         return "ring_right";
       }
-      return "ring_left";
+      return allowedSlots[0] ?? "body";
     }
 
-    if (item.category === "orbital") {
-      return "orbital";
-    }
-
-    if (item.category === "charm") {
-      return "charm";
-    }
-
-    if (item.category === "occult") {
-      return item.combatSpec?.handsRequired === 2 ? "weapon_primary" : "weapon_secondary";
-    }
-
-    return "body";
+    return allowedSlots[0] ?? "body";
   }
 
   function chooseWeaponEquipSlot(currentSheet: CharacterDraft, item: SharedItemRecord): WeaponHandSlotId {
+    const allowedSlots = getItemAllowedEquipSlots(item, itemRulesContext).filter(
+      (slot): slot is WeaponHandSlotId => slot === "weapon_primary" || slot === "weapon_secondary"
+    );
     const primaryItemId =
       currentSheet.equipment.find((entry) => entry.slot === "weapon_primary")?.itemId ?? null;
     const secondaryItemId =
       currentSheet.equipment.find((entry) => entry.slot === "weapon_secondary")?.itemId ?? null;
 
-    if (item.combatSpec?.handsRequired === 2) {
+    if (item.combatSpec?.handsRequired === 2 && allowedSlots.includes("weapon_primary")) {
       return "weapon_primary";
     }
 
-    if (!primaryItemId) {
+    if (allowedSlots.includes("weapon_primary") && !primaryItemId) {
       return "weapon_primary";
     }
 
-    if (!secondaryItemId) {
+    if (allowedSlots.includes("weapon_secondary") && !secondaryItemId) {
       return "weapon_secondary";
     }
 
-    return "weapon_primary";
+    return allowedSlots[0] ?? "weapon_primary";
   }
 
   function equipSharedItem(itemId: string, slot?: string): void {
@@ -589,7 +587,9 @@ export function usePlayerCharacterMutations({
     setSheetState((currentSheet) => {
       const baseSheet = removeCharacterItemFromEquipment(currentSheet, itemId);
       const nextSheet =
-        item.category === "melee" || item.category === "range" || item.category === "occult" || isShieldItem(item)
+        getItemAllowedEquipSlots(item, itemRulesContext).some(
+          (entry) => entry === "weapon_primary" || entry === "weapon_secondary"
+        ) || isShieldItem(item)
           ? setCharacterWeaponHandSlotItem(
               baseSheet,
               slot === "weapon_primary" || slot === "weapon_secondary"
@@ -598,7 +598,8 @@ export function usePlayerCharacterMutations({
                   ? "weapon_secondary"
                   : chooseWeaponEquipSlot(baseSheet, item),
               itemId,
-              itemsById
+              itemsById,
+              itemRulesContext
             )
           : setCharacterEquipmentSlotItem(
               baseSheet,
@@ -648,7 +649,7 @@ export function usePlayerCharacterMutations({
   function updateWeaponHandSlotItem(slot: WeaponHandSlotId, itemId: string): void {
     setSheetState((currentSheet) =>
       appendDmAuditEntry(
-        setCharacterWeaponHandSlotItem(currentSheet, slot, itemId, itemsById),
+        setCharacterWeaponHandSlotItem(currentSheet, slot, itemId, itemsById, itemRulesContext),
         createDmAuditEntry(
           "sheet",
           `equipment.${slot}.itemId`,

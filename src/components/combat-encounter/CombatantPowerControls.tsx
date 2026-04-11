@@ -8,7 +8,12 @@ import type {
   CharacterSheetUpdater,
   EncounterParticipantView,
 } from "../../types/combatEncounterView";
-import type { SharedItemRecord } from "../../types/items";
+import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+  SharedItemRecord,
+} from "../../types/items";
 import { CROWD_CONTROL_SPELL_NAME } from "../../powers/spellLabels.ts";
 import { CombatantActiveEffectsPanel } from "./CombatantActiveEffectsPanel";
 import { CombatantCastForm } from "./CombatantCastForm";
@@ -18,6 +23,9 @@ type CombatantPowerControlsProps = {
   view: EncounterParticipantView;
   encounterParticipants: EncounterParticipantView[];
   itemsById: Record<string, SharedItemRecord>;
+  itemBlueprints: ItemBlueprintRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   requestCast: (payload: CastRequestPayload) => string | null;
   requestPhysicalAttack: (payload: {
     casterView: EncounterParticipantView;
@@ -38,6 +46,9 @@ export function CombatantPowerControls({
   view,
   encounterParticipants,
   itemsById,
+  itemBlueprints,
+  itemCategoryDefinitions,
+  itemSubcategoryDefinitions,
   requestCast,
   requestPhysicalAttack,
   requestControlRelease,
@@ -144,6 +155,9 @@ export function CombatantPowerControls({
                   view={view}
                   encounterParticipants={encounterParticipants}
                   itemsById={itemsById}
+                  itemBlueprints={itemBlueprints}
+                  itemCategoryDefinitions={itemCategoryDefinitions}
+                  itemSubcategoryDefinitions={itemSubcategoryDefinitions}
                   requestPhysicalAttack={requestPhysicalAttack}
                 />
               </div>

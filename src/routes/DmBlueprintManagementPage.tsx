@@ -4,6 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate.ts";
 import {
   createEmptyBonusProfile,
+  getEquipmentSlotLabel,
   getItemPowerBonusOptions,
   getItemSpellBonusOptions,
   setProfileDerivedValue,
@@ -17,21 +18,13 @@ import {
 } from "../lib/items.ts";
 import { DAMAGE_TYPES } from "../rules/resistances.ts";
 import { useAppFlow } from "../state/appFlow";
-import {
-  BODY_ARMOR_SUBTYPES,
-  CHARM_SUBTYPES,
-  CONSUMABLE_SUBTYPES,
-  HEAD_SUBTYPES,
-  ITEM_CATEGORIES,
-  MELEE_SUBTYPES,
-  NECK_SUBTYPES,
-  OCCULT_SUBTYPES,
-  ORBITAL_SUBTYPES,
-  RANGE_SUBTYPES,
-  RINGS_SUBTYPES,
-  SHIELD_SUBTYPES,
+import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemCombatSpec,
+  ItemDerivedModifierId,
+  ItemSubcategoryDefinition,
 } from "../types/items.ts";
-import type { ItemBlueprintRecord, ItemCombatSpec, ItemDerivedModifierId } from "../types/items.ts";
 import { STAT_IDS, type StatId } from "../types/character.ts";
 
 const SKILL_OPTIONS = PLAYER_CHARACTER_TEMPLATE.createInstance().skills.map((skill) => ({
@@ -79,159 +72,189 @@ function sortBlueprints(blueprints: ItemBlueprintRecord[]): ItemBlueprintRecord[
   });
 }
 
-function formatOptionLabel(value: string): string {
-  return value
-    .split("_")
-    .map((entry) => entry.charAt(0).toUpperCase() + entry.slice(1))
-    .join(" ");
+function formatSlotSummary(slotIds: string[], mode: "allowed" | "occupied"): string {
+  if (
+    slotIds.length === 2 &&
+    slotIds.includes("weapon_primary") &&
+    slotIds.includes("weapon_secondary")
+  ) {
+    return mode === "allowed" ? "Hand" : "Primary Hand + Secondary Hand";
+  }
+
+  if (
+    slotIds.length === 2 &&
+    slotIds.includes("ring_left") &&
+    slotIds.includes("ring_right")
+  ) {
+    return "Left / Right Ring";
+  }
+
+  return slotIds.map((slotId) => getEquipmentSlotLabel(slotId)).join(mode === "allowed" ? " / " : " + ");
 }
 
 function getBlueprintSlotSummary(
-  category: ItemBlueprintRecord["category"],
-  subtype: ItemBlueprintRecord["subtype"],
+  subcategoryDefinition: ItemSubcategoryDefinition | null,
   combatSpec: ItemCombatSpec | null
 ): string {
-  if (category === "shield") {
-    return "Secondary Hand";
+  if (!subcategoryDefinition) {
+    return "None";
   }
 
-  if (category === "melee" || category === "range" || category === "occult") {
-    return combatSpec?.handsRequired === 2 ? "Primary Hand + Secondary Hand" : "Hand";
+  const occupiedSlots =
+    subcategoryDefinition.occupiedSlots.length > 0
+      ? subcategoryDefinition.occupiedSlots
+      : combatSpec?.handsRequired === 2 &&
+          subcategoryDefinition.allowedEquipSlots.includes("weapon_primary")
+        ? ["weapon_primary", "weapon_secondary"]
+        : [];
+  if (occupiedSlots.length > 0) {
+    return formatSlotSummary(occupiedSlots, "occupied");
   }
 
-  if (category === "body_armor") {
-    return "Chest / Body";
-  }
-
-  if (category === "neck") {
-    return "Neck";
-  }
-
-  if (category === "rings") {
-    return subtype === "earring" ? "Earring" : "Left / Right Ring";
-  }
-
-  if (category === "head") {
-    return "Head";
-  }
-
-  if (category === "orbital") {
-    return "Orbital";
-  }
-
-  if (category === "charm") {
-    return "Charm / Talisman";
+  if (subcategoryDefinition.allowedEquipSlots.length > 0) {
+    return formatSlotSummary(subcategoryDefinition.allowedEquipSlots, "allowed");
   }
 
   return "None";
 }
 
-function buildDefaultCombatSpec(category: string, subtype: string): ItemCombatSpec | null {
-  if (category === "melee") {
-    const handsRequired = subtype === "two_handed" || subtype === "oversized" ? 2 : 1;
+function buildDefaultCombatSpec(
+  subcategoryDefinition: ItemSubcategoryDefinition | null
+): ItemCombatSpec | null {
+  if (!subcategoryDefinition) {
+    return null;
+  }
+
+  if (subcategoryDefinition.mechanicalRole === "melee") {
+    const handsRequired =
+      subcategoryDefinition.occupiedSlots.includes("weapon_primary") &&
+      subcategoryDefinition.occupiedSlots.includes("weapon_secondary")
+        ? 2
+        : 1;
 
     return {
       attackKind: "melee",
       physicalProfileKind:
-        subtype === "unarmed" || subtype === "brawl" || subtype === "one_handed" || subtype === "two_handed" || subtype === "oversized"
-          ? subtype
+        subcategoryDefinition.id.endsWith(":unarmed") ||
+        subcategoryDefinition.id.endsWith(":brawl") ||
+        subcategoryDefinition.id.endsWith(":one_handed") ||
+        subcategoryDefinition.id.endsWith(":two_handed") ||
+        subcategoryDefinition.id.endsWith(":oversized")
+          ? (subcategoryDefinition.id.split(":").at(-1) as NonNullable<ItemCombatSpec["physicalProfileKind"]>)
           : "one_handed",
       handsRequired,
-      attacksPerAction: subtype === "unarmed" || subtype === "brawl" ? 2 : 1,
+      attacksPerAction:
+        subcategoryDefinition.id.endsWith(":unarmed") ||
+        subcategoryDefinition.id.endsWith(":brawl")
+          ? 2
+          : 1,
       slotKey: "Hand",
     };
   }
 
-  if (category === "range") {
+  if (subcategoryDefinition.mechanicalRole === "range") {
     return {
       attackKind: "ranged",
       physicalProfileKind: "ranged",
-      handsRequired: subtype === "gun" ? 1 : 2,
+      handsRequired:
+        subcategoryDefinition.occupiedSlots.includes("weapon_primary") &&
+        subcategoryDefinition.occupiedSlots.includes("weapon_secondary")
+          ? 2
+          : 1,
       attacksPerAction: 1,
       slotKey: "Hand",
     };
   }
 
-  if (category === "body_armor") {
+  if (subcategoryDefinition.mechanicalRole === "body_armor") {
     return { slotKey: "Body" };
   }
 
-  if (category === "shield") {
+  if (subcategoryDefinition.mechanicalRole === "shield") {
     return { slotKey: "Hand" };
   }
 
-  if (category === "occult") {
-    return { slotKey: "Hand", handsRequired: subtype === "two_handed" ? 2 : 1 };
+  if (subcategoryDefinition.mechanicalRole === "occult") {
+    return {
+      slotKey: "Hand",
+      handsRequired:
+        subcategoryDefinition.occupiedSlots.includes("weapon_primary") &&
+        subcategoryDefinition.occupiedSlots.includes("weapon_secondary")
+          ? 2
+          : 1,
+    };
   }
 
-  if (category === "neck") {
-    return { slotKey: "Neck" };
-  }
-
-  if (category === "rings") {
-    return { slotKey: subtype === "earring" ? "Earring" : "Ring" };
-  }
-
-  if (category === "head") {
-    return { slotKey: "Head" };
-  }
-
-  if (category === "orbital") {
-    return { slotKey: "Orbital" };
-  }
-
-  if (category === "charm") {
-    return { slotKey: "Charm / Talisman" };
-  }
-
-  if (category === "consumable") {
+  if (subcategoryDefinition.mechanicalRole === "consumable") {
     return null;
   }
 
-  if (category === "melee" || category === "range" || category === "shield" || category === "occult") {
-    return { slotKey: "Hand", handsRequired: 1 };
+  if (subcategoryDefinition.allowedEquipSlots.length === 0) {
+    return null;
   }
 
-  return null;
+  return { slotKey: getEquipmentSlotLabel(subcategoryDefinition.allowedEquipSlots[0]) };
 }
 
-function getSubtypeOptions(category: string): string[] {
-  if (category === "melee") return [...MELEE_SUBTYPES];
-  if (category === "body_armor") return [...BODY_ARMOR_SUBTYPES];
-  if (category === "consumable") return [...CONSUMABLE_SUBTYPES];
-  if (category === "shield") return [...SHIELD_SUBTYPES];
-  if (category === "neck") return [...NECK_SUBTYPES];
-  if (category === "rings") return [...RINGS_SUBTYPES];
-  if (category === "occult") return [...OCCULT_SUBTYPES];
-  if (category === "range") return [...RANGE_SUBTYPES];
-  if (category === "head") return [...HEAD_SUBTYPES];
-  if (category === "orbital") return [...ORBITAL_SUBTYPES];
-  if (category === "charm") return [...CHARM_SUBTYPES];
-  return [...MELEE_SUBTYPES];
+function getSubcategoryOptions(
+  categoryId: string,
+  subcategoryDefinitions: ItemSubcategoryDefinition[]
+): ItemSubcategoryDefinition[] {
+  return subcategoryDefinitions
+    .filter((definition) => definition.categoryId === categoryId)
+    .sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export function DmBlueprintManagementPage() {
   const navigate = useNavigate();
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const { roleChoice, itemBlueprints, items, createItemBlueprint, updateItemBlueprint, deleteItemBlueprint } = useAppFlow();
+  const {
+    roleChoice,
+    itemCategoryDefinitions,
+    itemSubcategoryDefinitions,
+    itemBlueprints,
+    items,
+    createItemBlueprint,
+    updateItemBlueprint,
+    deleteItemBlueprint,
+  } = useAppFlow();
   const sortedBlueprints = useMemo(() => sortBlueprints(itemBlueprints), [itemBlueprints]);
+  const sortedCategoryDefinitions = useMemo(
+    () =>
+      [...itemCategoryDefinitions].sort((left, right) => left.name.localeCompare(right.name)),
+    [itemCategoryDefinitions]
+  );
   const powerBonusOptions = useMemo(() => getItemPowerBonusOptions(), []);
   const spellBonusOptions = useMemo(() => getItemSpellBonusOptions(), []);
   const selectedBlueprint =
     sortedBlueprints.find((blueprint) => blueprint.id === selectedBlueprintId) ?? sortedBlueprints[0] ?? null;
+  const selectedSubcategoryDefinition =
+    selectedBlueprint
+      ? itemSubcategoryDefinitions.find(
+          (definition) => definition.id === selectedBlueprint.subcategoryDefinitionId
+        ) ?? null
+      : null;
 
   if (roleChoice !== "dm") {
     return <Navigate to="/role" replace />;
   }
 
   function handleCreateBlueprint(): void {
+    const defaultCategoryDefinition = sortedCategoryDefinitions[0] ?? null;
+    const defaultSubcategoryDefinition =
+      defaultCategoryDefinition
+        ? getSubcategoryOptions(
+            defaultCategoryDefinition.id,
+            itemSubcategoryDefinitions
+          )[0] ?? null
+        : null;
     const blueprintId = createItemBlueprint({
       label: "Custom Blueprint",
       defaultName: "Custom Item",
-      category: "melee",
-      subtype: "one_handed",
-      combatSpec: buildDefaultCombatSpec("melee", "one_handed"),
+      categoryDefinitionId: defaultCategoryDefinition?.id ?? "melee",
+      subcategoryDefinitionId: defaultSubcategoryDefinition?.id ?? "melee:one_handed",
+      combatSpec: buildDefaultCombatSpec(defaultSubcategoryDefinition),
       baseProfile: createEmptyBonusProfile(),
     });
     setSelectedBlueprintId(blueprintId);
@@ -261,6 +284,9 @@ export function DmBlueprintManagementPage() {
             </button>
             <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items/edit")}>
               Item Editting
+            </button>
+            <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items/definitions")}>
+              Definitions
             </button>
           </div>
         </header>
@@ -362,40 +388,58 @@ export function DmBlueprintManagementPage() {
                       <label className="dm-field">
                         <span>Category</span>
                         <select
-                          value={selectedBlueprint.category}
+                          value={selectedBlueprint.categoryDefinitionId}
                           onChange={(event) => {
-                            const nextCategory = event.target.value;
-                            const nextSubtype = getSubtypeOptions(nextCategory)[0] ?? "one_handed";
+                            const nextCategoryId = event.target.value;
+                            const nextSubcategoryDefinition =
+                              getSubcategoryOptions(
+                                nextCategoryId,
+                                itemSubcategoryDefinitions
+                              )[0] ?? null;
                             updateItemBlueprint(selectedBlueprint.id, (current) => ({
                               ...current,
-                              category: nextCategory as ItemBlueprintRecord["category"],
-                              subtype: nextSubtype as ItemBlueprintRecord["subtype"],
-                              combatSpec: buildDefaultCombatSpec(nextCategory, nextSubtype),
+                              categoryDefinitionId: nextCategoryId,
+                              subcategoryDefinitionId:
+                                nextSubcategoryDefinition?.id ??
+                                current.subcategoryDefinitionId,
+                              combatSpec: buildDefaultCombatSpec(nextSubcategoryDefinition),
                             }));
                           }}
                         >
-                          {ITEM_CATEGORIES.map((category) => (
-                            <option key={category} value={category}>
-                              {formatOptionLabel(category)}
+                          {sortedCategoryDefinitions.map((categoryDefinition) => (
+                            <option key={categoryDefinition.id} value={categoryDefinition.id}>
+                              {categoryDefinition.name}
                             </option>
                           ))}
                         </select>
                       </label>
                       <label className="dm-field">
-                        <span>Subtype</span>
+                        <span>Subcategory</span>
                         <select
-                          value={selectedBlueprint.subtype}
+                          value={selectedBlueprint.subcategoryDefinitionId}
                           onChange={(event) =>
-                            updateItemBlueprint(selectedBlueprint.id, (current) => ({
-                              ...current,
-                              subtype: event.target.value as ItemBlueprintRecord["subtype"],
-                              combatSpec: buildDefaultCombatSpec(current.category, event.target.value),
-                            }))
+                            updateItemBlueprint(selectedBlueprint.id, (current) => {
+                              const nextSubcategoryDefinition =
+                                itemSubcategoryDefinitions.find(
+                                  (definition) => definition.id === event.target.value
+                                ) ?? null;
+                              return {
+                                ...current,
+                                categoryDefinitionId:
+                                  nextSubcategoryDefinition?.categoryId ??
+                                  current.categoryDefinitionId,
+                                subcategoryDefinitionId: event.target.value,
+                                combatSpec: buildDefaultCombatSpec(nextSubcategoryDefinition),
+                              };
+                            })
                           }
                         >
-                          {getSubtypeOptions(selectedBlueprint.category).map((subtype) => (
-                            <option key={subtype} value={subtype}>
-                              {formatOptionLabel(subtype)}
+                          {getSubcategoryOptions(
+                            selectedBlueprint.categoryDefinitionId,
+                            itemSubcategoryDefinitions
+                          ).map((subcategoryDefinition) => (
+                            <option key={subcategoryDefinition.id} value={subcategoryDefinition.id}>
+                              {subcategoryDefinition.name}
                             </option>
                           ))}
                         </select>
@@ -555,8 +599,7 @@ export function DmBlueprintManagementPage() {
                         <span>Resolved Equipment Slot</span>
                         <input
                           value={getBlueprintSlotSummary(
-                            selectedBlueprint.category,
-                            selectedBlueprint.subtype,
+                            selectedSubcategoryDefinition,
                             selectedBlueprint.combatSpec
                           )}
                           readOnly

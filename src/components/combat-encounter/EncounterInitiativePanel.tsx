@@ -3,12 +3,20 @@ import type {
   CharacterSheetUpdater,
   EncounterParticipantView,
 } from "../../types/combatEncounterView";
-import type { SharedItemRecord } from "../../types/items";
+import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+  SharedItemRecord,
+} from "../../types/items";
 import { EncounterCombatantCard } from "./EncounterCombatantCard";
 
 type EncounterInitiativePanelProps = {
   encounterParticipants: EncounterParticipantView[];
   itemsById: Record<string, SharedItemRecord>;
+  itemBlueprints: ItemBlueprintRecord[];
+  itemCategoryDefinitions: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   openCharacterSheet: (characterId: string, ownerRole: "player" | "dm") => void;
   requestCast: (payload: CastRequestPayload) => string | null;
   requestPhysicalAttack: (payload: {
@@ -29,6 +37,9 @@ type EncounterInitiativePanelProps = {
 export function EncounterInitiativePanel({
   encounterParticipants,
   itemsById,
+  itemBlueprints,
+  itemCategoryDefinitions,
+  itemSubcategoryDefinitions,
   openCharacterSheet,
   requestCast,
   requestPhysicalAttack,
@@ -48,6 +59,9 @@ export function EncounterInitiativePanel({
             view={view}
             encounterParticipants={encounterParticipants}
             itemsById={itemsById}
+            itemBlueprints={itemBlueprints}
+            itemCategoryDefinitions={itemCategoryDefinitions}
+            itemSubcategoryDefinitions={itemSubcategoryDefinitions}
             openCharacterSheet={openCharacterSheet}
             requestCast={requestCast}
             requestPhysicalAttack={requestPhysicalAttack}

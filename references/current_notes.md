@@ -8,6 +8,7 @@ This file tracks active reminders for the current implementation block.
 - Knowledge System V1 is now implemented for character cards.
 - The remaining power TODO rewrite pass is now complete.
 - The encounter cast UI standardization, aura lifecycle cleanup, summon dismiss UI, and ingestion reference sync pass is now complete.
+- The persisted item-definition refactor is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -24,13 +25,21 @@ This file tracks active reminders for the current implementation block.
 - Items will move to shared standalone records outside character sheets.
 - Encounter physical attacks now resolve automatically from equipped loadout state.
 - `Brute Defiance` is passive again: 1/day, HP `0` to `-5`, resolves after one turn, and restores `1 / 2 / 4 / 8 / 16` HP by BR level.
+- Item blueprints now resolve through persisted `ItemCategoryDefinition` and `ItemSubcategoryDefinition` records instead of hardcoded category/subtype branching.
+- Current item behavior remains intentionally locked for this pass:
+  - shields still resolve to secondary hand
+  - one-handed hand items still prefer primary then secondary
+  - rings still resolve left then right
+  - true first-class anchor-slot / multi-slot occupancy remains deferred
 
 ## Known Structural Gaps
 - Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
+- DM item tooling now includes dedicated definition management for item categories and subcategories.
 - Encounter cast UI now uses a stable `Power > Spell > ...` flow for active casts.
 - Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
 - The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
+- First-class multi-slot occupancy is still not implemented; the current refactor only prepares the data model for that follow-up.
 
 ## Knowledge System V1
 - Keep `History` as an event log.

@@ -11,11 +11,16 @@ import type {
   ItemBlueprintId,
   ItemBlueprintRecord,
   ItemCategory,
+  ItemCategoryDefinition,
+  ItemCategoryDefinitionId,
   ItemCombatSpec,
   ItemCustomPropertyRecord,
   ItemCustomPropertyTarget,
   ItemDerivedModifierId,
+  ItemMechanicalRole,
   ItemModifierSource,
+  ItemSubcategoryDefinition,
+  ItemSubcategoryDefinitionId,
   MainEquipmentSlotId,
   SharedItemRecord,
   WeaponHandSlotId,
@@ -36,6 +41,7 @@ import {
   WEAPON_HAND_SLOT_IDS,
   WEAPON_HAND_SLOT_LABELS,
   isItemCategory,
+  isItemMechanicalRole,
   isCanonicalEquipmentSlotId,
   isMainEquipmentSlotId,
   isItemSubtype,
@@ -116,6 +122,237 @@ const LEGACY_BLUEPRINT_ALIASES: Record<string, ItemBlueprintId> = {
   "jewel:jewel": "rings:ring",
 };
 
+type ItemRulesContext = {
+  itemBlueprints?: ItemBlueprintRecord[];
+  itemCategoryDefinitions?: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions?: ItemSubcategoryDefinition[];
+};
+
+const DEFAULT_ITEM_CATEGORY_DEFINITION_SEED: ItemCategoryDefinition[] = [
+  { id: "melee", name: "Melee" },
+  { id: "body_armor", name: "Body Armor" },
+  { id: "consumable", name: "Consumable" },
+  { id: "shield", name: "Shield" },
+  { id: "neck", name: "Neck" },
+  { id: "rings", name: "Rings" },
+  { id: "occult", name: "Occult" },
+  { id: "range", name: "Range" },
+  { id: "head", name: "Head" },
+  { id: "orbital", name: "Orbital" },
+  { id: "charm", name: "Charm" },
+] as const satisfies ItemCategoryDefinition[];
+
+const DEFAULT_ITEM_SUBCATEGORY_DEFINITION_SEED: ItemSubcategoryDefinition[] = [
+  {
+    id: "melee:unarmed",
+    categoryId: "melee",
+    name: "Unarmed",
+    mechanicalRole: "melee",
+    allowedEquipSlots: ["weapon_primary", "weapon_secondary"],
+    occupiedSlots: [],
+  },
+  {
+    id: "melee:brawl",
+    categoryId: "melee",
+    name: "Brawl",
+    mechanicalRole: "melee",
+    allowedEquipSlots: ["weapon_primary", "weapon_secondary"],
+    occupiedSlots: [],
+  },
+  {
+    id: "melee:one_handed",
+    categoryId: "melee",
+    name: "One-Handed",
+    mechanicalRole: "melee",
+    allowedEquipSlots: ["weapon_primary", "weapon_secondary"],
+    occupiedSlots: [],
+  },
+  {
+    id: "melee:two_handed",
+    categoryId: "melee",
+    name: "Two-Handed",
+    mechanicalRole: "melee",
+    allowedEquipSlots: ["weapon_primary"],
+    occupiedSlots: ["weapon_primary", "weapon_secondary"],
+  },
+  {
+    id: "melee:oversized",
+    categoryId: "melee",
+    name: "Oversized",
+    mechanicalRole: "melee",
+    allowedEquipSlots: ["weapon_primary"],
+    occupiedSlots: ["weapon_primary", "weapon_secondary"],
+  },
+  {
+    id: "body_armor:clothing",
+    categoryId: "body_armor",
+    name: "Clothing",
+    mechanicalRole: "body_armor",
+    allowedEquipSlots: ["body"],
+    occupiedSlots: [],
+  },
+  {
+    id: "body_armor:light",
+    categoryId: "body_armor",
+    name: "Light",
+    mechanicalRole: "body_armor",
+    allowedEquipSlots: ["body"],
+    occupiedSlots: [],
+  },
+  {
+    id: "body_armor:medium",
+    categoryId: "body_armor",
+    name: "Medium",
+    mechanicalRole: "body_armor",
+    allowedEquipSlots: ["body"],
+    occupiedSlots: [],
+  },
+  {
+    id: "body_armor:heavy",
+    categoryId: "body_armor",
+    name: "Heavy",
+    mechanicalRole: "body_armor",
+    allowedEquipSlots: ["body"],
+    occupiedSlots: [],
+  },
+  {
+    id: "consumable:drinkable",
+    categoryId: "consumable",
+    name: "Drinkable",
+    mechanicalRole: "consumable",
+    allowedEquipSlots: [],
+    occupiedSlots: [],
+  },
+  {
+    id: "consumable:usable",
+    categoryId: "consumable",
+    name: "Usable",
+    mechanicalRole: "consumable",
+    allowedEquipSlots: [],
+    occupiedSlots: [],
+  },
+  {
+    id: "shield:light",
+    categoryId: "shield",
+    name: "Light Shield",
+    mechanicalRole: "shield",
+    allowedEquipSlots: ["weapon_secondary"],
+    occupiedSlots: [],
+  },
+  {
+    id: "shield:heavy",
+    categoryId: "shield",
+    name: "Heavy Shield",
+    mechanicalRole: "shield",
+    allowedEquipSlots: ["weapon_secondary"],
+    occupiedSlots: [],
+  },
+  {
+    id: "neck:wearable",
+    categoryId: "neck",
+    name: "Wearable",
+    mechanicalRole: "accessory",
+    allowedEquipSlots: ["neck"],
+    occupiedSlots: [],
+  },
+  {
+    id: "neck:amulet",
+    categoryId: "neck",
+    name: "Amulet",
+    mechanicalRole: "accessory",
+    allowedEquipSlots: ["neck"],
+    occupiedSlots: [],
+  },
+  {
+    id: "rings:ring",
+    categoryId: "rings",
+    name: "Ring",
+    mechanicalRole: "accessory",
+    allowedEquipSlots: ["ring_left", "ring_right"],
+    occupiedSlots: [],
+  },
+  {
+    id: "rings:earring",
+    categoryId: "rings",
+    name: "Earring",
+    mechanicalRole: "accessory",
+    allowedEquipSlots: ["earring"],
+    occupiedSlots: [],
+  },
+  {
+    id: "occult:one_handed",
+    categoryId: "occult",
+    name: "One-Handed",
+    mechanicalRole: "occult",
+    allowedEquipSlots: ["weapon_primary", "weapon_secondary"],
+    occupiedSlots: [],
+  },
+  {
+    id: "occult:two_handed",
+    categoryId: "occult",
+    name: "Two-Handed",
+    mechanicalRole: "occult",
+    allowedEquipSlots: ["weapon_primary"],
+    occupiedSlots: ["weapon_primary", "weapon_secondary"],
+  },
+  {
+    id: "range:bow",
+    categoryId: "range",
+    name: "Bow",
+    mechanicalRole: "range",
+    allowedEquipSlots: ["weapon_primary"],
+    occupiedSlots: ["weapon_primary", "weapon_secondary"],
+  },
+  {
+    id: "range:crossbow",
+    categoryId: "range",
+    name: "Crossbow",
+    mechanicalRole: "range",
+    allowedEquipSlots: ["weapon_primary"],
+    occupiedSlots: ["weapon_primary", "weapon_secondary"],
+  },
+  {
+    id: "range:gun",
+    categoryId: "range",
+    name: "Gun",
+    mechanicalRole: "range",
+    allowedEquipSlots: ["weapon_primary", "weapon_secondary"],
+    occupiedSlots: [],
+  },
+  {
+    id: "range:launcher",
+    categoryId: "range",
+    name: "Launcher",
+    mechanicalRole: "range",
+    allowedEquipSlots: ["weapon_primary"],
+    occupiedSlots: ["weapon_primary", "weapon_secondary"],
+  },
+  {
+    id: "head:head",
+    categoryId: "head",
+    name: "Head",
+    mechanicalRole: "accessory",
+    allowedEquipSlots: ["head"],
+    occupiedSlots: [],
+  },
+  {
+    id: "orbital:orbital",
+    categoryId: "orbital",
+    name: "Orbital",
+    mechanicalRole: "accessory",
+    allowedEquipSlots: ["orbital"],
+    occupiedSlots: [],
+  },
+  {
+    id: "charm:talisman",
+    categoryId: "charm",
+    name: "Talisman",
+    mechanicalRole: "accessory",
+    allowedEquipSlots: ["charm"],
+    occupiedSlots: [],
+  },
+] as const satisfies ItemSubcategoryDefinition[];
+
 function sanitizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -129,6 +366,64 @@ function sanitizeStringArray(value: unknown): string[] {
         .filter((entry) => entry.length > 0)
     ),
   ];
+}
+
+function sanitizeEquipSlotArray(value: unknown): CanonicalEquipmentSlotId[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      value.filter((entry): entry is CanonicalEquipmentSlotId => isCanonicalEquipmentSlotId(entry))
+    ),
+  ];
+}
+
+function cloneItemCategoryDefinition(definition: ItemCategoryDefinition): ItemCategoryDefinition {
+  return { ...definition };
+}
+
+function cloneItemSubcategoryDefinition(
+  definition: ItemSubcategoryDefinition
+): ItemSubcategoryDefinition {
+  return {
+    ...definition,
+    allowedEquipSlots: [...definition.allowedEquipSlots],
+    occupiedSlots: [...definition.occupiedSlots],
+  };
+}
+
+function inferDefinitionIdsFromLegacyCategorySubtype(
+  category: unknown,
+  subtype: unknown
+): {
+  categoryDefinitionId: ItemCategoryDefinitionId;
+  subcategoryDefinitionId: ItemSubcategoryDefinitionId;
+} | null {
+  if (!isItemCategory(category) || !isItemSubtype(subtype)) {
+    return null;
+  }
+
+  return {
+    categoryDefinitionId: category,
+    subcategoryDefinitionId: `${category}:${subtype}`,
+  };
+}
+
+function inferLegacyCategoryFromDefinitionId(
+  categoryDefinitionId: string,
+  fallbackCategory: ItemCategory = "melee"
+): ItemCategory {
+  return isItemCategory(categoryDefinitionId) ? categoryDefinitionId : fallbackCategory;
+}
+
+function inferLegacySubtypeFromDefinitionId(
+  subcategoryDefinitionId: string,
+  fallbackSubtype: ItemBlueprintRecord["subtype"] = "one_handed"
+): ItemBlueprintRecord["subtype"] {
+  const maybeSubtype = subcategoryDefinitionId.split(":").slice(1).join(":");
+  return isItemSubtype(maybeSubtype) ? maybeSubtype : fallbackSubtype;
 }
 
 function normalizeInteger(value: unknown, fallback = 0): number {
@@ -398,12 +693,196 @@ function inferBlueprintIdFromCategorySubtype(
   return `${category}:${subtype}`;
 }
 
+export function buildItemCategoryDefinitionIndex(
+  definitions: ItemCategoryDefinition[]
+): Record<ItemCategoryDefinitionId, ItemCategoryDefinition> {
+  return Object.fromEntries(definitions.map((definition) => [definition.id, definition]));
+}
+
+export function buildItemSubcategoryDefinitionIndex(
+  definitions: ItemSubcategoryDefinition[]
+): Record<ItemSubcategoryDefinitionId, ItemSubcategoryDefinition> {
+  return Object.fromEntries(definitions.map((definition) => [definition.id, definition]));
+}
+
+const DEFAULT_ITEM_CATEGORY_DEFINITIONS = DEFAULT_ITEM_CATEGORY_DEFINITION_SEED.map(
+  cloneItemCategoryDefinition
+);
+const DEFAULT_ITEM_SUBCATEGORY_DEFINITIONS = DEFAULT_ITEM_SUBCATEGORY_DEFINITION_SEED.map(
+  cloneItemSubcategoryDefinition
+);
+const DEFAULT_ITEM_CATEGORY_DEFINITION_INDEX = buildItemCategoryDefinitionIndex(
+  DEFAULT_ITEM_CATEGORY_DEFINITIONS
+);
+const DEFAULT_ITEM_SUBCATEGORY_DEFINITION_INDEX = buildItemSubcategoryDefinitionIndex(
+  DEFAULT_ITEM_SUBCATEGORY_DEFINITIONS
+);
+
+export function createDefaultItemCategoryDefinitions(): ItemCategoryDefinition[] {
+  return DEFAULT_ITEM_CATEGORY_DEFINITIONS.map(cloneItemCategoryDefinition);
+}
+
+export function createDefaultItemSubcategoryDefinitions(): ItemSubcategoryDefinition[] {
+  return DEFAULT_ITEM_SUBCATEGORY_DEFINITIONS.map(cloneItemSubcategoryDefinition);
+}
+
+export function hydrateItemCategoryDefinitionRecord(
+  value: unknown
+): ItemCategoryDefinition | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string" || record.id.trim().length === 0) {
+    return null;
+  }
+
+  return {
+    id: record.id.trim(),
+    name:
+      typeof record.name === "string" && record.name.trim().length > 0
+        ? record.name.trim()
+        : "Item Category",
+  };
+}
+
+export function hydrateItemSubcategoryDefinitionRecord(
+  value: unknown
+): ItemSubcategoryDefinition | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string" || record.id.trim().length === 0) {
+    return null;
+  }
+  if (typeof record.categoryId !== "string" || record.categoryId.trim().length === 0) {
+    return null;
+  }
+
+  const occupiedSlots = sanitizeEquipSlotArray(record.occupiedSlots);
+  const allowedEquipSlots = sanitizeEquipSlotArray(record.allowedEquipSlots);
+
+  return {
+    id: record.id.trim(),
+    categoryId: record.categoryId.trim(),
+    name:
+      typeof record.name === "string" && record.name.trim().length > 0
+        ? record.name.trim()
+        : "Item Subcategory",
+    mechanicalRole: isItemMechanicalRole(record.mechanicalRole)
+      ? record.mechanicalRole
+      : "accessory",
+    allowedEquipSlots: allowedEquipSlots.length > 0 ? allowedEquipSlots : [...occupiedSlots],
+    occupiedSlots,
+  };
+}
+
+export function createItemCategoryDefinitionRecord(
+  overrides: Partial<ItemCategoryDefinition> = {}
+): ItemCategoryDefinition {
+  return {
+    id:
+      typeof overrides.id === "string" && overrides.id.trim().length > 0
+        ? overrides.id.trim()
+        : createTimestampedId("item-category"),
+    name:
+      typeof overrides.name === "string" && overrides.name.trim().length > 0
+        ? overrides.name.trim()
+        : "Custom Category",
+  };
+}
+
+export function createItemSubcategoryDefinitionRecord(
+  overrides: Partial<ItemSubcategoryDefinition> = {}
+): ItemSubcategoryDefinition {
+  const occupiedSlots = sanitizeEquipSlotArray(overrides.occupiedSlots);
+  const allowedEquipSlots = sanitizeEquipSlotArray(overrides.allowedEquipSlots);
+
+  return {
+    id:
+      typeof overrides.id === "string" && overrides.id.trim().length > 0
+        ? overrides.id.trim()
+        : createTimestampedId("item-subcategory"),
+    categoryId:
+      typeof overrides.categoryId === "string" && overrides.categoryId.trim().length > 0
+        ? overrides.categoryId.trim()
+        : "melee",
+    name:
+      typeof overrides.name === "string" && overrides.name.trim().length > 0
+        ? overrides.name.trim()
+        : "Custom Subcategory",
+    mechanicalRole: isItemMechanicalRole(overrides.mechanicalRole)
+      ? overrides.mechanicalRole
+      : "accessory",
+    allowedEquipSlots: allowedEquipSlots.length > 0 ? allowedEquipSlots : [...occupiedSlots],
+    occupiedSlots,
+  };
+}
+
+function resolveCategoryDefinitionRecord(
+  categoryDefinitionId: ItemCategoryDefinitionId,
+  definitions?: ItemCategoryDefinition[]
+): ItemCategoryDefinition | null {
+  const index = definitions
+    ? buildItemCategoryDefinitionIndex(definitions)
+    : DEFAULT_ITEM_CATEGORY_DEFINITION_INDEX;
+  return index[categoryDefinitionId] ?? DEFAULT_ITEM_CATEGORY_DEFINITION_INDEX[categoryDefinitionId] ?? null;
+}
+
+function resolveSubcategoryDefinitionRecord(
+  subcategoryDefinitionId: ItemSubcategoryDefinitionId,
+  definitions?: ItemSubcategoryDefinition[]
+): ItemSubcategoryDefinition | null {
+  const index = definitions
+    ? buildItemSubcategoryDefinitionIndex(definitions)
+    : DEFAULT_ITEM_SUBCATEGORY_DEFINITION_INDEX;
+  return (
+    index[subcategoryDefinitionId] ??
+    DEFAULT_ITEM_SUBCATEGORY_DEFINITION_INDEX[subcategoryDefinitionId] ??
+    null
+  );
+}
+
 function createBlueprintRecord(
-  definition: Omit<ItemBlueprintRecord, "overrideItemIds"> & { overrideItemIds?: string[] }
+  definition: Omit<
+    ItemBlueprintRecord,
+    "overrideItemIds" | "categoryDefinitionId" | "subcategoryDefinitionId"
+  > & {
+    overrideItemIds?: string[];
+    categoryDefinitionId?: ItemCategoryDefinitionId;
+    subcategoryDefinitionId?: ItemSubcategoryDefinitionId;
+  }
 ): ItemBlueprintRecord {
+  const inferredDefinitionIds =
+    inferDefinitionIdsFromLegacyCategorySubtype(definition.category, definition.subtype) ??
+    inferDefinitionIdsFromLegacyCategorySubtype("melee", "one_handed");
+  const categoryDefinitionId =
+    typeof definition.categoryDefinitionId === "string" &&
+    definition.categoryDefinitionId.trim().length > 0
+      ? definition.categoryDefinitionId.trim()
+      : inferredDefinitionIds?.categoryDefinitionId ?? "melee";
+  const subcategoryDefinitionId =
+    typeof definition.subcategoryDefinitionId === "string" &&
+    definition.subcategoryDefinitionId.trim().length > 0
+      ? definition.subcategoryDefinitionId.trim()
+      : inferredDefinitionIds?.subcategoryDefinitionId ?? "melee:one_handed";
+
   return {
     ...definition,
     id: normalizeBlueprintId(definition.id),
+    categoryDefinitionId,
+    subcategoryDefinitionId,
+    category: inferLegacyCategoryFromDefinitionId(
+      categoryDefinitionId,
+      definition.category ?? "melee"
+    ),
+    subtype: inferLegacySubtypeFromDefinitionId(
+      subcategoryDefinitionId,
+      definition.subtype ?? "one_handed"
+    ),
     baseProfile: normalizeBonusProfile(definition.baseProfile),
     combatSpec: cloneCombatSpec(definition.combatSpec),
     visibleNotes: sanitizeStringArray(definition.visibleNotes),
@@ -1210,11 +1689,36 @@ export function hydrateItemBlueprintRecord(value: unknown): ItemBlueprintRecord 
 
   const blueprintId = normalizeBlueprintId(rawId);
   const fallback = DEFAULT_ITEM_BLUEPRINT_INDEX[blueprintId] ?? null;
-  const category = isItemCategory(record.category) ? record.category : fallback?.category ?? "occult";
-  const subtype = isItemSubtype(record.subtype) ? record.subtype : fallback?.subtype ?? "one_handed";
+  const inferredDefinitionIds =
+    inferDefinitionIdsFromLegacyCategorySubtype(record.category, record.subtype) ??
+    (fallback
+      ? {
+          categoryDefinitionId: fallback.categoryDefinitionId,
+          subcategoryDefinitionId: fallback.subcategoryDefinitionId,
+        }
+      : null);
+  const categoryDefinitionId =
+    typeof record.categoryDefinitionId === "string" && record.categoryDefinitionId.trim().length > 0
+      ? record.categoryDefinitionId.trim()
+      : inferredDefinitionIds?.categoryDefinitionId ?? "occult";
+  const subcategoryDefinitionId =
+    typeof record.subcategoryDefinitionId === "string" &&
+    record.subcategoryDefinitionId.trim().length > 0
+      ? record.subcategoryDefinitionId.trim()
+      : inferredDefinitionIds?.subcategoryDefinitionId ?? "occult:one_handed";
+  const category = inferLegacyCategoryFromDefinitionId(
+    categoryDefinitionId,
+    fallback?.category ?? "occult"
+  );
+  const subtype = inferLegacySubtypeFromDefinitionId(
+    subcategoryDefinitionId,
+    fallback?.subtype ?? "one_handed"
+  );
 
   return createBlueprintRecord({
     id: blueprintId,
+    categoryDefinitionId,
+    subcategoryDefinitionId,
     category,
     subtype,
     label: typeof record.label === "string" ? record.label : fallback?.label ?? blueprintId,
@@ -1246,15 +1750,121 @@ function resolveBlueprintRecord(
   return blueprintIndex[normalizedId] ?? DEFAULT_ITEM_BLUEPRINT_INDEX[normalizedId] ?? null;
 }
 
+function resolveItemRules(
+  item: Pick<SharedItemRecord, "blueprintId">,
+  context: ItemRulesContext = {}
+): {
+  blueprint: ItemBlueprintRecord | null;
+  categoryDefinition: ItemCategoryDefinition | null;
+  subcategoryDefinition: ItemSubcategoryDefinition | null;
+} {
+  const blueprint = resolveBlueprintRecord(item.blueprintId, context.itemBlueprints);
+  const categoryDefinition = blueprint
+    ? resolveCategoryDefinitionRecord(
+        blueprint.categoryDefinitionId,
+        context.itemCategoryDefinitions
+      )
+    : null;
+  const subcategoryDefinition = blueprint
+    ? resolveSubcategoryDefinitionRecord(
+        blueprint.subcategoryDefinitionId,
+        context.itemSubcategoryDefinitions
+      )
+    : null;
+
+  return {
+    blueprint,
+    categoryDefinition,
+    subcategoryDefinition,
+  };
+}
+
+export function getItemCategoryDefinitionRecord(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): ItemCategoryDefinition | null {
+  return resolveItemRules(item, context).categoryDefinition;
+}
+
+export function getItemSubcategoryDefinitionRecord(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): ItemSubcategoryDefinition | null {
+  return resolveItemRules(item, context).subcategoryDefinition;
+}
+
+export function getItemMechanicalRole(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): ItemMechanicalRole {
+  return resolveItemRules(item, context).subcategoryDefinition?.mechanicalRole ?? "accessory";
+}
+
+export function getItemAllowedEquipSlots(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): CanonicalEquipmentSlotId[] {
+  return [...(resolveItemRules(item, context).subcategoryDefinition?.allowedEquipSlots ?? [])];
+}
+
+export function getItemDefaultOccupiedSlots(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): CanonicalEquipmentSlotId[] {
+  const subcategoryDefinition = resolveItemRules(item, context).subcategoryDefinition;
+  if (!subcategoryDefinition) {
+    return [];
+  }
+
+  if (subcategoryDefinition.occupiedSlots.length > 0) {
+    return [...subcategoryDefinition.occupiedSlots];
+  }
+
+  if (
+    item.combatSpec?.handsRequired === 2 &&
+    subcategoryDefinition.allowedEquipSlots.includes("weapon_primary")
+  ) {
+    return ["weapon_primary", "weapon_secondary"];
+  }
+
+  return [];
+}
+
+export function getResolvedItemOccupiedSlots(
+  item: SharedItemRecord,
+  anchorSlot: CanonicalEquipmentSlotId,
+  context: ItemRulesContext = {}
+): CanonicalEquipmentSlotId[] {
+  const occupiedSlots = getItemDefaultOccupiedSlots(item, context);
+  return occupiedSlots.length > 0 ? occupiedSlots : [anchorSlot];
+}
+
+export function isItemHandEquippable(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): boolean {
+  return ["melee", "range", "shield", "occult"].includes(getItemMechanicalRole(item, context));
+}
+
 export function getItemBlueprintOptions(
   blueprints: ItemBlueprintRecord[]
-): Array<{ id: ItemBlueprintId; category: ItemCategory; subtype: ItemBlueprintRecord["subtype"]; label: string; isLegacy?: boolean }> {
+): Array<{
+  id: ItemBlueprintId;
+  category: ItemCategory;
+  subtype: ItemBlueprintRecord["subtype"];
+  categoryDefinitionId: ItemCategoryDefinitionId;
+  subcategoryDefinitionId: ItemSubcategoryDefinitionId;
+  label: string;
+  isLegacy?: boolean;
+}> {
   return [...blueprints]
     .sort((left, right) => left.label.localeCompare(right.label))
     .map((blueprint) => ({
       id: blueprint.id,
       category: blueprint.category,
       subtype: blueprint.subtype,
+      categoryDefinitionId: blueprint.categoryDefinitionId,
+      subcategoryDefinitionId: blueprint.subcategoryDefinitionId,
       label: blueprint.label,
       isLegacy: blueprint.isLegacy,
     }));
@@ -1271,11 +1881,33 @@ export function createItemBlueprintRecord(
     typeof overrides.id === "string" && overrides.id.trim().length > 0
       ? normalizeBlueprintId(overrides.id)
       : createTimestampedId("blueprint");
-  const category = isItemCategory(overrides.category) ? overrides.category : "melee";
-  const subtype = isItemSubtype(overrides.subtype) ? overrides.subtype : "one_handed";
+  const inferredDefinitionIds =
+    (typeof overrides.categoryDefinitionId === "string" &&
+      typeof overrides.subcategoryDefinitionId === "string" &&
+      overrides.categoryDefinitionId.trim().length > 0 &&
+      overrides.subcategoryDefinitionId.trim().length > 0
+      ? {
+          categoryDefinitionId: overrides.categoryDefinitionId.trim(),
+          subcategoryDefinitionId: overrides.subcategoryDefinitionId.trim(),
+        }
+      : inferDefinitionIdsFromLegacyCategorySubtype(overrides.category, overrides.subtype)) ??
+    {
+      categoryDefinitionId: "melee",
+      subcategoryDefinitionId: "melee:one_handed",
+    };
+  const category = inferLegacyCategoryFromDefinitionId(
+    inferredDefinitionIds.categoryDefinitionId,
+    "melee"
+  );
+  const subtype = inferLegacySubtypeFromDefinitionId(
+    inferredDefinitionIds.subcategoryDefinitionId,
+    "one_handed"
+  );
 
   return createBlueprintRecord({
     id,
+    categoryDefinitionId: inferredDefinitionIds.categoryDefinitionId,
+    subcategoryDefinitionId: inferredDefinitionIds.subcategoryDefinitionId,
     category,
     subtype,
     label:
@@ -1510,46 +2142,55 @@ function getBaseDamageLine(item: SharedItemRecord): string | null {
   return null;
 }
 
-function getItemSlotSummary(item: Pick<SharedItemRecord, "category" | "subtype" | "combatSpec">): string | null {
-  if (item.category === "shield") {
-    return "Secondary Hand";
+function formatEquipSlotSummary(
+  slotIds: CanonicalEquipmentSlotId[],
+  mode: "allowed" | "occupied"
+): string | null {
+  const uniqueSlotIds = [...new Set(slotIds)];
+  if (uniqueSlotIds.length === 0) {
+    return null;
   }
 
-  if (item.category === "melee" || item.category === "range" || item.category === "occult") {
-    return item.combatSpec?.handsRequired === 2 ? "Primary Hand + Secondary Hand" : "Hand";
+  if (
+    uniqueSlotIds.length === 2 &&
+    uniqueSlotIds.includes("weapon_primary") &&
+    uniqueSlotIds.includes("weapon_secondary")
+  ) {
+    return mode === "allowed" ? "Hand" : "Primary Hand + Secondary Hand";
   }
 
-  if (item.category === "body_armor") {
-    return "Chest / Body";
+  if (
+    uniqueSlotIds.length === 2 &&
+    uniqueSlotIds.includes("ring_left") &&
+    uniqueSlotIds.includes("ring_right")
+  ) {
+    return "Left / Right Ring";
   }
 
-  if (item.category === "neck") {
-    return "Neck";
-  }
-
-  if (item.category === "rings") {
-    return item.subtype === "earring" ? "Earring" : "Left / Right Ring";
-  }
-
-  if (item.category === "head") {
-    return "Head";
-  }
-
-  if (item.category === "orbital") {
-    return "Orbital";
-  }
-
-  if (item.category === "charm") {
-    return "Charm / Talisman";
-  }
-
-  return null;
+  return uniqueSlotIds.map((slotId) => getEquipmentSlotLabel(slotId)).join(mode === "allowed" ? " / " : " + ");
 }
 
-export function getItemBaseVisibleStats(item: SharedItemRecord): string[] {
+function getItemSlotSummary(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): string | null {
+  const occupiedSlots = getItemDefaultOccupiedSlots(item, context);
+  if (occupiedSlots.length > 0) {
+    return formatEquipSlotSummary(occupiedSlots, "occupied");
+  }
+
+  return formatEquipSlotSummary(getItemAllowedEquipSlots(item, context), "allowed");
+}
+
+export function getItemBaseVisibleStats(
+  item: SharedItemRecord,
+  context: ItemRulesContext = {}
+): string[] {
   const lines: string[] = [];
   const damageLine = getBaseDamageLine(item);
-  const slotSummary = getItemSlotSummary(item);
+  const slotSummary = getItemSlotSummary(item, context);
+  const subcategoryDefinitionId = getItemSubcategoryDefinitionRecord(item, context)?.id ?? null;
+  const mechanicalRole = getItemMechanicalRole(item, context);
 
   if (damageLine) {
     lines.push(damageLine);
@@ -1567,25 +2208,29 @@ export function getItemBaseVisibleStats(item: SharedItemRecord): string[] {
     lines.push(`${slotSummary.includes("+") ? "Slots" : "Slot"}: ${slotSummary}`);
   }
 
-  if (item.category === "body_armor") {
+  if (mechanicalRole === "body_armor") {
     const initiative = item.baseProfile.derivedBonuses.initiative ?? 0;
     const stealth = item.baseProfile.skillBonuses.stealth ?? 0;
     const dr = item.baseProfile.derivedBonuses.damage_reduction ?? 0;
 
-    if (item.subtype === "clothing" || initiative !== 0) {
+    if (subcategoryDefinitionId === "body_armor:clothing" || initiative !== 0) {
       lines.push(`Initiative ${formatSignedNumber(initiative)}`);
     }
-    if (item.subtype === "medium" || item.subtype === "heavy" || stealth !== 0) {
+    if (
+      subcategoryDefinitionId === "body_armor:medium" ||
+      subcategoryDefinitionId === "body_armor:heavy" ||
+      stealth !== 0
+    ) {
       lines.push(`Stealth ${formatSignedNumber(stealth)}`);
     }
     lines.push(`DR ${formatSignedNumber(dr)}`);
   }
 
-  if (item.category === "shield") {
+  if (mechanicalRole === "shield") {
     lines.push(`DR ${formatSignedNumber(item.baseProfile.derivedBonuses.damage_reduction ?? 0)}`);
   }
 
-  if (item.category === "occult") {
+  if (mechanicalRole === "occult") {
     lines.push(`Base Mana Bonus: ${formatSignedNumber(item.baseProfile.derivedBonuses.max_mana ?? 0)}`);
   }
 
@@ -1672,13 +2317,13 @@ export function getItemCompactBonusSummary(item: SharedItemRecord): string[] {
 
 export function getItemCompactHeaderSummary(
   item: SharedItemRecord,
-  options?: { includeBonus?: boolean }
+  options: (ItemRulesContext & { includeBonus?: boolean }) = {}
 ): string {
-  const slotSummary = getItemSlotSummary(item);
+  const slotSummary = getItemSlotSummary(item, options);
   const slotEntry = slotSummary
     ? `${slotSummary.includes("+") ? "Slots" : "Slot"}: ${slotSummary}`
     : null;
-  const baseEntries = getItemBaseVisibleStats(item).filter(
+  const baseEntries = getItemBaseVisibleStats(item, options).filter(
     (entry) => !entry.startsWith("Slot: ") && !entry.startsWith("Slots: ")
   );
   const bonusEntries = options?.includeBonus === false ? [] : getItemCompactBonusSummary(item);
@@ -1744,12 +2389,16 @@ export function getOtherEquipmentEntries(sheet: CharacterDraft): CharacterEquipm
   );
 }
 
-export function itemOccupiesBothWeaponHands(item: SharedItemRecord | null): boolean {
-  return (
-    !!item &&
-    (item.category === "melee" || item.category === "range" || item.category === "occult") &&
-    item.combatSpec?.handsRequired === 2
-  );
+export function itemOccupiesBothWeaponHands(
+  item: SharedItemRecord | null,
+  context: ItemRulesContext = {}
+): boolean {
+  if (!item) {
+    return false;
+  }
+
+  const occupiedSlots = getItemDefaultOccupiedSlots(item, context);
+  return occupiedSlots.includes("weapon_primary") && occupiedSlots.includes("weapon_secondary");
 }
 
 export function getEquippedWeaponHandItems(
@@ -1764,12 +2413,16 @@ export function getEquippedWeaponHandItems(
 
 export function getLegacyEquippedWeaponItems(
   sheet: CharacterDraft,
-  itemsById: Record<string, SharedItemRecord>
+  itemsById: Record<string, SharedItemRecord>,
+  context: ItemRulesContext = {}
 ): SharedItemRecord[] {
   return (sheet.equipment ?? [])
     .filter((entry) => !WEAPON_HAND_SLOT_IDS.includes(entry.slot as WeaponHandSlotId))
     .map((entry) => (entry.itemId ? itemsById[entry.itemId] ?? null : null))
-    .filter((item): item is SharedItemRecord => item !== null && (item.category === "melee" || item.category === "range"));
+    .filter(
+      (item): item is SharedItemRecord =>
+        item !== null && ["melee", "range"].includes(getItemMechanicalRole(item, context))
+    );
 }
 
 export function getApplicableItemIds(sheet: CharacterDraft): string[] {

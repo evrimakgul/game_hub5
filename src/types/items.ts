@@ -16,6 +16,17 @@ export const ITEM_CATEGORIES = [
 ] as const;
 export type ItemCategory = (typeof ITEM_CATEGORIES)[number];
 
+export const ITEM_MECHANICAL_ROLES = [
+  "melee",
+  "range",
+  "shield",
+  "body_armor",
+  "occult",
+  "consumable",
+  "accessory",
+] as const;
+export type ItemMechanicalRole = (typeof ITEM_MECHANICAL_ROLES)[number];
+
 export const MELEE_SUBTYPES = [
   "unarmed",
   "brawl",
@@ -163,9 +174,27 @@ export type ItemCombatSpec = {
 };
 
 export type ItemBlueprintId = string;
+export type ItemCategoryDefinitionId = string;
+export type ItemSubcategoryDefinitionId = string;
+
+export type ItemCategoryDefinition = {
+  id: ItemCategoryDefinitionId;
+  name: string;
+};
+
+export type ItemSubcategoryDefinition = {
+  id: ItemSubcategoryDefinitionId;
+  categoryId: ItemCategoryDefinitionId;
+  name: string;
+  mechanicalRole: ItemMechanicalRole;
+  allowedEquipSlots: CanonicalEquipmentSlotId[];
+  occupiedSlots: CanonicalEquipmentSlotId[];
+};
 
 export type ItemBlueprintRecord = {
   id: ItemBlueprintId;
+  categoryDefinitionId: ItemCategoryDefinitionId;
+  subcategoryDefinitionId: ItemSubcategoryDefinitionId;
   category: ItemCategory;
   subtype: ItemSubtype;
   label: string;
@@ -273,6 +302,10 @@ export type ItemModifierSource = {
 
 export function isItemCategory(value: unknown): value is ItemCategory {
   return typeof value === "string" && ITEM_CATEGORIES.includes(value as ItemCategory);
+}
+
+export function isItemMechanicalRole(value: unknown): value is ItemMechanicalRole {
+  return typeof value === "string" && ITEM_MECHANICAL_ROLES.includes(value as ItemMechanicalRole);
 }
 
 export function isMeleeSubtype(value: unknown): value is MeleeSubtype {
