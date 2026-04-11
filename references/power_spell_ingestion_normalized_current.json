@@ -263,7 +263,11 @@
           "name": "Lunar Bless",
           "type": "passive",
           "availability": "level 1+",
-          "rules": ["Grants mana bonus and night vision progression by level."]
+          "rules": [
+            "Grants +1 mana bonus per level.",
+            "Grants Night Vision to self at level 1.",
+            "Each level after 1 extends Night Vision to one additional ally."
+          ]
         },
         {
           "id": "let_there_be_light",

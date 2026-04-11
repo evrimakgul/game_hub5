@@ -484,19 +484,24 @@ Duration: 8 Hours
 Duration: Passive
 
 Level 1. Mana Bonus: +1
-Night Vision: Self
+Effect: Night Vision
+Target: Self
 
 Level 2. Mana Bonus: +2
-Night Vision: Self + 1
+Effect: Night Vision
+Target: Self + 1 ally
 
 Level 3. Mana Bonus: +3
-Night Vision: Self + 3
+Effect: Night Vision
+Target: Self + 2 allies
 
 Level 4. Mana Bonus: +4
-Night Vision: Self + 3
+Effect: Night Vision
+Target: Self + 3 allies
 
 Level 5. Mana Bonus: +5
-Night Vision: Self + 4
+Effect: Night Vision
+Target: Self + 4 allies
 
 
 6.3. Lessen Darkness (LD) - Active: Activates with the 5th Level of LTBL. Darkness-based and evil creatures in range of LTBL lose one Resistance Level (RL). If they are immune (RL2) to physical/elemental attacks, they become resistant (RL1) to those attacks; if they are resistant (RL1), they lose their resistance (RL0); if they do not have any resistance (RL0), they become vulnerable (RL-1): RL2 -> RL1, RL1 -> RL0, RL0 -> RL-1.

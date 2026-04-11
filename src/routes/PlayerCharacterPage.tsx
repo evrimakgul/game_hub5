@@ -498,9 +498,7 @@ export function PlayerCharacterPage({
             onEquipSharedItem={mutations.equipSharedItem}
             onUnequipSharedItem={mutations.unequipSharedItem}
             onUpdateWeaponHandSlotItem={mutations.updateWeaponHandSlotItem}
-            onUpdateEquipmentEntry={mutations.updateEquipmentEntry}
-            onAddEquipmentEntry={mutations.addEquipmentEntry}
-            onRemoveEquipmentEntry={mutations.removeEquipmentEntry}
+            onUpdateMainEquipmentSlotItem={mutations.updateMainEquipmentSlotItem}
             onUpdateMoney={(value) => mutations.updateSheetField("money", value)}
           />
 

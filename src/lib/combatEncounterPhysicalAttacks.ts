@@ -105,7 +105,7 @@ function getResolvedWeaponCandidates(
 ): SharedItemRecord[] {
   const weaponHands = getEquippedWeaponHandItems(sheet, itemsById);
   const handWeapons = [weaponHands.weapon_primary, weaponHands.weapon_secondary]
-    .filter((item): item is SharedItemRecord => item !== null && item.category === "weapon")
+    .filter((item): item is SharedItemRecord => item !== null && (item.category === "melee" || item.category === "range"))
     .filter(
       (item, index, entries) => entries.findIndex((candidate) => candidate.id === item.id) === index
     );
@@ -129,9 +129,9 @@ export function getResolvedPhysicalAttackProfile(
   const primaryWeapon = weaponCandidates[0] ?? null;
   const occupyingBothHandsWeapon = weaponCandidates.find((item) => itemOccupiesBothWeaponHands(item));
   const oneHandedWeapons = weaponCandidates.filter(
-    (item) => item.subtype === "one_handed" && item.combatSpec?.attackKind === "melee"
+    (item) => item.category === "melee" && item.subtype === "one_handed" && item.combatSpec?.attackKind === "melee"
   );
-  const brawlWeapons = weaponCandidates.filter((item) => item.subtype === "brawl");
+  const brawlWeapons = weaponCandidates.filter((item) => item.category === "melee" && item.subtype === "brawl");
 
   if (occupyingBothHandsWeapon) {
     if (occupyingBothHandsWeapon.combatSpec?.attackKind === "ranged") {

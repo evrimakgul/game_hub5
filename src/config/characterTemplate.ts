@@ -15,7 +15,11 @@ import type {
   ActivePowerEffect,
   ActivePowerEffectModifier,
 } from "../types/activePowerEffects";
-import type { CharacterEquipmentReference } from "../types/items.ts";
+import {
+  MAIN_EQUIPMENT_SLOT_IDS,
+  type CharacterEquipmentReference,
+  type MainEquipmentSlotId,
+} from "../types/items.ts";
 import { STAT_IDS, isStatId, type CharacterOwnerRole, type StatId } from "../types/character.ts";
 import type { PowerUsageState } from "../types/powerUsage.ts";
 import type { KnowledgeHistoryLink } from "../types/knowledge.ts";
@@ -158,6 +162,89 @@ export type PowerBenefitSection = {
 };
 
 export const CHARACTER_DRAFT_SCHEMA_VERSION = 6;
+
+function createDefaultEquipmentEntries(): CharacterEquipmentReference[] {
+  return MAIN_EQUIPMENT_SLOT_IDS.map((slot) => ({ slot, itemId: null }));
+}
+
+function normalizeEquipmentEntries(entries: CharacterEquipmentReference[]): CharacterEquipmentReference[] {
+  const mainEntries = new Map<MainEquipmentSlotId, CharacterEquipmentReference>(
+    createDefaultEquipmentEntries().map((entry) => [entry.slot as MainEquipmentSlotId, entry])
+  );
+  const otherEntries: CharacterEquipmentReference[] = [];
+
+  const chooseAccessoryRingSlot = (): MainEquipmentSlotId | null => {
+    if (!mainEntries.get("ring_left")?.itemId) {
+      return "ring_left";
+    }
+    if (!mainEntries.get("ring_right")?.itemId) {
+      return "ring_right";
+    }
+    return null;
+  };
+
+  const resolveCanonicalSlot = (rawSlot: string): string | null => {
+    const normalized = rawSlot.trim().toLowerCase();
+    switch (normalized) {
+      case "weapon_primary":
+      case "primary hand":
+      case "main hand":
+        return "weapon_primary";
+      case "weapon_secondary":
+      case "secondary hand":
+      case "off hand":
+      case "shield":
+        return "weapon_secondary";
+      case "ring_left":
+      case "left ring":
+      case "ring left":
+        return "ring_left";
+      case "ring_right":
+      case "right ring":
+      case "ring right":
+        return "ring_right";
+      case "body":
+      case "chest":
+      case "armor":
+      case "chest / body":
+        return "body";
+      case "neck":
+      case "focus":
+        return "neck";
+      case "head":
+        return "head";
+      case "orbital":
+        return "orbital";
+      case "earring":
+        return "earring";
+      case "charm":
+      case "talisman":
+      case "charm / talisman":
+        return "charm";
+      case "accessory":
+        return chooseAccessoryRingSlot();
+      default:
+        return rawSlot.trim().length > 0 ? rawSlot.trim() : null;
+    }
+  };
+
+  entries.forEach((entry) => {
+    const slot = resolveCanonicalSlot(entry.slot);
+    if (!slot) {
+      return;
+    }
+
+    const itemId = entry.itemId && entry.itemId.trim().length > 0 ? entry.itemId : null;
+    if (MAIN_EQUIPMENT_SLOT_IDS.includes(slot as MainEquipmentSlotId)) {
+      mainEntries.set(slot as MainEquipmentSlotId, { slot, itemId });
+      return;
+    }
+
+    otherEntries.push({ slot, itemId });
+  });
+
+  return [...MAIN_EQUIPMENT_SLOT_IDS.map((slot) => mainEntries.get(slot)!), ...otherEntries];
+}
 
 const BLANK_STAT_ENTRY = (): StatEntry => ({
   base: 2,
@@ -350,7 +437,7 @@ export class CharacterSheetTemplate {
       ownedItemIds: [],
       inventoryItemIds: [],
       activeItemIds: [],
-      equipment: [],
+      equipment: createDefaultEquipmentEntries(),
       gameHistory: [],
       statusTags: [],
       effects: [],
@@ -366,10 +453,7 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   const normalizedOwnedItemIds = [...new Set((sheet.ownedItemIds ?? []).filter((entry) => entry.trim().length > 0))];
   const normalizedInventoryItemIds = [...new Set((sheet.inventoryItemIds ?? []).filter((entry) => entry.trim().length > 0))];
   const normalizedActiveItemIds = [...new Set((sheet.activeItemIds ?? []).filter((entry) => entry.trim().length > 0))];
-  const normalizedEquipment = (sheet.equipment ?? []).map((entry) => ({
-    slot: entry.slot,
-    itemId: entry.itemId && entry.itemId.trim().length > 0 ? entry.itemId : null,
-  }));
+  const normalizedEquipment = normalizeEquipmentEntries(sheet.equipment ?? []);
   const hasAwareness = sheet.powers.some((power) => power.id === "awareness" && power.level > 0);
 
   if (hasAwareness && !sheet.awarenessInsightGranted) {
@@ -635,11 +719,16 @@ function getLightSupportSections(level: number): PowerBenefitSection[] {
   const adjudication = asRecord(levelDefinition?.adjudication);
   const cantripMechanics = getLatestCantripLevel("light_support", level);
   const manaBonus = asNumber(cantripMechanics?.mana_bonus) ?? 0;
+  const additionalAllies = Math.max(0, level - 1);
+  const nightVisionTarget =
+    additionalAllies === 0
+      ? "Target: Self."
+      : `Target: Self + ${additionalAllies} ${additionalAllies === 1 ? "ally" : "allies"}.`;
 
   return [
     {
       title: "Lunar Bless",
-      bullets: [`Gain nightvision and +${manaBonus} mana.`],
+      bullets: [`Effect: Gain +${manaBonus} mana and Night Vision.`, nightVisionTarget],
     },
     {
       title: "Let There Be Light",
@@ -994,10 +1083,10 @@ function hydrateItemIdList(value: unknown): string[] {
 
 function hydrateEquipment(value: unknown): CharacterEquipmentReference[] {
   if (!Array.isArray(value)) {
-    return [];
+    return createDefaultEquipmentEntries();
   }
 
-  return value.flatMap((entry) => {
+  return normalizeEquipmentEntries(value.flatMap((entry) => {
     if (!isRecord(entry)) {
       return [];
     }
@@ -1008,7 +1097,7 @@ function hydrateEquipment(value: unknown): CharacterEquipmentReference[] {
         itemId: typeof entry.itemId === "string" && entry.itemId.trim().length > 0 ? entry.itemId : null,
       },
     ];
-  });
+  }));
 }
 
 function hydrateIntelSnapshotFields(value: unknown): IntelSnapshotField[] {

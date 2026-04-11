@@ -1,5 +1,6 @@
 import {
   CHARACTER_DRAFT_SCHEMA_VERSION,
+  PLAYER_CHARACTER_TEMPLATE,
   hydrateCharacterDraft,
 } from "../config/characterTemplate.ts";
 import {
@@ -24,6 +25,7 @@ import {
 } from "../lib/knowledge.ts";
 
 export const CHARACTER_STORAGE_KEY = "convergence.local.characters";
+export const CHARACTER_STORAGE_BACKUP_KEY = "convergence.local.characters.backup";
 
 type PersistedCharacterEnvelope = {
   version: number;
@@ -65,6 +67,10 @@ function getEmptyPersistedCharacterState(): PersistedCharacterState {
   };
 }
 
+function getStarterItemIdSet(itemBlueprints: ItemBlueprintRecord[]): Set<string> {
+  return new Set(createStarterItemRecords(itemBlueprints).map((item) => item.id));
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -98,6 +104,98 @@ function safeHydrateEntry<T>(factory: () => T | null): T | null {
   } catch {
     return null;
   }
+}
+
+function hydrateCharacterRecordBestEffort(
+  entry: Record<string, unknown>,
+  itemBlueprints: ItemBlueprintRecord[],
+  migratedItems: SharedItemRecord[]
+): CharacterRecord | null {
+  if (typeof entry.id !== "string") {
+    return null;
+  }
+
+  try {
+    const migrated = migrateLegacySheetItems(entry.sheet, entry.id, itemBlueprints);
+    migratedItems.push(...migrated.migratedItems);
+
+    return {
+      id: entry.id,
+      ownerRole: normalizeOwnerRole(entry.ownerRole),
+      sheet: hydrateCharacterDraft(migrated.nextSheet),
+    };
+  } catch {
+    const fallbackSheet = hydrateCharacterDraft(entry.sheet);
+    if (isRecord(entry.sheet) && typeof entry.sheet.name === "string") {
+      fallbackSheet.name = entry.sheet.name;
+    } else if (!fallbackSheet.name.trim()) {
+      fallbackSheet.name = PLAYER_CHARACTER_TEMPLATE.createInstance().name;
+    }
+
+    return {
+      id: entry.id,
+      ownerRole: normalizeOwnerRole(entry.ownerRole),
+      sheet: fallbackSheet,
+    };
+  }
+}
+
+function hydrateItemRecordBestEffort(
+  value: unknown,
+  itemBlueprints: ItemBlueprintRecord[]
+): SharedItemRecord | null {
+  const hydrated = safeHydrateEntry(() => hydrateSharedItemRecord(value, itemBlueprints));
+  if (hydrated) {
+    return hydrated;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const name = typeof value.name === "string" && value.name.trim().length > 0 ? value.name : "Recovered Item";
+  const categoryText = typeof value.category === "string" ? value.category : "";
+  const slotText = typeof value.slot === "string" ? value.slot : "";
+  const blueprintId =
+    typeof value.blueprintId === "string"
+      ? value.blueprintId
+      : inferItemBlueprintId(name, categoryText, slotText);
+
+  return createSharedItemRecord(
+    blueprintId,
+    {
+      id: typeof value.id === "string" ? value.id : undefined,
+      name,
+      isArtifact: value.isArtifact === true,
+      baseDescription: typeof value.baseDescription === "string" ? value.baseDescription : "",
+      bonusProfile: isRecord(value.bonusProfile)
+        ? (value.bonusProfile as SharedItemRecord["bonusProfile"])
+        : undefined,
+      customProperties: Array.isArray(value.customProperties)
+        ? (value.customProperties as SharedItemRecord["customProperties"])
+        : undefined,
+      knowledge: isRecord(value.knowledge)
+        ? (value.knowledge as SharedItemRecord["knowledge"])
+        : undefined,
+      assignedCharacterId:
+        typeof value.assignedCharacterId === "string" && value.assignedCharacterId.trim().length > 0
+          ? value.assignedCharacterId
+          : null,
+    },
+    itemBlueprints
+  );
+}
+
+function hasMeaningfulPersistedData(state: PersistedCharacterState): boolean {
+  const starterItemIds = getStarterItemIdSet(state.itemBlueprints);
+
+  return (
+    state.characters.length > 0 ||
+    state.items.some((item) => !starterItemIds.has(item.id)) ||
+    state.knowledgeEntities.length > 0 ||
+    state.knowledgeRevisions.length > 0 ||
+    state.knowledgeOwnerships.length > 0
+  );
 }
 
 function buildLegacyItemKnowledge(
@@ -274,14 +372,16 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
           .map((entry) => safeHydrateEntry(() => hydrateItemBlueprintRecord(entry)))
           .filter((entry): entry is ItemBlueprintRecord => entry !== null)
       : createDefaultItemBlueprints();
-    const rawItemEntries = Array.isArray(envelope.itemInstances)
-      ? envelope.itemInstances
-      : Array.isArray(envelope.items)
-        ? envelope.items
-        : [];
-    const hydratedItems = rawItemEntries
-      .map((entry) => safeHydrateEntry(() => hydrateSharedItemRecord(entry, itemBlueprints)))
-      .filter((entry): entry is SharedItemRecord => entry !== null);
+    const rawItemEntries = [
+      ...(Array.isArray(envelope.items) ? envelope.items : []),
+      ...(Array.isArray(envelope.itemInstances) ? envelope.itemInstances : []),
+    ];
+    const hydratedItems = [...new Map(
+      rawItemEntries
+        .map((entry) => hydrateItemRecordBestEffort(entry, itemBlueprints))
+        .filter((entry): entry is SharedItemRecord => entry !== null)
+        .map((entry) => [entry.id, entry])
+    ).values()];
     const knowledgeEntities = Array.isArray(envelope.knowledgeEntities)
       ? envelope.knowledgeEntities
           .map((entry) => safeHydrateEntry(() => hydrateKnowledgeEntity(entry)))
@@ -304,16 +404,11 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
             return [];
           }
 
-          const hydratedCharacter = safeHydrateEntry(() => {
-            const migrated = migrateLegacySheetItems(entry.sheet, entry.id, itemBlueprints);
-            migratedItems.push(...migrated.migratedItems);
-
-            return {
-              id: entry.id,
-              ownerRole: normalizeOwnerRole(entry.ownerRole),
-              sheet: hydrateCharacterDraft(migrated.nextSheet),
-            };
-          });
+          const hydratedCharacter = hydrateCharacterRecordBestEffort(
+            entry,
+            itemBlueprints,
+            migratedItems
+          );
 
           return hydratedCharacter ? [hydratedCharacter] : [];
         })
@@ -385,7 +480,12 @@ export function readPersistedCharactersFromStorage(
     return getEmptyPersistedCharacterState();
   }
 
-  return hydratePersistedCharacters(storage.getItem(CHARACTER_STORAGE_KEY));
+  const primaryState = hydratePersistedCharacters(storage.getItem(CHARACTER_STORAGE_KEY));
+  const backupState = hydratePersistedCharacters(storage.getItem(CHARACTER_STORAGE_BACKUP_KEY));
+
+  return !hasMeaningfulPersistedData(primaryState) && hasMeaningfulPersistedData(backupState)
+    ? backupState
+    : primaryState;
 }
 
 export function serializePersistedCharacters(
@@ -417,5 +517,10 @@ export function writePersistedCharactersToStorage(
     return;
   }
 
-  storage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify(serializePersistedCharacters(state)));
+  const serialized = JSON.stringify(serializePersistedCharacters(state));
+  storage.setItem(CHARACTER_STORAGE_KEY, serialized);
+
+  if (hasMeaningfulPersistedData(state)) {
+    storage.setItem(CHARACTER_STORAGE_BACKUP_KEY, serialized);
+  }
 }

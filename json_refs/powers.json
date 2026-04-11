@@ -967,7 +967,7 @@
               "nightvision": true,
               "mana_bonus": 1
             },
-            "description": "You gain nightvision and +1 mana bonus."
+            "description": "Mana Bonus: +1. Effect: Night Vision. Target: Self."
           },
           {
             "power_level": 3,
@@ -975,7 +975,7 @@
               "nightvision": true,
               "mana_bonus": 2
             },
-            "description": "You gain nightvision and +2 mana bonus."
+            "description": "Mana Bonus: +2. Effect: Night Vision. Target: Self + 1 ally."
           },
           {
             "power_level": 5,
@@ -983,7 +983,7 @@
               "nightvision": true,
               "mana_bonus": 3
             },
-            "description": "You gain nightvision and +3 mana bonus."
+            "description": "Mana Bonus: +3. Effect: Night Vision. Target: Self + 2 allies."
           }
         ]
       }

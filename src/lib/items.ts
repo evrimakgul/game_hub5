@@ -5,6 +5,7 @@ import type { DamageTypeId } from "../rules/resistances.ts";
 import type { StatId } from "../types/character.ts";
 import type {
   BonusProfile,
+  CanonicalEquipmentSlotId,
   CharacterEquipmentReference,
   ItemBaseOverrideProfile,
   ItemBlueprintId,
@@ -15,13 +16,28 @@ import type {
   ItemCustomPropertyTarget,
   ItemDerivedModifierId,
   ItemModifierSource,
+  MainEquipmentSlotId,
   SharedItemRecord,
   WeaponHandSlotId,
 } from "../types/items.ts";
 import {
+  CANONICAL_EQUIPMENT_SLOT_IDS,
+  CHARM_SUBTYPES,
+  CONSUMABLE_SUBTYPES,
+  BODY_ARMOR_SUBTYPES,
+  MAIN_EQUIPMENT_SLOT_IDS,
+  MAIN_EQUIPMENT_SLOT_LABELS,
+  NECK_SUBTYPES,
+  OCCULT_SUBTYPES,
+  ORBITAL_SUBTYPES,
+  RANGE_SUBTYPES,
+  RINGS_SUBTYPES,
+  SHIELD_SUBTYPES,
   WEAPON_HAND_SLOT_IDS,
   WEAPON_HAND_SLOT_LABELS,
   isItemCategory,
+  isCanonicalEquipmentSlotId,
+  isMainEquipmentSlotId,
   isItemSubtype,
   isWeaponHandSlotId,
 } from "../types/items.ts";
@@ -74,9 +90,30 @@ const TIER_TWO_DERIVED_IDS = new Set<ItemDerivedModifierId>([
 ]);
 
 const LEGACY_BLUEPRINT_ALIASES: Record<string, ItemBlueprintId> = {
-  "weapon:bow": "weapon:ranged_light",
-  "armor:shield": "armor:shield_light",
-  "mystic:mystic": "mystic:focus",
+  "weapon:unarmed": "melee:unarmed",
+  "weapon:brawl": "melee:brawl",
+  "weapon:one_handed": "melee:one_handed",
+  "weapon:two_handed": "melee:two_handed",
+  "weapon:oversized": "melee:oversized",
+  "weapon:bow": "range:short_bow",
+  "weapon:ranged_light": "range:short_bow",
+  "weapon:pistol": "range:pistol",
+  "weapon:bow_long": "range:long_bow",
+  "weapon:rifle": "range:rifle",
+  "weapon:crossbow_heavy": "range:heavy_crossbow",
+  "weapon:shotgun": "range:shotgun",
+  "weapon:chaingun": "range:chaingun",
+  "weapon:rocket_launcher": "range:rocket_launcher",
+  "armor:clothing": "body_armor:clothing",
+  "armor:light": "body_armor:light",
+  "armor:medium": "body_armor:medium",
+  "armor:heavy": "body_armor:heavy",
+  "armor:shield": "shield:light",
+  "armor:shield_light": "shield:light",
+  "armor:shield_heavy": "shield:heavy",
+  "mystic:mystic": "occult:one_handed",
+  "mystic:focus": "occult:one_handed",
+  "jewel:jewel": "rings:ring",
 };
 
 function sanitizeStringArray(value: unknown): string[] {
@@ -131,16 +168,15 @@ function normalizeCustomPropertyTarget(value: unknown): ItemCustomPropertyTarget
 export function createItemCustomPropertyRecord(
   overrides: Partial<ItemCustomPropertyRecord> = {}
 ): ItemCustomPropertyRecord {
+  const rawLabel = typeof overrides.label === "string" ? overrides.label : "";
+  const rawNotes = typeof overrides.notes === "string" ? overrides.notes : "";
   return {
     id:
       typeof overrides.id === "string" && overrides.id.trim().length > 0
         ? overrides.id
         : createTimestampedId("item-prop"),
-    label:
-      typeof overrides.label === "string" && overrides.label.trim().length > 0
-        ? overrides.label.trim()
-        : "Custom Property",
-    notes: typeof overrides.notes === "string" ? overrides.notes.trim() : "",
+    label: rawLabel.trim().length > 0 ? rawLabel : "Custom Property",
+    notes: rawNotes,
     ppCost: normalizeInteger(overrides.ppCost, 0),
     value: normalizeInteger(overrides.value, 0),
     targets: Array.isArray(overrides.targets)
@@ -355,23 +391,11 @@ function inferBlueprintIdFromCategorySubtype(
     return LEGACY_BLUEPRINT_ALIASES[legacyKey];
   }
 
-  if (!isItemCategory(category)) {
+  if (!isItemCategory(category) || !isItemSubtype(subtype)) {
     return null;
   }
 
-  if (category === "weapon" && subtype === "bow") {
-    return "weapon:ranged_light";
-  }
-
-  if (category === "armor" && subtype === "shield") {
-    return "armor:shield_light";
-  }
-
-  if (category === "mystic" && subtype === "mystic") {
-    return "mystic:focus";
-  }
-
-  return legacyKey;
+  return `${category}:${subtype}`;
 }
 
 function createBlueprintRecord(
@@ -391,10 +415,10 @@ function createBlueprintRecord(
 function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
   return [
     createBlueprintRecord({
-      id: "weapon:unarmed",
-      category: "weapon",
+      id: "melee:unarmed",
+      category: "melee",
       subtype: "unarmed",
-      label: "Weapon / Unarmed",
+      label: "Melee Weapon / Unarmed",
       defaultName: "Unarmed",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -408,10 +432,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:brawl",
-      category: "weapon",
+      id: "melee:brawl",
+      category: "melee",
       subtype: "brawl",
-      label: "Weapon / Brawl Weapon",
+      label: "Melee Weapon / Brawl",
       defaultName: "Brawl Weapon",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -425,10 +449,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:one_handed",
-      category: "weapon",
+      id: "melee:one_handed",
+      category: "melee",
       subtype: "one_handed",
-      label: "Weapon / One-Handed",
+      label: "Melee Weapon / One-Handed",
       defaultName: "One-Handed Weapon",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -442,10 +466,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:two_handed",
-      category: "weapon",
+      id: "melee:two_handed",
+      category: "melee",
       subtype: "two_handed",
-      label: "Weapon / Two-Handed",
+      label: "Melee Weapon / Two-Handed",
       defaultName: "Two-Handed Weapon",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -460,10 +484,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: ["Minimum STR 4 to wield."],
     }),
     createBlueprintRecord({
-      id: "weapon:oversized",
-      category: "weapon",
+      id: "melee:oversized",
+      category: "melee",
       subtype: "oversized",
-      label: "Weapon / 3-Handed (Oversized)",
+      label: "Melee Weapon / Oversized",
       defaultName: "Oversized Weapon",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -478,10 +502,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: ["Minimum STR 6 to wield."],
     }),
     createBlueprintRecord({
-      id: "weapon:ranged_light",
-      category: "weapon",
-      subtype: "ranged_light",
-      label: "Weapon / Short Bow Or Light Crossbow",
+      id: "range:short_bow",
+      category: "range",
+      subtype: "bow",
+      label: "Range / Short Bow Or Light Crossbow",
       defaultName: "Short Bow / Light Crossbow",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -496,10 +520,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:pistol",
-      category: "weapon",
-      subtype: "pistol",
-      label: "Weapon / Pistol",
+      id: "range:pistol",
+      category: "range",
+      subtype: "gun",
+      label: "Range / Pistol",
       defaultName: "Pistol",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -514,10 +538,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:bow_long",
-      category: "weapon",
-      subtype: "bow_long",
-      label: "Weapon / Long Bow",
+      id: "range:long_bow",
+      category: "range",
+      subtype: "bow",
+      label: "Range / Long Bow",
       defaultName: "Long Bow",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -532,10 +556,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:rifle",
-      category: "weapon",
-      subtype: "rifle",
-      label: "Weapon / Rifle",
+      id: "range:rifle",
+      category: "range",
+      subtype: "gun",
+      label: "Range / Rifle",
       defaultName: "Rifle",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -550,10 +574,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:crossbow_heavy",
-      category: "weapon",
-      subtype: "crossbow_heavy",
-      label: "Weapon / Heavy Crossbow",
+      id: "range:heavy_crossbow",
+      category: "range",
+      subtype: "crossbow",
+      label: "Range / Heavy Crossbow",
       defaultName: "Heavy Crossbow",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -568,10 +592,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:shotgun",
-      category: "weapon",
-      subtype: "shotgun",
-      label: "Weapon / Shotgun",
+      id: "range:shotgun",
+      category: "range",
+      subtype: "gun",
+      label: "Range / Shotgun",
       defaultName: "Shotgun",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -586,10 +610,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "weapon:chaingun",
-      category: "weapon",
-      subtype: "chaingun",
-      label: "Weapon / Chaingun",
+      id: "range:chaingun",
+      category: "range",
+      subtype: "gun",
+      label: "Range / Chaingun",
       defaultName: "Chaingun",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -605,10 +629,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: ["Minimum STR 8 to wield."],
     }),
     createBlueprintRecord({
-      id: "weapon:rocket_launcher",
-      category: "weapon",
-      subtype: "rocket_launcher",
-      label: "Weapon / Rocket Launcher",
+      id: "range:rocket_launcher",
+      category: "range",
+      subtype: "launcher",
+      label: "Range / Rocket Launcher",
       defaultName: "Rocket Launcher",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
@@ -624,24 +648,24 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "armor:clothing",
-      category: "armor",
+      id: "body_armor:clothing",
+      category: "body_armor",
       subtype: "clothing",
-      label: "Armor / Clothing Or Robes",
+      label: "Body Armor / Clothing Or Robes",
       defaultName: "Clothing / Robes",
       baseProfile: {
         ...createEmptyBonusProfile(),
         derivedBonuses: { initiative: 2 },
       },
-      combatSpec: { slotKey: "Chest" },
+      combatSpec: { slotKey: "Body" },
       visibleNotes: [],
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "armor:light",
-      category: "armor",
+      id: "body_armor:light",
+      category: "body_armor",
       subtype: "light",
-      label: "Armor / Light",
+      label: "Body Armor / Light",
       defaultName: "Light Armor",
       baseProfile: {
         ...createEmptyBonusProfile(),
@@ -650,30 +674,30 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
           damage_reduction: 1,
         },
       },
-      combatSpec: { slotKey: "Chest" },
+      combatSpec: { slotKey: "Body" },
       visibleNotes: [],
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "armor:medium",
-      category: "armor",
+      id: "body_armor:medium",
+      category: "body_armor",
       subtype: "medium",
-      label: "Armor / Medium",
+      label: "Body Armor / Medium",
       defaultName: "Medium Armor",
       baseProfile: {
         ...createEmptyBonusProfile(),
         skillBonuses: { stealth: -1 },
         derivedBonuses: { damage_reduction: 2 },
       },
-      combatSpec: { slotKey: "Chest" },
+      combatSpec: { slotKey: "Body" },
       visibleNotes: [],
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "armor:heavy",
-      category: "armor",
+      id: "body_armor:heavy",
+      category: "body_armor",
       subtype: "heavy",
-      label: "Armor / Heavy",
+      label: "Body Armor / Heavy",
       defaultName: "Heavy Armor",
       baseProfile: {
         ...createEmptyBonusProfile(),
@@ -683,14 +707,14 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
           damage_reduction: 3,
         },
       },
-      combatSpec: { slotKey: "Chest" },
+      combatSpec: { slotKey: "Body" },
       visibleNotes: [],
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "armor:shield_light",
-      category: "armor",
-      subtype: "shield_light",
+      id: "shield:light",
+      category: "shield",
+      subtype: "light",
       label: "Shield / Light",
       defaultName: "Light Shield",
       baseProfile: {
@@ -702,9 +726,9 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "armor:shield_heavy",
-      category: "armor",
-      subtype: "shield_heavy",
+      id: "shield:heavy",
+      category: "shield",
+      subtype: "heavy",
       label: "Shield / Heavy",
       defaultName: "Heavy Shield",
       baseProfile: {
@@ -716,27 +740,125 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "mystic:focus",
-      category: "mystic",
-      subtype: "focus",
-      label: "Mystic / Occult Focus",
-      defaultName: "Occult Focus",
+      id: "occult:one_handed",
+      category: "occult",
+      subtype: "one_handed",
+      label: "Occult / One-Handed",
+      defaultName: "Occult Implement",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: { slotKey: "Hand", handsRequired: 1 },
       visibleNotes: ["Allows the user to cast spells while holding this item."],
       requirements: [],
     }),
     createBlueprintRecord({
-      id: "jewel:jewel",
-      category: "jewel",
-      subtype: "jewel",
-      label: "Legacy / Jewel",
-      defaultName: "Jewel",
+      id: "occult:two_handed",
+      category: "occult",
+      subtype: "two_handed",
+      label: "Occult / Two-Handed",
+      defaultName: "Two-Handed Occult Implement",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Hand", handsRequired: 2 },
+      visibleNotes: ["Allows the user to cast spells while holding this item."],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "neck:wearable",
+      category: "neck",
+      subtype: "wearable",
+      label: "Neck / Wearable",
+      defaultName: "Neck Wearable",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Neck" },
+      visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "neck:amulet",
+      category: "neck",
+      subtype: "amulet",
+      label: "Neck / Amulet",
+      defaultName: "Amulet",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Neck" },
+      visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "rings:ring",
+      category: "rings",
+      subtype: "ring",
+      label: "Rings / Ring",
+      defaultName: "Ring",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Ring" },
+      visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "rings:earring",
+      category: "rings",
+      subtype: "earring",
+      label: "Rings / Earring",
+      defaultName: "Earring",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Earring" },
+      visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "head:head",
+      category: "head",
+      subtype: "head",
+      label: "Head / Wearable",
+      defaultName: "Head Item",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Head" },
+      visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "orbital:orbital",
+      category: "orbital",
+      subtype: "orbital",
+      label: "Orbital / Item",
+      defaultName: "Orbital Item",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Orbital" },
+      visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "charm:talisman",
+      category: "charm",
+      subtype: "talisman",
+      label: "Charm / Talisman",
+      defaultName: "Charm / Talisman",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: { slotKey: "Charm / Talisman" },
+      visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "consumable:drinkable",
+      category: "consumable",
+      subtype: "drinkable",
+      label: "Consumable / Drinkable",
+      defaultName: "Drinkable",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: null,
       visibleNotes: [],
       requirements: [],
-      isLegacy: true,
+    }),
+    createBlueprintRecord({
+      id: "consumable:usable",
+      category: "consumable",
+      subtype: "usable",
+      label: "Consumable / Usable",
+      defaultName: "Usable",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: null,
+      visibleNotes: [],
+      requirements: [],
     }),
   ];
 }
@@ -1088,8 +1210,8 @@ export function hydrateItemBlueprintRecord(value: unknown): ItemBlueprintRecord 
 
   const blueprintId = normalizeBlueprintId(rawId);
   const fallback = DEFAULT_ITEM_BLUEPRINT_INDEX[blueprintId] ?? null;
-  const category = isItemCategory(record.category) ? record.category : fallback?.category ?? "mystic";
-  const subtype = isItemSubtype(record.subtype) ? record.subtype : fallback?.subtype ?? "focus";
+  const category = isItemCategory(record.category) ? record.category : fallback?.category ?? "occult";
+  const subtype = isItemSubtype(record.subtype) ? record.subtype : fallback?.subtype ?? "one_handed";
 
   return createBlueprintRecord({
     id: blueprintId,
@@ -1149,8 +1271,8 @@ export function createItemBlueprintRecord(
     typeof overrides.id === "string" && overrides.id.trim().length > 0
       ? normalizeBlueprintId(overrides.id)
       : createTimestampedId("blueprint");
-  const category = isItemCategory(overrides.category) ? overrides.category : "mystic";
-  const subtype = isItemSubtype(overrides.subtype) ? overrides.subtype : "focus";
+  const category = isItemCategory(overrides.category) ? overrides.category : "melee";
+  const subtype = isItemSubtype(overrides.subtype) ? overrides.subtype : "one_handed";
 
   return createBlueprintRecord({
     id,
@@ -1273,7 +1395,7 @@ export function hydrateSharedItemRecord(
       ? normalizeBlueprintId(record.blueprintId)
       : legacyBlueprintId;
   const blueprint = rawBlueprintId ? resolveBlueprintRecord(rawBlueprintId, itemBlueprints) : null;
-  const effectiveBlueprintId = rawBlueprintId ?? blueprint?.id ?? "mystic:focus";
+  const effectiveBlueprintId = rawBlueprintId ?? blueprint?.id ?? "occult:one_handed";
   const legacyQualityTier = typeof record.qualityTier === "string" ? record.qualityTier : null;
   const legacyItemLevel =
     typeof record.itemLevel === "number" && Number.isFinite(record.itemLevel)
@@ -1292,8 +1414,8 @@ export function hydrateSharedItemRecord(
       typeof record.isArtifact === "boolean"
         ? record.isArtifact
         : inferLegacyArtifactFlag(legacyQualityTier),
-    category: blueprint?.category ?? (isItemCategory(record.category) ? record.category : "mystic"),
-    subtype: blueprint?.subtype ?? (isItemSubtype(record.subtype) ? record.subtype : "focus"),
+    category: blueprint?.category ?? (isItemCategory(record.category) ? record.category : "occult"),
+    subtype: blueprint?.subtype ?? (isItemSubtype(record.subtype) ? record.subtype : "one_handed"),
     baseDescription: typeof record.baseDescription === "string" ? record.baseDescription : "",
     combatSpec: cloneCombatSpec(blueprint?.combatSpec) ?? normalizeItemCombatSpec(record.combatSpec),
     visibleNotes: blueprint?.visibleNotes ? [...blueprint.visibleNotes] : sanitizeStringArray(record.visibleNotes),
@@ -1388,9 +1510,46 @@ function getBaseDamageLine(item: SharedItemRecord): string | null {
   return null;
 }
 
+function getItemSlotSummary(item: Pick<SharedItemRecord, "category" | "subtype" | "combatSpec">): string | null {
+  if (item.category === "shield") {
+    return "Secondary Hand";
+  }
+
+  if (item.category === "melee" || item.category === "range" || item.category === "occult") {
+    return item.combatSpec?.handsRequired === 2 ? "Primary Hand + Secondary Hand" : "Hand";
+  }
+
+  if (item.category === "body_armor") {
+    return "Chest / Body";
+  }
+
+  if (item.category === "neck") {
+    return "Neck";
+  }
+
+  if (item.category === "rings") {
+    return item.subtype === "earring" ? "Earring" : "Left / Right Ring";
+  }
+
+  if (item.category === "head") {
+    return "Head";
+  }
+
+  if (item.category === "orbital") {
+    return "Orbital";
+  }
+
+  if (item.category === "charm") {
+    return "Charm / Talisman";
+  }
+
+  return null;
+}
+
 export function getItemBaseVisibleStats(item: SharedItemRecord): string[] {
   const lines: string[] = [];
   const damageLine = getBaseDamageLine(item);
+  const slotSummary = getItemSlotSummary(item);
 
   if (damageLine) {
     lines.push(damageLine);
@@ -1404,11 +1563,11 @@ export function getItemBaseVisibleStats(item: SharedItemRecord): string[] {
   if (typeof item.combatSpec?.attacksPerAction === "number") {
     lines.push(`Attacks: ${item.combatSpec.attacksPerAction}`);
   }
-  if (typeof item.combatSpec?.slotKey === "string" && item.combatSpec.slotKey.trim().length > 0) {
-    lines.push(`Slot: ${item.combatSpec.slotKey}`);
+  if (slotSummary) {
+    lines.push(`${slotSummary.includes("+") ? "Slots" : "Slot"}: ${slotSummary}`);
   }
 
-  if (item.category === "armor") {
+  if (item.category === "body_armor") {
     const initiative = item.baseProfile.derivedBonuses.initiative ?? 0;
     const stealth = item.baseProfile.skillBonuses.stealth ?? 0;
     const dr = item.baseProfile.derivedBonuses.damage_reduction ?? 0;
@@ -1422,7 +1581,11 @@ export function getItemBaseVisibleStats(item: SharedItemRecord): string[] {
     lines.push(`DR ${formatSignedNumber(dr)}`);
   }
 
-  if (item.category === "mystic") {
+  if (item.category === "shield") {
+    lines.push(`DR ${formatSignedNumber(item.baseProfile.derivedBonuses.damage_reduction ?? 0)}`);
+  }
+
+  if (item.category === "occult") {
     lines.push(`Base Mana Bonus: ${formatSignedNumber(item.baseProfile.derivedBonuses.max_mana ?? 0)}`);
   }
 
@@ -1433,6 +1596,101 @@ export function getItemBaseVisibleStats(item: SharedItemRecord): string[] {
   }
 
   return [...new Set(lines)];
+}
+
+function getCompactDerivedBonusLabel(targetId: string): string {
+  switch (targetId) {
+    case "max_hp":
+      return "HP";
+    case "max_mana":
+      return "Mana";
+    case "initiative":
+      return "Initiative";
+    case "inspiration":
+      return "Inspiration";
+    case "attack_dice_bonus":
+      return "Hit";
+    case "melee_attack":
+      return "Melee Attack";
+    case "ranged_attack":
+      return "Ranged Attack";
+    case "armor_class":
+      return "AC";
+    case "damage_reduction":
+      return "DR";
+    case "soak":
+      return "Soak";
+    case "melee_damage":
+      return "Melee Damage";
+    case "ranged_damage":
+      return "Ranged Damage";
+    default:
+      return targetId;
+  }
+}
+
+function getCompactResistanceLabel(damageTypeId: string): string {
+  return `${damageTypeId} RL`;
+}
+
+function getCompactProfileSummary(profile: BonusProfile): string[] {
+  const normalized = normalizeBonusProfile(profile);
+
+  return [
+    ...Object.entries(normalized.statBonuses)
+      .filter(([, value]) => (value ?? 0) !== 0)
+      .map(([statId, value]) => `${statId} ${formatSignedNumber(value ?? 0)}`),
+    ...Object.entries(normalized.skillBonuses)
+      .filter(([, value]) => value !== 0)
+      .map(([skillId, value]) => `${skillId} ${formatSignedNumber(value)}`),
+    ...Object.entries(normalized.derivedBonuses)
+      .filter(([, value]) => (value ?? 0) !== 0)
+      .map(([targetId, value]) => `${getCompactDerivedBonusLabel(targetId)} ${formatSignedNumber(value ?? 0)}`),
+    ...Object.entries(normalized.resistanceBonuses)
+      .filter(([, value]) => (value ?? 0) !== 0)
+      .map(([damageTypeId, value]) => `${getCompactResistanceLabel(damageTypeId)} ${formatSignedNumber(value ?? 0)}`),
+    ...Object.entries(normalized.powerBonuses)
+      .filter(([, value]) => value !== 0)
+      .map(([powerId, value]) => `${getItemPowerBonusLabel(powerId)} ${formatSignedNumber(value)}`),
+    ...Object.entries(normalized.spellBonuses)
+      .filter(([, value]) => value !== 0)
+      .map(([spellId, value]) => `${getItemSpellBonusLabel(spellId)} ${formatSignedNumber(value)}`),
+    ...normalized.utilityTraits,
+    ...normalized.notes,
+  ];
+}
+
+export function getItemCompactBonusSummary(item: SharedItemRecord): string[] {
+  const directBonuses = getCompactProfileSummary(item.bonusProfile);
+  const customPropertyBonuses = item.customProperties.map((property) => {
+    const valueSuffix = property.value === 0 ? "" : ` ${formatSignedNumber(property.value)}`;
+    return `${property.label}${valueSuffix}`;
+  });
+
+  return [...new Set([...directBonuses, ...customPropertyBonuses].filter((entry) => entry.trim().length > 0))];
+}
+
+export function getItemCompactHeaderSummary(
+  item: SharedItemRecord,
+  options?: { includeBonus?: boolean }
+): string {
+  const slotSummary = getItemSlotSummary(item);
+  const slotEntry = slotSummary
+    ? `${slotSummary.includes("+") ? "Slots" : "Slot"}: ${slotSummary}`
+    : null;
+  const baseEntries = getItemBaseVisibleStats(item).filter(
+    (entry) => !entry.startsWith("Slot: ") && !entry.startsWith("Slots: ")
+  );
+  const bonusEntries = options?.includeBonus === false ? [] : getItemCompactBonusSummary(item);
+  const segments = [
+    `PP ${getItemPropertyPoints(item)}`,
+    getItemTierLabel(item),
+    slotEntry,
+    baseEntries.length > 0 ? `Base: ${baseEntries.join(", ")}` : null,
+    bonusEntries.length > 0 ? `Bonus: ${bonusEntries.join(", ")}` : null,
+  ].filter((entry): entry is string => entry !== null && entry.trim().length > 0);
+
+  return segments.join(" | ");
 }
 
 export function getItemResolvedProfile(item: SharedItemRecord): BonusProfile {
@@ -1466,12 +1724,32 @@ export function getWeaponHandSlotLabel(slotId: WeaponHandSlotId): string {
   return WEAPON_HAND_SLOT_LABELS[slotId];
 }
 
+export function getEquipmentSlotLabel(slotId: string): string {
+  return isCanonicalEquipmentSlotId(slotId)
+    ? (
+        isMainEquipmentSlotId(slotId)
+          ? MAIN_EQUIPMENT_SLOT_LABELS[slotId as MainEquipmentSlotId]
+          : {
+              orbital: "Orbital",
+              earring: "Earring",
+              charm: "Charm / Talisman",
+            }[slotId as Exclude<CanonicalEquipmentSlotId, MainEquipmentSlotId>]
+      )
+    : slotId;
+}
+
 export function getOtherEquipmentEntries(sheet: CharacterDraft): CharacterEquipmentReference[] {
-  return (sheet.equipment ?? []).filter((entry) => !isWeaponHandSlotId(entry.slot));
+  return (sheet.equipment ?? []).filter(
+    (entry) => !CANONICAL_EQUIPMENT_SLOT_IDS.includes(entry.slot as CanonicalEquipmentSlotId)
+  );
 }
 
 export function itemOccupiesBothWeaponHands(item: SharedItemRecord | null): boolean {
-  return !!item && item.category === "weapon" && item.combatSpec?.handsRequired === 2;
+  return (
+    !!item &&
+    (item.category === "melee" || item.category === "range" || item.category === "occult") &&
+    item.combatSpec?.handsRequired === 2
+  );
 }
 
 export function getEquippedWeaponHandItems(
@@ -1491,7 +1769,7 @@ export function getLegacyEquippedWeaponItems(
   return (sheet.equipment ?? [])
     .filter((entry) => !WEAPON_HAND_SLOT_IDS.includes(entry.slot as WeaponHandSlotId))
     .map((entry) => (entry.itemId ? itemsById[entry.itemId] ?? null : null))
-    .filter((item): item is SharedItemRecord => item !== null && item.category === "weapon");
+    .filter((item): item is SharedItemRecord => item !== null && (item.category === "melee" || item.category === "range"));
 }
 
 export function getApplicableItemIds(sheet: CharacterDraft): string[] {
@@ -1634,38 +1912,46 @@ export function getVisibleItemBonusNotes(item: SharedItemRecord, characterId: st
 export function inferItemBlueprintId(itemName: string, categoryText: string, slotText = ""): ItemBlueprintId {
   const combined = `${itemName} ${categoryText} ${slotText}`.trim().toLowerCase();
 
-  if (combined.includes("rocket")) return "weapon:rocket_launcher";
-  if (combined.includes("chaingun")) return "weapon:chaingun";
-  if (combined.includes("shotgun")) return "weapon:shotgun";
-  if (combined.includes("heavy crossbow")) return "weapon:crossbow_heavy";
-  if (combined.includes("rifle")) return "weapon:rifle";
-  if (combined.includes("long bow") || combined.includes("longbow")) return "weapon:bow_long";
-  if (combined.includes("pistol")) return "weapon:pistol";
-  if (combined.includes("crossbow") || combined.includes("short bow") || combined.includes("bow")) return "weapon:ranged_light";
-  if (combined.includes("3-handed") || combined.includes("oversized")) return "weapon:oversized";
-  if (combined.includes("two") && combined.includes("hand")) return "weapon:two_handed";
-  if (combined.includes("heavy shield")) return "armor:shield_heavy";
-  if (combined.includes("shield")) return "armor:shield_light";
-  if (combined.includes("medium armor")) return "armor:medium";
-  if (combined.includes("light armor")) return "armor:light";
-  if (combined.includes("heavy armor")) return "armor:heavy";
-  if (combined.includes("clothing") || combined.includes("robe")) return "armor:clothing";
-  if (combined.includes("focus") || combined.includes("orb") || combined.includes("wand") || combined.includes("staff") || combined.includes("mystic")) return "mystic:focus";
-  if (combined.includes("jewel") || combined.includes("ring") || combined.includes("necklace")) return "jewel:jewel";
-  if (combined.includes("unarmed")) return "weapon:unarmed";
-  if (combined.includes("brawl") || combined.includes("fist") || combined.includes("gauntlet") || combined.includes("knuckle")) return "weapon:brawl";
-  if (combined.includes("weapon") || combined.includes("sword") || combined.includes("mace") || combined.includes("baton") || combined.includes("blade")) return "weapon:one_handed";
-  if (combined.includes("armor")) return "armor:light";
+  if (combined.includes("rocket")) return "range:rocket_launcher";
+  if (combined.includes("chaingun")) return "range:chaingun";
+  if (combined.includes("shotgun")) return "range:shotgun";
+  if (combined.includes("heavy crossbow")) return "range:heavy_crossbow";
+  if (combined.includes("rifle")) return "range:rifle";
+  if (combined.includes("long bow") || combined.includes("longbow")) return "range:long_bow";
+  if (combined.includes("pistol")) return "range:pistol";
+  if (combined.includes("crossbow") || combined.includes("short bow") || combined.includes("bow")) return "range:short_bow";
+  if (combined.includes("3-handed") || combined.includes("oversized")) return "melee:oversized";
+  if (combined.includes("two") && combined.includes("hand")) return "melee:two_handed";
+  if (combined.includes("heavy shield")) return "shield:heavy";
+  if (combined.includes("shield")) return "shield:light";
+  if (combined.includes("medium armor")) return "body_armor:medium";
+  if (combined.includes("light armor")) return "body_armor:light";
+  if (combined.includes("heavy armor")) return "body_armor:heavy";
+  if (combined.includes("clothing") || combined.includes("robe")) return "body_armor:clothing";
+  if (combined.includes("amulet") || combined.includes("necklace")) return "neck:amulet";
+  if (combined.includes("wearable") || combined.includes("neck")) return "neck:wearable";
+  if (combined.includes("earring")) return "rings:earring";
+  if (combined.includes("ring") || combined.includes("jewel")) return "rings:ring";
+  if (combined.includes("orbital")) return "orbital:orbital";
+  if (combined.includes("charm") || combined.includes("talisman")) return "charm:talisman";
+  if (combined.includes("drink") || combined.includes("vial") || combined.includes("potion")) return "consumable:drinkable";
+  if (combined.includes("usable") || combined.includes("orb")) return "consumable:usable";
+  if (combined.includes("focus") || combined.includes("wand") || combined.includes("staff") || combined.includes("occult")) return "occult:one_handed";
+  if (combined.includes("head") || combined.includes("helm") || combined.includes("helmet")) return "head:head";
+  if (combined.includes("unarmed")) return "melee:unarmed";
+  if (combined.includes("brawl") || combined.includes("fist") || combined.includes("gauntlet") || combined.includes("knuckle")) return "melee:brawl";
+  if (combined.includes("weapon") || combined.includes("sword") || combined.includes("mace") || combined.includes("baton") || combined.includes("blade")) return "melee:one_handed";
+  if (combined.includes("armor")) return "body_armor:light";
 
-  return "mystic:focus";
+  return "occult:one_handed";
 }
 
 export const STARTER_ITEM_DEFINITIONS: StarterItemDefinition[] = [
-  { id: "starter-item-bow", blueprintId: "weapon:ranged_light", name: "Bow" },
-  { id: "starter-item-one-handed-sword", blueprintId: "weapon:one_handed", name: "One-Handed Sword" },
-  { id: "starter-item-two-handed-sword", blueprintId: "weapon:two_handed", name: "Two-Handed Sword" },
-  { id: "starter-item-shield", blueprintId: "armor:shield_light", name: "Shield" },
-  { id: "starter-item-armor", blueprintId: "armor:light", name: "Armor" },
+  { id: "starter-item-bow", blueprintId: "range:short_bow", name: "Bow" },
+  { id: "starter-item-one-handed-sword", blueprintId: "melee:one_handed", name: "One-Handed Sword" },
+  { id: "starter-item-two-handed-sword", blueprintId: "melee:two_handed", name: "Two-Handed Sword" },
+  { id: "starter-item-shield", blueprintId: "shield:light", name: "Shield" },
+  { id: "starter-item-armor", blueprintId: "body_armor:light", name: "Armor" },
 ];
 
 export function createStarterItemRecords(itemBlueprints?: ItemBlueprintRecord[]): SharedItemRecord[] {

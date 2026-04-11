@@ -8,8 +8,10 @@ import {
 import { getResolvedResistanceLevel } from "../src/config/characterRuntime.ts";
 import { buildItemIndex, createDefaultItemBlueprints, createSharedItemRecord } from "../src/lib/items.ts";
 import {
+  CHARACTER_STORAGE_BACKUP_KEY,
   CHARACTER_STORAGE_KEY,
   hydratePersistedCharacters,
+  readPersistedCharactersFromStorage,
   serializePersistedCharacters,
   writePersistedCharactersToStorage,
 } from "../src/state/appFlowPersistence.ts";
@@ -121,6 +123,48 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           JSON.parse(writes.get(CHARACTER_STORAGE_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"
         );
+        assert.equal(
+          JSON.parse(writes.get(CHARACTER_STORAGE_BACKUP_KEY) ?? "{}").activePlayerCharacterId,
+          "writer-1"
+        );
+      },
+    },
+    {
+      name: "readPersistedCharactersFromStorage recovers from backup when primary is starter-only",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.name = "Recovered";
+        const primary = JSON.stringify({
+          version: 6,
+          characters: [],
+          itemInstances: createDefaultItemBlueprints()
+            .slice(0, 0),
+          starterItemsInitialized: true,
+        });
+        const backup = JSON.stringify({
+          version: 6,
+          characters: [{ id: "recovered-1", ownerRole: "player", sheet }],
+          itemBlueprints: createDefaultItemBlueprints(),
+          itemInstances: [],
+          starterItemsInitialized: true,
+        });
+
+        const state = readPersistedCharactersFromStorage({
+          getItem: (key) => {
+            if (key === CHARACTER_STORAGE_KEY) {
+              return primary;
+            }
+
+            if (key === CHARACTER_STORAGE_BACKUP_KEY) {
+              return backup;
+            }
+
+            return null;
+          },
+        });
+
+        assert.equal(state.characters.length, 1);
+        assert.equal(state.characters[0]?.sheet.name, "Recovered");
       },
     },
     {
@@ -343,9 +387,37 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         );
         const itemIndex = buildItemIndex(state.items);
 
-        assert.equal(itemIndex["legacy-bow"]?.blueprintId, "weapon:ranged_light");
-        assert.equal(itemIndex["legacy-shield"]?.blueprintId, "armor:shield_light");
-        assert.equal(itemIndex["legacy-focus"]?.blueprintId, "mystic:focus");
+        assert.equal(itemIndex["legacy-bow"]?.blueprintId, "range:short_bow");
+        assert.equal(itemIndex["legacy-shield"]?.blueprintId, "shield:light");
+        assert.equal(itemIndex["legacy-focus"]?.blueprintId, "occult:one_handed");
+      },
+    },
+    {
+      name: "hydratePersistedCharacters keeps mixed-schema items when both items and itemInstances exist",
+      run: () => {
+        const legacyItem = createSharedItemRecord("weapon:one_handed", {
+          id: "legacy-item",
+          name: "Legacy Blade",
+        });
+        const currentItem = createSharedItemRecord("armor:shield_heavy", {
+          id: "current-item",
+          name: "Turtle Shield",
+        });
+
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [],
+            itemBlueprints: createDefaultItemBlueprints(),
+            items: [legacyItem],
+            itemInstances: [currentItem],
+            starterItemsInitialized: true,
+          })
+        );
+
+        const itemIndex = buildItemIndex(state.items);
+        assert.ok(itemIndex["legacy-item"]);
+        assert.ok(itemIndex["current-item"]);
       },
     },
     {

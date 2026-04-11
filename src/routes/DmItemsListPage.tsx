@@ -6,6 +6,7 @@ import {
   getItemBaseVisibleStats,
   getItemBlueprintLabel,
   getItemCharacterImpactSummary,
+  getItemCompactHeaderSummary,
   getItemCustomPropertySummary,
   getItemPropertyPoints,
   getItemPowerBonusSummary,
@@ -40,12 +41,41 @@ function formatSummary(lines: string[]): string {
   return lines.length > 0 ? lines.join(" | ") : "None";
 }
 
+function hasAnyBonusValue(item: SharedItemRecord): boolean {
+  return (
+    Object.keys(item.bonusProfile.statBonuses).length > 0 ||
+    Object.keys(item.bonusProfile.skillBonuses).length > 0 ||
+    Object.keys(item.bonusProfile.derivedBonuses).length > 0 ||
+    Object.keys(item.bonusProfile.resistanceBonuses).length > 0 ||
+    Object.keys(item.bonusProfile.powerBonuses).length > 0 ||
+    Object.keys(item.bonusProfile.spellBonuses).length > 0 ||
+    item.bonusProfile.utilityTraits.length > 0 ||
+    item.bonusProfile.notes.length > 0
+  );
+}
+
+function isAccidentalNewItem(item: SharedItemRecord): boolean {
+  return (
+    item.name.trim() === "New Item" &&
+    item.assignedCharacterId === null &&
+    item.baseDescription.trim().length === 0 &&
+    item.customProperties.length === 0 &&
+    getItemPropertyPoints(item) === 0 &&
+    !hasAnyBonusValue(item)
+  );
+}
+
 export function DmItemsListPage() {
   const navigate = useNavigate();
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  const { roleChoice, characters, itemBlueprints, items, assignItemToCharacter } = useAppFlow();
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const { roleChoice, characters, itemBlueprints, items, assignItemToCharacter, deleteItem } = useAppFlow();
   const sortedItems = useMemo(() => sortItems(items), [items]);
   const sortedCharacters = useMemo(() => sortCharacters(characters), [characters]);
+  const accidentalNewItems = useMemo(
+    () => sortedItems.filter((item) => isAccidentalNewItem(item)),
+    [sortedItems]
+  );
 
   if (roleChoice !== "dm") {
     return <Navigate to="/role" replace />;
@@ -64,6 +94,40 @@ export function DmItemsListPage() {
           <button type="button" className="flow-primary" onClick={() => navigate("/dm/items/edit?create=1")}>
             Create New Item
           </button>
+          {accidentalNewItems.length > 0 ? (
+            confirmBulkDelete ? (
+              <>
+                <button
+                  type="button"
+                  className="flow-danger"
+                  onClick={() => {
+                    accidentalNewItems.forEach((item) => deleteItem(item.id));
+                    setConfirmBulkDelete(false);
+                    setExpandedItemId((current) =>
+                      current && accidentalNewItems.some((item) => item.id === current) ? null : current
+                    );
+                  }}
+                >
+                  Delete {accidentalNewItems.length} New Item Entries
+                </button>
+                <button
+                  type="button"
+                  className="flow-cancel"
+                  onClick={() => setConfirmBulkDelete(false)}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="flow-danger"
+                onClick={() => setConfirmBulkDelete(true)}
+              >
+                Delete Duplicate New Items ({accidentalNewItems.length})
+              </button>
+            )
+          ) : null}
           <button type="button" className="flow-secondary" onClick={() => navigate("/dm/items/blueprints")}>
             Blueprint Management
           </button>
@@ -93,6 +157,7 @@ export function DmItemsListPage() {
                     <span className="dm-item-line-main">
                       <strong>{item.name}</strong>
                       <small>{getItemBlueprintLabel(item, itemBlueprints)}</small>
+                      <small>{getItemCompactHeaderSummary(item)}</small>
                     </span>
                     <span className="dm-item-line-side">
                       <span>PP {getItemPropertyPoints(item)}</span>

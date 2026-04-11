@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate.ts";
@@ -9,6 +9,7 @@ import {
   getItemBaseVisibleStats,
   getItemBlueprintLabel,
   getItemBlueprintOptions,
+  getItemCompactHeaderSummary,
   getItemCustomPropertySummary,
   getItemPropertyPoints,
   getItemBlueprintRecord,
@@ -112,6 +113,7 @@ export function DmItemEditPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [baseEditEnabled, setBaseEditEnabled] = useState(false);
   const [saveModeOpen, setSaveModeOpen] = useState(false);
+  const createRequestHandledRef = useRef(false);
   const {
     roleChoice,
     itemBlueprints,
@@ -138,6 +140,7 @@ export function DmItemEditPage() {
     [powerBonusOptions, spellBonusOptions]
   );
   const requestedItemId = searchParams.get("itemId");
+  const createRequested = searchParams.get("create") === "1";
   const selectedItem =
     sortedItems.find((item) => item.id === requestedItemId) ?? sortedItems[0] ?? null;
   const [baseDraft, setBaseDraft] = useState(() =>
@@ -149,17 +152,24 @@ export function DmItemEditPage() {
       return;
     }
 
-    if (searchParams.get("create") !== "1") {
+    if (!createRequested) {
+      createRequestHandledRef.current = false;
       return;
     }
 
-    const defaultBlueprintId = blueprintOptions.find((option) => option.isLegacy !== true)?.id ?? "mystic:focus";
+    if (createRequestHandledRef.current) {
+      return;
+    }
+
+    createRequestHandledRef.current = true;
+
+    const defaultBlueprintId = blueprintOptions.find((option) => option.isLegacy !== true)?.id ?? "occult:one_handed";
     const itemId = createItem(defaultBlueprintId, {
       name: "New Item",
       baseDescription: "",
     });
-    setSearchParams({ itemId });
-  }, [blueprintOptions, createItem, roleChoice, searchParams, setSearchParams]);
+    setSearchParams({ itemId }, { replace: true });
+  }, [blueprintOptions, createItem, createRequested, roleChoice, setSearchParams]);
 
   useEffect(() => {
     if (!selectedItem) {
@@ -242,7 +252,7 @@ export function DmItemEditPage() {
   }
 
   function handleCreateNewItem(): void {
-    const defaultBlueprintId = blueprintOptions.find((option) => option.isLegacy !== true)?.id ?? "mystic:focus";
+    const defaultBlueprintId = blueprintOptions.find((option) => option.isLegacy !== true)?.id ?? "occult:one_handed";
     const itemId = createItem(defaultBlueprintId, {
       name: "New Item",
       baseDescription: "",
@@ -354,11 +364,7 @@ export function DmItemEditPage() {
                 >
                   <strong>{item.name}</strong>
                   <span>{getItemBlueprintLabel(item, itemBlueprints)}</span>
-                  <small>
-                    {`PP ${getItemPropertyPoints(item)} | ${getItemTierLabel(item)} | ${
-                      getItemBaseVisibleStats(item).join(" | ") || "No base stats listed."
-                    }`}
-                  </small>
+                  <small>{getItemCompactHeaderSummary(item)}</small>
                 </button>
               ))}
             </div>

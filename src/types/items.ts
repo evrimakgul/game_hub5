@@ -1,35 +1,64 @@
 import type { DamageTypeId } from "../rules/resistances.ts";
 import type { StatId } from "./character.ts";
 
-export const ITEM_CATEGORIES = ["weapon", "armor", "jewel", "mystic"] as const;
+export const ITEM_CATEGORIES = [
+  "melee",
+  "body_armor",
+  "consumable",
+  "shield",
+  "neck",
+  "rings",
+  "occult",
+  "range",
+  "head",
+  "orbital",
+  "charm",
+] as const;
 export type ItemCategory = (typeof ITEM_CATEGORIES)[number];
 
-export const WEAPON_SUBTYPES = [
+export const MELEE_SUBTYPES = [
   "unarmed",
   "brawl",
   "one_handed",
   "two_handed",
   "oversized",
-  "ranged_light",
-  "pistol",
-  "bow_long",
-  "rifle",
-  "crossbow_heavy",
-  "shotgun",
-  "chaingun",
-  "rocket_launcher",
 ] as const;
-export type WeaponSubtype = (typeof WEAPON_SUBTYPES)[number];
+export type MeleeSubtype = (typeof MELEE_SUBTYPES)[number];
 
-export const ARMOR_SUBTYPES = [
+export const BODY_ARMOR_SUBTYPES = [
   "clothing",
   "light",
   "medium",
   "heavy",
-  "shield_light",
-  "shield_heavy",
 ] as const;
-export type ArmorSubtype = (typeof ARMOR_SUBTYPES)[number];
+export type BodyArmorSubtype = (typeof BODY_ARMOR_SUBTYPES)[number];
+
+export const CONSUMABLE_SUBTYPES = ["drinkable", "usable"] as const;
+export type ConsumableSubtype = (typeof CONSUMABLE_SUBTYPES)[number];
+
+export const SHIELD_SUBTYPES = ["light", "heavy"] as const;
+export type ShieldSubtype = (typeof SHIELD_SUBTYPES)[number];
+
+export const NECK_SUBTYPES = ["wearable", "amulet"] as const;
+export type NeckSubtype = (typeof NECK_SUBTYPES)[number];
+
+export const RINGS_SUBTYPES = ["ring", "earring"] as const;
+export type RingsSubtype = (typeof RINGS_SUBTYPES)[number];
+
+export const OCCULT_SUBTYPES = ["one_handed", "two_handed"] as const;
+export type OccultSubtype = (typeof OCCULT_SUBTYPES)[number];
+
+export const RANGE_SUBTYPES = ["bow", "crossbow", "gun", "launcher"] as const;
+export type RangeSubtype = (typeof RANGE_SUBTYPES)[number];
+
+export const HEAD_SUBTYPES = ["head"] as const;
+export type HeadSubtype = (typeof HEAD_SUBTYPES)[number];
+
+export const ORBITAL_SUBTYPES = ["orbital"] as const;
+export type OrbitalSubtype = (typeof ORBITAL_SUBTYPES)[number];
+
+export const CHARM_SUBTYPES = ["talisman"] as const;
+export type CharmSubtype = (typeof CHARM_SUBTYPES)[number];
 
 export const ITEM_DERIVED_MODIFIER_IDS = [
   "max_hp",
@@ -47,7 +76,18 @@ export const ITEM_DERIVED_MODIFIER_IDS = [
 ] as const;
 export type ItemDerivedModifierId = (typeof ITEM_DERIVED_MODIFIER_IDS)[number];
 
-export type ItemSubtype = WeaponSubtype | ArmorSubtype | "jewel" | "focus";
+export type ItemSubtype =
+  | MeleeSubtype
+  | BodyArmorSubtype
+  | ConsumableSubtype
+  | ShieldSubtype
+  | NeckSubtype
+  | RingsSubtype
+  | OccultSubtype
+  | RangeSubtype
+  | HeadSubtype
+  | OrbitalSubtype
+  | CharmSubtype;
 
 export const ITEM_CUSTOM_PROPERTY_TARGET_TYPES = [
   "stat",
@@ -164,6 +204,54 @@ export type CharacterEquipmentReference = {
   itemId: string | null;
 };
 
+export const MAIN_EQUIPMENT_SLOT_IDS = [
+  "weapon_primary",
+  "weapon_secondary",
+  "ring_left",
+  "ring_right",
+  "body",
+  "neck",
+  "head",
+] as const;
+export type MainEquipmentSlotId = (typeof MAIN_EQUIPMENT_SLOT_IDS)[number];
+
+export const MAIN_EQUIPMENT_SLOT_LABELS: Record<MainEquipmentSlotId, string> = {
+  weapon_primary: "Primary Hand",
+  weapon_secondary: "Secondary Hand",
+  ring_left: "Left Ring",
+  ring_right: "Right Ring",
+  body: "Chest / Body",
+  neck: "Neck",
+  head: "Head",
+};
+
+export function isMainEquipmentSlotId(value: unknown): value is MainEquipmentSlotId {
+  return typeof value === "string" && MAIN_EQUIPMENT_SLOT_IDS.includes(value as MainEquipmentSlotId);
+}
+
+export const SUPPLEMENTARY_EQUIPMENT_SLOT_IDS = ["orbital", "earring", "charm"] as const;
+export type SupplementaryEquipmentSlotId = (typeof SUPPLEMENTARY_EQUIPMENT_SLOT_IDS)[number];
+
+export const SUPPLEMENTARY_EQUIPMENT_SLOT_LABELS: Record<SupplementaryEquipmentSlotId, string> = {
+  orbital: "Orbital",
+  earring: "Earring",
+  charm: "Charm / Talisman",
+};
+
+export const CANONICAL_EQUIPMENT_SLOT_IDS = [
+  ...MAIN_EQUIPMENT_SLOT_IDS,
+  ...SUPPLEMENTARY_EQUIPMENT_SLOT_IDS,
+] as const;
+export type CanonicalEquipmentSlotId = (typeof CANONICAL_EQUIPMENT_SLOT_IDS)[number];
+
+export function isSupplementaryEquipmentSlotId(value: unknown): value is SupplementaryEquipmentSlotId {
+  return typeof value === "string" && SUPPLEMENTARY_EQUIPMENT_SLOT_IDS.includes(value as SupplementaryEquipmentSlotId);
+}
+
+export function isCanonicalEquipmentSlotId(value: unknown): value is CanonicalEquipmentSlotId {
+  return typeof value === "string" && CANONICAL_EQUIPMENT_SLOT_IDS.includes(value as CanonicalEquipmentSlotId);
+}
+
 export const WEAPON_HAND_SLOT_IDS = ["weapon_primary", "weapon_secondary"] as const;
 export type WeaponHandSlotId = (typeof WEAPON_HAND_SLOT_IDS)[number];
 
@@ -187,14 +275,26 @@ export function isItemCategory(value: unknown): value is ItemCategory {
   return typeof value === "string" && ITEM_CATEGORIES.includes(value as ItemCategory);
 }
 
-export function isWeaponSubtype(value: unknown): value is WeaponSubtype {
-  return typeof value === "string" && WEAPON_SUBTYPES.includes(value as WeaponSubtype);
+export function isMeleeSubtype(value: unknown): value is MeleeSubtype {
+  return typeof value === "string" && MELEE_SUBTYPES.includes(value as MeleeSubtype);
 }
 
-export function isArmorSubtype(value: unknown): value is ArmorSubtype {
-  return typeof value === "string" && ARMOR_SUBTYPES.includes(value as ArmorSubtype);
+export function isBodyArmorSubtype(value: unknown): value is BodyArmorSubtype {
+  return typeof value === "string" && BODY_ARMOR_SUBTYPES.includes(value as BodyArmorSubtype);
 }
 
 export function isItemSubtype(value: unknown): value is ItemSubtype {
-  return value === "jewel" || value === "focus" || isWeaponSubtype(value) || isArmorSubtype(value);
+  return (
+    isMeleeSubtype(value) ||
+    isBodyArmorSubtype(value) ||
+    (typeof value === "string" && CONSUMABLE_SUBTYPES.includes(value as ConsumableSubtype)) ||
+    (typeof value === "string" && SHIELD_SUBTYPES.includes(value as ShieldSubtype)) ||
+    (typeof value === "string" && NECK_SUBTYPES.includes(value as NeckSubtype)) ||
+    (typeof value === "string" && RINGS_SUBTYPES.includes(value as RingsSubtype)) ||
+    (typeof value === "string" && OCCULT_SUBTYPES.includes(value as OccultSubtype)) ||
+    (typeof value === "string" && RANGE_SUBTYPES.includes(value as RangeSubtype)) ||
+    (typeof value === "string" && HEAD_SUBTYPES.includes(value as HeadSubtype)) ||
+    (typeof value === "string" && ORBITAL_SUBTYPES.includes(value as OrbitalSubtype)) ||
+    (typeof value === "string" && CHARM_SUBTYPES.includes(value as CharmSubtype))
+  );
 }

@@ -44,8 +44,16 @@ function clearWeaponHandSlot(sheet: CharacterDraft, slot: WeaponHandSlotId): Cha
   return upsertEquipmentSlotValue(sheet, slot, null);
 }
 
+function isShieldItem(item: SharedItemRecord | null | undefined): boolean {
+  return !!item && item.category === "shield";
+}
+
 function itemOccupiesBothWeaponHands(item: SharedItemRecord | null | undefined): boolean {
-  return !!item && item.category === "weapon" && item.combatSpec?.handsRequired === 2;
+  return (
+    !!item &&
+    (item.category === "melee" || item.category === "range" || item.category === "occult") &&
+    item.combatSpec?.handsRequired === 2
+  );
 }
 
 export function setCharacterWeaponHandSlotItem(
@@ -71,10 +79,25 @@ export function setCharacterWeaponHandSlotItem(
       : cleared;
   }
 
+  if (isShieldItem(nextItem)) {
+    const primaryItemId = sheet.equipment.find((entry) => entry.slot === "weapon_primary")?.itemId ?? null;
+    const primaryItem = primaryItemId ? itemsById[primaryItemId] ?? null : null;
+
+    if (itemOccupiesBothWeaponHands(primaryItem)) {
+      return sheet;
+    }
+
+    return upsertEquipmentSlotValue(sheet, "weapon_secondary", normalizedItemId);
+  }
+
   let nextSheet = upsertEquipmentSlotValue(sheet, slot, normalizedItemId);
 
   if (itemOccupiesBothWeaponHands(nextItem)) {
-    return upsertEquipmentSlotValue(nextSheet, oppositeSlot, normalizedItemId);
+    return upsertEquipmentSlotValue(
+      upsertEquipmentSlotValue(nextSheet, "weapon_primary", normalizedItemId),
+      "weapon_secondary",
+      normalizedItemId
+    );
   }
 
   if (itemOccupiesBothWeaponHands(oppositeSlotItem) || oppositeSlotItemId === currentSlotItemId) {

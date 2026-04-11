@@ -49,6 +49,7 @@ import type { CharacterRecord, StatId } from "../types/character";
 import type {
   ItemBlueprintId,
   ItemDerivedModifierId,
+  MainEquipmentSlotId,
   SharedItemRecord,
   WeaponHandSlotId,
 } from "../types/items.ts";
@@ -126,6 +127,7 @@ export type PlayerCharacterMutations = {
   equipSharedItem: (itemId: string, slot?: string) => void;
   unequipSharedItem: (itemId: string) => void;
   updateWeaponHandSlotItem: (slot: WeaponHandSlotId, itemId: string) => void;
+  updateMainEquipmentSlotItem: (slot: MainEquipmentSlotId, itemId: string) => void;
   updateEquipmentEntry: (index: number, field: EquipmentReferenceField, value: string) => void;
   addEquipmentEntry: () => void;
   removeEquipmentEntry: (index: number) => void;
@@ -509,22 +511,52 @@ export function usePlayerCharacterMutations({
     deleteItem(itemId);
   }
 
-  function resolveDefaultEquipmentSlot(item: SharedItemRecord): string {
-    if (item.category === "armor") {
-      return item.subtype === "shield_light" || item.subtype === "shield_heavy"
-        ? "Shield"
-        : "Armor";
+  function isShieldItem(item: SharedItemRecord): boolean {
+    return item.category === "shield";
+  }
+
+  function resolveDefaultEquipmentSlot(currentSheet: CharacterDraft, item: SharedItemRecord): string {
+    if (item.category === "body_armor") {
+      return "body";
     }
 
-    if (item.category === "mystic") {
-      return "Focus";
+    if (item.category === "neck") {
+      return "neck";
     }
 
-    if (item.category === "jewel") {
-      return "Accessory";
+    if (item.category === "head") {
+      return "head";
     }
 
-    return item.combatSpec?.slotKey?.trim() || "Equipment";
+    if (item.category === "rings") {
+      if (item.subtype === "earring") {
+        return "earring";
+      }
+
+      const leftRingItemId = currentSheet.equipment.find((entry) => entry.slot === "ring_left")?.itemId ?? null;
+      const rightRingItemId = currentSheet.equipment.find((entry) => entry.slot === "ring_right")?.itemId ?? null;
+      if (!leftRingItemId) {
+        return "ring_left";
+      }
+      if (!rightRingItemId) {
+        return "ring_right";
+      }
+      return "ring_left";
+    }
+
+    if (item.category === "orbital") {
+      return "orbital";
+    }
+
+    if (item.category === "charm") {
+      return "charm";
+    }
+
+    if (item.category === "occult") {
+      return item.combatSpec?.handsRequired === 2 ? "weapon_primary" : "weapon_secondary";
+    }
+
+    return "body";
   }
 
   function chooseWeaponEquipSlot(currentSheet: CharacterDraft, item: SharedItemRecord): WeaponHandSlotId {
@@ -557,16 +589,22 @@ export function usePlayerCharacterMutations({
     setSheetState((currentSheet) => {
       const baseSheet = removeCharacterItemFromEquipment(currentSheet, itemId);
       const nextSheet =
-        item.category === "weapon"
+        item.category === "melee" || item.category === "range" || item.category === "occult" || isShieldItem(item)
           ? setCharacterWeaponHandSlotItem(
               baseSheet,
               slot === "weapon_primary" || slot === "weapon_secondary"
                 ? slot
-                : chooseWeaponEquipSlot(baseSheet, item),
+                : isShieldItem(item)
+                  ? "weapon_secondary"
+                  : chooseWeaponEquipSlot(baseSheet, item),
               itemId,
               itemsById
             )
-          : setCharacterEquipmentSlotItem(baseSheet, slot?.trim() || resolveDefaultEquipmentSlot(item), itemId);
+          : setCharacterEquipmentSlotItem(
+              baseSheet,
+              slot?.trim() || resolveDefaultEquipmentSlot(baseSheet, item),
+              itemId
+            );
 
       if (!isDmView) {
         return nextSheet;
@@ -621,6 +659,32 @@ export function usePlayerCharacterMutations({
         )
       )
     );
+  }
+
+  function updateMainEquipmentSlotItem(slot: MainEquipmentSlotId, itemId: string): void {
+    if (slot === "weapon_primary" || slot === "weapon_secondary") {
+      updateWeaponHandSlotItem(slot, itemId);
+      return;
+    }
+
+    setSheetState((currentSheet) => {
+      const nextSheet = setCharacterEquipmentSlotItem(currentSheet, slot, itemId);
+      if (!isDmView) {
+        return nextSheet;
+      }
+
+      return appendDmAuditEntry(
+        nextSheet,
+        createDmAuditEntry(
+          "sheet",
+          `equipment.${slot}.itemId`,
+          currentSheet.equipment.find((entry) => entry.slot === slot)?.itemId ?? "",
+          itemId,
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
   }
 
   function updateEquipmentEntry(index: number, field: EquipmentReferenceField, value: string): void {
@@ -802,6 +866,7 @@ export function usePlayerCharacterMutations({
     equipSharedItem,
     unequipSharedItem,
     updateWeaponHandSlotItem,
+    updateMainEquipmentSlotItem,
     updateEquipmentEntry,
     addEquipmentEntry: addEquipmentEntryHandler,
     removeEquipmentEntry: removeEquipmentEntryHandler,
