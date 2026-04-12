@@ -56,6 +56,7 @@ export function applyDamageToSheet(
     rawAmount: number;
     damageType: DamageTypeId;
     mitigationChannel: DamageMitigationChannel;
+    armorPenetration?: number;
     itemsById?: Record<string, SharedItemRecord>;
   }
 ): {
@@ -66,8 +67,16 @@ export function applyDamageToSheet(
 } {
   const resolvedAmount = Math.max(0, Math.trunc(options.rawAmount));
   const derived = buildCharacterDerivedValues(sheet, options.itemsById ?? {});
+  const armorPenetration =
+    options.mitigationChannel === "dr" &&
+    typeof options.armorPenetration === "number" &&
+    Number.isFinite(options.armorPenetration)
+      ? Math.max(0, Math.trunc(options.armorPenetration))
+      : 0;
   const mitigationValue =
-    options.mitigationChannel === "dr" ? derived.damageReduction : derived.soak;
+    options.mitigationChannel === "dr"
+      ? Math.max(0, derived.damageReduction - armorPenetration)
+      : derived.soak;
   const mitigatedAmount = Math.max(0, resolvedAmount - mitigationValue);
   const resistanceLevel = getResolvedResistanceLevel(sheet, options.damageType, options.itemsById ?? {});
   const resistanceRule = RESISTANCE_LEVELS[resistanceLevel];

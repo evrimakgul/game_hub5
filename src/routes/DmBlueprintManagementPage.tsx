@@ -564,6 +564,26 @@ export function DmBlueprintManagementPage() {
                         />
                       </label>
                       <label className="dm-field">
+                        <span>Armor Penetration</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={selectedBlueprint.combatSpec?.armorPenetration ?? ""}
+                          onChange={(event) =>
+                            updateItemBlueprint(selectedBlueprint.id, (current) => ({
+                              ...current,
+                              combatSpec: {
+                                ...(current.combatSpec ?? {}),
+                                armorPenetration:
+                                  parseNumericInput(event.target.value) === null
+                                    ? undefined
+                                    : Math.max(0, parseNumericInput(event.target.value) ?? 0),
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="dm-field">
                         <span>Range (m)</span>
                         <input
                           type="number"

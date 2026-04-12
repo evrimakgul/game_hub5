@@ -39,6 +39,7 @@ export type PhysicalAttackProfile = {
   attackPool: number;
   successDc: number;
   baseDamagePool: number;
+  armorPenetration: number;
 };
 
 type PhysicalAttackSequenceResult = {
@@ -167,6 +168,7 @@ export function getResolvedPhysicalAttackProfile(
         successDc: 6,
         baseDamagePool:
           (occupyingBothHandsWeapon.combatSpec.rangedDamageBase ?? 0) + rangedDamageBonus,
+        armorPenetration: occupyingBothHandsWeapon.combatSpec.armorPenetration ?? 0,
       };
     }
 
@@ -181,6 +183,7 @@ export function getResolvedPhysicalAttackProfile(
         attackPool: derived.meleeAttack,
         successDc: 6,
         baseDamagePool: derived.meleeDamage + 9,
+        armorPenetration: 0,
       };
     }
 
@@ -191,6 +194,7 @@ export function getResolvedPhysicalAttackProfile(
       attackPool: derived.meleeAttack,
       successDc: 6,
       baseDamagePool: derived.meleeDamage + 6,
+      armorPenetration: 0,
     };
   }
 
@@ -202,6 +206,7 @@ export function getResolvedPhysicalAttackProfile(
       attackPool: derived.rangedAttack,
       successDc: 6,
       baseDamagePool: (primaryWeapon.combatSpec.rangedDamageBase ?? 0) + rangedDamageBonus,
+      armorPenetration: primaryWeapon.combatSpec.armorPenetration ?? 0,
     };
   }
 
@@ -213,6 +218,7 @@ export function getResolvedPhysicalAttackProfile(
       attackPool: derived.meleeAttack,
       successDc: 7,
       baseDamagePool: derived.meleeDamage + 3,
+      armorPenetration: 0,
     };
   }
 
@@ -224,6 +230,7 @@ export function getResolvedPhysicalAttackProfile(
       attackPool: derived.meleeAttack,
       successDc: 6,
       baseDamagePool: derived.meleeDamage + 3,
+      armorPenetration: 0,
     };
   }
 
@@ -235,6 +242,7 @@ export function getResolvedPhysicalAttackProfile(
       attackPool: derived.meleeAttack,
       successDc: 6,
       baseDamagePool: derived.meleeDamage + 1,
+      armorPenetration: 0,
     };
   }
 
@@ -245,6 +253,7 @@ export function getResolvedPhysicalAttackProfile(
     attackPool: derived.meleeAttack,
     successDc: 6,
     baseDamagePool: derived.meleeDamage,
+    armorPenetration: 0,
   };
 }
 
@@ -313,10 +322,12 @@ export function preparePhysicalAttackRequest(payload: {
       0,
       getPhysicalAttackProfileSuccesses(damageFaces, damagePool, 6)
     );
+    const effectiveDamageReduction = Math.max(0, targetDerived.damageReduction - profile.armorPenetration);
     const damagePreview = applyDamageToSheet(previewTargetSheet, {
       rawAmount: damageSuccesses,
       damageType: "physical",
       mitigationChannel: "dr",
+      armorPenetration: profile.armorPenetration > 0 ? profile.armorPenetration : undefined,
       itemsById,
     });
 
@@ -326,6 +337,9 @@ export function preparePhysicalAttackRequest(payload: {
         rawAmount: damageSuccesses,
         damageType: "physical",
         mitigationChannel: "dr",
+        ...(profile.armorPenetration > 0
+          ? { armorPenetration: profile.armorPenetration }
+          : {}),
         sourceCharacterId: payload.casterCharacter.id,
         sourceLabel: profile.label,
         sourceSummary: `${profile.label} (${damageSuccesses} physical)`,
@@ -338,7 +352,7 @@ export function preparePhysicalAttackRequest(payload: {
       targetArmorClass: targetDerived.armorClass,
       marginal,
       damageSuccesses,
-      targetDamageReduction: targetDerived.damageReduction,
+      targetDamageReduction: effectiveDamageReduction,
       appliedDamage: damagePreview.appliedDamage,
       missed: false,
     });

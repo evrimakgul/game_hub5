@@ -612,6 +612,10 @@ function normalizeItemCombatSpec(value: unknown): ItemCombatSpec | null {
       typeof record.rangedDamageBase === "number" && Number.isFinite(record.rangedDamageBase)
         ? Math.trunc(record.rangedDamageBase)
         : undefined,
+    armorPenetration:
+      typeof record.armorPenetration === "number" && Number.isFinite(record.armorPenetration)
+        ? Math.max(0, Math.trunc(record.armorPenetration))
+        : undefined,
     rangeMeters:
       typeof record.rangeMeters === "number" && Number.isFinite(record.rangeMeters)
         ? Math.max(0, Math.trunc(record.rangeMeters))
@@ -1036,7 +1040,9 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
         rangedDamageBase: 5,
         rangeMeters: 25,
       },
-      visibleNotes: [],
+      visibleNotes: [
+        "Classic rules note: may move 10m instead of 5m when attacking; DM must enforce manually.",
+      ],
       requirements: [],
     }),
     createBlueprintRecord({
@@ -1052,11 +1058,11 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
         handsRequired: 2,
         attacksPerAction: 1,
         rangedDamageBase: 5,
+        armorPenetration: 1,
         rangeMeters: 25,
       },
       visibleNotes: [
-        "Classic rules note: reload / action pacing is not simulated yet.",
-        "Classic rules note: armor penetration is not simulated yet.",
+        "Classic rules note: uses both attack and move actions; DM must enforce manually.",
       ],
       requirements: [],
     }),
@@ -1127,11 +1133,11 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
         handsRequired: 2,
         attacksPerAction: 1,
         rangedDamageBase: 8,
+        armorPenetration: 2,
         rangeMeters: 50,
       },
       visibleNotes: [
-        "Classic rules note: reload / action pacing is not simulated yet.",
-        "Classic rules note: armor penetration is not simulated yet.",
+        "Classic rules note: uses attack, bonus, and move actions; DM must enforce manually.",
       ],
       requirements: [],
     }),
@@ -2486,6 +2492,9 @@ export function getItemBaseVisibleStats(
   }
   if (typeof item.combatSpec?.attacksPerAction === "number") {
     lines.push(`Attacks: ${item.combatSpec.attacksPerAction}`);
+  }
+  if (typeof item.combatSpec?.armorPenetration === "number" && item.combatSpec.armorPenetration > 0) {
+    lines.push(`Armor Penetration: ${item.combatSpec.armorPenetration}`);
   }
   if (slotSummary) {
     lines.push(`${slotSummary.includes("+") ? "Slots" : "Slot"}: ${slotSummary}`);

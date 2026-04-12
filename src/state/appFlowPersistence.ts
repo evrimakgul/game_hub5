@@ -85,6 +85,51 @@ function mergeDefaultRecordsById<T extends { id: string }>(
   return mergedRecords;
 }
 
+function supplementSeededBlueprintCatalog(
+  persistedBlueprints: ItemBlueprintRecord[],
+  defaultBlueprints: ItemBlueprintRecord[]
+): ItemBlueprintRecord[] {
+  const defaultBlueprintIndex = new Map(
+    defaultBlueprints.map((blueprint) => [blueprint.id, blueprint])
+  );
+
+  return persistedBlueprints.map((blueprint) => {
+    const defaultBlueprint = defaultBlueprintIndex.get(blueprint.id);
+    if (!defaultBlueprint) {
+      return blueprint;
+    }
+
+    const visibleNotes = [...blueprint.visibleNotes];
+    defaultBlueprint.visibleNotes.forEach((note) => {
+      if (!visibleNotes.includes(note)) {
+        visibleNotes.push(note);
+      }
+    });
+
+    const requirements = [...blueprint.requirements];
+    defaultBlueprint.requirements.forEach((requirement) => {
+      if (!requirements.includes(requirement)) {
+        requirements.push(requirement);
+      }
+    });
+
+    return {
+      ...blueprint,
+      combatSpec:
+        blueprint.combatSpec || defaultBlueprint.combatSpec
+          ? {
+              ...(defaultBlueprint.combatSpec ?? {}),
+              ...Object.fromEntries(
+                Object.entries(blueprint.combatSpec ?? {}).filter(([, value]) => value !== undefined)
+              ),
+            }
+          : null,
+      visibleNotes,
+      requirements,
+    };
+  });
+}
+
 function getEmptyPersistedCharacterState(): PersistedCharacterState {
   const itemCategoryDefinitions = createDefaultItemCategoryDefinitions();
   const itemSubcategoryDefinitions = createDefaultItemSubcategoryDefinitions();
@@ -423,10 +468,13 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
         )
       : defaultItemSubcategoryDefinitions;
     const itemBlueprints = Array.isArray(envelope.itemBlueprints)
-      ? mergeDefaultRecordsById(
-          envelope.itemBlueprints
-            .map((entry) => safeHydrateEntry(() => hydrateItemBlueprintRecord(entry)))
-            .filter((entry): entry is ItemBlueprintRecord => entry !== null),
+      ? supplementSeededBlueprintCatalog(
+          mergeDefaultRecordsById(
+            envelope.itemBlueprints
+              .map((entry) => safeHydrateEntry(() => hydrateItemBlueprintRecord(entry)))
+              .filter((entry): entry is ItemBlueprintRecord => entry !== null),
+            defaultItemBlueprints
+          ),
           defaultItemBlueprints
         )
       : defaultItemBlueprints;

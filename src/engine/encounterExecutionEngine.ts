@@ -186,6 +186,7 @@ export class EncounterExecutionEngine {
           rawAmount: application.rawAmount,
           damageType: application.damageType,
           mitigationChannel: application.mitigationChannel,
+          armorPenetration: application.armorPenetration,
           itemsById: this.itemsById,
         }).sheet
       );

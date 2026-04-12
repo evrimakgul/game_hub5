@@ -230,5 +230,16 @@ export async function runItemBehaviorTests(): Promise<void> {
         );
       },
     },
+    {
+      name: "crossbow summaries show armor penetration",
+      run: () => {
+        const crossbow = createSharedItemRecord("weapon:crossbow_heavy", {
+          id: "weapon-summary-crossbow",
+          name: "Heavy Crossbow",
+        });
+
+        assert.match(getItemCompactHeaderSummary(crossbow), /Armor Penetration: 2/);
+      },
+    },
   ]);
 }

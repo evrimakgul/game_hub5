@@ -540,6 +540,53 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
       },
     },
     {
+      name: "hydratePersistedCharacters supplements seeded blueprint combat fields and notes without overwriting explicit values",
+      run: () => {
+        const defaultHeavyCrossbow = createDefaultItemBlueprints().find(
+          (blueprint) => blueprint.id === "range:heavy_crossbow"
+        );
+        assert.ok(defaultHeavyCrossbow);
+        if (!defaultHeavyCrossbow) {
+          return;
+        }
+
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: CHARACTER_DRAFT_SCHEMA_VERSION,
+            characters: [],
+            starterItemsInitialized: true,
+            itemBlueprints: [
+              {
+                ...defaultHeavyCrossbow,
+                label: "Custom Heavy Crossbow",
+                combatSpec: {
+                  attackKind: "ranged",
+                  physicalProfileKind: "ranged",
+                  handsRequired: 2,
+                  attacksPerAction: 1,
+                  rangedDamageBase: 8,
+                  rangeMeters: 50,
+                },
+                visibleNotes: [],
+              },
+            ],
+          })
+        );
+
+        const heavyCrossbow = state.itemBlueprints.find(
+          (blueprint) => blueprint.id === "range:heavy_crossbow"
+        );
+
+        assert.equal(heavyCrossbow?.label, "Custom Heavy Crossbow");
+        assert.equal(heavyCrossbow?.combatSpec?.armorPenetration, 2);
+        assert.ok(
+          heavyCrossbow?.visibleNotes.includes(
+            "Classic rules note: uses attack, bonus, and move actions; DM must enforce manually."
+          )
+        );
+      },
+    },
+    {
       name: "deprecated melee unarmed blueprint stays readable but is hidden from normal creation options",
       run: () => {
         const state = hydratePersistedCharacters(null);

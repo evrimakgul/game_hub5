@@ -242,7 +242,8 @@ This roadmap is the active implementation source of truth for this branch.
 - `Short Bow` and `Light Crossbow` are now separate blueprint identities.
 - Legacy alias `weapon:ranged_light` now migrates to `range:light_crossbow`.
 - Older persisted item catalogs now backfill missing seeded blueprints and item definitions during hydration without overwriting same-id custom edits.
-- Unsupported classic crossbow timing / armor-penetration rules remain represented as visible notes until the later combat-action extension exists.
+- Crossbow armor penetration now reduces DR during physical attack resolution.
+- Unsupported classic bow / crossbow timing and movement rules remain represented as visible notes until the later combat-action extension exists.
 
 ## Validation
 - After each meaningful task group run:

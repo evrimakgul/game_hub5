@@ -6,7 +6,10 @@ import {
   preparePhysicalAttackRequest,
 } from "../src/lib/combatEncounterPhysicalAttacks.ts";
 import { buildItemIndex, createSharedItemRecord } from "../src/lib/items.ts";
-import { setCharacterWeaponHandSlotItem } from "../src/mutations/characterItemMutations.ts";
+import {
+  setCharacterEquipmentSlotItem,
+  setCharacterWeaponHandSlotItem,
+} from "../src/mutations/characterItemMutations.ts";
 import type { CharacterRecord } from "../src/types/character.ts";
 import { runTestSuite } from "./harness.ts";
 
@@ -257,6 +260,66 @@ export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
 
           assert.equal(profile.id, "ranged");
           assert.equal(profile.baseDamagePool, expected);
+        });
+      },
+    },
+    {
+      name: "crossbow armor penetration reduces target DR during physical attacks",
+      run: () => {
+        const attacker = createCharacterRecord("attacker-crossbow", "Attacker", "player", {
+          stats: { DEX: 3 },
+        });
+        const target = createCharacterRecord("target-crossbow", "Target", "dm", {
+          stats: { DEX: 1, STAM: 2 },
+        });
+        const crossbow = createSharedItemRecord("weapon:crossbow_heavy", {
+          id: "item-crossbow-ap",
+          name: "Siege Crossbow",
+        });
+        const armor = createSharedItemRecord("body_armor:heavy", {
+          id: "item-heavy-armor",
+          name: "Plate Armor",
+        });
+        const itemsById = buildItemIndex([crossbow, armor]);
+
+        attacker.sheet = setCharacterWeaponHandSlotItem(
+          attacker.sheet,
+          "weapon_primary",
+          crossbow.id,
+          itemsById
+        );
+        target.sheet = setCharacterEquipmentSlotItem(target.sheet, "body", armor.id, itemsById);
+
+        withMockedRollFaces([6, 6, 2, 6, 6, 2, 2, 2, 2, 2, 2, 2], () => {
+          const prepared = preparePhysicalAttackRequest({
+            casterCharacter: attacker,
+            targetCharacter: target,
+            itemsById,
+          });
+
+          assert.ok(!("error" in prepared));
+          if ("error" in prepared) {
+            return;
+          }
+
+          assert.equal(prepared.profile.id, "ranged");
+          assert.equal(prepared.profile.armorPenetration, 2);
+          assert.deepEqual(prepared.request.damageApplications, [
+            {
+              targetCharacterId: target.id,
+              rawAmount: 2,
+              damageType: "physical",
+              mitigationChannel: "dr",
+              armorPenetration: 2,
+              sourceCharacterId: attacker.id,
+              sourceLabel: "Siege Crossbow",
+              sourceSummary: "Siege Crossbow (2 physical)",
+            },
+          ]);
+          assert.equal(
+            prepared.request.activityLogEntries[0]?.summary,
+            "Attacker attacked Target with Siege Crossbow. A1 hit 2 vs AC 1, marginal 1, dmg 2 vs DR 1, took 1."
+          );
         });
       },
     },

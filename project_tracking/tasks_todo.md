@@ -16,7 +16,7 @@
 ### Group 4: Item Equip Core And Hand-State Cleanup
 - `ITEM-MULTISLOT-01` completed. Equipment entries now persist a real `anchorSlot`, canonical multi-slot occupancy is normalized during hydration and live state updates, equip/unequip logic clears whole anchor groups, and follower slots render as occupied/locked instead of looking like duplicate equips.
 - `ITEM-HAND-LOGIC-01` completed. Physical attack profile resolution now distinguishes `unarmed` as both hands empty and `brawl` as at least one equipped brawl item with no non-brawl hand item occupying either hand.
-- `ITEM-RANGE-01` completed for the classic subset. `Short Bow` and `Light Crossbow` are now separate blueprint identities, `weapon:ranged_light` migrates to `range:light_crossbow`, older saves backfill missing seeded blueprints/definitions during hydration, and unsupported classic crossbow timing / armor-penetration details are carried as visible notes instead of fake runtime mechanics.
+- `ITEM-RANGE-01` completed for the classic subset. `Short Bow` and `Light Crossbow` are now separate blueprint identities, `weapon:ranged_light` migrates to `range:light_crossbow`, older saves backfill missing seeded blueprints/definitions during hydration, crossbow armor penetration now reduces DR at runtime, and unsupported classic bow / crossbow timing details remain note-only until the combat-action pass.
 
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion

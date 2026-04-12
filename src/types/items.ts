@@ -167,6 +167,7 @@ export type ItemCombatSpec = {
   attacksPerAction?: number;
   meleeDamageBonus?: number;
   rangedDamageBase?: number;
+  armorPenetration?: number;
   rangeMeters?: number;
   minimumStrength?: number;
   isAreaOfEffect?: boolean;

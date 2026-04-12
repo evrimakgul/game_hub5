@@ -50,6 +50,7 @@ export type PreparedCastRequest = {
     rawAmount: number;
     damageType: DamageTypeId;
     mitigationChannel: DamageMitigationChannel;
+    armorPenetration?: number;
     sourceCharacterId: string;
     sourceLabel: string;
     sourceSummary: string;

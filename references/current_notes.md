@@ -36,6 +36,7 @@ This file tracks active reminders for the current implementation block.
 - `brawl` now means at least one equipped `melee:brawl` item is present and no non-brawl hand item occupies either weapon hand.
 - `melee:unarmed` remains readable for compatibility, but it is deprecated for normal new-item authoring.
 - Classic ranged blueprints are now split so `Short Bow` and `Light Crossbow` are separate identities.
+- Crossbow armor penetration now reduces DR during physical attack resolution.
 - Older saves now backfill missing seeded item blueprints and item definitions during hydration without overwriting same-id persisted edits.
 
 ## Known Structural Gaps
@@ -45,7 +46,7 @@ This file tracks active reminders for the current implementation block.
 - Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
 - The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
-- Classic crossbow action-cost and armor-penetration rules are still represented only as visible notes; runtime timing support remains deferred to the later combat-action pass.
+- Classic bow / crossbow action-cost and movement rules are still represented only as visible notes; runtime timing support remains deferred to the later combat-action pass.
 
 ## Knowledge System V1
 - Keep `History` as an event log.
