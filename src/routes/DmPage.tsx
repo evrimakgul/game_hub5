@@ -108,9 +108,17 @@ export function DmPage() {
             >
               Definition Management
             </button>
+          </article>
+
+          <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Item Interactions</p>
+            <h2>Item Interactions</h2>
+            <p className="dm-summary-line">
+              Enable supplementary slots, generate item cards, and share them to selected characters.
+            </p>
             <button
               type="button"
-              className="flow-secondary"
+              className="flow-primary"
               onClick={() => navigate("/dm/items/interactions")}
             >
               Item Interactions
