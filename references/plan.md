@@ -83,8 +83,8 @@ This roadmap is the active implementation source of truth for this branch.
 
 ### 3.2 Automatic Physical Attacks
 - Encounter physical attacks now infer the active profile from equipped weapon hand slots.
-- If no weapon is equipped, use `brawl / fists`.
-- If an equipped weapon is explicitly typed as `brawl`, use the brawl profile.
+- If both weapon hands are empty, use `unarmed`.
+- If at least one equipped hand item is explicitly typed as `brawl` and no non-brawl hand item occupies either hand, use the brawl profile.
 - Physical attacks now auto-resolve hit, marginal, damage, DR mitigation, and encounter activity logging in-system.
 
 ### 3.3 Manual Brute Defiance Trigger
@@ -220,6 +220,29 @@ This roadmap is the active implementation source of truth for this branch.
   - `references/power_spell_ingestion_decisions_current.json`
   - `references/power_spell_mechanics_current.json`
   - `references/power_spell_ui_current.json`
+
+## Completed Follow-Up: Item Equip Core And Classic Range Cleanup
+
+### 7.1 Anchor-Slot Equip State
+- Character equipment entries now persist explicit `anchorSlot` values on canonical slots.
+- Multi-slot items still write their `itemId` into every occupied canonical slot, but all occupied follower entries share the same anchor.
+- Hydration and live state updates normalize old slot-only saves into the anchor-aware shape.
+
+### 7.2 Multi-Slot Equip Behavior
+- Equip and unequip mutations now operate on anchor groups instead of raw duplicate slot ids.
+- Unequipping from a follower slot clears the whole anchored item group.
+- Player loadout rendering now distinguishes anchor slots from occupied follower slots.
+
+### 7.3 Hand-State Combat Rules
+- `unarmed` now means both `weapon_primary` and `weapon_secondary` are empty.
+- `brawl` now means at least one equipped `melee:brawl` item is present and no non-brawl hand item occupies either hand.
+- `melee:unarmed` remains readable for compatibility but is deprecated for normal new-item authoring flows.
+
+### 7.4 Classic Ranged Split
+- `Short Bow` and `Light Crossbow` are now separate blueprint identities.
+- Legacy alias `weapon:ranged_light` now migrates to `range:light_crossbow`.
+- Older persisted item catalogs now backfill missing seeded blueprints and item definitions during hydration without overwriting same-id custom edits.
+- Unsupported classic crossbow timing / armor-penetration rules remain represented as visible notes until the later combat-action extension exists.
 
 ## Validation
 - After each meaningful task group run:

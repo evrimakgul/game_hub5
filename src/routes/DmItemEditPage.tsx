@@ -170,7 +170,10 @@ export function DmItemEditPage() {
 
     createRequestHandledRef.current = true;
 
-    const defaultBlueprintId = blueprintOptions.find((option) => option.isLegacy !== true)?.id ?? "occult:one_handed";
+    const defaultBlueprintId =
+      blueprintOptions.find(
+        (option) => option.isLegacy !== true && option.isDeprecated !== true
+      )?.id ?? "occult:one_handed";
     const itemId = createItem(defaultBlueprintId, {
       name: "New Item",
       baseDescription: "",
@@ -259,7 +262,10 @@ export function DmItemEditPage() {
   }
 
   function handleCreateNewItem(): void {
-    const defaultBlueprintId = blueprintOptions.find((option) => option.isLegacy !== true)?.id ?? "occult:one_handed";
+    const defaultBlueprintId =
+      blueprintOptions.find(
+        (option) => option.isLegacy !== true && option.isDeprecated !== true
+      )?.id ?? "occult:one_handed";
     const itemId = createItem(defaultBlueprintId, {
       name: "New Item",
       baseDescription: "",

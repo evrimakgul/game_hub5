@@ -155,14 +155,10 @@ export function DmItemDefinitionManagementPage() {
       const allowedEquipSlots = hasSlot
         ? current.allowedEquipSlots.filter((entry) => entry !== slotId)
         : [...current.allowedEquipSlots, slotId];
-      const occupiedSlots = hasSlot
-        ? current.occupiedSlots.filter((entry) => entry !== slotId)
-        : current.occupiedSlots;
 
       return {
         ...current,
         allowedEquipSlots,
-        occupiedSlots,
       };
     });
   }
@@ -177,13 +173,9 @@ export function DmItemDefinitionManagementPage() {
       const occupiedSlots = hasSlot
         ? current.occupiedSlots.filter((entry) => entry !== slotId)
         : [...current.occupiedSlots, slotId];
-      const allowedEquipSlots = current.allowedEquipSlots.includes(slotId)
-        ? current.allowedEquipSlots
-        : [...current.allowedEquipSlots, slotId];
 
       return {
         ...current,
-        allowedEquipSlots,
         occupiedSlots,
       };
     });
@@ -437,6 +429,9 @@ export function DmItemDefinitionManagementPage() {
 
                   <section className="dm-item-editor-section">
                     <h3>Allowed Equip Slots</h3>
+                    <p className="dm-summary-line">
+                      These are the valid anchor slots for the item.
+                    </p>
                     <div className="dm-pill-list">
                       {CANONICAL_EQUIPMENT_SLOT_IDS.map((slotId) => (
                         <label key={`allowed:${slotId}`} className="equipment-toggle">
@@ -454,7 +449,10 @@ export function DmItemDefinitionManagementPage() {
                   <section className="dm-item-editor-section">
                     <h3>Occupied Slots</h3>
                     <p className="dm-summary-line">
-                      Leave this empty for anchor-only occupancy. Use it only for fixed multi-slot usage.
+                      Leave this empty when the item should occupy only its chosen anchor slot. Fill it only when the item always occupies a fixed slot set from that anchor.
+                    </p>
+                    <p className="dm-summary-line">
+                      When this list is not empty, every allowed anchor must also be part of the occupied set.
                     </p>
                     <div className="dm-pill-list">
                       {CANONICAL_EQUIPMENT_SLOT_IDS.map((slotId) => (

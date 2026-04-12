@@ -152,7 +152,7 @@ export async function runCharacterRuntimeTests(): Promise<void> {
         sheet.ownedItemIds = ["armor-1", "jewel-1"];
         sheet.inventoryItemIds = ["armor-1", "jewel-1"];
         sheet.activeItemIds = ["jewel-1"];
-        sheet.equipment = [{ slot: "Armor", itemId: "armor-1" }];
+        sheet.equipment = [{ slot: "Armor", itemId: "armor-1", anchorSlot: null }];
 
         const derived = buildCharacterDerivedValues(sheet, itemsById);
 
@@ -176,7 +176,7 @@ export async function runCharacterRuntimeTests(): Promise<void> {
         const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
         sheet.ownedItemIds = ["shield-1"];
         sheet.inventoryItemIds = ["shield-1"];
-        sheet.equipment = [{ slot: "Shield", itemId: "shield-1" }];
+        sheet.equipment = [{ slot: "Shield", itemId: "shield-1", anchorSlot: null }];
 
         const derived = buildCharacterDerivedValues(sheet, itemsById);
 
@@ -198,12 +198,12 @@ export async function runCharacterRuntimeTests(): Promise<void> {
         const mediumSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
         mediumSheet.ownedItemIds = [mediumArmor.id];
         mediumSheet.inventoryItemIds = [mediumArmor.id];
-        mediumSheet.equipment = [{ slot: "Armor", itemId: mediumArmor.id }];
+        mediumSheet.equipment = [{ slot: "Armor", itemId: mediumArmor.id, anchorSlot: null }];
 
         const heavySheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
         heavySheet.ownedItemIds = [heavyArmor.id];
         heavySheet.inventoryItemIds = [heavyArmor.id];
-        heavySheet.equipment = [{ slot: "Armor", itemId: heavyArmor.id }];
+        heavySheet.equipment = [{ slot: "Armor", itemId: heavyArmor.id, anchorSlot: null }];
 
         const mediumItems = buildItemIndex([mediumArmor]);
         const heavyItems = buildItemIndex([heavyArmor]);

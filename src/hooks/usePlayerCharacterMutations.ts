@@ -604,7 +604,9 @@ export function usePlayerCharacterMutations({
           : setCharacterEquipmentSlotItem(
               baseSheet,
               slot?.trim() || resolveDefaultEquipmentSlot(baseSheet, item),
-              itemId
+              itemId,
+              itemsById,
+              itemRulesContext
             );
 
       if (!isDmView) {
@@ -669,13 +671,19 @@ export function usePlayerCharacterMutations({
     }
 
     setSheetState((currentSheet) => {
-      const nextSheet = setCharacterEquipmentSlotItem(currentSheet, slot, itemId);
+      const resolvedSheet = setCharacterEquipmentSlotItem(
+        currentSheet,
+        slot,
+        itemId,
+        itemsById,
+        itemRulesContext
+      );
       if (!isDmView) {
-        return nextSheet;
+        return resolvedSheet;
       }
 
       return appendDmAuditEntry(
-        nextSheet,
+        resolvedSheet,
         createDmAuditEntry(
           "sheet",
           `equipment.${slot}.itemId`,

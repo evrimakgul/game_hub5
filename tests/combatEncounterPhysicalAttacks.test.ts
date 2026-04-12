@@ -88,6 +88,100 @@ export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
       },
     },
     {
+      name: "two equipped brawl items still resolve to the brawl profile",
+      run: () => {
+        const character = createCharacterRecord("fighter", "Fighter", "player", {
+          stats: { STR: 4, DEX: 3 },
+        });
+        const primaryKnuckles = createSharedItemRecord("weapon:brawl", {
+          id: "item-brawl-primary",
+          name: "Primary Knuckles",
+        });
+        const secondaryKnuckles = createSharedItemRecord("weapon:brawl", {
+          id: "item-brawl-secondary",
+          name: "Secondary Knuckles",
+        });
+        const itemsById = buildItemIndex([primaryKnuckles, secondaryKnuckles]);
+
+        character.sheet = setCharacterWeaponHandSlotItem(
+          character.sheet,
+          "weapon_primary",
+          primaryKnuckles.id,
+          itemsById
+        );
+        character.sheet = setCharacterWeaponHandSlotItem(
+          character.sheet,
+          "weapon_secondary",
+          secondaryKnuckles.id,
+          itemsById
+        );
+
+        const profile = getResolvedPhysicalAttackProfile(character.sheet, itemsById);
+
+        assert.equal(profile.id, "brawl");
+        assert.equal(profile.baseDamagePool, 5);
+      },
+    },
+    {
+      name: "brawl plus shield does not resolve to the brawl profile",
+      run: () => {
+        const character = createCharacterRecord("fighter", "Fighter", "player", {
+          stats: { STR: 4, DEX: 3 },
+        });
+        const knuckles = createSharedItemRecord("weapon:brawl", {
+          id: "item-brawl-shield",
+          name: "Shock Knuckles",
+        });
+        const shield = createSharedItemRecord("armor:shield_light", {
+          id: "item-brawl-shield-offhand",
+          name: "Round Shield",
+        });
+        const itemsById = buildItemIndex([knuckles, shield]);
+
+        character.sheet = setCharacterWeaponHandSlotItem(
+          character.sheet,
+          "weapon_primary",
+          knuckles.id,
+          itemsById
+        );
+        character.sheet = setCharacterWeaponHandSlotItem(
+          character.sheet,
+          "weapon_secondary",
+          shield.id,
+          itemsById
+        );
+
+        const profile = getResolvedPhysicalAttackProfile(character.sheet, itemsById);
+
+        assert.notEqual(profile.id, "brawl");
+      },
+    },
+    {
+      name: "non-brawl hand weapons block the unarmed profile",
+      run: () => {
+        const character = createCharacterRecord("fighter", "Fighter", "player", {
+          stats: { STR: 4, DEX: 3 },
+        });
+        const sword = createSharedItemRecord("weapon:one_handed", {
+          id: "item-sword-unarmed-block",
+          name: "Sword",
+        });
+        const itemsById = buildItemIndex([sword]);
+
+        character.sheet = setCharacterWeaponHandSlotItem(
+          character.sheet,
+          "weapon_primary",
+          sword.id,
+          itemsById
+        );
+
+        const profile = getResolvedPhysicalAttackProfile(character.sheet, itemsById);
+
+        assert.notEqual(profile.id, "unarmed");
+        assert.equal(profile.id, "one_handed");
+      },
+    },
+    {
       name: "two-handed and oversized melee weapons use the new baseline damage values",
       run: () => {
         const twoHandedUser = createCharacterRecord("fighter-2h", "Fighter", "player", {
@@ -137,7 +231,7 @@ export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
       name: "ranged blueprint classes use their authoritative base damage values",
       run: () => {
         const cases = [
-          { blueprintId: "weapon:ranged_light", itemId: "item-ranged-light", expected: 5 },
+          { blueprintId: "range:light_crossbow", itemId: "item-ranged-light", expected: 5 },
           { blueprintId: "weapon:pistol", itemId: "item-pistol", expected: 6 },
           { blueprintId: "weapon:bow_long", itemId: "item-bow-long", expected: 6 },
           { blueprintId: "weapon:rifle", itemId: "item-rifle", expected: 7 },

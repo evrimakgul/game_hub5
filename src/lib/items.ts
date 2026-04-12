@@ -102,7 +102,7 @@ const LEGACY_BLUEPRINT_ALIASES: Record<string, ItemBlueprintId> = {
   "weapon:two_handed": "melee:two_handed",
   "weapon:oversized": "melee:oversized",
   "weapon:bow": "range:short_bow",
-  "weapon:ranged_light": "range:short_bow",
+  "weapon:ranged_light": "range:light_crossbow",
   "weapon:pistol": "range:pistol",
   "weapon:bow_long": "range:long_bow",
   "weapon:rifle": "range:rifle",
@@ -380,6 +380,36 @@ function sanitizeEquipSlotArray(value: unknown): CanonicalEquipmentSlotId[] {
   ];
 }
 
+function normalizeSubcategoryEquipRules(
+  allowedEquipSlots: CanonicalEquipmentSlotId[],
+  occupiedSlots: CanonicalEquipmentSlotId[]
+): {
+  allowedEquipSlots: CanonicalEquipmentSlotId[];
+  occupiedSlots: CanonicalEquipmentSlotId[];
+} {
+  const normalizedOccupiedSlots = sanitizeEquipSlotArray(occupiedSlots);
+  const normalizedAllowedSlots = sanitizeEquipSlotArray(allowedEquipSlots);
+
+  if (normalizedOccupiedSlots.length === 0) {
+    return {
+      allowedEquipSlots: normalizedAllowedSlots,
+      occupiedSlots: normalizedOccupiedSlots,
+    };
+  }
+
+  const filteredAllowedSlots = normalizedAllowedSlots.filter((slotId) =>
+    normalizedOccupiedSlots.includes(slotId)
+  );
+
+  return {
+    allowedEquipSlots:
+      filteredAllowedSlots.length > 0
+        ? filteredAllowedSlots
+        : [normalizedOccupiedSlots[0]!],
+    occupiedSlots: normalizedOccupiedSlots,
+  };
+}
+
 function cloneItemCategoryDefinition(definition: ItemCategoryDefinition): ItemCategoryDefinition {
   return { ...definition };
 }
@@ -387,10 +417,14 @@ function cloneItemCategoryDefinition(definition: ItemCategoryDefinition): ItemCa
 function cloneItemSubcategoryDefinition(
   definition: ItemSubcategoryDefinition
 ): ItemSubcategoryDefinition {
+  const equipRules = normalizeSubcategoryEquipRules(
+    definition.allowedEquipSlots,
+    definition.occupiedSlots
+  );
   return {
     ...definition,
-    allowedEquipSlots: [...definition.allowedEquipSlots],
-    occupiedSlots: [...definition.occupiedSlots],
+    allowedEquipSlots: [...equipRules.allowedEquipSlots],
+    occupiedSlots: [...equipRules.occupiedSlots],
   };
 }
 
@@ -762,8 +796,10 @@ export function hydrateItemSubcategoryDefinitionRecord(
     return null;
   }
 
-  const occupiedSlots = sanitizeEquipSlotArray(record.occupiedSlots);
-  const allowedEquipSlots = sanitizeEquipSlotArray(record.allowedEquipSlots);
+  const equipRules = normalizeSubcategoryEquipRules(
+    sanitizeEquipSlotArray(record.allowedEquipSlots),
+    sanitizeEquipSlotArray(record.occupiedSlots)
+  );
 
   return {
     id: record.id.trim(),
@@ -775,8 +811,8 @@ export function hydrateItemSubcategoryDefinitionRecord(
     mechanicalRole: isItemMechanicalRole(record.mechanicalRole)
       ? record.mechanicalRole
       : "accessory",
-    allowedEquipSlots: allowedEquipSlots.length > 0 ? allowedEquipSlots : [...occupiedSlots],
-    occupiedSlots,
+    allowedEquipSlots: equipRules.allowedEquipSlots,
+    occupiedSlots: equipRules.occupiedSlots,
   };
 }
 
@@ -798,8 +834,10 @@ export function createItemCategoryDefinitionRecord(
 export function createItemSubcategoryDefinitionRecord(
   overrides: Partial<ItemSubcategoryDefinition> = {}
 ): ItemSubcategoryDefinition {
-  const occupiedSlots = sanitizeEquipSlotArray(overrides.occupiedSlots);
-  const allowedEquipSlots = sanitizeEquipSlotArray(overrides.allowedEquipSlots);
+  const equipRules = normalizeSubcategoryEquipRules(
+    sanitizeEquipSlotArray(overrides.allowedEquipSlots),
+    sanitizeEquipSlotArray(overrides.occupiedSlots)
+  );
 
   return {
     id:
@@ -817,8 +855,8 @@ export function createItemSubcategoryDefinitionRecord(
     mechanicalRole: isItemMechanicalRole(overrides.mechanicalRole)
       ? overrides.mechanicalRole
       : "accessory",
-    allowedEquipSlots: allowedEquipSlots.length > 0 ? allowedEquipSlots : [...occupiedSlots],
-    occupiedSlots,
+    allowedEquipSlots: equipRules.allowedEquipSlots,
+    occupiedSlots: equipRules.occupiedSlots,
   };
 }
 
@@ -888,6 +926,8 @@ function createBlueprintRecord(
     visibleNotes: sanitizeStringArray(definition.visibleNotes),
     requirements: sanitizeStringArray(definition.requirements),
     overrideItemIds: sanitizeStringArray(definition.overrideItemIds),
+    isLegacy: definition.isLegacy ?? false,
+    isDeprecated: definition.isDeprecated ?? false,
   };
 }
 
@@ -909,6 +949,7 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       },
       visibleNotes: [],
       requirements: [],
+      isDeprecated: true,
     }),
     createBlueprintRecord({
       id: "melee:brawl",
@@ -984,8 +1025,8 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
       id: "range:short_bow",
       category: "range",
       subtype: "bow",
-      label: "Range / Short Bow Or Light Crossbow",
-      defaultName: "Short Bow / Light Crossbow",
+      label: "Range / Short Bow",
+      defaultName: "Short Bow",
       baseProfile: createEmptyBonusProfile(),
       combatSpec: {
         attackKind: "ranged",
@@ -996,6 +1037,27 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
         rangeMeters: 25,
       },
       visibleNotes: [],
+      requirements: [],
+    }),
+    createBlueprintRecord({
+      id: "range:light_crossbow",
+      category: "range",
+      subtype: "crossbow",
+      label: "Range / Light Crossbow",
+      defaultName: "Light Crossbow",
+      baseProfile: createEmptyBonusProfile(),
+      combatSpec: {
+        attackKind: "ranged",
+        physicalProfileKind: "ranged",
+        handsRequired: 2,
+        attacksPerAction: 1,
+        rangedDamageBase: 5,
+        rangeMeters: 25,
+      },
+      visibleNotes: [
+        "Classic rules note: reload / action pacing is not simulated yet.",
+        "Classic rules note: armor penetration is not simulated yet.",
+      ],
       requirements: [],
     }),
     createBlueprintRecord({
@@ -1067,7 +1129,10 @@ function buildDefaultItemBlueprints(): ItemBlueprintRecord[] {
         rangedDamageBase: 8,
         rangeMeters: 50,
       },
-      visibleNotes: [],
+      visibleNotes: [
+        "Classic rules note: reload / action pacing is not simulated yet.",
+        "Classic rules note: armor penetration is not simulated yet.",
+      ],
       requirements: [],
     }),
     createBlueprintRecord({
@@ -1673,6 +1738,8 @@ export function createDefaultItemBlueprints(): ItemBlueprintRecord[] {
     visibleNotes: [...blueprint.visibleNotes],
     requirements: [...blueprint.requirements],
     overrideItemIds: [...blueprint.overrideItemIds],
+    isLegacy: blueprint.isLegacy,
+    isDeprecated: blueprint.isDeprecated,
   }));
 }
 
@@ -1738,6 +1805,10 @@ export function hydrateItemBlueprintRecord(value: unknown): ItemBlueprintRecord 
         : fallback?.requirements ?? [],
     overrideItemIds: sanitizeStringArray(record.overrideItemIds),
     isLegacy: typeof record.isLegacy === "boolean" ? record.isLegacy : fallback?.isLegacy ?? false,
+    isDeprecated:
+      typeof record.isDeprecated === "boolean"
+        ? record.isDeprecated
+        : fallback?.isDeprecated ?? false,
   });
 }
 
@@ -1836,7 +1907,216 @@ export function getResolvedItemOccupiedSlots(
   context: ItemRulesContext = {}
 ): CanonicalEquipmentSlotId[] {
   const occupiedSlots = getItemDefaultOccupiedSlots(item, context);
-  return occupiedSlots.length > 0 ? occupiedSlots : [anchorSlot];
+  const resolvedSlots = occupiedSlots.length > 0 ? occupiedSlots : [anchorSlot];
+  return [...new Set(resolvedSlots)];
+}
+
+function sortCanonicalSlots(
+  slotIds: CanonicalEquipmentSlotId[]
+): CanonicalEquipmentSlotId[] {
+  return [...slotIds].sort(
+    (left, right) =>
+      CANONICAL_EQUIPMENT_SLOT_IDS.indexOf(left) -
+      CANONICAL_EQUIPMENT_SLOT_IDS.indexOf(right)
+  );
+}
+
+function getResolvedEquipmentEntryAnchorSlot(
+  entry: CharacterEquipmentReference,
+  item: SharedItemRecord | null,
+  context: ItemRulesContext = {}
+): CanonicalEquipmentSlotId | null {
+  if (!entry.itemId || !isCanonicalEquipmentSlotId(entry.slot)) {
+    return null;
+  }
+
+  if (isCanonicalEquipmentSlotId(entry.anchorSlot)) {
+    return entry.anchorSlot;
+  }
+
+  const allowedEquipSlots = item ? getItemAllowedEquipSlots(item, context) : [];
+  if (allowedEquipSlots.includes(entry.slot)) {
+    return entry.slot;
+  }
+
+  return allowedEquipSlots[0] ?? entry.slot;
+}
+
+export type EquippedItemAnchorGroup = {
+  itemId: string;
+  item: SharedItemRecord | null;
+  anchorSlot: CanonicalEquipmentSlotId | null;
+  occupiedSlots: CanonicalEquipmentSlotId[];
+  entrySlots: CanonicalEquipmentSlotId[];
+};
+
+export function getEquippedItemAnchorGroups(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord>,
+  context: ItemRulesContext = {}
+): EquippedItemAnchorGroup[] {
+  const groups = new Map<
+    string,
+    {
+      itemId: string;
+      item: SharedItemRecord | null;
+      anchorSlot: CanonicalEquipmentSlotId | null;
+      entrySlots: Set<CanonicalEquipmentSlotId>;
+    }
+  >();
+
+  (sheet.equipment ?? []).forEach((entry) => {
+    if (
+      typeof entry.itemId !== "string" ||
+      entry.itemId.trim().length === 0 ||
+      !isCanonicalEquipmentSlotId(entry.slot)
+    ) {
+      return;
+    }
+
+    const item = itemsById[entry.itemId] ?? null;
+    const anchorSlot = getResolvedEquipmentEntryAnchorSlot(entry, item, context);
+    const groupKey = `${entry.itemId}:${anchorSlot ?? entry.slot}`;
+    const group =
+      groups.get(groupKey) ??
+      {
+        itemId: entry.itemId,
+        item,
+        anchorSlot,
+        entrySlots: new Set<CanonicalEquipmentSlotId>(),
+      };
+
+    group.entrySlots.add(entry.slot);
+    if (!group.anchorSlot && anchorSlot) {
+      group.anchorSlot = anchorSlot;
+    }
+
+    groups.set(groupKey, group);
+  });
+
+  return [...groups.values()].map((group) => {
+    const occupiedSlots =
+      group.item && group.anchorSlot
+        ? getResolvedItemOccupiedSlots(group.item, group.anchorSlot, context)
+        : [...group.entrySlots];
+
+    return {
+      itemId: group.itemId,
+      item: group.item,
+      anchorSlot: group.anchorSlot,
+      occupiedSlots: sortCanonicalSlots(occupiedSlots),
+      entrySlots: sortCanonicalSlots([...group.entrySlots]),
+    };
+  });
+}
+
+export function getEquipmentSlotOccupancy(
+  sheet: CharacterDraft,
+  slotId: CanonicalEquipmentSlotId,
+  itemsById: Record<string, SharedItemRecord>,
+  context: ItemRulesContext = {}
+): (EquippedItemAnchorGroup & { isAnchorSlot: boolean }) | null {
+  const group =
+    getEquippedItemAnchorGroups(sheet, itemsById, context).find((candidate) =>
+      candidate.occupiedSlots.includes(slotId)
+    ) ?? null;
+
+  if (!group) {
+    return null;
+  }
+
+  return {
+    ...group,
+    isAnchorSlot: group.anchorSlot === slotId,
+  };
+}
+
+export function normalizeCharacterEquipmentAnchors(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord>,
+  context: ItemRulesContext = {}
+): CharacterDraft {
+  const nextCanonicalEntries = new Map<CanonicalEquipmentSlotId, CharacterEquipmentReference>(
+    CANONICAL_EQUIPMENT_SLOT_IDS.map((slotId) => [
+      slotId,
+      { slot: slotId, itemId: null, anchorSlot: null },
+    ])
+  );
+  const nonCanonicalEntries = getOtherEquipmentEntries(sheet).map((entry) => ({
+    ...entry,
+    anchorSlot: null,
+  }));
+  const canonicalEntries = (sheet.equipment ?? []).filter(
+    (entry): entry is CharacterEquipmentReference & { slot: CanonicalEquipmentSlotId } =>
+      isCanonicalEquipmentSlotId(entry.slot)
+  );
+  const groups = new Map<
+    string,
+    {
+      itemId: string;
+      occupiedSlots: Set<CanonicalEquipmentSlotId>;
+      anchorCandidates: Set<CanonicalEquipmentSlotId>;
+    }
+  >();
+
+  canonicalEntries.forEach((entry) => {
+    if (!entry.itemId) {
+      return;
+    }
+
+    const group =
+      groups.get(entry.itemId) ??
+      {
+        itemId: entry.itemId,
+        occupiedSlots: new Set<CanonicalEquipmentSlotId>(),
+        anchorCandidates: new Set<CanonicalEquipmentSlotId>(),
+      };
+
+    group.occupiedSlots.add(entry.slot);
+    if (isCanonicalEquipmentSlotId(entry.anchorSlot)) {
+      group.anchorCandidates.add(entry.anchorSlot);
+    }
+
+    groups.set(entry.itemId, group);
+  });
+
+  [...groups.values()].forEach((group) => {
+    const item = itemsById[group.itemId] ?? null;
+    const occupiedSlots = sortCanonicalSlots([...group.occupiedSlots]);
+    const allowedEquipSlots = item ? getItemAllowedEquipSlots(item, context) : [];
+    const validExistingAnchors = sortCanonicalSlots(
+      [...group.anchorCandidates].filter((slotId) =>
+        allowedEquipSlots.length === 0 ? true : allowedEquipSlots.includes(slotId)
+      )
+    );
+    const anchorSlot =
+      validExistingAnchors.length === 1
+        ? validExistingAnchors[0]
+        : occupiedSlots.find((slotId) => allowedEquipSlots.includes(slotId)) ??
+          allowedEquipSlots[0] ??
+          occupiedSlots[0] ??
+          null;
+    const resolvedOccupiedSlots =
+      item && anchorSlot
+        ? getResolvedItemOccupiedSlots(item, anchorSlot, context)
+        : occupiedSlots;
+
+    resolvedOccupiedSlots.forEach((slotId) => {
+      nextCanonicalEntries.set(slotId, {
+        slot: slotId,
+        itemId: group.itemId,
+        anchorSlot,
+      });
+    });
+  });
+
+  return {
+    ...sheet,
+    equipment: [
+      ...CANONICAL_EQUIPMENT_SLOT_IDS.map((slotId) => nextCanonicalEntries.get(slotId)!),
+      ...nonCanonicalEntries,
+    ],
+  };
 }
 
 export function isItemHandEquippable(
@@ -1856,6 +2136,7 @@ export function getItemBlueprintOptions(
   subcategoryDefinitionId: ItemSubcategoryDefinitionId;
   label: string;
   isLegacy?: boolean;
+  isDeprecated?: boolean;
 }> {
   return [...blueprints]
     .sort((left, right) => left.label.localeCompare(right.label))
@@ -1867,11 +2148,12 @@ export function getItemBlueprintOptions(
       subcategoryDefinitionId: blueprint.subcategoryDefinitionId,
       label: blueprint.label,
       isLegacy: blueprint.isLegacy,
+      isDeprecated: blueprint.isDeprecated,
     }));
 }
 
 export const ITEM_BLUEPRINT_OPTIONS = getItemBlueprintOptions(createDefaultItemBlueprints()).filter(
-  (option) => option.isLegacy !== true
+  (option) => option.isLegacy !== true && option.isDeprecated !== true
 );
 
 export function createItemBlueprintRecord(
@@ -1924,6 +2206,7 @@ export function createItemBlueprintRecord(
     requirements: overrides.requirements ?? [],
     overrideItemIds: overrides.overrideItemIds ?? [],
     isLegacy: overrides.isLegacy ?? false,
+    isDeprecated: overrides.isDeprecated ?? false,
   });
 }
 
@@ -2411,6 +2694,51 @@ export function getEquippedWeaponHandItems(
   };
 }
 
+export type PhysicalAttackHandState = {
+  primaryItem: SharedItemRecord | null;
+  secondaryItem: SharedItemRecord | null;
+  handItems: SharedItemRecord[];
+  brawlItems: SharedItemRecord[];
+  nonBrawlHandItems: SharedItemRecord[];
+  isUnarmed: boolean;
+  isBrawling: boolean;
+};
+
+export function getPhysicalAttackHandState(
+  sheet: CharacterDraft,
+  itemsById: Record<string, SharedItemRecord>,
+  context: ItemRulesContext = {}
+): PhysicalAttackHandState {
+  const equippedHandItems = getEquippedWeaponHandItems(sheet, itemsById);
+  const handItems = [equippedHandItems.weapon_primary, equippedHandItems.weapon_secondary]
+    .filter((item): item is SharedItemRecord => item !== null)
+    .filter(
+      (item, index, entries) => entries.findIndex((candidate) => candidate.id === item.id) === index
+    );
+  const brawlItems = handItems.filter(
+    (item) =>
+      getItemMechanicalRole(item, context) === "melee" &&
+      getItemSubcategoryDefinitionRecord(item, context)?.id === "melee:brawl"
+  );
+  const nonBrawlHandItems = handItems.filter(
+    (item) =>
+      !(
+        getItemMechanicalRole(item, context) === "melee" &&
+        getItemSubcategoryDefinitionRecord(item, context)?.id === "melee:brawl"
+      )
+  );
+
+  return {
+    primaryItem: equippedHandItems.weapon_primary,
+    secondaryItem: equippedHandItems.weapon_secondary,
+    handItems,
+    brawlItems,
+    nonBrawlHandItems,
+    isUnarmed: handItems.length === 0,
+    isBrawling: brawlItems.length > 0 && nonBrawlHandItems.length === 0,
+  };
+}
+
 export function getLegacyEquippedWeaponItems(
   sheet: CharacterDraft,
   itemsById: Record<string, SharedItemRecord>,
@@ -2569,10 +2897,11 @@ export function inferItemBlueprintId(itemName: string, categoryText: string, slo
   if (combined.includes("chaingun")) return "range:chaingun";
   if (combined.includes("shotgun")) return "range:shotgun";
   if (combined.includes("heavy crossbow")) return "range:heavy_crossbow";
+  if (combined.includes("light crossbow") || combined.includes("crossbow")) return "range:light_crossbow";
   if (combined.includes("rifle")) return "range:rifle";
   if (combined.includes("long bow") || combined.includes("longbow")) return "range:long_bow";
   if (combined.includes("pistol")) return "range:pistol";
-  if (combined.includes("crossbow") || combined.includes("short bow") || combined.includes("bow")) return "range:short_bow";
+  if (combined.includes("short bow") || combined.includes("shortbow") || combined.includes("bow")) return "range:short_bow";
   if (combined.includes("3-handed") || combined.includes("oversized")) return "melee:oversized";
   if (combined.includes("two") && combined.includes("hand")) return "melee:two_handed";
   if (combined.includes("heavy shield")) return "shield:heavy";

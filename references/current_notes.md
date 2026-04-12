@@ -9,6 +9,8 @@ This file tracks active reminders for the current implementation block.
 - The remaining power TODO rewrite pass is now complete.
 - The encounter cast UI standardization, aura lifecycle cleanup, summon dismiss UI, and ingestion reference sync pass is now complete.
 - The persisted item-definition refactor is now complete.
+- The anchor-slot / multi-slot equipment pass is now complete.
+- The hand-state combat cleanup and classic ranged split pass is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -26,11 +28,15 @@ This file tracks active reminders for the current implementation block.
 - Encounter physical attacks now resolve automatically from equipped loadout state.
 - `Brute Defiance` is passive again: 1/day, HP `0` to `-5`, resolves after one turn, and restores `1 / 2 / 4 / 8 / 16` HP by BR level.
 - Item blueprints now resolve through persisted `ItemCategoryDefinition` and `ItemSubcategoryDefinition` records instead of hardcoded category/subtype branching.
-- Current item behavior remains intentionally locked for this pass:
-  - shields still resolve to secondary hand
-  - one-handed hand items still prefer primary then secondary
-  - rings still resolve left then right
-  - true first-class anchor-slot / multi-slot occupancy remains deferred
+- Equipment entries now persist explicit `anchorSlot` values, and multi-slot items occupy canonical follower slots through the anchor model.
+- Shields still resolve to the secondary hand.
+- One-handed hand items still prefer primary then secondary.
+- Rings still resolve left then right.
+- `unarmed` now means both weapon hands are empty.
+- `brawl` now means at least one equipped `melee:brawl` item is present and no non-brawl hand item occupies either weapon hand.
+- `melee:unarmed` remains readable for compatibility, but it is deprecated for normal new-item authoring.
+- Classic ranged blueprints are now split so `Short Bow` and `Light Crossbow` are separate identities.
+- Older saves now backfill missing seeded item blueprints and item definitions during hydration without overwriting same-id persisted edits.
 
 ## Known Structural Gaps
 - Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
@@ -39,7 +45,7 @@ This file tracks active reminders for the current implementation block.
 - Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
 - The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
-- First-class multi-slot occupancy is still not implemented; the current refactor only prepares the data model for that follow-up.
+- Classic crossbow action-cost and armor-penetration rules are still represented only as visible notes; runtime timing support remains deferred to the later combat-action pass.
 
 ## Knowledge System V1
 - Keep `History` as an event log.

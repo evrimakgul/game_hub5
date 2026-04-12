@@ -1,11 +1,15 @@
 import type { CharacterDraft } from "../config/characterTemplate";
 import {
+  getEquipmentSlotOccupancy,
   getItemAllowedEquipSlots,
   getItemMechanicalRole,
+  getResolvedItemOccupiedSlots,
   itemOccupiesBothWeaponHands,
 } from "../lib/items.ts";
 import {
+  isCanonicalEquipmentSlotId,
   isWeaponHandSlotId,
+  type CanonicalEquipmentSlotId,
   type ItemBlueprintRecord,
   type ItemCategoryDefinition,
   type ItemSubcategoryDefinition,
@@ -21,52 +25,178 @@ type LinkItemOptions = {
 
 export type EquipmentReferenceField = "slot" | "itemId";
 
-function upsertEquipmentSlotValue(
-  sheet: CharacterDraft,
-  slot: string,
-  itemId: string | null
-): CharacterDraft {
-  const existingIndex = sheet.equipment.findIndex((entry) => entry.slot === slot);
-  const normalizedItemId = itemId && itemId.trim().length > 0 ? itemId : null;
-
-  if (existingIndex >= 0) {
-    return {
-      ...sheet,
-      equipment: sheet.equipment.map((entry, index) =>
-        index === existingIndex ? { ...entry, itemId: normalizedItemId } : entry
-      ),
-    };
-  }
-
-  return {
-    ...sheet,
-    equipment: [...sheet.equipment, { slot, itemId: normalizedItemId }],
-  };
-}
-
-export function setCharacterEquipmentSlotItem(
-  sheet: CharacterDraft,
-  slot: string,
-  itemId: string
-): CharacterDraft {
-  return upsertEquipmentSlotValue(sheet, slot, itemId);
-}
-
-function clearWeaponHandSlot(sheet: CharacterDraft, slot: WeaponHandSlotId): CharacterDraft {
-  return upsertEquipmentSlotValue(sheet, slot, null);
-}
-
 type ItemRulesContext = {
   itemBlueprints?: ItemBlueprintRecord[];
   itemCategoryDefinitions?: ItemCategoryDefinition[];
   itemSubcategoryDefinitions?: ItemSubcategoryDefinition[];
 };
 
+function upsertEquipmentSlotValue(
+  sheet: CharacterDraft,
+  slot: string,
+  itemId: string | null,
+  anchorSlot: CanonicalEquipmentSlotId | null
+): CharacterDraft {
+  const existingIndex = sheet.equipment.findIndex((entry) => entry.slot === slot);
+  const normalizedItemId = itemId && itemId.trim().length > 0 ? itemId : null;
+  const normalizedAnchorSlot =
+    normalizedItemId && isCanonicalEquipmentSlotId(anchorSlot) ? anchorSlot : null;
+
+  if (existingIndex >= 0) {
+    return {
+      ...sheet,
+      equipment: sheet.equipment.map((entry, index) =>
+        index === existingIndex
+          ? { ...entry, itemId: normalizedItemId, anchorSlot: normalizedAnchorSlot }
+          : entry
+      ),
+    };
+  }
+
+  return {
+    ...sheet,
+    equipment: [
+      ...sheet.equipment,
+      { slot, itemId: normalizedItemId, anchorSlot: normalizedAnchorSlot },
+    ],
+  };
+}
+
+function clearCanonicalSlot(sheet: CharacterDraft, slot: CanonicalEquipmentSlotId): CharacterDraft {
+  return upsertEquipmentSlotValue(sheet, slot, null, null);
+}
+
+function writeCanonicalItemGroup(
+  sheet: CharacterDraft,
+  itemId: string,
+  anchorSlot: CanonicalEquipmentSlotId,
+  occupiedSlots: CanonicalEquipmentSlotId[]
+): CharacterDraft {
+  return occupiedSlots.reduce(
+    (currentSheet, slotId) => upsertEquipmentSlotValue(currentSheet, slotId, itemId, anchorSlot),
+    sheet
+  );
+}
+
 function isShieldItem(
   item: SharedItemRecord | null | undefined,
   itemRulesContext: ItemRulesContext = {}
 ): boolean {
   return !!item && getItemMechanicalRole(item, itemRulesContext) === "shield";
+}
+
+function removeItemFromEquipmentEntries(sheet: CharacterDraft, itemId: string): CharacterDraft {
+  return {
+    ...sheet,
+    equipment: sheet.equipment.flatMap((entry) => {
+      if (entry.itemId !== itemId) {
+        return [entry];
+      }
+
+      return isCanonicalEquipmentSlotId(entry.slot)
+        ? [{ ...entry, itemId: null, anchorSlot: null }]
+        : [];
+    }),
+  };
+}
+
+function resolveRequestedAnchorSlot(
+  item: SharedItemRecord,
+  requestedSlot: CanonicalEquipmentSlotId,
+  itemRulesContext: ItemRulesContext = {}
+): CanonicalEquipmentSlotId | null {
+  const allowedEquipSlots = getItemAllowedEquipSlots(item, itemRulesContext);
+  if (allowedEquipSlots.length === 0) {
+    return requestedSlot;
+  }
+
+  if (allowedEquipSlots.includes(requestedSlot)) {
+    return requestedSlot;
+  }
+
+  return allowedEquipSlots[0] ?? null;
+}
+
+function clearEquipmentAssignment(
+  sheet: CharacterDraft,
+  slot: string,
+  itemsById: Record<string, SharedItemRecord>,
+  itemRulesContext: ItemRulesContext = {}
+): CharacterDraft {
+  if (!isCanonicalEquipmentSlotId(slot)) {
+    return upsertEquipmentSlotValue(sheet, slot, null, null);
+  }
+
+  const occupancy = getEquipmentSlotOccupancy(sheet, slot, itemsById, itemRulesContext);
+  if (!occupancy) {
+    return clearCanonicalSlot(sheet, slot);
+  }
+
+  return removeItemFromEquipmentEntries(sheet, occupancy.itemId);
+}
+
+function equipCharacterItemToSlot(
+  sheet: CharacterDraft,
+  requestedSlot: string,
+  itemId: string,
+  itemsById: Record<string, SharedItemRecord>,
+  itemRulesContext: ItemRulesContext = {}
+): CharacterDraft {
+  const normalizedItemId = itemId.trim().length > 0 ? itemId : null;
+  if (!normalizedItemId) {
+    return clearEquipmentAssignment(sheet, requestedSlot, itemsById, itemRulesContext);
+  }
+
+  if (!isCanonicalEquipmentSlotId(requestedSlot)) {
+    return upsertEquipmentSlotValue(sheet, requestedSlot, normalizedItemId, null);
+  }
+
+  const nextItem = itemsById[normalizedItemId] ?? null;
+  if (!nextItem) {
+    return upsertEquipmentSlotValue(sheet, requestedSlot, normalizedItemId, requestedSlot);
+  }
+
+  const anchorSlot = resolveRequestedAnchorSlot(nextItem, requestedSlot, itemRulesContext);
+  if (!anchorSlot) {
+    return sheet;
+  }
+
+  const occupiedSlots = getResolvedItemOccupiedSlots(nextItem, anchorSlot, itemRulesContext);
+  const conflictingOccupancies = occupiedSlots.flatMap((slotId) => {
+    const occupancy = getEquipmentSlotOccupancy(sheet, slotId, itemsById, itemRulesContext);
+    return occupancy ? [occupancy] : [];
+  });
+  const conflictingItemIds = [
+    ...new Set(
+      conflictingOccupancies
+        .map((occupancy) => occupancy.itemId)
+        .filter((entry) => entry !== normalizedItemId)
+    ),
+  ];
+
+  if (
+    isShieldItem(nextItem, itemRulesContext) &&
+    conflictingOccupancies.some((occupancy) => itemOccupiesBothWeaponHands(occupancy.item, itemRulesContext))
+  ) {
+    return sheet;
+  }
+
+  let nextSheet = removeItemFromEquipmentEntries(sheet, normalizedItemId);
+  conflictingItemIds.forEach((conflictingItemId) => {
+    nextSheet = removeItemFromEquipmentEntries(nextSheet, conflictingItemId);
+  });
+
+  return writeCanonicalItemGroup(nextSheet, normalizedItemId, anchorSlot, occupiedSlots);
+}
+
+export function setCharacterEquipmentSlotItem(
+  sheet: CharacterDraft,
+  slot: string,
+  itemId: string,
+  itemsById: Record<string, SharedItemRecord> = {},
+  itemRulesContext: ItemRulesContext = {}
+): CharacterDraft {
+  return equipCharacterItemToSlot(sheet, slot, itemId, itemsById, itemRulesContext);
 }
 
 export function setCharacterWeaponHandSlotItem(
@@ -76,64 +206,7 @@ export function setCharacterWeaponHandSlotItem(
   itemsById: Record<string, SharedItemRecord>,
   itemRulesContext: ItemRulesContext = {}
 ): CharacterDraft {
-  const normalizedItemId = itemId.trim().length > 0 ? itemId : null;
-  const nextItem = normalizedItemId ? itemsById[normalizedItemId] ?? null : null;
-  const resolvedSlot = nextItem
-    ? getItemAllowedEquipSlots(nextItem, itemRulesContext).find(
-        (allowedSlot): allowedSlot is WeaponHandSlotId =>
-          (allowedSlot === "weapon_primary" || allowedSlot === "weapon_secondary") &&
-          allowedSlot === slot
-      ) ??
-      getItemAllowedEquipSlots(nextItem, itemRulesContext).find(
-        (allowedSlot): allowedSlot is WeaponHandSlotId =>
-          allowedSlot === "weapon_primary" || allowedSlot === "weapon_secondary"
-      ) ??
-      slot
-    : slot;
-  const oppositeSlot = resolvedSlot === "weapon_primary" ? "weapon_secondary" : "weapon_primary";
-  const currentSlotItemId =
-    sheet.equipment.find((entry) => entry.slot === resolvedSlot)?.itemId ?? null;
-  const currentSlotItem = currentSlotItemId ? itemsById[currentSlotItemId] ?? null : null;
-  const oppositeSlotItemId =
-    sheet.equipment.find((entry) => entry.slot === oppositeSlot)?.itemId ?? null;
-  const oppositeSlotItem = oppositeSlotItemId ? itemsById[oppositeSlotItemId] ?? null : null;
-
-  if (!normalizedItemId) {
-    const cleared = clearWeaponHandSlot(sheet, resolvedSlot);
-    return itemOccupiesBothWeaponHands(currentSlotItem, itemRulesContext) && currentSlotItemId === oppositeSlotItemId
-      ? clearWeaponHandSlot(cleared, oppositeSlot)
-      : cleared;
-  }
-
-  if (isShieldItem(nextItem, itemRulesContext)) {
-    const primaryItemId = sheet.equipment.find((entry) => entry.slot === "weapon_primary")?.itemId ?? null;
-    const primaryItem = primaryItemId ? itemsById[primaryItemId] ?? null : null;
-
-    if (itemOccupiesBothWeaponHands(primaryItem, itemRulesContext)) {
-      return sheet;
-    }
-
-    return upsertEquipmentSlotValue(sheet, "weapon_secondary", normalizedItemId);
-  }
-
-  let nextSheet = upsertEquipmentSlotValue(sheet, resolvedSlot, normalizedItemId);
-
-  if (itemOccupiesBothWeaponHands(nextItem, itemRulesContext)) {
-    return upsertEquipmentSlotValue(
-      upsertEquipmentSlotValue(nextSheet, "weapon_primary", normalizedItemId),
-      "weapon_secondary",
-      normalizedItemId
-    );
-  }
-
-  if (
-    itemOccupiesBothWeaponHands(oppositeSlotItem, itemRulesContext) ||
-    oppositeSlotItemId === currentSlotItemId
-  ) {
-    nextSheet = clearWeaponHandSlot(nextSheet, oppositeSlot);
-  }
-
-  return nextSheet;
+  return equipCharacterItemToSlot(sheet, slot, itemId, itemsById, itemRulesContext);
 }
 
 function appendUnique(values: string[], nextValue: string): string[] {
@@ -175,7 +248,7 @@ export function removeSharedItemFromCharacter(
     inventoryItemIds: removeValue(sheet.inventoryItemIds, itemId),
     activeItemIds: removeValue(sheet.activeItemIds, itemId),
     equipment: sheet.equipment.map((entry) =>
-      entry.itemId === itemId ? { ...entry, itemId: null } : entry
+      entry.itemId === itemId ? { ...entry, itemId: null, anchorSlot: null } : entry
     ),
   };
 }
@@ -184,16 +257,7 @@ export function removeCharacterItemFromEquipment(
   sheet: CharacterDraft,
   itemId: string
 ): CharacterDraft {
-  return {
-    ...sheet,
-    equipment: sheet.equipment.flatMap((entry) => {
-      if (entry.itemId !== itemId) {
-        return [entry];
-      }
-
-      return isWeaponHandSlotId(entry.slot) ? [{ ...entry, itemId: null }] : [];
-    }),
-  };
+  return removeItemFromEquipmentEntries(sheet, itemId);
 }
 
 export function setCharacterOwnedItemState(
@@ -221,7 +285,7 @@ export function setCharacterInventoryItemState(
     equipment: isCarried
       ? sheet.equipment
       : sheet.equipment.map((entry) =>
-          entry.itemId === itemId ? { ...entry, itemId: null } : entry
+          entry.itemId === itemId ? { ...entry, itemId: null, anchorSlot: null } : entry
         ),
   };
 }
@@ -250,6 +314,10 @@ export function updateEquipmentReferenceField(
         ? {
             ...entry,
             [field]: field === "itemId" ? (value.trim() ? value : null) : value,
+            anchorSlot:
+              field === "itemId" && value.trim().length === 0
+                ? null
+                : entry.anchorSlot,
           }
         : entry
     ),
@@ -259,7 +327,7 @@ export function updateEquipmentReferenceField(
 export function addEquipmentReference(sheet: CharacterDraft): CharacterDraft {
   return {
     ...sheet,
-    equipment: [...sheet.equipment, { slot: "", itemId: null }],
+    equipment: [...sheet.equipment, { slot: "", itemId: null, anchorSlot: null }],
   };
 }
 

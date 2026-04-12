@@ -159,6 +159,64 @@ export async function runItemBehaviorTests(): Promise<void> {
       },
     },
     {
+      name: "two-handed equip writes one anchor across both occupied hands",
+      run: () => {
+        const bow = createSharedItemRecord("weapon:bow", {
+          id: "weapon-anchor-bow",
+          name: "Ash Bow",
+        });
+        const itemsById = buildItemIndex([bow]);
+        const nextSheet = setCharacterWeaponHandSlotItem(
+          PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          "weapon_primary",
+          bow.id,
+          itemsById
+        );
+
+        assert.deepEqual(
+          nextSheet.equipment
+            .filter((entry) => entry.slot === "weapon_primary" || entry.slot === "weapon_secondary")
+            .map((entry) => [entry.slot, entry.itemId, entry.anchorSlot]),
+          [
+            ["weapon_primary", bow.id, "weapon_primary"],
+            ["weapon_secondary", bow.id, "weapon_primary"],
+          ]
+        );
+      },
+    },
+    {
+      name: "clearing a follower hand slot clears the whole anchored group",
+      run: () => {
+        const bow = createSharedItemRecord("weapon:bow", {
+          id: "weapon-follower-bow",
+          name: "Ash Bow",
+        });
+        const itemsById = buildItemIndex([bow]);
+        const equippedSheet = setCharacterWeaponHandSlotItem(
+          PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          "weapon_primary",
+          bow.id,
+          itemsById
+        );
+        const clearedSheet = setCharacterWeaponHandSlotItem(
+          equippedSheet,
+          "weapon_secondary",
+          "",
+          itemsById
+        );
+
+        assert.deepEqual(
+          clearedSheet.equipment
+            .filter((entry) => entry.slot === "weapon_primary" || entry.slot === "weapon_secondary")
+            .map((entry) => [entry.slot, entry.itemId, entry.anchorSlot]),
+          [
+            ["weapon_primary", null, null],
+            ["weapon_secondary", null, null],
+          ]
+        );
+      },
+    },
+    {
       name: "two-handed summaries show both occupied hand slots",
       run: () => {
         const weapon = createSharedItemRecord("weapon:two_handed", {

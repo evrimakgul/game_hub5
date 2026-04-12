@@ -9,6 +9,7 @@ import { rollD10Faces } from "./dice.ts";
 import {
   getEquippedWeaponHandItems,
   getItemMechanicalRole,
+  getPhysicalAttackHandState,
   getItemSubcategoryDefinitionRecord,
   getLegacyEquippedWeaponItems,
   itemOccupiesBothWeaponHands,
@@ -144,6 +145,7 @@ export function getResolvedPhysicalAttackProfile(
   const derived = buildCharacterDerivedValues(sheet, itemsById);
   const rangedDamageBonus = getDerivedModifierTotal(sheet, "ranged_damage", itemsById);
   const weaponCandidates = getResolvedWeaponCandidates(sheet, itemsById, itemRulesContext);
+  const handState = getPhysicalAttackHandState(sheet, itemsById, itemRulesContext);
   const primaryWeapon = weaponCandidates[0] ?? null;
   const occupyingBothHandsWeapon = weaponCandidates.find((item) =>
     itemOccupiesBothWeaponHands(item, itemRulesContext)
@@ -153,11 +155,6 @@ export function getResolvedPhysicalAttackProfile(
       getItemMechanicalRole(item, itemRulesContext) === "melee" &&
       getItemSubcategoryDefinitionRecord(item, itemRulesContext)?.id === "melee:one_handed" &&
       item.combatSpec?.attackKind === "melee"
-  );
-  const brawlWeapons = weaponCandidates.filter(
-    (item) =>
-      getItemMechanicalRole(item, itemRulesContext) === "melee" &&
-      getItemSubcategoryDefinitionRecord(item, itemRulesContext)?.id === "melee:brawl"
   );
 
   if (occupyingBothHandsWeapon) {
@@ -230,10 +227,10 @@ export function getResolvedPhysicalAttackProfile(
     };
   }
 
-  if (brawlWeapons.length > 0) {
+  if (handState.isBrawling) {
     return {
       id: "brawl",
-      label: brawlWeapons[0].name || "Brawl Weapon",
+      label: handState.brawlItems[0]?.name || "Brawl Weapon",
       attacksPerAction: 2,
       attackPool: derived.meleeAttack,
       successDc: 6,

@@ -4,6 +4,7 @@ import {
   hydrateCharacterDraft,
 } from "../config/characterTemplate.ts";
 import {
+  buildItemIndex,
   createEmptyBonusProfile,
   createDefaultItemBlueprints,
   createDefaultItemCategoryDefinitions,
@@ -17,6 +18,7 @@ import {
   hydrateItemSubcategoryDefinitionRecord,
   hydrateSharedItemRecord,
   inferItemBlueprintId,
+  normalizeCharacterEquipmentAnchors,
 } from "../lib/items.ts";
 import { isCharacterOwnerRole, type CharacterRecord } from "../types/character.ts";
 import type {
@@ -66,6 +68,22 @@ export type PersistedCharacterState = {
   activePlayerCharacterId: string | null;
   activeDmCharacterId: string | null;
 };
+
+function mergeDefaultRecordsById<T extends { id: string }>(
+  persistedRecords: T[],
+  defaultRecords: T[]
+): T[] {
+  const mergedRecords = [...persistedRecords];
+  const existingIds = new Set(persistedRecords.map((record) => record.id));
+
+  defaultRecords.forEach((record) => {
+    if (!existingIds.has(record.id)) {
+      mergedRecords.push(record);
+    }
+  });
+
+  return mergedRecords;
+}
 
 function getEmptyPersistedCharacterState(): PersistedCharacterState {
   const itemCategoryDefinitions = createDefaultItemCategoryDefinitions();
@@ -318,6 +336,7 @@ function migrateLegacySheetItems(
     return {
       slot: typeof entry.slot === "string" ? entry.slot : "",
       itemId,
+      anchorSlot: null,
     };
   });
 
@@ -360,15 +379,15 @@ function migrateLegacySheetItems(
     inventoryItemIds.push(itemId);
   });
 
-  return {
-    nextSheet: {
-      ...rawSheet,
-      ownedItemIds: [...new Set(ownedItemIds)],
-      inventoryItemIds: [...new Set(inventoryItemIds)],
-      activeItemIds: [...new Set(activeItemIds)],
-      equipment,
-    },
-    migratedItems,
+    return {
+      nextSheet: {
+        ...rawSheet,
+        ownedItemIds: [...new Set(ownedItemIds)],
+        inventoryItemIds: [...new Set(inventoryItemIds)],
+        activeItemIds: [...new Set(activeItemIds)],
+        equipment,
+      },
+      migratedItems,
   };
 }
 
@@ -384,21 +403,33 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
     }
 
     const envelope = parsed as Partial<PersistedCharacterEnvelope>;
+    const defaultItemCategoryDefinitions = createDefaultItemCategoryDefinitions();
+    const defaultItemSubcategoryDefinitions = createDefaultItemSubcategoryDefinitions();
+    const defaultItemBlueprints = createDefaultItemBlueprints();
     const itemCategoryDefinitions = Array.isArray(envelope.itemCategoryDefinitions)
-      ? envelope.itemCategoryDefinitions
-          .map((entry) => safeHydrateEntry(() => hydrateItemCategoryDefinitionRecord(entry)))
-          .filter((entry): entry is ItemCategoryDefinition => entry !== null)
-      : createDefaultItemCategoryDefinitions();
+      ? mergeDefaultRecordsById(
+          envelope.itemCategoryDefinitions
+            .map((entry) => safeHydrateEntry(() => hydrateItemCategoryDefinitionRecord(entry)))
+            .filter((entry): entry is ItemCategoryDefinition => entry !== null),
+          defaultItemCategoryDefinitions
+        )
+      : defaultItemCategoryDefinitions;
     const itemSubcategoryDefinitions = Array.isArray(envelope.itemSubcategoryDefinitions)
-      ? envelope.itemSubcategoryDefinitions
-          .map((entry) => safeHydrateEntry(() => hydrateItemSubcategoryDefinitionRecord(entry)))
-          .filter((entry): entry is ItemSubcategoryDefinition => entry !== null)
-      : createDefaultItemSubcategoryDefinitions();
+      ? mergeDefaultRecordsById(
+          envelope.itemSubcategoryDefinitions
+            .map((entry) => safeHydrateEntry(() => hydrateItemSubcategoryDefinitionRecord(entry)))
+            .filter((entry): entry is ItemSubcategoryDefinition => entry !== null),
+          defaultItemSubcategoryDefinitions
+        )
+      : defaultItemSubcategoryDefinitions;
     const itemBlueprints = Array.isArray(envelope.itemBlueprints)
-      ? envelope.itemBlueprints
-          .map((entry) => safeHydrateEntry(() => hydrateItemBlueprintRecord(entry)))
-          .filter((entry): entry is ItemBlueprintRecord => entry !== null)
-      : createDefaultItemBlueprints();
+      ? mergeDefaultRecordsById(
+          envelope.itemBlueprints
+            .map((entry) => safeHydrateEntry(() => hydrateItemBlueprintRecord(entry)))
+            .filter((entry): entry is ItemBlueprintRecord => entry !== null),
+          defaultItemBlueprints
+        )
+      : defaultItemBlueprints;
     const rawItemEntries = [
       ...(Array.isArray(envelope.items) ? envelope.items : []),
       ...(Array.isArray(envelope.itemInstances) ? envelope.itemInstances : []),
@@ -465,9 +496,18 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
             assignedCharacterId: inferAssignedCharacterId(item.id, characters),
           }
     );
+    const itemsById = buildItemIndex(normalizedItems);
+    const normalizedCharacters = characters.map((character) => ({
+      ...character,
+      sheet: normalizeCharacterEquipmentAnchors(character.sheet, itemsById, {
+        itemBlueprints,
+        itemCategoryDefinitions,
+        itemSubcategoryDefinitions,
+      }),
+    }));
 
     return {
-      characters,
+      characters: normalizedCharacters,
       itemCategoryDefinitions:
         itemCategoryDefinitions.length > 0
           ? itemCategoryDefinitions
@@ -484,7 +524,7 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
       starterItemsInitialized: true,
       activePlayerCharacterId:
         persistedActivePlayerCharacterId &&
-        characters.some(
+        normalizedCharacters.some(
           (character) =>
             character.id === persistedActivePlayerCharacterId && character.ownerRole === "player"
         )
@@ -494,7 +534,7 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
             : null,
       activeDmCharacterId:
         persistedActiveDmCharacterId &&
-        characters.some(
+        normalizedCharacters.some(
           (character) =>
             character.id === persistedActiveDmCharacterId && character.ownerRole === "dm"
         )

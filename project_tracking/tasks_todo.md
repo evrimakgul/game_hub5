@@ -1,6 +1,6 @@
 # Tasks TODO
 ## Active
-- `ITEM-MULTISLOT-01` After `ITEM-REFAC-01`, add first-class multi-slot occupancy for items. The target model should support `allowedEquipSlots[]`, `occupiedSlots[]`, and an `anchorSlot` or equivalent resolved-equip slot so shields, two-handed weapons, and future body-plus-head items can be represented without special-case slot hacks.
+- No active task recorded yet. Pick the next item from deferred after reviewing current notes and roadmap.
 
 ## Completed
 ### Group 1: Encounter Cast UI Standardization
@@ -13,6 +13,11 @@
 ### Group 3: Ingestion Reference Sync
 - `INGEST-REF-01` completed. The four reverse-engineered power/spell ingestion reference files now describe the updated cast UI, aura lifecycle, and summon dismiss behavior.
 
+### Group 4: Item Equip Core And Hand-State Cleanup
+- `ITEM-MULTISLOT-01` completed. Equipment entries now persist a real `anchorSlot`, canonical multi-slot occupancy is normalized during hydration and live state updates, equip/unequip logic clears whole anchor groups, and follower slots render as occupied/locked instead of looking like duplicate equips.
+- `ITEM-HAND-LOGIC-01` completed. Physical attack profile resolution now distinguishes `unarmed` as both hands empty and `brawl` as at least one equipped brawl item with no non-brawl hand item occupying either hand.
+- `ITEM-RANGE-01` completed for the classic subset. `Short Bow` and `Light Crossbow` are now separate blueprint identities, `weapon:ranged_light` migrates to `range:light_crossbow`, older saves backfill missing seeded blueprints/definitions during hydration, and unsupported classic crossbow timing / armor-penetration details are carried as visible notes instead of fake runtime mechanics.
+
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion
 - `B01` Expand the shared item UI into a full item-authoring and multi-target knowledge-sharing flow.
@@ -20,6 +25,5 @@
 - `EQUIP-SUP-01` Defer the three supplementary equipment slots until a later phase. Add DM-controlled per-character activation for `orbital`, `earring`, and `charm/talisman` slots, and keep those slots hidden from the player-facing character sheet until the DM activates them for that specific character.
 - `KNOW-V2-01` Expand the new knowledge-card system beyond character cards so item, place, faction, story, and custom subjects get first-class creation flows and sheet/browser surfaces.
 - `AA-01` Defer full `Artifact Appraisal (AA)` integration until item mechanics and item UI are ready.
-- `ITEM-RANGE-01` After refactoring, tune ranged blueprint identities. Current locked direction: `Short Bow` = `5d10`, `+1 hit`, and may move `10m` instead of `5m` with an attack action; `Long Bow` = `6d10` with longer range; `Light Crossbow` = `5d10`, `armorPenetration 1`, uses both attack and move actions; `Heavy Crossbow` = `8d10`, `armorPenetration 2`, uses all non-free actions (`attack`, `bonus`, `move`). Add a follow-up tuning pass for modern ranged weapons as well.
 - `COMBAT-ACT-01` After item refactoring, design and implement the timing / action-economy extension for `actionBudget`, `action cost`, `weapon speed`, and multi-attack throughput. Preserve the summary of the discussion: this is intended to support characters gaining more than one attack in a standard action, weapons consuming different portions of a turn, and a future timing engine that can express combinations such as slower heavy weapons, faster brawl strings, and expanded character action budgets.
 - `REPO-CLEANUP-01` Deferred cleanup: `python.ipynb` is intentionally allowed in the repo for temporary checking during development, but it must be removed before the project is considered done. Keep new threads aware that the notebook is temporary and should not become a permanent project artifact.

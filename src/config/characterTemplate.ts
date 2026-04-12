@@ -17,6 +17,7 @@ import type {
 } from "../types/activePowerEffects";
 import {
   MAIN_EQUIPMENT_SLOT_IDS,
+  isCanonicalEquipmentSlotId,
   type CharacterEquipmentReference,
   type MainEquipmentSlotId,
 } from "../types/items.ts";
@@ -161,10 +162,14 @@ export type PowerBenefitSection = {
   bullets: string[];
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 6;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 7;
 
 function createDefaultEquipmentEntries(): CharacterEquipmentReference[] {
-  return MAIN_EQUIPMENT_SLOT_IDS.map((slot) => ({ slot, itemId: null }));
+  return MAIN_EQUIPMENT_SLOT_IDS.map((slot) => ({
+    slot,
+    itemId: null,
+    anchorSlot: null,
+  }));
 }
 
 function normalizeEquipmentEntries(entries: CharacterEquipmentReference[]): CharacterEquipmentReference[] {
@@ -236,11 +241,17 @@ function normalizeEquipmentEntries(entries: CharacterEquipmentReference[]): Char
 
     const itemId = entry.itemId && entry.itemId.trim().length > 0 ? entry.itemId : null;
     if (MAIN_EQUIPMENT_SLOT_IDS.includes(slot as MainEquipmentSlotId)) {
-      mainEntries.set(slot as MainEquipmentSlotId, { slot, itemId });
+      const anchorSlot =
+        itemId === null
+          ? null
+          : isCanonicalEquipmentSlotId(entry.anchorSlot)
+            ? entry.anchorSlot
+            : (slot as MainEquipmentSlotId);
+      mainEntries.set(slot as MainEquipmentSlotId, { slot, itemId, anchorSlot });
       return;
     }
 
-    otherEntries.push({ slot, itemId });
+    otherEntries.push({ slot, itemId, anchorSlot: null });
   });
 
   return [...MAIN_EQUIPMENT_SLOT_IDS.map((slot) => mainEntries.get(slot)!), ...otherEntries];
@@ -1095,6 +1106,7 @@ function hydrateEquipment(value: unknown): CharacterEquipmentReference[] {
       {
         slot: coerceString(entry.slot, ""),
         itemId: typeof entry.itemId === "string" && entry.itemId.trim().length > 0 ? entry.itemId : null,
+        anchorSlot: isCanonicalEquipmentSlotId(entry.anchorSlot) ? entry.anchorSlot : null,
       },
     ];
   }));

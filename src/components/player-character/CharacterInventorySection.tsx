@@ -3,6 +3,7 @@ import {
   canCharacterIdentifyItem,
   getEquipmentSlotLabel,
   getEquipmentEntryBySlot,
+  getEquipmentSlotOccupancy,
   getItemAllowedEquipSlots,
   getItemCompactHeaderSummary,
   getItemMechanicalRole,
@@ -115,6 +116,7 @@ type CharacterInventorySectionProps = {
     subcategoryDefinitionId: string;
     label: string;
     isLegacy?: boolean;
+    isDeprecated?: boolean;
   }>;
   artifactAppraisalLevel: number;
   isSheetEditMode: boolean;
@@ -194,6 +196,7 @@ export function CharacterInventorySection({
     slotId,
     label: getEquipmentSlotLabel(slotId),
     entry: getEquipmentEntryBySlot(sheetState, slotId),
+    occupancy: getEquipmentSlotOccupancy(sheetState, slotId, itemsById, itemRulesContext),
   }));
   const equippedItemIds = new Set(
     (sheetState.equipment ?? [])
@@ -212,13 +215,22 @@ export function CharacterInventorySection({
           <h3>Loadout</h3>
         </div>
         <div className="equipment-compact-list">
-          {mainEquipmentEntries.map(({ slotId, label, entry }) => {
-            const item = entry?.itemId ? itemsById[entry.itemId] ?? null : null;
+          {mainEquipmentEntries.map(({ slotId, label, entry, occupancy }) => {
+            const item = occupancy?.item ?? (entry?.itemId ? itemsById[entry.itemId] ?? null : null);
+            const followerAnchorLabel =
+              occupancy && !occupancy.isAnchorSlot && occupancy.anchorSlot
+                ? getEquipmentSlotLabel(occupancy.anchorSlot)
+                : null;
 
             return isSheetEditMode ? (
               <div key={slotId} className="equipment-compact-row equipment-compact-row-edit">
                 <div className="equipment-compact-main">
                   <strong>{label}</strong>
+                  {occupancy && !occupancy.isAnchorSlot ? (
+                    <span className="equipment-line-detail">
+                      Occupied by {item?.name ?? "equipped item"} via {followerAnchorLabel ?? "anchor"}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="equipment-inline-controls">
                   <select
@@ -243,10 +255,19 @@ export function CharacterInventorySection({
               <div key={slotId} className="equipment-compact-row">
                 <div className="equipment-compact-main">
                       <strong>{label}</strong>
-                      <span className="equipment-line-detail">{item?.name ?? "Open Slot"}</span>
+                      <span className="equipment-line-detail">
+                        {occupancy && !occupancy.isAnchorSlot
+                          ? `Occupied by ${item?.name ?? "equipped item"}`
+                          : item?.name ?? "Open Slot"}
+                      </span>
+                      {occupancy && !occupancy.isAnchorSlot ? (
+                        <small className="equipment-state-line">
+                          Locked by {followerAnchorLabel ?? "anchor slot"}.
+                        </small>
+                      ) : null}
                 </div>
                 <div className="equipment-read-meta">
-                  {item ? (
+                  {item && (!occupancy || occupancy.isAnchorSlot) ? (
                     <>
                       <em>{getItemCompactHeaderSummary(item, itemRulesContext)}</em>
                       <div className="equipment-inline-actions">
@@ -282,6 +303,8 @@ export function CharacterInventorySection({
                         )}
                       </div>
                     </>
+                  ) : occupancy && !occupancy.isAnchorSlot ? (
+                    <em>This slot is occupied as part of a multi-slot item.</em>
                   ) : (
                     <em>No item equipped.</em>
                   )}

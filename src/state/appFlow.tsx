@@ -16,10 +16,12 @@ import {
 } from "../config/characterTemplate";
 import { createEmptyKnowledgeState } from "../lib/knowledge.ts";
 import {
+  buildItemIndex,
   createItemCategoryDefinitionRecord,
   createItemBlueprintRecord,
   createItemSubcategoryDefinitionRecord,
   createSharedItemRecord,
+  normalizeCharacterEquipmentAnchors,
   syncItemsWithBlueprint,
   syncSharedItemRecordWithBlueprint,
   updateBlueprintOverrideList,
@@ -184,6 +186,38 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => {
+    setCharacters((currentCharacters) => {
+      let didChange = false;
+      const normalizedCharacters = currentCharacters.map((character) => {
+        const normalizedSheet = normalizeSheetEquipment(character.sheet);
+        const equipmentChanged =
+          normalizedSheet.equipment.length !== character.sheet.equipment.length ||
+          normalizedSheet.equipment.some((entry, index) => {
+            const previousEntry = character.sheet.equipment[index];
+            return (
+              !previousEntry ||
+              previousEntry.slot !== entry.slot ||
+              previousEntry.itemId !== entry.itemId ||
+              previousEntry.anchorSlot !== entry.anchorSlot
+            );
+          });
+
+        if (!equipmentChanged) {
+          return character;
+        }
+
+        didChange = true;
+        return {
+          ...character,
+          sheet: normalizedSheet,
+        };
+      });
+
+      return didChange ? normalizedCharacters : currentCharacters;
+    });
+  }, [itemBlueprints, itemCategoryDefinitions, itemSubcategoryDefinitions, items]);
+
+  useEffect(() => {
     if (skipNextPersistRef.current) {
       skipNextPersistRef.current = false;
       return;
@@ -274,20 +308,32 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     return values.includes(nextValue) ? values : [...values, nextValue];
   }
 
+  function normalizeSheetEquipment(sheet: CharacterDraft): CharacterDraft {
+    return normalizeCharacterEquipmentAnchors(
+      normalizeCharacterDraft(sheet),
+      buildItemIndex(items),
+      {
+        itemBlueprints,
+        itemCategoryDefinitions,
+        itemSubcategoryDefinitions,
+      }
+    );
+  }
+
   function stripItemReferencesFromSheet(sheet: CharacterDraft, itemId: string): CharacterDraft {
-    return normalizeCharacterDraft({
+    return normalizeSheetEquipment({
       ...sheet,
       ownedItemIds: sheet.ownedItemIds.filter((entry) => entry !== itemId),
       inventoryItemIds: sheet.inventoryItemIds.filter((entry) => entry !== itemId),
       activeItemIds: sheet.activeItemIds.filter((entry) => entry !== itemId),
       equipment: sheet.equipment.map((entry) =>
-        entry.itemId === itemId ? { ...entry, itemId: null } : entry
+        entry.itemId === itemId ? { ...entry, itemId: null, anchorSlot: null } : entry
       ),
     });
   }
 
   function assignItemReferencesToSheet(sheet: CharacterDraft, itemId: string): CharacterDraft {
-    return normalizeCharacterDraft({
+    return normalizeSheetEquipment({
       ...sheet,
       ownedItemIds: appendUnique(sheet.ownedItemIds, itemId),
       inventoryItemIds: appendUnique(sheet.inventoryItemIds, itemId),
@@ -389,10 +435,10 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
 
         const updated =
           typeof updater === "function" ? updater(definition) : updater;
-        nextDefinition = {
+        nextDefinition = createItemSubcategoryDefinitionRecord({
           ...updated,
           id: definition.id,
-        };
+        });
         return nextDefinition;
       })
     );
@@ -605,7 +651,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
 
         return {
           ...character,
-          sheet: normalizeCharacterDraft(nextSheet),
+          sheet: normalizeSheetEquipment(nextSheet),
         };
       })
     );
@@ -615,7 +661,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     setCharacters(
       nextCharacters.map((character) => ({
         ...character,
-        sheet: normalizeCharacterDraft(character.sheet),
+        sheet: normalizeSheetEquipment(character.sheet),
       }))
     );
   }

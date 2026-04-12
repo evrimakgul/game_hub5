@@ -205,6 +205,7 @@ export type ItemBlueprintRecord = {
   requirements: string[];
   overrideItemIds: string[];
   isLegacy?: boolean;
+  isDeprecated?: boolean;
 };
 
 export type SharedItemRecord = {
@@ -231,6 +232,7 @@ export type ItemInstanceRecord = SharedItemRecord;
 export type CharacterEquipmentReference = {
   slot: string;
   itemId: string | null;
+  anchorSlot: CanonicalEquipmentSlotId | null;
 };
 
 export const MAIN_EQUIPMENT_SLOT_IDS = [

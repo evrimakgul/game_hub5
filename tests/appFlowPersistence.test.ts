@@ -11,6 +11,7 @@ import {
   createDefaultItemBlueprints,
   createDefaultItemCategoryDefinitions,
   createDefaultItemSubcategoryDefinitions,
+  getItemBlueprintOptions,
   createSharedItemRecord,
 } from "../src/lib/items.ts";
 import {
@@ -136,6 +137,89 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(
           JSON.parse(writes.get(CHARACTER_STORAGE_BACKUP_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"
+        );
+      },
+    },
+    {
+      name: "hydratePersistedCharacters infers a shared anchor for legacy multi-slot weapon entries",
+      run: () => {
+        const legacySheet = {
+          ...PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          ownedItemIds: ["legacy-bow"],
+          inventoryItemIds: ["legacy-bow"],
+          equipment: [
+            { slot: "weapon_primary", itemId: "legacy-bow" },
+            { slot: "weapon_secondary", itemId: "legacy-bow" },
+          ],
+        };
+
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [{ id: "archer-1", ownerRole: "player", sheet: legacySheet }],
+            items: [
+              createSharedItemRecord("weapon:bow", {
+                id: "legacy-bow",
+                name: "Legacy Bow",
+              }),
+            ],
+            starterItemsInitialized: true,
+          })
+        );
+
+        assert.deepEqual(
+          state.characters[0]?.sheet.equipment
+            .filter((entry) => entry.slot === "weapon_primary" || entry.slot === "weapon_secondary")
+            .map((entry) => [entry.slot, entry.itemId, entry.anchorSlot]),
+          [
+            ["weapon_primary", "legacy-bow", "weapon_primary"],
+            ["weapon_secondary", "legacy-bow", "weapon_primary"],
+          ]
+        );
+      },
+    },
+    {
+      name: "serializePersistedCharacters keeps anchor-aware equipment entries",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.equipment = [
+          { slot: "weapon_primary", itemId: "bow-1", anchorSlot: "weapon_primary" },
+          { slot: "weapon_secondary", itemId: "bow-1", anchorSlot: "weapon_primary" },
+          ...sheet.equipment.filter(
+            (entry) => entry.slot !== "weapon_primary" && entry.slot !== "weapon_secondary"
+          ),
+        ];
+
+        const payload = serializePersistedCharacters({
+          characters: [{ id: "archer-2", ownerRole: "player", sheet }],
+          itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+          itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
+          itemBlueprints: createDefaultItemBlueprints(),
+          items: [],
+          knowledgeEntities: [],
+          knowledgeRevisions: [],
+          knowledgeOwnerships: [],
+          starterItemsInitialized: true,
+          activePlayerCharacterId: "archer-2",
+          activeDmCharacterId: null,
+        });
+        const serializedEquipment =
+          ((payload.characters[0]?.sheet as {
+            equipment?: Array<{
+              slot: string;
+              itemId: string | null;
+              anchorSlot: string | null;
+            }>;
+          } | undefined)?.equipment ?? []);
+
+        assert.deepEqual(
+          serializedEquipment
+            .filter((entry) => entry.slot === "weapon_primary" || entry.slot === "weapon_secondary")
+            .map((entry) => [entry.slot, entry.itemId, entry.anchorSlot]),
+          [
+            ["weapon_primary", "bow-1", "weapon_primary"],
+            ["weapon_secondary", "bow-1", "weapon_primary"],
+          ]
         );
       },
     },
@@ -390,6 +474,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
             starterItemsInitialized: true,
             items: [
               createSharedItemRecord("weapon:bow", { id: "legacy-bow" }),
+              createSharedItemRecord("weapon:ranged_light", { id: "legacy-light-crossbow" }),
               createSharedItemRecord("armor:shield", { id: "legacy-shield" }),
               createSharedItemRecord("mystic:mystic", { id: "legacy-focus" }),
             ],
@@ -398,8 +483,72 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         const itemIndex = buildItemIndex(state.items);
 
         assert.equal(itemIndex["legacy-bow"]?.blueprintId, "range:short_bow");
+        assert.equal(itemIndex["legacy-light-crossbow"]?.blueprintId, "range:light_crossbow");
         assert.equal(itemIndex["legacy-shield"]?.blueprintId, "shield:light");
         assert.equal(itemIndex["legacy-focus"]?.blueprintId, "occult:one_handed");
+      },
+    },
+    {
+      name: "hydratePersistedCharacters backfills missing seeded definitions and blueprints into existing catalogs",
+      run: () => {
+        const persistedBlueprints = createDefaultItemBlueprints()
+          .filter((blueprint) => blueprint.id !== "range:light_crossbow")
+          .map((blueprint) =>
+            blueprint.id === "range:short_bow"
+              ? { ...blueprint, label: "Custom Short Bow Label" }
+              : blueprint
+          );
+        const persistedCategories = createDefaultItemCategoryDefinitions()
+          .filter((definition) => definition.id !== "range")
+          .map((definition) =>
+            definition.id === "melee" ? { ...definition, name: "Custom Melee" } : definition
+          );
+        const persistedSubcategories = createDefaultItemSubcategoryDefinitions()
+          .filter((definition) => definition.id !== "range:crossbow")
+          .map((definition) =>
+            definition.id === "range:bow" ? { ...definition, name: "Custom Bow" } : definition
+          );
+
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: CHARACTER_DRAFT_SCHEMA_VERSION,
+            characters: [],
+            starterItemsInitialized: true,
+            itemBlueprints: persistedBlueprints,
+            itemCategoryDefinitions: persistedCategories,
+            itemSubcategoryDefinitions: persistedSubcategories,
+          })
+        );
+
+        assert.equal(
+          state.itemBlueprints.find((blueprint) => blueprint.id === "range:short_bow")?.label,
+          "Custom Short Bow Label"
+        );
+        assert.ok(state.itemBlueprints.some((blueprint) => blueprint.id === "range:light_crossbow"));
+        assert.equal(
+          state.itemCategoryDefinitions.find((definition) => definition.id === "melee")?.name,
+          "Custom Melee"
+        );
+        assert.ok(state.itemCategoryDefinitions.some((definition) => definition.id === "range"));
+        assert.equal(
+          state.itemSubcategoryDefinitions.find((definition) => definition.id === "range:bow")?.name,
+          "Custom Bow"
+        );
+        assert.ok(
+          state.itemSubcategoryDefinitions.some((definition) => definition.id === "range:crossbow")
+        );
+      },
+    },
+    {
+      name: "deprecated melee unarmed blueprint stays readable but is hidden from normal creation options",
+      run: () => {
+        const state = hydratePersistedCharacters(null);
+        const blueprintOptions = getItemBlueprintOptions(state.itemBlueprints).filter(
+          (option) => option.isLegacy !== true && option.isDeprecated !== true
+        );
+
+        assert.ok(state.itemBlueprints.some((blueprint) => blueprint.id === "melee:unarmed"));
+        assert.ok(!blueprintOptions.some((option) => option.id === "melee:unarmed"));
       },
     },
     {

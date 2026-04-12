@@ -169,7 +169,10 @@ export function PlayerCharacterPage({
   const actualDate = formatDateDayMonthYear(new Date());
   const itemsById = buildItemIndex(items);
   const itemBlueprintOptions = useMemo(
-    () => getItemBlueprintOptions(itemBlueprints).filter((option) => option.isLegacy !== true),
+    () =>
+      getItemBlueprintOptions(itemBlueprints).filter(
+        (option) => option.isLegacy !== true && option.isDeprecated !== true
+      ),
     [itemBlueprints]
   );
   const {
