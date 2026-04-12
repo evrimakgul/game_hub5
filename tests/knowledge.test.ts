@@ -5,9 +5,12 @@ import {
   applyKnowledgeBatch,
   buildLinkedCharacterKnowledgeBatchFromIntelEntry,
   createEmptyKnowledgeState,
+  createItemKnowledgeRevision,
+  createItemKnowledgeShareResult,
   createKnowledgeShareResult,
   getKnowledgeGroupsForOwner,
 } from "../src/lib/knowledge.ts";
+import { createSharedItemRecord } from "../src/lib/items.ts";
 import { buildAssessCharacterHistoryEntry } from "../src/powers/runtimeSupport.ts";
 import type { CharacterRecord } from "../src/types/character.ts";
 import { runTestSuite } from "./harness.ts";
@@ -109,6 +112,93 @@ export async function runKnowledgeTests(): Promise<void> {
           result.historyEntries[0]?.entry.knowledgeLink?.knowledgeRevisionId,
           created.batch.revisions[0]?.id
         );
+      },
+    },
+    {
+      name: "creating an item card uses an item knowledge entity keyed by item id",
+      run: () => {
+        const item = createSharedItemRecord("range:short_bow", {
+          id: "item-1",
+          name: "Short Bow",
+        });
+
+        const created = createItemKnowledgeRevision({
+          state: createEmptyKnowledgeState(),
+          item,
+          createdByCharacterId: null,
+          sourceType: "dm_grant",
+        });
+
+        assert.equal(created.entity.type, "item");
+        assert.equal(created.entity.subjectKey, item.id);
+        assert.equal(created.revision.isCanonical, true);
+      },
+    },
+    {
+      name: "refreshing an item card creates a later revision on the same entity",
+      run: () => {
+        const item = createSharedItemRecord("range:short_bow", {
+          id: "item-2",
+          name: "Short Bow",
+        });
+        const first = createItemKnowledgeRevision({
+          state: createEmptyKnowledgeState(),
+          item,
+          createdByCharacterId: null,
+          sourceType: "dm_grant",
+        });
+        const stateAfterFirst = applyKnowledgeBatch(createEmptyKnowledgeState(), first.batch);
+        const second = createItemKnowledgeRevision({
+          state: stateAfterFirst,
+          item: {
+            ...item,
+            baseDescription: "Updated string",
+          },
+          createdByCharacterId: null,
+          sourceType: "dm_grant",
+        });
+
+        assert.equal(second.entity.id, first.entity.id);
+        assert.equal(second.revision.revisionNumber, 2);
+        assert.equal(second.revision.lineageMode, "updated_scan");
+      },
+    },
+    {
+      name: "sharing an item revision grants knowledge ownership and reveals the item",
+      run: () => {
+        const recipientA = createCharacterRecord("recipient-a", "Ayse", "player");
+        const recipientB = createCharacterRecord("recipient-b", "Deniz", "player");
+        const item = createSharedItemRecord("range:light_crossbow", {
+          id: "item-3",
+          name: "Light Crossbow",
+        });
+        const created = createItemKnowledgeRevision({
+          state: createEmptyKnowledgeState(),
+          item,
+          createdByCharacterId: null,
+          sourceType: "dm_grant",
+        });
+        const knowledgeState = applyKnowledgeBatch(createEmptyKnowledgeState(), created.batch);
+
+        const result = createItemKnowledgeShareResult({
+          state: knowledgeState,
+          item,
+          entity: created.entity,
+          revision: created.revision,
+          sourceOwnerName: "DM",
+          recipientCharacters: [recipientA, recipientB],
+        });
+
+        assert.equal(result.batch.revisions.length, 0);
+        assert.equal(result.batch.ownerships.length, 2);
+        assert.deepEqual(result.item.knowledge.learnedCharacterIds.sort(), [
+          "recipient-a",
+          "recipient-b",
+        ]);
+        assert.deepEqual(result.item.knowledge.visibleCharacterIds.sort(), [
+          "recipient-a",
+          "recipient-b",
+        ]);
       },
     },
   ]);

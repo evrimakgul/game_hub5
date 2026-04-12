@@ -245,6 +245,41 @@ This roadmap is the active implementation source of truth for this branch.
 - Crossbow armor penetration now reduces DR during physical attack resolution.
 - Unsupported classic bow / crossbow timing and movement rules remain represented as visible notes until the later combat-action extension exists.
 
+## Completed Follow-Up: Supplementary Slots And Item Knowledge UX
+
+### 8.1 Per-Character Supplementary Slot Activation
+- Character sheets now persist explicit enabled supplementary slot ids for `orbital`, `earring`, and `charm`.
+- Supplementary slots stay hidden on player and DM sheets until enabled for that specific character.
+- Disabling a supplementary slot clears that slot's equipped item entry without deleting the shared item itself.
+
+### 8.2 Item-Focused DM Interaction Hub
+- The DM dashboard now links to a dedicated item interaction page.
+- The hub supports:
+  - selecting one or more recipient characters
+  - enabling or disabling supplementary slots for those selected characters
+  - selecting one shared item
+  - generating or refreshing that item's canonical knowledge card
+  - inspecting item revisions
+  - sharing one selected item revision to multiple characters at once
+
+### 8.3 Item Knowledge Cards
+- Item knowledge now uses the existing standalone knowledge collections with `KnowledgeEntity.type = "item"`.
+- Item knowledge subjects are item-instance specific, keyed by the shared item id.
+- Canonical item-card generation now builds revisioned cards containing:
+  - summary / identity
+  - visible properties
+  - identified bonuses
+  - requirements
+  - visible notes
+  - base description
+- Regenerating an item card creates a later canonical revision on the same knowledge entity.
+
+### 8.4 Item Knowledge Sync
+- Sharing an item card grants knowledge ownerships to all selected recipients without cloning the revision.
+- Item-card sharing now also marks the shared item as learned and visible for those recipients.
+- Existing identify / mask item behavior remains intact.
+- Full `Artifact Appraisal` runtime integration remains deferred to a later pass.
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`
@@ -258,11 +293,11 @@ This roadmap is the active implementation source of truth for this branch.
 ## Deferred
 - Future knowledge/intel work should move toward standalone revisioned knowledge cards:
   - V1 now ships the standalone revisioned character-card system described in `references/knowledge_card_design.md`
-  - remaining follow-up is expanding that model beyond character cards to other subject types
+  - remaining follow-up is expanding that model beyond character and item cards to other subject types
 - Aura-builder redesign remains deferred:
   - current implementation still uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
   - the recorded alternative is a dedicated aura builder such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`
 - Full item-authoring workflow and richer item bonus editors.
-- Full multi-target `AA` knowledge-sharing UI.
+- Full `Artifact Appraisal` runtime and richer `AA` interaction UI.
 - Encounter persistence and backend sync.
 - Player-side encounter UI.

@@ -8,6 +8,11 @@ import { createTimestampedId, getIsoTimestamp } from "./ids.ts";
 import type { SharedItemRecord } from "../types/items.ts";
 import type { CharacterRecord } from "../types/character.ts";
 import type {
+  ItemBlueprintRecord,
+  ItemCategoryDefinition,
+  ItemSubcategoryDefinition,
+} from "../types/items.ts";
+import type {
   KnowledgeEntity,
   KnowledgeHistoryLink,
   KnowledgeLineageMode,
@@ -29,6 +34,15 @@ import { buildAssessCharacterHistoryEntry } from "../powers/runtimeSupport.ts";
 import { buildCharacterDerivedValues } from "../config/characterRuntime.ts";
 import { buildCharacterEncounterSnapshot } from "../rules/combatEncounter.ts";
 import { getCrAndRankFromXpUsed } from "../rules/xpTables.ts";
+import {
+  getItemBaseVisibleStats,
+  getItemBlueprintLabel,
+  getItemCompactBonusSummary,
+  getItemCompactHeaderSummary,
+  getItemPropertyPoints,
+  getItemTierLabel,
+  identifyItemForCharacter,
+} from "./items.ts";
 
 type KnowledgeIndexes = {
   entityById: Map<string, KnowledgeEntity>;
@@ -79,6 +93,12 @@ type CreateCharacterKnowledgeRevisionArgs = {
   parentRevisionId?: string | null;
   itemsById?: Record<string, SharedItemRecord>;
   now?: Date;
+};
+
+type ItemKnowledgeContext = {
+  itemBlueprints?: ItemBlueprintRecord[];
+  itemCategoryDefinitions?: ItemCategoryDefinition[];
+  itemSubcategoryDefinitions?: ItemSubcategoryDefinition[];
 };
 
 type KnowledgeBatch = {
@@ -548,6 +568,36 @@ function ensureCharacterKnowledgeEntity(args: {
   };
 }
 
+function ensureItemKnowledgeEntity(args: {
+  state: KnowledgeState;
+  item: SharedItemRecord;
+  now?: Date;
+}): { entity: KnowledgeEntity; existed: boolean } {
+  const now = args.now ?? new Date();
+  const existingEntity = findKnowledgeEntityBySubjectKey(args.state, "item", args.item.id);
+
+  if (!existingEntity) {
+    return {
+      entity: createKnowledgeEntity({
+        type: "item",
+        subjectKey: args.item.id,
+        displayName: args.item.name.trim() || args.item.id,
+        now,
+      }),
+      existed: false,
+    };
+  }
+
+  return {
+    entity: {
+      ...existingEntity,
+      displayName: args.item.name.trim() || args.item.id,
+      updatedAt: getIsoTimestamp(now),
+    },
+    existed: true,
+  };
+}
+
 export function createKnowledgeRevisionBatch(args: {
   state: KnowledgeState;
   entity:
@@ -705,6 +755,47 @@ export function buildCharacterKnowledgeDraftFromSheet(
   };
 }
 
+export function buildItemKnowledgeDraftFromItem(
+  item: SharedItemRecord,
+  context: ItemKnowledgeContext = {}
+): Pick<KnowledgeRevision, "title" | "summary" | "content" | "tags"> {
+  const sections = [
+    createSection("Summary", "summary", [
+      { label: "Blueprint", value: getItemBlueprintLabel(item, context.itemBlueprints) },
+      { label: "Tier", value: getItemTierLabel(item) },
+      { label: "Property Points", value: `${getItemPropertyPoints(item)}` },
+    ]),
+    createSection(
+      "Visible Properties",
+      "combat_summary",
+      getItemBaseVisibleStats(item, context).map((value) => ({ value }))
+    ),
+    createSection(
+      "Identified Bonuses",
+      "specials",
+      getItemCompactBonusSummary(item).map((value) => ({ value }))
+    ),
+    createSection(
+      "Requirements",
+      "custom",
+      item.requirements.map((value) => ({ value }))
+    ),
+    createSection(
+      "Visible Notes",
+      "notes",
+      item.visibleNotes.map((value) => ({ value }))
+    ),
+    createSection("Description", "biography", [{ value: item.baseDescription }]),
+  ].filter((section): section is KnowledgeRevisionSection => section !== null);
+
+  return {
+    title: `${item.name.trim() || item.id} Card`,
+    summary: getItemCompactHeaderSummary(item, { ...context, includeBonus: false }),
+    content: sections,
+    tags: ["item", item.blueprintId],
+  };
+}
+
 export function createCharacterKnowledgeRevision(args: CreateCharacterKnowledgeRevisionArgs & {
   state: KnowledgeState;
 }): { entity: KnowledgeEntity; revision: KnowledgeRevision; batch: KnowledgeBatch } {
@@ -731,6 +822,53 @@ export function createCharacterKnowledgeRevision(args: CreateCharacterKnowledgeR
     lineageMode: args.lineageMode,
     isCanonical: args.isCanonical,
     id: args.revisionId,
+  });
+
+  return {
+    entity,
+    revision,
+    batch: {
+      entities: [entity],
+      revisions: [revision],
+      ownerships: [],
+    },
+  };
+}
+
+export function createItemKnowledgeRevision(args: {
+  state: KnowledgeState;
+  item: SharedItemRecord;
+  createdByCharacterId: string | null;
+  sourceType: KnowledgeSourceType;
+  sourceSpellName?: string | null;
+  parentRevisionId?: string | null;
+  lineageMode?: KnowledgeLineageMode;
+  isCanonical?: boolean;
+  context?: ItemKnowledgeContext;
+  now?: Date;
+}): { entity: KnowledgeEntity; revision: KnowledgeRevision; batch: KnowledgeBatch } {
+  const now = args.now ?? new Date();
+  const { entity, existed } = ensureItemKnowledgeEntity({
+    state: args.state,
+    item: args.item,
+    now,
+  });
+  const draft = buildItemKnowledgeDraftFromItem(args.item, args.context);
+  const revision = createKnowledgeRevision({
+    entityId: entity.id,
+    revisionNumber: getNextKnowledgeRevisionNumber(args.state, entity.id),
+    title: draft.title,
+    summary: draft.summary,
+    content: draft.content,
+    tags: draft.tags,
+    createdAt: getIsoTimestamp(now),
+    createdByCharacterId: args.createdByCharacterId,
+    sourceType: args.sourceType,
+    sourceSpellName: args.sourceSpellName ?? null,
+    sourceHistoryEntryId: null,
+    parentRevisionId: args.parentRevisionId ?? null,
+    lineageMode: args.lineageMode ?? (existed ? "updated_scan" : "observed"),
+    isCanonical: args.isCanonical !== false,
   });
 
   return {
@@ -1030,9 +1168,10 @@ export function createKnowledgeShareResult(args: {
   state: KnowledgeState;
   entity: KnowledgeEntity;
   revision: KnowledgeRevision;
-  sourceOwnerCharacterId: string;
+  sourceOwnerCharacterId?: string | null;
   sourceOwnerName: string;
   recipientCharacters: CharacterRecord[];
+  cardLabel?: string;
   now?: Date;
 }): {
   batch: KnowledgeBatch;
@@ -1055,7 +1194,7 @@ export function createKnowledgeShareResult(args: {
         ownerCharacterId: character.id,
         revisionId: args.revision.id,
         acquiredAt: getIsoTimestamp(now),
-        acquiredFromCharacterId: args.sourceOwnerCharacterId,
+        acquiredFromCharacterId: args.sourceOwnerCharacterId ?? null,
       }),
     ];
   });
@@ -1073,13 +1212,47 @@ export function createKnowledgeShareResult(args: {
       return {
         characterId: ownership.ownerCharacterId,
         entry: buildKnowledgeAcquiredHistoryEntry({
-          note: `Acquired character card ${args.entity.displayName} from ${args.sourceOwnerName}.`,
+          note: `Acquired ${args.cardLabel ?? "character card"} ${args.entity.displayName} from ${args.sourceOwnerName}.`,
           knowledgeLink,
           gameDateTime: recipient?.sheet.gameDateTime ?? "",
           now,
         }),
       };
     }),
+  };
+}
+
+export function createItemKnowledgeShareResult(args: {
+  state: KnowledgeState;
+  item: SharedItemRecord;
+  entity: KnowledgeEntity;
+  revision: KnowledgeRevision;
+  sourceOwnerCharacterId?: string | null;
+  sourceOwnerName: string;
+  recipientCharacters: CharacterRecord[];
+  now?: Date;
+}): {
+  batch: KnowledgeBatch;
+  historyEntries: Array<{ characterId: string; entry: GameHistoryEntry }>;
+  item: SharedItemRecord;
+} {
+  const shareResult = createKnowledgeShareResult({
+    state: args.state,
+    entity: args.entity,
+    revision: args.revision,
+    sourceOwnerCharacterId: args.sourceOwnerCharacterId ?? null,
+    sourceOwnerName: args.sourceOwnerName,
+    recipientCharacters: args.recipientCharacters,
+    cardLabel: "item card",
+    now: args.now,
+  });
+
+  return {
+    ...shareResult,
+    item: args.recipientCharacters.reduce(
+      (currentItem, character) => identifyItemForCharacter(currentItem, character.id),
+      args.item
+    ),
   };
 }
 

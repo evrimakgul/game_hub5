@@ -32,6 +32,7 @@ import {
   type PersistedCharacterState,
   writePersistedCharactersToStorage,
 } from "./appFlowPersistence";
+import { setCharacterSupplementarySlotEnabled as setCharacterSupplementarySlotEnabledOnSheet } from "../mutations/characterItemMutations.ts";
 import {
   isCharacterOwnerRole,
   type CharacterOwnerRole,
@@ -44,6 +45,7 @@ import type {
   ItemCategoryDefinition,
   ItemSubcategoryDefinition,
   SharedItemRecord,
+  SupplementaryEquipmentSlotId,
 } from "../types/items.ts";
 import type {
   KnowledgeEntity,
@@ -125,6 +127,11 @@ type AppFlowContextValue = {
   updateCharacter: (
     characterId: string,
     updater: CharacterDraft | ((current: CharacterDraft) => CharacterDraft)
+  ) => void;
+  setCharacterSupplementarySlotEnabled: (
+    characterId: string,
+    slotId: SupplementaryEquipmentSlotId,
+    isEnabled: boolean
   ) => void;
   replaceCharacters: (characters: CharacterRecord[]) => void;
   updateKnowledgeState: (
@@ -657,6 +664,27 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     );
   }
 
+  function setCharacterSupplementarySlotEnabled(
+    characterId: string,
+    slotId: SupplementaryEquipmentSlotId,
+    isEnabled: boolean
+  ): void {
+    setCharacters((currentCharacters) =>
+      currentCharacters.map((character) => {
+        if (character.id !== characterId) {
+          return character;
+        }
+
+        return {
+          ...character,
+          sheet: normalizeSheetEquipment(
+            setCharacterSupplementarySlotEnabledOnSheet(character.sheet, slotId, isEnabled)
+          ),
+        };
+      })
+    );
+  }
+
   function replaceCharacters(nextCharacters: CharacterRecord[]): void {
     setCharacters(
       nextCharacters.map((character) => ({
@@ -731,6 +759,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         selectCharacter,
         deleteCharacter,
         updateCharacter,
+        setCharacterSupplementarySlotEnabled,
         replaceCharacters,
         updateKnowledgeState,
         beginCombatEncounter,

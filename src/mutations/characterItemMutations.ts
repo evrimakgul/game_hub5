@@ -8,12 +8,14 @@ import {
 } from "../lib/items.ts";
 import {
   isCanonicalEquipmentSlotId,
+  isSupplementaryEquipmentSlotId,
   isWeaponHandSlotId,
   type CanonicalEquipmentSlotId,
   type ItemBlueprintRecord,
   type ItemCategoryDefinition,
   type ItemSubcategoryDefinition,
   type SharedItemRecord,
+  type SupplementaryEquipmentSlotId,
   type WeaponHandSlotId,
 } from "../types/items.ts";
 
@@ -299,6 +301,23 @@ export function setCharacterActiveItemState(
     ...sheet,
     activeItemIds: isActive ? appendUnique(sheet.activeItemIds, itemId) : removeValue(sheet.activeItemIds, itemId),
   };
+}
+
+export function setCharacterSupplementarySlotEnabled(
+  sheet: CharacterDraft,
+  slot: SupplementaryEquipmentSlotId,
+  isEnabled: boolean
+): CharacterDraft {
+  const nextEnabledSlots = isEnabled
+    ? appendUnique(sheet.enabledSupplementarySlotIds, slot).filter(isSupplementaryEquipmentSlotId)
+    : removeValue(sheet.enabledSupplementarySlotIds, slot).filter(isSupplementaryEquipmentSlotId);
+
+  const nextSheet = {
+    ...sheet,
+    enabledSupplementarySlotIds: nextEnabledSlots,
+  };
+
+  return isEnabled ? nextSheet : clearCanonicalSlot(nextSheet, slot);
 }
 
 export function updateEquipmentReferenceField(

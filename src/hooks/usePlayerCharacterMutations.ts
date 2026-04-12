@@ -56,6 +56,7 @@ import type {
   MainEquipmentSlotId,
   ItemSubcategoryDefinition,
   SharedItemRecord,
+  SupplementaryEquipmentSlotId,
   WeaponHandSlotId,
 } from "../types/items.ts";
 import type { PowerUsageResetScope } from "../types/powerUsage";
@@ -136,6 +137,10 @@ export type PlayerCharacterMutations = {
   unequipSharedItem: (itemId: string) => void;
   updateWeaponHandSlotItem: (slot: WeaponHandSlotId, itemId: string) => void;
   updateMainEquipmentSlotItem: (slot: MainEquipmentSlotId, itemId: string) => void;
+  updateSupplementaryEquipmentSlotItem: (
+    slot: SupplementaryEquipmentSlotId,
+    itemId: string
+  ) => void;
   updateEquipmentEntry: (index: number, field: EquipmentReferenceField, value: string) => void;
   addEquipmentEntry: () => void;
   removeEquipmentEntry: (index: number) => void;
@@ -696,6 +701,36 @@ export function usePlayerCharacterMutations({
     });
   }
 
+  function updateSupplementaryEquipmentSlotItem(
+    slot: SupplementaryEquipmentSlotId,
+    itemId: string
+  ): void {
+    setSheetState((currentSheet) => {
+      const resolvedSheet = setCharacterEquipmentSlotItem(
+        currentSheet,
+        slot,
+        itemId,
+        itemsById,
+        itemRulesContext
+      );
+      if (!isDmView) {
+        return resolvedSheet;
+      }
+
+      return appendDmAuditEntry(
+        resolvedSheet,
+        createDmAuditEntry(
+          "sheet",
+          `equipment.${slot}.itemId`,
+          currentSheet.equipment.find((entry) => entry.slot === slot)?.itemId ?? "",
+          itemId,
+          dmEditReason.trim(),
+          "dm-character-sheet"
+        )
+      );
+    });
+  }
+
   function updateEquipmentEntry(index: number, field: EquipmentReferenceField, value: string): void {
     setSheetState((currentSheet) =>
       appendDmAuditEntry(
@@ -876,6 +911,7 @@ export function usePlayerCharacterMutations({
     unequipSharedItem,
     updateWeaponHandSlotItem,
     updateMainEquipmentSlotItem,
+    updateSupplementaryEquipmentSlotItem,
     updateEquipmentEntry,
     addEquipmentEntry: addEquipmentEntryHandler,
     removeEquipmentEntry: removeEquipmentEntryHandler,

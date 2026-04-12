@@ -179,6 +179,38 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
       },
     },
     {
+      name: "supplementary slot enablement persists through serialize and hydrate",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.enabledSupplementarySlotIds = ["orbital", "charm"];
+
+        const payload = serializePersistedCharacters({
+          characters: [{ id: "support-1", ownerRole: "player", sheet }],
+          itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+          itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
+          itemBlueprints: createDefaultItemBlueprints(),
+          items: [],
+          knowledgeEntities: [],
+          knowledgeRevisions: [],
+          knowledgeOwnerships: [],
+          starterItemsInitialized: true,
+          activePlayerCharacterId: "support-1",
+          activeDmCharacterId: null,
+        });
+        const hydrated = hydratePersistedCharacters(JSON.stringify(payload));
+
+        assert.deepEqual(
+          ((payload.characters[0]?.sheet as { enabledSupplementarySlotIds?: string[] } | undefined)
+            ?.enabledSupplementarySlotIds ?? []),
+          ["orbital", "charm"]
+        );
+        assert.deepEqual(
+          hydrated.characters[0]?.sheet.enabledSupplementarySlotIds,
+          ["orbital", "charm"]
+        );
+      },
+    },
+    {
       name: "serializePersistedCharacters keeps anchor-aware equipment entries",
       run: () => {
         const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();

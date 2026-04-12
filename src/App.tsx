@@ -6,6 +6,7 @@ import { DmCharacterHubPage } from "./routes/DmCharacterHubPage";
 import { DmBlueprintManagementPage } from "./routes/DmBlueprintManagementPage";
 import { DmItemEditPage } from "./routes/DmItemEditPage";
 import { DmItemDefinitionManagementPage } from "./routes/DmItemDefinitionManagementPage";
+import { DmItemInteractionsPage } from "./routes/DmItemInteractionsPage";
 import { DmItemsListPage } from "./routes/DmItemsListPage";
 import { DmNpcCreatorPage } from "./routes/DmNpcCreatorPage";
 import { DmPage } from "./routes/DmPage";
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/dm/items/edit" element={<DmItemEditPage />} />
       <Route path="/dm/items/blueprints" element={<DmBlueprintManagementPage />} />
       <Route path="/dm/items/definitions" element={<DmItemDefinitionManagementPage />} />
+      <Route path="/dm/items/interactions" element={<DmItemInteractionsPage />} />
       <Route path="/dm/combat" element={<CombatDashboardPage />} />
       <Route path="/dm/combat/encounter" element={<CombatEncounterPage />} />
       <Route path="*" element={<NotFoundPage />} />

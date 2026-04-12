@@ -18,8 +18,10 @@ import type {
 import {
   MAIN_EQUIPMENT_SLOT_IDS,
   isCanonicalEquipmentSlotId,
+  isSupplementaryEquipmentSlotId,
   type CharacterEquipmentReference,
   type MainEquipmentSlotId,
+  type SupplementaryEquipmentSlotId,
 } from "../types/items.ts";
 import { STAT_IDS, isStatId, type CharacterOwnerRole, type StatId } from "../types/character.ts";
 import type { PowerUsageState } from "../types/powerUsage.ts";
@@ -143,6 +145,7 @@ export type CharacterDraft = {
   ownedItemIds: string[];
   inventoryItemIds: string[];
   activeItemIds: string[];
+  enabledSupplementarySlotIds: SupplementaryEquipmentSlotId[];
   equipment: CharacterEquipmentReference[];
   gameHistory: GameHistoryEntry[];
   statusTags: EncounterStatusTag[];
@@ -162,7 +165,7 @@ export type PowerBenefitSection = {
   bullets: string[];
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 7;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 8;
 
 function createDefaultEquipmentEntries(): CharacterEquipmentReference[] {
   return MAIN_EQUIPMENT_SLOT_IDS.map((slot) => ({
@@ -255,6 +258,22 @@ function normalizeEquipmentEntries(entries: CharacterEquipmentReference[]): Char
   });
 
   return [...MAIN_EQUIPMENT_SLOT_IDS.map((slot) => mainEntries.get(slot)!), ...otherEntries];
+}
+
+function normalizeSupplementarySlotIds(
+  value: SupplementaryEquipmentSlotId[] | undefined
+): SupplementaryEquipmentSlotId[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      value.filter((slotId): slotId is SupplementaryEquipmentSlotId =>
+        isSupplementaryEquipmentSlotId(slotId)
+      )
+    ),
+  ];
 }
 
 const BLANK_STAT_ENTRY = (): StatEntry => ({
@@ -448,6 +467,7 @@ export class CharacterSheetTemplate {
       ownedItemIds: [],
       inventoryItemIds: [],
       activeItemIds: [],
+      enabledSupplementarySlotIds: [],
       equipment: createDefaultEquipmentEntries(),
       gameHistory: [],
       statusTags: [],
@@ -464,6 +484,9 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   const normalizedOwnedItemIds = [...new Set((sheet.ownedItemIds ?? []).filter((entry) => entry.trim().length > 0))];
   const normalizedInventoryItemIds = [...new Set((sheet.inventoryItemIds ?? []).filter((entry) => entry.trim().length > 0))];
   const normalizedActiveItemIds = [...new Set((sheet.activeItemIds ?? []).filter((entry) => entry.trim().length > 0))];
+  const normalizedSupplementarySlotIds = normalizeSupplementarySlotIds(
+    sheet.enabledSupplementarySlotIds
+  );
   const normalizedEquipment = normalizeEquipmentEntries(sheet.equipment ?? []);
   const hasAwareness = sheet.powers.some((power) => power.id === "awareness" && power.level > 0);
 
@@ -474,6 +497,7 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
       ownedItemIds: normalizedOwnedItemIds,
       inventoryItemIds: normalizedInventoryItemIds,
       activeItemIds: normalizedActiveItemIds,
+      enabledSupplementarySlotIds: normalizedSupplementarySlotIds,
       equipment: normalizedEquipment,
       temporaryInspiration: sheet.temporaryInspiration + 1,
       awarenessInsightGranted: true,
@@ -487,6 +511,7 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
       ownedItemIds: normalizedOwnedItemIds,
       inventoryItemIds: normalizedInventoryItemIds,
       activeItemIds: normalizedActiveItemIds,
+      enabledSupplementarySlotIds: normalizedSupplementarySlotIds,
       equipment: normalizedEquipment,
       temporaryInspiration: Math.max(0, sheet.temporaryInspiration - 1),
       awarenessInsightGranted: false,
@@ -499,6 +524,7 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
     ownedItemIds: normalizedOwnedItemIds,
     inventoryItemIds: normalizedInventoryItemIds,
     activeItemIds: normalizedActiveItemIds,
+    enabledSupplementarySlotIds: normalizedSupplementarySlotIds,
     equipment: normalizedEquipment,
   };
 }
@@ -1092,6 +1118,18 @@ function hydrateItemIdList(value: unknown): string[] {
   return [...new Set(value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0))];
 }
 
+function hydrateSupplementarySlotIds(value: unknown): SupplementaryEquipmentSlotId[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return normalizeSupplementarySlotIds(
+    value.filter((entry): entry is SupplementaryEquipmentSlotId =>
+      isSupplementaryEquipmentSlotId(entry)
+    )
+  );
+}
+
 function hydrateEquipment(value: unknown): CharacterEquipmentReference[] {
   if (!Array.isArray(value)) {
     return createDefaultEquipmentEntries();
@@ -1541,6 +1579,9 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     ownedItemIds: hydrateItemIdList(record.ownedItemIds),
     inventoryItemIds: hydrateItemIdList(record.inventoryItemIds),
     activeItemIds: hydrateItemIdList(record.activeItemIds),
+    enabledSupplementarySlotIds: hydrateSupplementarySlotIds(
+      record.enabledSupplementarySlotIds
+    ),
     equipment: hydrateEquipment(record.equipment),
     gameHistory: hydrateGameHistory(record.gameHistory),
     statusTags: hydrateStatusTags(record.statusTags),

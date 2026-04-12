@@ -341,6 +341,9 @@ export function DmItemEditPage() {
             <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items/definitions")}>
               Definitions
             </button>
+            <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items/interactions")}>
+              Interactions
+            </button>
           </div>
         </header>
 

@@ -11,6 +11,7 @@ This file tracks active reminders for the current implementation block.
 - The persisted item-definition refactor is now complete.
 - The anchor-slot / multi-slot equipment pass is now complete.
 - The hand-state combat cleanup and classic ranged split pass is now complete.
+- The supplementary-slot and item-knowledge UX pass is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -38,15 +39,19 @@ This file tracks active reminders for the current implementation block.
 - Classic ranged blueprints are now split so `Short Bow` and `Light Crossbow` are separate identities.
 - Crossbow armor penetration now reduces DR during physical attack resolution.
 - Older saves now backfill missing seeded item blueprints and item definitions during hydration without overwriting same-id persisted edits.
+- Supplementary `orbital`, `earring`, and `charm/talisman` slots now use persisted per-character activation and stay hidden until enabled.
+- Item knowledge cards now exist as standalone `KnowledgeEntity.type = "item"` revisions keyed by shared item id.
+- Sharing an item card now also marks that shared item learned and visible for the recipients.
 
 ## Known Structural Gaps
-- Shared item editing is intentionally minimal and does not yet cover full authoring or knowledge-sharing UX.
+- Shared item editing is still not a full end-state authoring workflow, but item-card generation/share and supplementary-slot activation now exist in the DM item interactions hub.
 - DM item tooling now includes dedicated definition management for item categories and subcategories.
 - Encounter cast UI now uses a stable `Power > Spell > ...` flow for active casts.
 - Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
 - The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
 - Classic bow / crossbow action-cost and movement rules are still represented only as visible notes; runtime timing support remains deferred to the later combat-action pass.
+- Full `Artifact Appraisal` runtime integration remains deferred.
 
 ## Knowledge System V1
 - Keep `History` as an event log.
@@ -61,19 +66,21 @@ This file tracks active reminders for the current implementation block.
 - History entries now reference exact revisions so the UI can preview or open the specific version involved in the event.
 - Character sheets now expose a dedicated inline `Knowledge` area for browsing owned subjects and revisions separately from `History`.
 - V1 implementation scope:
-  - character cards only
+  - character cards
+  - item cards
   - duplicate / edited copy / share / archive / pin / compare
-  - DM snapshot creation, manual creation, edit-before-save, and grant flows
+  - DM character snapshot/manual creation and grant flows
+  - DM item-card generation/refresh and one-to-many share flows
   - legacy embedded intel history rows are intentionally removed during hydration
 
 ## Deferred But Recorded
-- Full item-authoring UX and multi-target `AA` knowledge-sharing UI remain deferred.
+- Full item-authoring UX and full `AA` runtime integration remain deferred.
 - Future creation/template work should distinguish humanoid apparel logic from mobs/animals:
   - humanoids can use default clothing and naked-state initiative rules
   - beasts/mobs can intentionally have no clothing baseline
   - both should still be able to equip armor/weapons when explicitly assigned
   - recommended implementation hint: per-character/template flag such as `apparelMode: humanoid | none`
-- Expansion of the knowledge system beyond character cards remains deferred.
+- Expansion of the knowledge system beyond character and item cards remains deferred.
 - Backend sync and encounter persistence remain out of scope.
 
 ## Resolved Design Direction

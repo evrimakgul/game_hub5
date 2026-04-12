@@ -8,7 +8,11 @@ import {
   getItemCompactHeaderSummary,
   normalizeItemCustomPropertyRecords,
 } from "../src/lib/items.ts";
-import { setCharacterWeaponHandSlotItem } from "../src/mutations/characterItemMutations.ts";
+import {
+  setCharacterEquipmentSlotItem,
+  setCharacterSupplementarySlotEnabled,
+  setCharacterWeaponHandSlotItem,
+} from "../src/mutations/characterItemMutations.ts";
 import { runTestSuite } from "./harness.ts";
 
 export async function runItemBehaviorTests(): Promise<void> {
@@ -239,6 +243,37 @@ export async function runItemBehaviorTests(): Promise<void> {
         });
 
         assert.match(getItemCompactHeaderSummary(crossbow), /Armor Penetration: 2/);
+      },
+    },
+    {
+      name: "disabling a supplementary slot clears that equipped slot",
+      run: () => {
+        const earring = createSharedItemRecord("rings:earring", {
+          id: "earring-1",
+          name: "Silver Stud",
+        });
+        const itemsById = buildItemIndex([earring]);
+        const enabledSheet = {
+          ...PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          enabledSupplementarySlotIds: ["earring" as const],
+        };
+        const equippedSheet = setCharacterEquipmentSlotItem(
+          enabledSheet,
+          "earring",
+          earring.id,
+          itemsById
+        );
+        const disabledSheet = setCharacterSupplementarySlotEnabled(
+          equippedSheet,
+          "earring",
+          false
+        );
+
+        assert.deepEqual(disabledSheet.enabledSupplementarySlotIds, []);
+        assert.equal(
+          disabledSheet.equipment.find((entry) => entry.slot === "earring")?.itemId ?? null,
+          null
+        );
       },
     },
   ]);

@@ -1,6 +1,6 @@
 # Tasks TODO
 ## Active
-- No active task recorded yet. Pick the next item from deferred after reviewing current notes and roadmap.
+- `AA-01` Implement full `Artifact Appraisal (AA)` integration on top of the now-live item-card generation/share flow. Keep it aligned with the current item knowledge model, support multi-target reveal/share where appropriate, and avoid duplicating the new item knowledge infrastructure.
 
 ## Completed
 ### Group 1: Encounter Cast UI Standardization
@@ -18,12 +18,13 @@
 - `ITEM-HAND-LOGIC-01` completed. Physical attack profile resolution now distinguishes `unarmed` as both hands empty and `brawl` as at least one equipped brawl item with no non-brawl hand item occupying either hand.
 - `ITEM-RANGE-01` completed for the classic subset. `Short Bow` and `Light Crossbow` are now separate blueprint identities, `weapon:ranged_light` migrates to `range:light_crossbow`, older saves backfill missing seeded blueprints/definitions during hydration, crossbow armor penetration now reduces DR at runtime, and unsupported classic bow / crossbow timing details remain note-only until the combat-action pass.
 
+### Group 5: Supplementary Slots And Item Knowledge UX
+- `EQUIP-SUP-01` completed. Supplementary `orbital`, `earring`, and `charm/talisman` slots now use persisted per-character activation state, remain hidden until enabled, and disabling an active slot clears only that equipment slot.
+- `B01` completed for item cards. Added an item-focused DM interaction hub that can activate supplementary slots for selected characters, generate or refresh canonical item knowledge cards, inspect item revisions, and share one item card revision to multiple characters at once while also syncing item learned/visible state.
+
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion
-- `B01` Expand the shared item UI into a full item-authoring and multi-target knowledge-sharing flow.
 - `CHAR-APPAREL-01` During future character-creation / encounter-creation work, add an `unarmored humanoid baseline` rule so humanoid characters can receive `+3 Initiative` to their naked-state baseline when no chest armor is equipped, while mobs/animals can intentionally have no clothing-based baseline but still optionally equip armor or weapons. Implement with a per-character/template flag such as `apparelMode: humanoid | none`.
-- `EQUIP-SUP-01` Defer the three supplementary equipment slots until a later phase. Add DM-controlled per-character activation for `orbital`, `earring`, and `charm/talisman` slots, and keep those slots hidden from the player-facing character sheet until the DM activates them for that specific character.
-- `KNOW-V2-01` Expand the new knowledge-card system beyond character cards so item, place, faction, story, and custom subjects get first-class creation flows and sheet/browser surfaces.
-- `AA-01` Defer full `Artifact Appraisal (AA)` integration until item mechanics and item UI are ready.
+- `KNOW-V2-01` Expand the new knowledge-card system beyond character and item cards so place, faction, story, and custom subjects get first-class creation flows and sheet/browser surfaces.
 - `COMBAT-ACT-01` After item refactoring, design and implement the timing / action-economy extension for `actionBudget`, `action cost`, `weapon speed`, and multi-attack throughput. Preserve the summary of the discussion: this is intended to support characters gaining more than one attack in a standard action, weapons consuming different portions of a turn, and a future timing engine that can express combinations such as slower heavy weapons, faster brawl strings, and expanded character action budgets.
 - `REPO-CLEANUP-01` Deferred cleanup: `python.ipynb` is intentionally allowed in the repo for temporary checking during development, but it must be removed before the project is considered done. Keep new threads aware that the notebook is temporary and should not become a permanent project artifact.

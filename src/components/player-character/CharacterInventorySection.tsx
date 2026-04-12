@@ -23,9 +23,15 @@ import type {
   MainEquipmentSlotId,
   ItemSubcategoryDefinition,
   SharedItemRecord,
+  SupplementaryEquipmentSlotId,
   WeaponHandSlotId,
 } from "../../types/items.ts";
-import { MAIN_EQUIPMENT_SLOT_IDS, isWeaponHandSlotId } from "../../types/items.ts";
+import {
+  MAIN_EQUIPMENT_SLOT_IDS,
+  SUPPLEMENTARY_EQUIPMENT_SLOT_IDS,
+  isSupplementaryEquipmentSlotId,
+  isWeaponHandSlotId,
+} from "../../types/items.ts";
 import type { StatId } from "../../types/character";
 
 const STAT_BONUS_FIELDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
@@ -83,13 +89,14 @@ function isHandEquippableItem(
   );
 }
 
-function isMainSlotEquipItem(
+function canEquipIntoVisibleNonHandSlot(
   item: SharedItemRecord,
   itemRulesContext: {
     itemBlueprints: ItemBlueprintRecord[];
     itemCategoryDefinitions: ItemCategoryDefinition[];
     itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
-  }
+  },
+  enabledSupplementarySlotIds: Set<SupplementaryEquipmentSlotId>
 ): boolean {
   return getItemAllowedEquipSlots(item, itemRulesContext).some(
     (slot) =>
@@ -97,7 +104,8 @@ function isMainSlotEquipItem(
       slot === "neck" ||
       slot === "head" ||
       slot === "ring_left" ||
-      slot === "ring_right"
+      slot === "ring_right" ||
+      (isSupplementaryEquipmentSlotId(slot) && enabledSupplementarySlotIds.has(slot))
   );
 }
 
@@ -144,6 +152,10 @@ type CharacterInventorySectionProps = {
   onUnequipSharedItem: (itemId: string) => void;
   onUpdateWeaponHandSlotItem: (slot: WeaponHandSlotId, itemId: string) => void;
   onUpdateMainEquipmentSlotItem: (slot: MainEquipmentSlotId, itemId: string) => void;
+  onUpdateSupplementaryEquipmentSlotItem: (
+    slot: SupplementaryEquipmentSlotId,
+    itemId: string
+  ) => void;
   onUpdateMoney: (value: number) => void;
 };
 
@@ -173,6 +185,7 @@ export function CharacterInventorySection({
   onUnequipSharedItem,
   onUpdateWeaponHandSlotItem,
   onUpdateMainEquipmentSlotItem,
+  onUpdateSupplementaryEquipmentSlotItem,
   onUpdateMoney,
 }: CharacterInventorySectionProps) {
   const itemRulesContext = {
@@ -180,6 +193,15 @@ export function CharacterInventorySection({
     itemCategoryDefinitions,
     itemSubcategoryDefinitions,
   };
+  const enabledSupplementarySlotIdSet = new Set(
+    sheetState.enabledSupplementarySlotIds ?? []
+  );
+  const visibleEquipmentSlotIds = [
+    ...MAIN_EQUIPMENT_SLOT_IDS,
+    ...SUPPLEMENTARY_EQUIPMENT_SLOT_IDS.filter((slotId) =>
+      enabledSupplementarySlotIdSet.has(slotId)
+    ),
+  ];
   const referencedItemIds = [...new Set([
     ...(sheetState.ownedItemIds ?? []),
     ...(sheetState.inventoryItemIds ?? []),
@@ -192,7 +214,7 @@ export function CharacterInventorySection({
     .map((itemId) => itemsById[itemId])
     .filter((item): item is SharedItemRecord => item !== undefined);
   const sortedReferencedItems = sortItemsByName(referencedItems);
-  const mainEquipmentEntries = MAIN_EQUIPMENT_SLOT_IDS.map((slotId) => ({
+  const mainEquipmentEntries = visibleEquipmentSlotIds.map((slotId) => ({
     slotId,
     label: getEquipmentSlotLabel(slotId),
     entry: getEquipmentEntryBySlot(sheetState, slotId),
@@ -239,7 +261,9 @@ export function CharacterInventorySection({
                     onChange={(event) =>
                       isWeaponHandSlotId(slotId)
                         ? onUpdateWeaponHandSlotItem(slotId, event.target.value)
-                        : onUpdateMainEquipmentSlotItem(slotId, event.target.value)
+                        : isSupplementaryEquipmentSlotId(slotId)
+                          ? onUpdateSupplementaryEquipmentSlotItem(slotId, event.target.value)
+                          : onUpdateMainEquipmentSlotItem(slotId, event.target.value)
                     }
                   >
                     <option value="">No item</option>
@@ -553,7 +577,13 @@ export function CharacterInventorySection({
                           Equip
                         </button>
                       ) : null}
-                      {isCarried && !isEquipped && isMainSlotEquipItem(item, itemRulesContext) ? (
+                      {isCarried &&
+                      !isEquipped &&
+                      canEquipIntoVisibleNonHandSlot(
+                        item,
+                        itemRulesContext,
+                        enabledSupplementarySlotIdSet
+                      ) ? (
                         <button
                           type="button"
                           className="equipment-inline-button"

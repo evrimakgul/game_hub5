@@ -1,5 +1,15 @@
 # Task Log
 
+## 2026-04-11
+
+- `EQUIP-SUP-01` and `B01` completed together as Milestone 3.
+  - Added persisted per-character `enabledSupplementarySlotIds` state and a shared mutation path for enabling/disabling `orbital`, `earring`, and `charm` slots.
+  - Updated player/DM character-sheet equipment rendering so supplementary slots stay hidden until enabled and disabling an occupied supplementary slot clears only that slot's equipment entry.
+  - Added a new DM item interactions page from the dashboard for recipient selection, supplementary-slot activation, canonical item-card generation/refresh, revision inspection, and one-to-many item-card sharing.
+  - Extended the standalone Knowledge system with item-instance card builders and canonical `KnowledgeEntity.type = "item"` revision generation keyed by shared item id.
+  - Item-card sharing now grants knowledge ownerships and also syncs the shared item's learned/visible character lists for the recipients.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
 ## 2026-04-10
 
 - `ITEM-REFAC-01` completed.

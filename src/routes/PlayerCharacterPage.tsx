@@ -520,6 +520,9 @@ export function PlayerCharacterPage({
             onUnequipSharedItem={mutations.unequipSharedItem}
             onUpdateWeaponHandSlotItem={mutations.updateWeaponHandSlotItem}
             onUpdateMainEquipmentSlotItem={mutations.updateMainEquipmentSlotItem}
+            onUpdateSupplementaryEquipmentSlotItem={
+              mutations.updateSupplementaryEquipmentSlotItem
+            }
             onUpdateMoney={(value) => mutations.updateSheetField("money", value)}
           />
 

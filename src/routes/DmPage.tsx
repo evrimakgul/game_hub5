@@ -108,6 +108,13 @@ export function DmPage() {
             >
               Definition Management
             </button>
+            <button
+              type="button"
+              className="flow-secondary"
+              onClick={() => navigate("/dm/items/interactions")}
+            >
+              Item Interactions
+            </button>
           </article>
         </section>
       </section>
