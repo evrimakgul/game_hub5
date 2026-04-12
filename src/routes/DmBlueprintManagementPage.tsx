@@ -58,8 +58,7 @@ function parseNumericInput(value: string): number | null {
 function splitLines(value: string): string[] {
   return value
     .split("\n")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
+    .filter((entry) => entry.trim().length > 0);
 }
 
 function sortBlueprints(blueprints: ItemBlueprintRecord[]): ItemBlueprintRecord[] {

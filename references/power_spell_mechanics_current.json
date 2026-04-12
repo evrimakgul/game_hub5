@@ -36,8 +36,8 @@
       ],
       "spells": [
         {
-          "id": "assess_character",
-          "name": "Assess Character",
+          "id": "assess_entity",
+          "name": "Assess Entity",
           "kind": "knowledge",
           "actionCost": "bonus",
           "manaCost": 0,

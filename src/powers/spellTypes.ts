@@ -5,6 +5,7 @@ export type CastPowerMode = "self" | "aura";
 export type DamageMitigationChannel = "dr" | "soak";
 export type CastPowerVariantId =
   | "default"
+  | "assess_entity"
   | "assess_character"
   | "crowd_control"
   | "release_control"

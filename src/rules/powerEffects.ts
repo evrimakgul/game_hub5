@@ -482,7 +482,7 @@ export function getCastPowerModeOptionsForVariant(
 
 export function getCastPowerVariantOptions(power: PowerEntry): CastPowerVariantOption[] {
   if (power.id === "awareness") {
-    return [{ id: "assess_character", label: "Assess Character" }];
+    return [{ id: "assess_entity", label: "Assess Entity" }];
   }
 
   if (power.id === "body_reinforcement") {

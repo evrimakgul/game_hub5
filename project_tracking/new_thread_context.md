@@ -36,7 +36,7 @@ Stable completed architecture:
 
 Stable completed systems:
 - Knowledge System V1 exists for character cards through `KnowledgeEntity`, `KnowledgeRevision`, and `KnowledgeOwnership`.
-- `Assess Character` creates linked character-card revisions and history links.
+- `Assess Entity` creates linked character-card revisions and history links.
 - Power rewrite/source reconciliation is complete for:
   - Awareness
   - Body Reinforcement
@@ -47,7 +47,7 @@ Stable completed systems:
   - Necromancy
   - Shadow Control
 - Locked source-rule decisions:
-  - `Assess Character` keeps CR caps `6 / 9 / 12 / 15 / 18`.
+  - `Assess Entity` keeps CR caps `6 / 9 / 12 / 15 / 18`.
   - `Control Entity` uses `CHA + INT` at levels `1-3`.
   - `Control Entity` uses `CHA + INT + CC level` at levels `4-5`.
   - `Awakened Insight` currently grants temporary inspiration; uninspired-status interaction is still deferred.

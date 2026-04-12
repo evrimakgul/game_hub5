@@ -122,7 +122,7 @@ This roadmap is the active implementation source of truth for this branch.
 - Old embedded `intel_snapshot` history rows are discarded during hydration instead of being treated as real long-term storage.
 
 ### 4.2 Spell Integration
-- `Assess Character` now creates immutable linked character-card revisions during encounter resolution.
+- `Assess Entity` now creates immutable linked character-card revisions during encounter resolution.
 - The caster receives ownership of the new revision.
 - `History` remains a log, but linked intel rows now point to the exact revision involved.
 

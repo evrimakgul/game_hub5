@@ -202,8 +202,8 @@
           }
         },
         {
-          "id": "assess_character",
-          "name": "Assess Character",
+          "id": "assess_entity",
+          "name": "Assess Entity",
           "abbreviation": "AC",
           "parentSpellId": null,
           "spellRole": "standalone",
@@ -378,7 +378,7 @@
           },
           "validation": {
             "warnings": [
-              "Current awarenessModule only exposes assess_character."
+              "Current awarenessModule only exposes assess_entity."
             ]
           }
         }

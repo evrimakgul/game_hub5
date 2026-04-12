@@ -571,11 +571,15 @@ function joinList(values: string[]): string {
   return `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
 }
 
+function normalizeAssessEntityLabel(value: string): string {
+  return value.replaceAll("Assess Character", "Assess Entity");
+}
+
 function getAwarenessSections(level: number): PowerBenefitSection[] {
   const levelDefinition = getRuntimePowerLevelDefinition("awareness", level);
   const mechanics = asRecord(levelDefinition?.mechanics);
-  const assessCharacter = asRecord(mechanics?.assess_character);
-  const crLimitFormula = asRecord(assessCharacter?.cr_limit_formula);
+  const assessEntity = asRecord(mechanics?.assess_entity ?? mechanics?.assess_character);
+  const crLimitFormula = asRecord(assessEntity?.cr_limit_formula);
   const artifactAppraisalSummaryByLevel: Record<number, string> = {
     1: "Identifies masterwork or lesser items.",
     2: "Identifies rare or lesser items.",
@@ -594,10 +598,10 @@ function getAwarenessSections(level: number): PowerBenefitSection[] {
       bullets: ["Gain +1 temporary inspiration per session."],
     },
     {
-      title: "Assess Character",
+      title: "Assess Entity",
       bullets: [
         level >= 2 ? "Reveal stats, skills, powers, and specials." : "Reveal stats and skills.",
-        `Allowed CR equals min(PER + ${asNumber(crLimitFormula?.flat_bonus) ?? level}, ${asNumber(assessCharacter?.cr_cap) ?? 0}).`,
+        `Allowed CR equals min(PER + ${asNumber(crLimitFormula?.flat_bonus) ?? level}, ${asNumber(assessEntity?.cr_cap) ?? 0}).`,
         ...(level >= 3 ? ["Ignores techno-infused invisibility."] : []),
         ...(level >= 5 ? ["May share results with the party."] : []),
       ],
@@ -1217,7 +1221,9 @@ function hydrateGameHistory(value: unknown): GameHistoryEntry[] {
         type,
         actualDateTime,
         gameDateTime,
-        sourcePower: coerceString(entry.sourcePower, "Assess Character"),
+        sourcePower: normalizeAssessEntityLabel(
+          coerceString(entry.sourcePower, "Assess Entity")
+        ),
         targetCharacterId:
           typeof entry.targetCharacterId === "string" ? entry.targetCharacterId : null,
         targetName: coerceString(entry.targetName, "Unknown Target"),

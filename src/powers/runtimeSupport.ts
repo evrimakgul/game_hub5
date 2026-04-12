@@ -472,7 +472,7 @@ export function buildDefaultHealingAllocations(
   );
 }
 
-export function buildAssessCharacterHistoryEntry(
+export function buildAssessEntityHistoryEntry(
   casterSheet: CharacterRecord["sheet"],
   targetCharacter: CharacterRecord,
   actualDateTime: string,
@@ -488,7 +488,7 @@ export function buildAssessCharacterHistoryEntry(
     type: "intel_snapshot",
     actualDateTime,
     gameDateTime: casterSheet.gameDateTime,
-    sourcePower: `Assess Character Lv ${awarenessLevel}`,
+    sourcePower: `Assess Entity Lv ${awarenessLevel}`,
     targetCharacterId: targetCharacter.id,
     targetName: targetCharacter.sheet.name.trim() || targetCharacter.id,
     summary: `CR ${targetProgression.cr}, Rank ${targetProgression.rank}`,

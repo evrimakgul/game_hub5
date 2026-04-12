@@ -9,6 +9,7 @@ import {
   applyKnowledgeBatch,
   createItemKnowledgeRevision,
   createItemKnowledgeShareResult,
+  deleteKnowledgeRevision,
   findKnowledgeEntityBySubjectKey,
   getKnowledgeEntityById,
   getKnowledgeRevisionById,
@@ -51,6 +52,7 @@ export function DmItemInteractionsPage() {
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
   const [openKnowledgeRevisionId, setOpenKnowledgeRevisionId] = useState<string | null>(null);
+  const [pendingDeleteRevisionId, setPendingDeleteRevisionId] = useState<string | null>(null);
 
   const sortedCharacters = useMemo(() => sortCharacters(characters), [characters]);
   const sortedItems = useMemo(
@@ -159,6 +161,29 @@ export function DmItemInteractionsPage() {
     });
   }
 
+  function stripKnowledgeLinkFromAllHistories(revisionId: string): void {
+    characters.forEach((character) => {
+      const hasLinkedEntry = (character.sheet.gameHistory ?? []).some(
+        (entry) => entry.knowledgeLink?.knowledgeRevisionId === revisionId
+      );
+      if (!hasLinkedEntry) {
+        return;
+      }
+
+      updateCharacter(character.id, (currentSheet) => ({
+        ...currentSheet,
+        gameHistory: (currentSheet.gameHistory ?? []).map((entry) =>
+          entry.knowledgeLink?.knowledgeRevisionId === revisionId
+            ? {
+                ...entry,
+                knowledgeLink: null,
+              }
+            : entry
+        ),
+      }));
+    });
+  }
+
   function handleGenerateItemCard(): void {
     if (!selectedItem) {
       return;
@@ -196,6 +221,21 @@ export function DmItemInteractionsPage() {
     updateKnowledgeState(applyKnowledgeBatch(knowledgeState, result.batch));
     updateItem(selectedItem.id, result.item);
     appendHistoryEntries(result.historyEntries);
+  }
+
+  function handleDeleteSelectedRevision(): void {
+    if (!selectedRevision) {
+      return;
+    }
+
+    updateKnowledgeState((currentState) =>
+      deleteKnowledgeRevision(currentState, selectedRevision.id)
+    );
+    stripKnowledgeLinkFromAllHistories(selectedRevision.id);
+    if (openKnowledgeRevisionId === selectedRevision.id) {
+      setOpenKnowledgeRevisionId(null);
+    }
+    setPendingDeleteRevisionId(null);
   }
 
   return (
@@ -351,6 +391,34 @@ export function DmItemInteractionsPage() {
                   >
                     Share To Selected
                   </button>
+                  {pendingDeleteRevisionId === selectedRevision?.id ? (
+                    <>
+                      <button
+                        type="button"
+                        className="flow-danger is-confirm"
+                        disabled={!selectedRevision}
+                        onClick={handleDeleteSelectedRevision}
+                      >
+                        Confirm Delete
+                      </button>
+                      <button
+                        type="button"
+                        className="flow-cancel"
+                        onClick={() => setPendingDeleteRevisionId(null)}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="flow-danger"
+                      disabled={!selectedRevision}
+                      onClick={() => setPendingDeleteRevisionId(selectedRevision?.id ?? null)}
+                    >
+                      Delete Revision
+                    </button>
+                  )}
                 </div>
 
                 {selectedItemRevisions.length > 0 ? (

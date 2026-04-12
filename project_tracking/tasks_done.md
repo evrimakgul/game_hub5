@@ -43,9 +43,9 @@
 - `CS-RULE-01` Replaced manual-assisted physical attacks with automatic loadout-driven resolution, canonical hand-slot inference, automatic hit and damage rolls, DR mitigation, and detailed encounter activity logging.
 - `CS-UX-01` Replaced automatic `Brute Defiance` revival with a visible manual encounter trigger, clear eligibility text, and focused regression coverage.
 - `PWR-ARCH-01` Refactored spell preparation and passive derivation into the new `Action` / `Effect` runtime, power registry, and passive provider registry while preserving current powers, spells, local saves, and encounter UI flows.
-- `CS-HIST-01` Replaced the old embedded `Assess Character` history-only rendering path with linked knowledge revisions surfaced from `Game History`.
+- `CS-HIST-01` Replaced the old embedded `Assess Entity` history-only rendering path with linked knowledge revisions surfaced from `Game History`.
 - `KNOW-ARCH-01` Added standalone local-first `KnowledgeEntity`, `KnowledgeRevision`, and `KnowledgeOwnership` collections with persistence, hydration, and migration cleanup for legacy embedded intel rows.
-- `KNOW-SPELL-01` Changed `Assess Character` to mint immutable linked character-card revisions and assign ownership to the caster during encounter resolution.
+- `KNOW-SPELL-01` Changed `Assess Entity` to mint immutable linked character-card revisions and assign ownership to the caster during encounter resolution.
 - `KNOW-UI-01` Added exact knowledge-revision links in `Game History` with hover preview and click-to-open revision dialogs.
 - `KNOW-UI-02` Added a full-width inline `Knowledge` manager on the character sheet with revision browsing, duplicate, edited-copy, share, archive, pin, compare, and DM authoring/grant flows for character cards.
 - `ARCH-REM-01` Extracted encounter request execution, turn advance, upkeep, aura cleanup, summon lifecycle merges, and linked-knowledge/history application into a dedicated `EncounterExecutionEngine`, leaving `CombatEncounterPage.tsx` as a thin coordinator over request preparation and UI wiring.

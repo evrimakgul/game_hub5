@@ -119,7 +119,7 @@ Examples:
 
 ## Main Flows
 
-### 1. `Assess Character`
+### 1. `Assess Entity`
 - Cast spell.
 - Resolve target and build a structured character knowledge payload.
 - Find or create the target `KnowledgeEntity`.
@@ -199,7 +199,7 @@ Recommended actions:
    - `KnowledgeRevision`
    - `KnowledgeOwnership`
 2. Add storage, normalization, and migration support for the new collections.
-3. Change `Assess Character` so it creates knowledge revisions plus a linked history row.
+3. Change `Assess Entity` so it creates knowledge revisions plus a linked history row.
 4. Add history-row hover preview and click-to-open behavior for linked revisions.
 5. Add the `Knowledge` area to the character sheet.
 6. Add duplicate/share/archive/pin flows.

@@ -104,8 +104,8 @@ export async function runPowerRegistryTests(): Promise<void> {
         const cases = [
           {
             power: { id: "awareness", name: "Awareness", level: 5, governingStat: "PER" as const },
-            spellId: "assess_character" as const,
-            actionName: "AssessCharacterSpellAction",
+            spellId: "assess_entity" as const,
+            actionName: "AssessEntitySpellAction",
           },
           {
             power: {

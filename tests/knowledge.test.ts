@@ -8,10 +8,11 @@ import {
   createItemKnowledgeRevision,
   createItemKnowledgeShareResult,
   createKnowledgeShareResult,
+  deleteKnowledgeRevision,
   getKnowledgeGroupsForOwner,
 } from "../src/lib/knowledge.ts";
 import { createSharedItemRecord } from "../src/lib/items.ts";
-import { buildAssessCharacterHistoryEntry } from "../src/powers/runtimeSupport.ts";
+import { buildAssessEntityHistoryEntry } from "../src/powers/runtimeSupport.ts";
 import type { CharacterRecord } from "../src/types/character.ts";
 import { runTestSuite } from "./harness.ts";
 
@@ -33,14 +34,14 @@ function createCharacterRecord(
 export async function runKnowledgeTests(): Promise<void> {
   await runTestSuite("knowledge", [
     {
-      name: "linked assess character history creates a revisioned knowledge card",
+      name: "linked assess entity history creates a revisioned knowledge card",
       run: () => {
         const caster = createCharacterRecord("caster-1", "Veli", "player");
         const target = createCharacterRecord("target-1", "Ali", "player");
         caster.sheet.powers = [
           { id: "awareness", name: "Awareness", level: 3, governingStat: "PER" },
         ];
-        const historyEntry = buildAssessCharacterHistoryEntry(
+        const historyEntry = buildAssessEntityHistoryEntry(
           caster.sheet,
           target,
           "04.04.2026 12:00"
@@ -81,7 +82,7 @@ export async function runKnowledgeTests(): Promise<void> {
         caster.sheet.powers = [
           { id: "awareness", name: "Awareness", level: 3, governingStat: "PER" },
         ];
-        const baseEntry = buildAssessCharacterHistoryEntry(
+        const baseEntry = buildAssessEntityHistoryEntry(
           caster.sheet,
           target,
           "04.04.2026 12:00"
@@ -199,6 +200,38 @@ export async function runKnowledgeTests(): Promise<void> {
           "recipient-a",
           "recipient-b",
         ]);
+      },
+    },
+    {
+      name: "deleting an item revision removes its ownerships and drops the entity when empty",
+      run: () => {
+        const recipient = createCharacterRecord("recipient-z", "Zeynep", "player");
+        const item = createSharedItemRecord("range:light_crossbow", {
+          id: "item-delete-1",
+          name: "Light Crossbow",
+        });
+        const created = createItemKnowledgeRevision({
+          state: createEmptyKnowledgeState(),
+          item,
+          createdByCharacterId: null,
+          sourceType: "dm_grant",
+        });
+        const knowledgeState = applyKnowledgeBatch(createEmptyKnowledgeState(), created.batch);
+        const shared = createItemKnowledgeShareResult({
+          state: knowledgeState,
+          item,
+          entity: created.entity,
+          revision: created.revision,
+          sourceOwnerName: "DM",
+          recipientCharacters: [recipient],
+        });
+        const populatedState = applyKnowledgeBatch(knowledgeState, shared.batch);
+
+        const nextState = deleteKnowledgeRevision(populatedState, created.revision.id);
+
+        assert.equal(nextState.knowledgeRevisions.length, 0);
+        assert.equal(nextState.knowledgeOwnerships.length, 0);
+        assert.equal(nextState.knowledgeEntities.length, 0);
       },
     },
   ]);

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import { EncounterExecutionEngine } from "../src/engine/encounterExecutionEngine.ts";
-import { buildAssessCharacterHistoryEntry } from "../src/powers/runtimeSupport.ts";
+import { buildAssessEntityHistoryEntry } from "../src/powers/runtimeSupport.ts";
 import type { ActivePowerEffect } from "../src/types/activePowerEffects.ts";
 import type { CharacterRecord } from "../src/types/character.ts";
 import type {
@@ -161,14 +161,14 @@ function createAuraSharedEffect(
 export async function runEncounterExecutionEngineTests(): Promise<void> {
   await runTestSuite("encounterExecutionEngine", [
     {
-      name: "executePreparedRequest links Assess Character history rows into knowledge revisions",
+      name: "executePreparedRequest links Assess Entity history rows into knowledge revisions",
       run: () => {
         const caster = createCharacterRecord("caster-1", "Veli", "player");
         const target = createCharacterRecord("target-1", "Ali", "player");
         caster.sheet.powers = [
           { id: "awareness", name: "Awareness", level: 3, governingStat: "PER" },
         ];
-        const historyEntry = buildAssessCharacterHistoryEntry(
+        const historyEntry = buildAssessEntityHistoryEntry(
           caster.sheet,
           target,
           "04.04.2026 12:00"

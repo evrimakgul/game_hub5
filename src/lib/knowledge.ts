@@ -30,7 +30,7 @@ import {
   isKnowledgeRevisionSectionKind,
   isKnowledgeSourceType,
 } from "../types/knowledge.ts";
-import { buildAssessCharacterHistoryEntry } from "../powers/runtimeSupport.ts";
+import { buildAssessEntityHistoryEntry } from "../powers/runtimeSupport.ts";
 import { buildCharacterDerivedValues } from "../config/characterRuntime.ts";
 import { buildCharacterEncounterSnapshot } from "../rules/combatEncounter.ts";
 import { getCrAndRankFromXpUsed } from "../rules/xpTables.ts";
@@ -125,6 +125,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function coerceString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
+}
+
+function normalizeAssessEntityLabel(value: string): string {
+  return value.replaceAll("Assess Character", "Assess Entity");
+}
+
+function normalizeAssessEntityTag(value: string): string {
+  return value === "assess_character" ? "assess_entity" : value;
 }
 
 function normalizeEntries(
@@ -262,12 +270,17 @@ export function hydrateKnowledgeRevision(value: unknown): KnowledgeRevision | nu
     summary,
     content,
     tags: Array.isArray(value.tags)
-      ? value.tags.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+      ? value.tags
+          .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+          .map(normalizeAssessEntityTag)
       : [],
     createdAt,
     createdByCharacterId: typeof value.createdByCharacterId === "string" ? value.createdByCharacterId : null,
     sourceType: value.sourceType,
-    sourceSpellName: typeof value.sourceSpellName === "string" ? value.sourceSpellName : null,
+    sourceSpellName:
+      typeof value.sourceSpellName === "string"
+        ? normalizeAssessEntityLabel(value.sourceSpellName)
+        : null,
     sourceHistoryEntryId: typeof value.sourceHistoryEntryId === "string" ? value.sourceHistoryEntryId : null,
     parentRevisionId: typeof value.parentRevisionId === "string" ? value.parentRevisionId : null,
     lineageMode: value.lineageMode,
@@ -372,6 +385,42 @@ export function applyKnowledgeBatch(currentState: KnowledgeState, batch: Knowled
     knowledgeEntities: [...nextEntities.values()],
     knowledgeRevisions: [...nextRevisions.values()],
     knowledgeOwnerships: [...nextOwnerships.values()],
+  };
+}
+
+export function deleteKnowledgeRevision(
+  state: KnowledgeState,
+  revisionId: string
+): KnowledgeState {
+  const revision = getKnowledgeRevisionById(state, revisionId);
+  if (!revision) {
+    return state;
+  }
+
+  const nextRevisions = state.knowledgeRevisions
+    .filter((entry) => entry.id !== revisionId)
+    .map((entry) =>
+      entry.parentRevisionId === revisionId
+        ? {
+            ...entry,
+            parentRevisionId: null,
+          }
+        : entry
+    );
+  const nextOwnerships = state.knowledgeOwnerships.filter(
+    (ownership) => ownership.revisionId !== revisionId
+  );
+  const entityStillHasRevisions = nextRevisions.some(
+    (entry) => entry.entityId === revision.entityId
+  );
+  const nextEntities = entityStillHasRevisions
+    ? state.knowledgeEntities
+    : state.knowledgeEntities.filter((entity) => entity.id !== revision.entityId);
+
+  return {
+    knowledgeEntities: nextEntities,
+    knowledgeRevisions: nextRevisions,
+    knowledgeOwnerships: nextOwnerships,
   };
 }
 
@@ -901,7 +950,7 @@ export function buildLinkedCharacterKnowledgeBatchFromIntelEntry(args: {
     title: `${entity.displayName} Card`,
     summary: args.entry.summary,
     content: buildCharacterKnowledgeSectionsFromIntelEntry(args.entry),
-    tags: ["character", "assess_character"],
+    tags: ["character", "assess_entity"],
     createdAt: getIsoTimestamp(now),
     createdByCharacterId: args.casterCharacter.id,
     sourceType: "spell",
@@ -935,7 +984,7 @@ export function buildLinkedCharacterKnowledgeBatchFromIntelEntry(args: {
   };
 }
 
-export function buildCharacterKnowledgeBatchFromAssessCharacter(args: {
+export function buildCharacterKnowledgeBatchFromAssessEntity(args: {
   casterCharacter: CharacterRecord;
   targetCharacter: CharacterRecord;
   state: KnowledgeState;
@@ -943,7 +992,7 @@ export function buildCharacterKnowledgeBatchFromAssessCharacter(args: {
   now?: Date;
 }): { batch: KnowledgeBatch; historyEntry: GameHistoryEntry } {
   const now = args.now ?? new Date();
-  const baseHistoryEntry = buildAssessCharacterHistoryEntry(
+  const baseHistoryEntry = buildAssessEntityHistoryEntry(
     args.casterCharacter.sheet,
     args.targetCharacter,
     formatActualDateTime(now),
@@ -981,7 +1030,7 @@ export function buildCharacterKnowledgeBatchFromAssessCharacter(args: {
     title: `${entity.displayName} Card`,
     summary: baseHistoryEntry.summary,
     content: buildCharacterKnowledgeSectionsFromIntelEntry(baseHistoryEntry),
-    tags: ["character", "assess_character"],
+    tags: ["character", "assess_entity"],
     createdAt: getIsoTimestamp(now),
     createdByCharacterId: args.casterCharacter.id,
     sourceType: "spell",
@@ -1063,6 +1112,24 @@ export function getKnowledgeGroupsForOwner(
 
       return left.entity.displayName.localeCompare(right.entity.displayName);
     });
+}
+
+export function characterOwnsItemKnowledgeCard(
+  state: KnowledgeState,
+  ownerCharacterId: string,
+  itemId: string
+): boolean {
+  const entity = findKnowledgeEntityBySubjectKey(state, "item", itemId);
+  if (!entity) {
+    return false;
+  }
+
+  const indexes = buildKnowledgeIndexes(state);
+  const ownerships = indexes.ownershipsByOwnerId.get(ownerCharacterId) ?? [];
+  return ownerships.some((ownership) => {
+    const revision = indexes.revisionById.get(ownership.revisionId);
+    return revision?.entityId === entity.id;
+  });
 }
 
 export function buildKnowledgeAcquiredHistoryEntry(args: {

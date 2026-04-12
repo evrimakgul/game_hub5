@@ -27,16 +27,16 @@
     {
       "id": "awareness",
       "variantsByLevel": {
-        "1": ["assess_character"],
-        "2": ["assess_character"],
-        "3": ["assess_character"],
-        "4": ["assess_character"],
-        "5": ["assess_character"]
+        "1": ["assess_entity"],
+        "2": ["assess_entity"],
+        "3": ["assess_entity"],
+        "4": ["assess_entity"],
+        "5": ["assess_entity"]
       },
       "spells": [
         {
-          "id": "assess_character",
-          "label": "Assess Character",
+          "id": "assess_entity",
+          "label": "Assess Entity",
           "flowsByLevel": {
             "1": ["power", "spell", "target"],
             "2": ["power", "spell", "target"],

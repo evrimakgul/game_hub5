@@ -42,6 +42,7 @@ This file tracks active reminders for the current implementation block.
 - Supplementary `orbital`, `earring`, and `charm/talisman` slots now use persisted per-character activation and stay hidden until enabled.
 - Item knowledge cards now exist as standalone `KnowledgeEntity.type = "item"` revisions keyed by shared item id.
 - Sharing an item card now also marks that shared item learned and visible for the recipients.
+- Hidden item bonus rendering should key off item-card ownership for the viewer, not a separate raw identify flag. `Artifact Appraisal` should reveal by granting the item card.
 
 ## Known Structural Gaps
 - Shared item editing is still not a full end-state authoring workflow, but item-card generation/share and supplementary-slot activation now exist in the DM item interactions hub.
@@ -52,6 +53,7 @@ This file tracks active reminders for the current implementation block.
 - The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
 - Classic bow / crossbow action-cost and movement rules are still represented only as visible notes; runtime timing support remains deferred to the later combat-action pass.
 - Full `Artifact Appraisal` runtime integration remains deferred.
+- `Assess Entity` should keep card output totals-only for entities without exposing hidden item bonus details or item-card internals.
 
 ## Knowledge System V1
 - Keep `History` as an event log.

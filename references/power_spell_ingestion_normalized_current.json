@@ -46,8 +46,8 @@
           "rules": ["Adds a utility trait for techno-invisibility immunity."]
         },
         {
-          "id": "assess_character",
-          "name": "Assess Character",
+          "id": "assess_entity",
+          "name": "Assess Entity",
           "type": "active",
           "availability": "level 1+",
           "cost": "bonus action; 0 mana",

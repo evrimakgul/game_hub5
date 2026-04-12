@@ -3,10 +3,18 @@ import assert from "node:assert/strict";
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import {
   buildItemIndex,
+  canViewerSeeItemBonusDetails,
+  createEmptyBonusProfile,
+  createItemBlueprintRecord,
+  createItemCategoryDefinitionRecord,
   createItemCustomPropertyRecord,
+  createItemSubcategoryDefinitionRecord,
   createSharedItemRecord,
   getItemCompactHeaderSummary,
   normalizeItemCustomPropertyRecords,
+  setProfileNotes,
+  setProfileUtilityTraits,
+  syncSharedItemRecordWithBlueprint,
 } from "../src/lib/items.ts";
 import {
   setCharacterEquipmentSlotItem,
@@ -30,6 +38,103 @@ export async function runItemBehaviorTests(): Promise<void> {
         assert.equal(property.notes, "Fire and Cold");
         assert.equal(normalized[0]?.label, "Resistance Bundle");
         assert.equal(normalized[0]?.notes, "Fire and Cold");
+      },
+    },
+    {
+      name: "blank editable labels remain blank instead of being reset to defaults",
+      run: () => {
+        const blueprint = createItemBlueprintRecord({
+          id: "blueprint:blank-text",
+          label: "",
+          defaultName: "  ",
+        });
+        const category = createItemCategoryDefinitionRecord({
+          id: "category:blank-text",
+          name: "",
+        });
+        const subcategory = createItemSubcategoryDefinitionRecord({
+          id: "subcategory:blank-text",
+          categoryId: "melee",
+          name: "  ",
+        });
+        const property = createItemCustomPropertyRecord({
+          id: "property:blank-text",
+          label: "",
+        });
+
+        assert.equal(blueprint.label, "");
+        assert.equal(blueprint.defaultName, "  ");
+        assert.equal(category.name, "");
+        assert.equal(subcategory.name, "  ");
+        assert.equal(property.label, "");
+      },
+    },
+    {
+      name: "synced items preserve blank names and spaces in visible instance notes",
+      run: () => {
+        const blueprint = createItemBlueprintRecord({
+          id: "blueprint:item-text",
+          label: "Blueprint",
+          defaultName: "Fallback Name",
+        });
+        const item = syncSharedItemRecordWithBlueprint(
+          {
+            ...createSharedItemRecord(blueprint.id, {}, [blueprint]),
+            name: "",
+            baseDescription: "Visible note with spaces ",
+          },
+          blueprint
+        );
+
+        assert.equal(item.name, "");
+        assert.equal(item.baseDescription, "Visible note with spaces ");
+      },
+    },
+    {
+      name: "profile note fields preserve spaces while still dropping empty lines",
+      run: () => {
+        const profileWithTraits = setProfileUtilityTraits(createEmptyBonusProfile(), [
+          "Quick Draw ",
+          "   ",
+          " Heavy Pull",
+        ]);
+        const profileWithNotes = setProfileNotes(createEmptyBonusProfile(), [
+          "Can move 10 m with attack ",
+          "",
+          " Uses move action",
+        ]);
+
+        assert.deepEqual(profileWithTraits.utilityTraits, ["Quick Draw ", " Heavy Pull"]);
+        assert.deepEqual(profileWithNotes.notes, [
+          "Can move 10 m with attack ",
+          " Uses move action",
+        ]);
+      },
+    },
+    {
+      name: "item bonus detail visibility is gated by item-card ownership",
+      run: () => {
+        const item = createSharedItemRecord("weapon:one_handed", {
+          id: "item-card-gated-1",
+          name: "Hidden Blade",
+          bonusProfile: {
+            ...createEmptyBonusProfile(),
+            derivedBonuses: { meleeDamage: 2 },
+          },
+          knowledge: {
+            learnedCharacterIds: ["player-1"],
+            visibleCharacterIds: ["player-1"],
+          },
+        });
+
+        assert.equal(
+          canViewerSeeItemBonusDetails(item, "player-1", false, false),
+          false
+        );
+        assert.equal(
+          canViewerSeeItemBonusDetails(item, "player-1", true, false),
+          true
+        );
       },
     },
     {

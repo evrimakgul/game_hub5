@@ -462,13 +462,17 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
 
         assert.equal(state.characters[0]?.sheet.gameHistory.length, 1);
         assert.equal(state.characters[0]?.sheet.gameHistory[0]?.type, "note");
+        assert.equal(
+          state.knowledgeRevisions[0]?.sourceSpellName,
+          "Assess Entity Lv 3"
+        );
         assert.equal(state.knowledgeEntities.length, 1);
         assert.equal(state.knowledgeRevisions.length, 1);
         assert.equal(state.knowledgeOwnerships.length, 1);
       },
     },
     {
-      name: "hydratePersistedCharacters preserves spell bonuses on shared items",
+      name: "hydratePersistedCharacters normalizes legacy assess spell bonuses on shared items",
       run: () => {
         const item = createSharedItemRecord("mystic:mystic", {
           id: "spell-item-1",
@@ -491,8 +495,12 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         );
 
         assert.equal(
-          buildItemIndex(state.items)["spell-item-1"]?.bonusProfile.spellBonuses["awareness:assess_character"],
+          buildItemIndex(state.items)["spell-item-1"]?.bonusProfile.spellBonuses["awareness:assess_entity"],
           1
+        );
+        assert.equal(
+          buildItemIndex(state.items)["spell-item-1"]?.bonusProfile.spellBonuses["awareness:assess_character"],
+          undefined
         );
       },
     },

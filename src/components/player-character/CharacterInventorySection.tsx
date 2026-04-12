@@ -1,25 +1,18 @@
 import type { CharacterDraft } from "../../config/characterTemplate";
 import {
   canCharacterIdentifyItem,
+  canViewerSeeItemBonusDetails,
   getEquipmentSlotLabel,
   getEquipmentEntryBySlot,
   getEquipmentSlotOccupancy,
   getItemAllowedEquipSlots,
   getItemCompactHeaderSummary,
   getItemMechanicalRole,
-  getItemPropertyPoints,
-  getItemTierLabel,
   getWeaponHandSlotLabel,
-  getItemBlueprintId,
-  getVisibleItemBonusNotes,
-  hasCharacterLearnedItem,
-  isItemBonusVisibleToCharacter,
 } from "../../lib/items.ts";
 import type {
-  ItemBlueprintId,
   ItemBlueprintRecord,
   ItemCategoryDefinition,
-  ItemDerivedModifierId,
   MainEquipmentSlotId,
   ItemSubcategoryDefinition,
   SharedItemRecord,
@@ -32,24 +25,6 @@ import {
   isSupplementaryEquipmentSlotId,
   isWeaponHandSlotId,
 } from "../../types/items.ts";
-import type { StatId } from "../../types/character";
-
-const STAT_BONUS_FIELDS: StatId[] = ["STR", "DEX", "STAM", "CHA", "APP", "MAN", "INT", "WITS", "PER"];
-const DERIVED_BONUS_FIELDS: Array<{ id: ItemDerivedModifierId; label: string }> = [
-  { id: "max_hp", label: "Max HP" },
-  { id: "max_mana", label: "Max Mana" },
-  { id: "initiative", label: "Initiative" },
-  { id: "inspiration", label: "Inspiration" },
-  { id: "attack_dice_bonus", label: "Attack Dice" },
-  { id: "melee_attack", label: "Melee Attack" },
-  { id: "ranged_attack", label: "Ranged Attack" },
-  { id: "armor_class", label: "AC" },
-  { id: "damage_reduction", label: "DR" },
-  { id: "soak", label: "Soak" },
-  { id: "melee_damage", label: "Melee Damage" },
-  { id: "ranged_damage", label: "Ranged Damage" },
-];
-
 function sortItemsByName(items: SharedItemRecord[]): SharedItemRecord[] {
   return [...items].sort((left, right) => left.name.localeCompare(right.name));
 }
@@ -116,38 +91,11 @@ type CharacterInventorySectionProps = {
   itemBlueprints: ItemBlueprintRecord[];
   itemCategoryDefinitions: ItemCategoryDefinition[];
   itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
-  blueprintOptions: Array<{
-    id: ItemBlueprintId;
-    category: string;
-    subtype: string;
-    categoryDefinitionId: string;
-    subcategoryDefinitionId: string;
-    label: string;
-    isLegacy?: boolean;
-    isDeprecated?: boolean;
-  }>;
+  ownedItemCardIds: Set<string>;
+  revealAllItemBonusDetails: boolean;
   artifactAppraisalLevel: number;
   isSheetEditMode: boolean;
-  onCreateSharedItem: (blueprintId: ItemBlueprintId) => void;
-  onUpdateSharedItemField: (
-    itemId: string,
-    field: "name" | "baseDescription",
-    value: string
-  ) => void;
-  onUpdateSharedItemBlueprint: (itemId: string, blueprintId: ItemBlueprintId) => void;
-  onUpdateSharedItemBonusNotes: (itemId: string, value: string) => void;
-  onUpdateSharedItemStatBonus: (itemId: string, statId: StatId, value: string) => void;
-  onUpdateSharedItemDerivedBonus: (
-    itemId: string,
-    targetId: ItemDerivedModifierId,
-    value: string
-  ) => void;
-  onUpdateSharedItemOwnedState: (itemId: string, isOwned: boolean) => void;
-  onUpdateSharedItemInventoryState: (itemId: string, isCarried: boolean) => void;
-  onUpdateSharedItemActiveState: (itemId: string, isActive: boolean) => void;
   onIdentifySharedItem: (itemId: string) => void;
-  onMaskSharedItem: (itemId: string) => void;
-  onDeleteSharedItem: (itemId: string) => void;
   onEquipSharedItem: (itemId: string, slot?: string) => void;
   onUnequipSharedItem: (itemId: string) => void;
   onUpdateWeaponHandSlotItem: (slot: WeaponHandSlotId, itemId: string) => void;
@@ -166,21 +114,11 @@ export function CharacterInventorySection({
   itemBlueprints,
   itemCategoryDefinitions,
   itemSubcategoryDefinitions,
-  blueprintOptions,
+  ownedItemCardIds,
+  revealAllItemBonusDetails,
   artifactAppraisalLevel,
   isSheetEditMode,
-  onCreateSharedItem,
-  onUpdateSharedItemField,
-  onUpdateSharedItemBlueprint,
-  onUpdateSharedItemBonusNotes,
-  onUpdateSharedItemStatBonus,
-  onUpdateSharedItemDerivedBonus,
-  onUpdateSharedItemOwnedState,
-  onUpdateSharedItemInventoryState,
-  onUpdateSharedItemActiveState,
   onIdentifySharedItem,
-  onMaskSharedItem,
-  onDeleteSharedItem,
   onEquipSharedItem,
   onUnequipSharedItem,
   onUpdateWeaponHandSlotItem,
@@ -292,41 +230,48 @@ export function CharacterInventorySection({
                 </div>
                 <div className="equipment-read-meta">
                   {item && (!occupancy || occupancy.isAnchorSlot) ? (
-                    <>
-                      <em>{getItemCompactHeaderSummary(item, itemRulesContext)}</em>
-                      <div className="equipment-inline-actions">
-                        <button
-                          type="button"
-                          className="equipment-inline-button"
-                          onClick={() => onUnequipSharedItem(item.id)}
-                        >
-                          Unequip
-                        </button>
-                        {isItemBonusVisibleToCharacter(item, characterId) ? (
-                          <button
-                            type="button"
-                            className="equipment-inline-button"
-                            onClick={() => onMaskSharedItem(item.id)}
-                          >
-                            Mask
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="equipment-inline-button"
-                            disabled={
-                              !(
-                                hasCharacterLearnedItem(item, characterId) ||
-                                canCharacterIdentifyItem(item, artifactAppraisalLevel)
-                              )
-                            }
-                            onClick={() => onIdentifySharedItem(item.id)}
-                          >
-                            Identify
-                          </button>
-                        )}
-                      </div>
-                    </>
+                    (() => {
+                      const hasOwnedItemCard = ownedItemCardIds.has(item.id);
+                      const canShowBonusDetails = canViewerSeeItemBonusDetails(
+                        item,
+                        characterId,
+                        hasOwnedItemCard,
+                        revealAllItemBonusDetails
+                      );
+                      const canIdentify =
+                        !hasOwnedItemCard &&
+                        canCharacterIdentifyItem(item, artifactAppraisalLevel);
+
+                      return (
+                        <>
+                          <em>
+                            {getItemCompactHeaderSummary(item, {
+                              ...itemRulesContext,
+                              includeBonus: canShowBonusDetails,
+                            })}
+                          </em>
+                          <div className="equipment-inline-actions">
+                            <button
+                              type="button"
+                              className="equipment-inline-button"
+                              onClick={() => onUnequipSharedItem(item.id)}
+                            >
+                              Unequip
+                            </button>
+                            {!revealAllItemBonusDetails && !hasOwnedItemCard ? (
+                              <button
+                                type="button"
+                                className="equipment-inline-button"
+                                disabled={!canIdentify}
+                                onClick={() => onIdentifySharedItem(item.id)}
+                              >
+                                Identify
+                              </button>
+                            ) : null}
+                          </div>
+                        </>
+                      );
+                    })()
                   ) : occupancy && !occupancy.isAnchorSlot ? (
                     <em>This slot is occupied as part of a multi-slot item.</em>
                   ) : (
@@ -360,158 +305,24 @@ export function CharacterInventorySection({
           </div>
         </div>
 
-        {isSheetEditMode ? (
-          <>
-            <div className="equipment-add-row">
-              {blueprintOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className="flow-secondary"
-                  onClick={() => onCreateSharedItem(option.id)}
-                >
-                  Add {option.label}
-                </button>
-              ))}
-            </div>
-
-            {sortedReferencedItems.length === 0 ? (
-              <p className="empty-block-copy">No shared items linked to this character.</p>
-            ) : (
-              <div className="equipment-item-edit-list">
-                {sortedReferencedItems.map((item) => (
-                  <div key={item.id} className="equipment-item-edit-row">
-                    <div className="equipment-item-edit-grid equipment-item-edit-grid-primary">
-                      <input
-                        className="sheet-meta-input"
-                        value={item.name}
-                        onChange={(event) => onUpdateSharedItemField(item.id, "name", event.target.value)}
-                        placeholder="Item name"
-                      />
-                      <select
-                        className="sheet-meta-input"
-                        value={getItemBlueprintId(item)}
-                        onChange={(event) =>
-                          onUpdateSharedItemBlueprint(item.id, event.target.value as ItemBlueprintId)
-                        }
-                      >
-                        {blueprintOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="sheet-meta-input"
-                        value={`PP ${getItemPropertyPoints(item)}`}
-                        readOnly
-                        aria-label="Property points"
-                      />
-                      <input
-                        className="sheet-meta-input"
-                        value={getItemTierLabel(item)}
-                        readOnly
-                        aria-label="Item tier"
-                      />
-                    </div>
-                    <div className="equipment-item-edit-grid equipment-item-edit-grid-secondary">
-                      <input
-                        className="sheet-meta-input"
-                        value={item.baseDescription}
-                        onChange={(event) =>
-                          onUpdateSharedItemField(item.id, "baseDescription", event.target.value)
-                        }
-                        placeholder="Base description"
-                      />
-                      <label className="equipment-toggle">
-                        <input
-                          type="checkbox"
-                          checked={sheetState.ownedItemIds.includes(item.id)}
-                          onChange={(event) =>
-                            onUpdateSharedItemOwnedState(item.id, event.target.checked)
-                          }
-                        />
-                        Owned
-                      </label>
-                      <label className="equipment-toggle">
-                        <input
-                          type="checkbox"
-                          checked={sheetState.inventoryItemIds.includes(item.id)}
-                          onChange={(event) =>
-                            onUpdateSharedItemInventoryState(item.id, event.target.checked)
-                          }
-                        />
-                        Carrying
-                      </label>
-                      <label className="equipment-toggle">
-                        <input
-                          type="checkbox"
-                          checked={sheetState.activeItemIds.includes(item.id)}
-                          onChange={(event) =>
-                            onUpdateSharedItemActiveState(item.id, event.target.checked)
-                          }
-                        />
-                        Active
-                      </label>
-                      <button
-                        type="button"
-                        className="equipment-inline-button"
-                        onClick={() => onDeleteSharedItem(item.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    <textarea
-                      className="sheet-meta-input equipment-notes-input"
-                      rows={2}
-                      value={item.bonusProfile.notes.join("\n")}
-                      onChange={(event) => onUpdateSharedItemBonusNotes(item.id, event.target.value)}
-                      placeholder="Hidden bonus notes, one per line"
-                    />
-                    <div className="equipment-bonus-grid">
-                      {STAT_BONUS_FIELDS.map((statId) => (
-                        <label key={`${item.id}:${statId}`} className="equipment-bonus-field">
-                          <span>{statId}</span>
-                          <input
-                            className="badge-input"
-                            type="number"
-                            value={item.bonusProfile.statBonuses[statId] ?? ""}
-                            onChange={(event) =>
-                              onUpdateSharedItemStatBonus(item.id, statId, event.target.value)
-                            }
-                          />
-                        </label>
-                      ))}
-                    </div>
-                    <div className="equipment-bonus-grid equipment-derived-grid">
-                      {DERIVED_BONUS_FIELDS.map((field) => (
-                        <label key={`${item.id}:${field.id}`} className="equipment-bonus-field">
-                          <span>{field.label}</span>
-                          <input
-                            className="badge-input"
-                            type="number"
-                            value={item.bonusProfile.derivedBonuses[field.id] ?? ""}
-                            onChange={(event) =>
-                              onUpdateSharedItemDerivedBonus(item.id, field.id, event.target.value)
-                            }
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        ) : unequippedReferencedItems.length === 0 ? (
-          <p className="empty-block-copy">No unequipped items linked to this character.</p>
+        {unequippedReferencedItems.length === 0 ? (
+          <p className="empty-block-copy">
+            No unequipped items linked to this character. Create and assign items from the DM item workflow.
+          </p>
         ) : (
           <div className="equipment-compact-list">
             {unequippedReferencedItems.map((item) => {
-              const visibleBonusNotes = getVisibleItemBonusNotes(item, characterId);
-              const hasLearned = hasCharacterLearnedItem(item, characterId);
-              const isVisible = isItemBonusVisibleToCharacter(item, characterId);
-              const canIdentify = hasLearned || canCharacterIdentifyItem(item, artifactAppraisalLevel);
+              const hasOwnedItemCard = ownedItemCardIds.has(item.id);
+              const canShowBonusDetails = canViewerSeeItemBonusDetails(
+                item,
+                characterId,
+                hasOwnedItemCard,
+                revealAllItemBonusDetails
+              );
+              const visibleBonusNotes = canShowBonusDetails ? [...item.bonusProfile.notes] : [];
+              const canIdentify =
+                !hasOwnedItemCard &&
+                canCharacterIdentifyItem(item, artifactAppraisalLevel);
               const equippedSlots = (sheetState.equipment ?? [])
                 .filter((entry) => entry.itemId === item.id)
                 .map((entry) =>
@@ -525,7 +336,10 @@ export function CharacterInventorySection({
                   <div className="equipment-compact-main">
                     <strong>{item.name}</strong>
                     <span className="equipment-line-detail">
-                      {getItemCompactHeaderSummary(item, itemRulesContext)}
+                      {getItemCompactHeaderSummary(item, {
+                        ...itemRulesContext,
+                        includeBonus: canShowBonusDetails,
+                      })}
                     </span>
                     <small className="equipment-state-line">
                       {[
@@ -541,7 +355,7 @@ export function CharacterInventorySection({
                   <div className="equipment-read-meta">
                     {visibleBonusNotes.length > 0 ? (
                       <em>{visibleBonusNotes.join(" | ")}</em>
-                    ) : item.bonusProfile.notes.length > 0 ? (
+                    ) : item.bonusProfile.notes.length > 0 && !canShowBonusDetails ? (
                       <em>Bonus details hidden.</em>
                     ) : null}
                     <div className="equipment-inline-actions">
@@ -592,24 +406,18 @@ export function CharacterInventorySection({
                           Equip
                         </button>
                       ) : null}
-                      {isVisible ? (
-                        <button
-                          type="button"
-                          className="equipment-inline-button"
-                          onClick={() => onMaskSharedItem(item.id)}
-                        >
-                          Mask
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="equipment-inline-button"
-                          disabled={!canIdentify}
-                          onClick={() => onIdentifySharedItem(item.id)}
-                        >
-                          Identify
-                        </button>
-                      )}
+                      {!revealAllItemBonusDetails && !hasOwnedItemCard ? (
+                        <div className="equipment-inline-actions">
+                          <button
+                            type="button"
+                            className="equipment-inline-button"
+                            disabled={!canIdentify}
+                            onClick={() => onIdentifySharedItem(item.id)}
+                          >
+                            Identify
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>

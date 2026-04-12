@@ -368,6 +368,20 @@ function sanitizeStringArray(value: unknown): string[] {
   ];
 }
 
+function sanitizeEditableTextArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      value
+        .filter((entry): entry is string => typeof entry === "string")
+        .filter((entry) => entry.trim().length > 0)
+    ),
+  ];
+}
+
 function sanitizeEquipSlotArray(value: unknown): CanonicalEquipmentSlotId[] {
   if (!Array.isArray(value)) {
     return [];
@@ -504,7 +518,7 @@ export function createItemCustomPropertyRecord(
       typeof overrides.id === "string" && overrides.id.trim().length > 0
         ? overrides.id
         : createTimestampedId("item-prop"),
-    label: rawLabel.trim().length > 0 ? rawLabel : "Custom Property",
+    label: typeof overrides.label === "string" ? rawLabel : "Custom Property",
     notes: rawNotes,
     ppCost: normalizeInteger(overrides.ppCost, 0),
     value: normalizeInteger(overrides.value, 0),
@@ -828,10 +842,7 @@ export function createItemCategoryDefinitionRecord(
       typeof overrides.id === "string" && overrides.id.trim().length > 0
         ? overrides.id.trim()
         : createTimestampedId("item-category"),
-    name:
-      typeof overrides.name === "string" && overrides.name.trim().length > 0
-        ? overrides.name.trim()
-        : "Custom Category",
+    name: typeof overrides.name === "string" ? overrides.name : "Custom Category",
   };
 }
 
@@ -852,10 +863,7 @@ export function createItemSubcategoryDefinitionRecord(
       typeof overrides.categoryId === "string" && overrides.categoryId.trim().length > 0
         ? overrides.categoryId.trim()
         : "melee",
-    name:
-      typeof overrides.name === "string" && overrides.name.trim().length > 0
-        ? overrides.name.trim()
-        : "Custom Subcategory",
+    name: typeof overrides.name === "string" ? overrides.name : "Custom Subcategory",
     mechanicalRole: isItemMechanicalRole(overrides.mechanicalRole)
       ? overrides.mechanicalRole
       : "accessory",
@@ -927,8 +935,8 @@ function createBlueprintRecord(
     ),
     baseProfile: normalizeBonusProfile(definition.baseProfile),
     combatSpec: cloneCombatSpec(definition.combatSpec),
-    visibleNotes: sanitizeStringArray(definition.visibleNotes),
-    requirements: sanitizeStringArray(definition.requirements),
+    visibleNotes: sanitizeEditableTextArray(definition.visibleNotes),
+    requirements: sanitizeEditableTextArray(definition.requirements),
     overrideItemIds: sanitizeStringArray(definition.overrideItemIds),
     isLegacy: definition.isLegacy ?? false,
     isDeprecated: definition.isDeprecated ?? false,
@@ -1457,15 +1465,25 @@ export function cloneItemBaseOverrideProfile(profile: ItemBaseOverrideProfile): 
 }
 
 export function normalizeBonusProfile(value: Partial<BonusProfile> | null | undefined): BonusProfile {
+  const normalizedSpellBonuses = normalizeNumericMapValue(value?.spellBonuses, { preserveZero: false });
+  if (
+    normalizedSpellBonuses["awareness:assess_character"] !== undefined &&
+    normalizedSpellBonuses["awareness:assess_entity"] === undefined
+  ) {
+    normalizedSpellBonuses["awareness:assess_entity"] =
+      normalizedSpellBonuses["awareness:assess_character"];
+  }
+  delete normalizedSpellBonuses["awareness:assess_character"];
+
   return {
     statBonuses: normalizeNumericMapValue(value?.statBonuses, { preserveZero: false }) as Partial<Record<StatId, number>>,
     skillBonuses: normalizeNumericMapValue(value?.skillBonuses, { preserveZero: false }),
     derivedBonuses: normalizeNumericMapValue(value?.derivedBonuses, { preserveZero: false }) as Partial<Record<ItemDerivedModifierId, number>>,
     resistanceBonuses: normalizeNumericMapValue(value?.resistanceBonuses, { preserveZero: false }) as Partial<Record<DamageTypeId, number>>,
-    utilityTraits: sanitizeStringArray(value?.utilityTraits),
-    notes: sanitizeStringArray(value?.notes),
+    utilityTraits: sanitizeEditableTextArray(value?.utilityTraits),
+    notes: sanitizeEditableTextArray(value?.notes),
     powerBonuses: normalizeNumericMapValue(value?.powerBonuses, { preserveZero: false }),
-    spellBonuses: normalizeNumericMapValue(value?.spellBonuses, { preserveZero: false }),
+    spellBonuses: normalizedSpellBonuses,
   };
 }
 
@@ -1487,16 +1505,27 @@ export function normalizeItemBaseOverrideProfile(
     next.resistanceBonuses = normalizeNumericMapValue(value.resistanceBonuses, { preserveZero: true }) as Partial<Record<DamageTypeId, number>>;
   }
   if (value?.utilityTraits !== undefined) {
-    next.utilityTraits = sanitizeStringArray(value.utilityTraits);
+    next.utilityTraits = sanitizeEditableTextArray(value.utilityTraits);
   }
   if (value?.notes !== undefined) {
-    next.notes = sanitizeStringArray(value.notes);
+    next.notes = sanitizeEditableTextArray(value.notes);
   }
   if (value?.powerBonuses !== undefined) {
     next.powerBonuses = normalizeNumericMapValue(value.powerBonuses, { preserveZero: true });
   }
   if (value?.spellBonuses !== undefined) {
-    next.spellBonuses = normalizeNumericMapValue(value.spellBonuses, { preserveZero: true });
+    const normalizedSpellBonuses = normalizeNumericMapValue(value.spellBonuses, {
+      preserveZero: true,
+    });
+    if (
+      normalizedSpellBonuses["awareness:assess_character"] !== undefined &&
+      normalizedSpellBonuses["awareness:assess_entity"] === undefined
+    ) {
+      normalizedSpellBonuses["awareness:assess_entity"] =
+        normalizedSpellBonuses["awareness:assess_character"];
+    }
+    delete normalizedSpellBonuses["awareness:assess_character"];
+    next.spellBonuses = normalizedSpellBonuses;
   }
 
   return next;
@@ -1803,11 +1832,11 @@ export function hydrateItemBlueprintRecord(value: unknown): ItemBlueprintRecord 
     combatSpec: normalizeItemCombatSpec(record.combatSpec) ?? fallback?.combatSpec ?? null,
     visibleNotes:
       record.visibleNotes !== undefined
-        ? sanitizeStringArray(record.visibleNotes)
+        ? sanitizeEditableTextArray(record.visibleNotes)
         : fallback?.visibleNotes ?? [],
     requirements:
       record.requirements !== undefined
-        ? sanitizeStringArray(record.requirements)
+        ? sanitizeEditableTextArray(record.requirements)
         : fallback?.requirements ?? [],
     overrideItemIds: sanitizeStringArray(record.overrideItemIds),
     isLegacy: typeof record.isLegacy === "boolean" ? record.isLegacy : fallback?.isLegacy ?? false,
@@ -2199,13 +2228,9 @@ export function createItemBlueprintRecord(
     category,
     subtype,
     label:
-      typeof overrides.label === "string" && overrides.label.trim().length > 0
-        ? overrides.label
-        : "Custom Blueprint",
+      typeof overrides.label === "string" ? overrides.label : "Custom Blueprint",
     defaultName:
-      typeof overrides.defaultName === "string" && overrides.defaultName.trim().length > 0
-        ? overrides.defaultName
-        : "Custom Item",
+      typeof overrides.defaultName === "string" ? overrides.defaultName : "Custom Item",
     baseProfile: normalizeBonusProfile(overrides.baseProfile),
     combatSpec: cloneCombatSpec(overrides.combatSpec),
     visibleNotes: overrides.visibleNotes ?? [],
@@ -2229,11 +2254,11 @@ export function syncSharedItemRecordWithBlueprint(
   return {
     id: item.id,
     blueprintId: blueprint.id,
-    name: item.name.trim().length > 0 ? item.name : blueprint.defaultName,
+    name: typeof item.name === "string" ? item.name : blueprint.defaultName,
     isArtifact: item.isArtifact === true,
     category: blueprint.category,
     subtype: blueprint.subtype,
-    baseDescription: item.baseDescription?.trim() ?? "",
+    baseDescription: typeof item.baseDescription === "string" ? item.baseDescription : "",
     combatSpec: cloneCombatSpec(blueprint.combatSpec),
     visibleNotes: [...blueprint.visibleNotes],
     requirements: [...blueprint.requirements],
@@ -2279,14 +2304,11 @@ export function createSharedItemRecord(
     {
       id: overrides.id ?? createTimestampedId("item"),
       blueprintId: blueprint.id,
-      name:
-        typeof overrides.name === "string" && overrides.name.trim().length > 0
-          ? overrides.name
-          : blueprint.defaultName,
+      name: typeof overrides.name === "string" ? overrides.name : blueprint.defaultName,
       isArtifact: overrides.isArtifact === true,
       category: blueprint.category,
       subtype: blueprint.subtype,
-      baseDescription: overrides.baseDescription?.trim() ?? "",
+      baseDescription: typeof overrides.baseDescription === "string" ? overrides.baseDescription : "",
       combatSpec: cloneCombatSpec(blueprint.combatSpec),
       visibleNotes: [...blueprint.visibleNotes],
       requirements: [...blueprint.requirements],
@@ -2339,8 +2361,10 @@ export function hydrateSharedItemRecord(
     subtype: blueprint?.subtype ?? (isItemSubtype(record.subtype) ? record.subtype : "one_handed"),
     baseDescription: typeof record.baseDescription === "string" ? record.baseDescription : "",
     combatSpec: cloneCombatSpec(blueprint?.combatSpec) ?? normalizeItemCombatSpec(record.combatSpec),
-    visibleNotes: blueprint?.visibleNotes ? [...blueprint.visibleNotes] : sanitizeStringArray(record.visibleNotes),
-    requirements: blueprint?.requirements ? [...blueprint.requirements] : sanitizeStringArray(record.requirements),
+    visibleNotes:
+      blueprint?.visibleNotes ? [...blueprint.visibleNotes] : sanitizeEditableTextArray(record.visibleNotes),
+    requirements:
+      blueprint?.requirements ? [...blueprint.requirements] : sanitizeEditableTextArray(record.requirements),
     baseProfile:
       record.baseProfile !== undefined
         ? normalizeBonusProfile(record.baseProfile as Partial<BonusProfile>)
@@ -2859,6 +2883,19 @@ export function isItemBonusVisibleToCharacter(item: SharedItemRecord, characterI
   return item.knowledge.visibleCharacterIds.includes(characterId);
 }
 
+export function canViewerSeeItemBonusDetails(
+  item: SharedItemRecord,
+  _characterId: string,
+  hasOwnedItemCard: boolean,
+  revealAll = false
+): boolean {
+  if (revealAll) {
+    return true;
+  }
+
+  return hasOwnedItemCard;
+}
+
 export function identifyItemForCharacter(item: SharedItemRecord, characterId: string): SharedItemRecord {
   return {
     ...item,
@@ -3015,11 +3052,11 @@ export function setProfileSpellValue(profile: BonusProfile, spellKey: string, va
 }
 
 export function setProfileUtilityTraits(profile: BonusProfile, utilityTraits: string[]): BonusProfile {
-  return { ...profile, utilityTraits: sanitizeStringArray(utilityTraits) };
+  return { ...profile, utilityTraits: sanitizeEditableTextArray(utilityTraits) };
 }
 
 export function setProfileNotes(profile: BonusProfile, notes: string[]): BonusProfile {
-  return { ...profile, notes: sanitizeStringArray(notes) };
+  return { ...profile, notes: sanitizeEditableTextArray(notes) };
 }
 
 export function setSharedItemStatBonus(item: SharedItemRecord, statId: StatId, value: number | null): SharedItemRecord {
@@ -3085,7 +3122,12 @@ export function getItemPowerBonusLabel(powerId: string): string {
 }
 
 export function getItemSpellBonusLabel(spellKey: string): string {
-  return getItemSpellBonusOptions().find((option) => option.id === spellKey)?.label ?? spellKey;
+  const normalizedSpellKey =
+    spellKey === "awareness:assess_character" ? "awareness:assess_entity" : spellKey;
+  return (
+    getItemSpellBonusOptions().find((option) => option.id === normalizedSpellKey)?.label ??
+    normalizedSpellKey
+  );
 }
 
 function summarizeBonusMap(entries: Record<string, number>, getLabel: (id: string) => string): string[] {

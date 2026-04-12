@@ -16,13 +16,17 @@ import { RollHelperPopover } from "../components/player-character/RollHelperPopo
 import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate";
 import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
-import { getKnowledgeEntityById, getKnowledgeGroupsForOwner, getKnowledgeRevisionById } from "../lib/knowledge.ts";
+import {
+  characterOwnsItemKnowledgeCard,
+  getKnowledgeEntityById,
+  getKnowledgeGroupsForOwner,
+  getKnowledgeRevisionById,
+} from "../lib/knowledge.ts";
 import { prependGameHistoryEntry } from "../lib/historyEntries.ts";
 import { usePlayerCharacterMutations } from "../hooks/usePlayerCharacterMutations";
 import {
   buildItemIndex,
   getCharacterArtifactAppraisalLevel,
-  getItemBlueprintOptions,
 } from "../lib/items.ts";
 import { buildPowerUsageSummary } from "../lib/powerUsage";
 import { resolveDicePool } from "../rules/combat";
@@ -168,13 +172,6 @@ export function PlayerCharacterPage({
   const isProgressionEditMode = isEditMode || (isDmEditableView && dmEditMode);
   const actualDate = formatDateDayMonthYear(new Date());
   const itemsById = buildItemIndex(items);
-  const itemBlueprintOptions = useMemo(
-    () =>
-      getItemBlueprintOptions(itemBlueprints).filter(
-        (option) => option.isLegacy !== true && option.isDeprecated !== true
-      ),
-    [itemBlueprints]
-  );
   const {
     derived,
     progression,
@@ -191,6 +188,19 @@ export function PlayerCharacterPage({
     knowledgeRevisions,
     knowledgeOwnerships,
   };
+  const ownedItemCardIds = useMemo(
+    () =>
+      activeCharacter
+        ? new Set(
+            items
+              .filter((item) =>
+                characterOwnsItemKnowledgeCard(knowledgeState, activeCharacter.id, item.id)
+              )
+              .map((item) => item.id)
+          )
+        : new Set<string>(),
+    [activeCharacter, items, knowledgeEntities, knowledgeOwnerships, knowledgeRevisions]
+  );
   const activeKnowledgeOwnerships =
     activeCharacter
       ? getKnowledgeGroupsForOwner(knowledgeState, activeCharacter.id).flatMap(
@@ -233,6 +243,8 @@ export function PlayerCharacterPage({
     pendingPowerId,
     sessionNotes,
     updateCharacter,
+    knowledgeState,
+    updateKnowledgeState,
     itemBlueprints,
     itemCategoryDefinitions,
     itemSubcategoryDefinitions,
@@ -501,21 +513,11 @@ export function PlayerCharacterPage({
             itemBlueprints={itemBlueprints}
             itemCategoryDefinitions={itemCategoryDefinitions}
             itemSubcategoryDefinitions={itemSubcategoryDefinitions}
-            blueprintOptions={itemBlueprintOptions}
+            ownedItemCardIds={ownedItemCardIds}
+            revealAllItemBonusDetails={isDmView}
             artifactAppraisalLevel={artifactAppraisalLevel}
             isSheetEditMode={isSheetEditMode}
-            onCreateSharedItem={mutations.createSharedItem}
-            onUpdateSharedItemField={mutations.updateSharedItemField}
-            onUpdateSharedItemBlueprint={mutations.updateSharedItemBlueprint}
-            onUpdateSharedItemBonusNotes={mutations.updateSharedItemBonusNotes}
-            onUpdateSharedItemStatBonus={mutations.updateSharedItemStatBonus}
-            onUpdateSharedItemDerivedBonus={mutations.updateSharedItemDerivedBonus}
-            onUpdateSharedItemOwnedState={mutations.updateSharedItemOwnedState}
-            onUpdateSharedItemInventoryState={mutations.updateSharedItemInventoryState}
-            onUpdateSharedItemActiveState={mutations.updateSharedItemActiveState}
             onIdentifySharedItem={mutations.identifySharedItem}
-            onMaskSharedItem={mutations.maskSharedItem}
-            onDeleteSharedItem={mutations.deleteSharedItem}
             onEquipSharedItem={mutations.equipSharedItem}
             onUnequipSharedItem={mutations.unequipSharedItem}
             onUpdateWeaponHandSlotItem={mutations.updateWeaponHandSlotItem}

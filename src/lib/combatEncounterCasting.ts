@@ -2,7 +2,7 @@ import type { ActionContext } from "../engine/context.ts";
 import { executeAction } from "../engine/effectExecutor.ts";
 import { createActionForContext } from "../powers/registry.ts";
 import {
-  buildAssessCharacterHistoryEntry,
+  buildAssessEntityHistoryEntry,
   buildDefaultHealingAllocations,
   canEncounterTargetReceiveGroupBuff,
   canEncounterTargetReceiveHealing,
@@ -127,7 +127,7 @@ export function prepareCastRequest(
 }
 
 export {
-  buildAssessCharacterHistoryEntry,
+  buildAssessEntityHistoryEntry,
   buildDefaultHealingAllocations,
   canEncounterTargetReceiveGroupBuff,
   canEncounterTargetReceiveHealing,

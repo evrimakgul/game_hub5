@@ -215,7 +215,7 @@
 - `CS-HIST-01`, `KNOW-ARCH-01`, `KNOW-SPELL-01`, `KNOW-UI-01`, and `KNOW-UI-02` completed together as Knowledge System V1.
   - Added standalone `KnowledgeEntity`, `KnowledgeRevision`, and `KnowledgeOwnership` collections to local persistence and app state.
   - Added migration cleanup so old embedded `intel_snapshot` history rows are discarded instead of treated as the source of truth.
-  - `Assess Character` now creates immutable linked character-card revisions during encounter execution and writes history rows that reference the exact revision involved.
+  - `Assess Entity` now creates immutable linked character-card revisions during encounter execution and writes history rows that reference the exact revision involved.
   - Added `Game History` hover preview plus click/open revision dialog behavior for linked knowledge rows.
   - Added a full-width inline `Knowledge` section on the character sheet with subject grouping, revision browsing, duplicate, edited-copy, share, archive, pin, compare, and DM authoring/grant flows.
   - V1 boundary: only character cards are implemented end-to-end; item/place/faction/story/custom card creation remains future work.
@@ -256,6 +256,6 @@
   - Updated the four reverse-engineered ingestion reference JSON files to match the new behavior.
 - Reconciled source notes from `T1 Supernatural Powers v1.1`.
   - Updated `Control Entity` so level `4+` caster contests use `CHA + INT + CC level`.
-  - Kept `Assess Character` CR caps `6 / 9 / 12 / 15 / 18` and renamed the source reference file to `references/originals/T1 Supernatural Powers_v1.1.txt`.
+  - Kept `Assess Entity` CR caps `6 / 9 / 12 / 15 / 18` and renamed the source reference file to `references/originals/T1 Supernatural Powers_v1.1.txt`.
   - Recorded `Awakened Insight` as implemented for temporary inspiration while deferring its uninspired-status interaction because that status mechanic does not exist yet.
   - Deferred full `Artifact Appraisal` integration until item mechanics and item UI are ready.
