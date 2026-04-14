@@ -2495,6 +2495,20 @@ function getItemSlotSummary(
   return formatEquipSlotSummary(getItemAllowedEquipSlots(item, context), "allowed");
 }
 
+const MINIMUM_STRENGTH_REQUIREMENT_PATTERN = /^minimum\s+str\s+\d+\s+to\s+wield\.?$/i;
+
+export function getItemVisibleRequirements(item: SharedItemRecord): string[] {
+  const lines = sanitizeEditableTextArray(item.requirements).filter(
+    (entry) => !MINIMUM_STRENGTH_REQUIREMENT_PATTERN.test(entry.trim())
+  );
+
+  if (typeof item.combatSpec?.minimumStrength === "number") {
+    lines.push(`Minimum STR ${item.combatSpec.minimumStrength} to wield.`);
+  }
+
+  return [...new Set(lines)];
+}
+
 export function getItemBaseVisibleStats(
   item: SharedItemRecord,
   context: ItemRulesContext = {}
@@ -2551,7 +2565,7 @@ export function getItemBaseVisibleStats(
   }
 
   item.visibleNotes.forEach((entry) => lines.push(entry));
-  item.requirements.forEach((entry) => lines.push(entry));
+  getItemVisibleRequirements(item).forEach((entry) => lines.push(entry));
   if (item.baseDescription.trim()) {
     lines.push(item.baseDescription.trim());
   }
@@ -2629,6 +2643,45 @@ export function getItemCompactBonusSummary(item: SharedItemRecord): string[] {
   });
 
   return [...new Set([...directBonuses, ...customPropertyBonuses].filter((entry) => entry.trim().length > 0))];
+}
+
+export function getViewerFacingItemRecord(
+  item: SharedItemRecord,
+  options: ItemRulesContext & {
+    hasOwnedItemCard: boolean;
+    revealAll?: boolean;
+  }
+): SharedItemRecord {
+  if (options.revealAll || options.hasOwnedItemCard) {
+    return item;
+  }
+
+  const blueprint = resolveBlueprintRecord(item.blueprintId, options.itemBlueprints);
+  if (!blueprint) {
+    return item;
+  }
+
+  const concealedItem = syncSharedItemRecordWithBlueprint(
+    {
+      ...item,
+      name: blueprint.defaultName,
+      isArtifact: false,
+      baseDescription: item.baseDescription,
+      baseOverrides: {},
+      bonusProfile: createEmptyBonusProfile(),
+      customProperties: [],
+    },
+    blueprint
+  );
+
+  return {
+    ...concealedItem,
+    name: blueprint.defaultName,
+    isArtifact: false,
+    baseDescription: item.baseDescription,
+    bonusProfile: createEmptyBonusProfile(),
+    customProperties: [],
+  };
 }
 
 export function getItemCompactHeaderSummary(
@@ -2915,6 +2968,23 @@ export function maskItemForCharacter(item: SharedItemRecord, characterId: string
     ...item,
     knowledge: {
       ...item.knowledge,
+      visibleCharacterIds: item.knowledge.visibleCharacterIds.filter((entry) => entry !== characterId),
+    },
+  };
+}
+
+export function forgetItemForCharacter(item: SharedItemRecord, characterId: string): SharedItemRecord {
+  if (
+    !item.knowledge.learnedCharacterIds.includes(characterId) &&
+    !item.knowledge.visibleCharacterIds.includes(characterId)
+  ) {
+    return item;
+  }
+
+  return {
+    ...item,
+    knowledge: {
+      learnedCharacterIds: item.knowledge.learnedCharacterIds.filter((entry) => entry !== characterId),
       visibleCharacterIds: item.knowledge.visibleCharacterIds.filter((entry) => entry !== characterId),
     },
   };

@@ -10,6 +10,7 @@ import {
   createKnowledgeShareResult,
   deleteKnowledgeRevision,
   getKnowledgeGroupsForOwner,
+  revokeItemKnowledgeShareResult,
 } from "../src/lib/knowledge.ts";
 import { createSharedItemRecord } from "../src/lib/items.ts";
 import { buildAssessEntityHistoryEntry } from "../src/powers/runtimeSupport.ts";
@@ -232,6 +233,43 @@ export async function runKnowledgeTests(): Promise<void> {
         assert.equal(nextState.knowledgeRevisions.length, 0);
         assert.equal(nextState.knowledgeOwnerships.length, 0);
         assert.equal(nextState.knowledgeEntities.length, 0);
+      },
+    },
+    {
+      name: "unsharing an item revision removes ownership and clears synced item visibility when no other item card remains",
+      run: () => {
+        const recipient = createCharacterRecord("recipient-unshare", "Mina", "player");
+        const item = createSharedItemRecord("range:light_crossbow", {
+          id: "item-unshare-1",
+          name: "Light Crossbow",
+        });
+        const created = createItemKnowledgeRevision({
+          state: createEmptyKnowledgeState(),
+          item,
+          createdByCharacterId: null,
+          sourceType: "dm_grant",
+        });
+        const knowledgeState = applyKnowledgeBatch(createEmptyKnowledgeState(), created.batch);
+        const shared = createItemKnowledgeShareResult({
+          state: knowledgeState,
+          item,
+          entity: created.entity,
+          revision: created.revision,
+          sourceOwnerName: "DM",
+          recipientCharacters: [recipient],
+        });
+        const populatedState = applyKnowledgeBatch(knowledgeState, shared.batch);
+
+        const revoked = revokeItemKnowledgeShareResult({
+          state: populatedState,
+          item: shared.item,
+          revision: created.revision,
+          recipientCharacterIds: [recipient.id],
+        });
+
+        assert.equal(revoked.state.knowledgeOwnerships.length, 0);
+        assert.deepEqual(revoked.item.knowledge.learnedCharacterIds, []);
+        assert.deepEqual(revoked.item.knowledge.visibleCharacterIds, []);
       },
     },
   ]);

@@ -1,5 +1,8 @@
 import type { CharacterDraft } from "../../config/characterTemplate";
 import {
+  getCurrentStatValue,
+} from "../../config/characterRuntime.ts";
+import {
   canCharacterIdentifyItem,
   canViewerSeeItemBonusDetails,
   getEquipmentSlotLabel,
@@ -8,6 +11,7 @@ import {
   getItemAllowedEquipSlots,
   getItemCompactHeaderSummary,
   getItemMechanicalRole,
+  getViewerFacingItemRecord,
   getWeaponHandSlotLabel,
 } from "../../lib/items.ts";
 import type {
@@ -84,6 +88,19 @@ function canEquipIntoVisibleNonHandSlot(
   );
 }
 
+function canCharacterMeetItemStrengthRequirement(
+  sheetState: CharacterDraft,
+  item: SharedItemRecord,
+  itemsById: Record<string, SharedItemRecord>
+): boolean {
+  const minimumStrength = item.combatSpec?.minimumStrength;
+  if (typeof minimumStrength !== "number") {
+    return true;
+  }
+
+  return getCurrentStatValue(sheetState, "STR", itemsById) >= minimumStrength;
+}
+
 type CharacterInventorySectionProps = {
   characterId: string;
   sheetState: CharacterDraft;
@@ -121,9 +138,6 @@ export function CharacterInventorySection({
   onIdentifySharedItem,
   onEquipSharedItem,
   onUnequipSharedItem,
-  onUpdateWeaponHandSlotItem,
-  onUpdateMainEquipmentSlotItem,
-  onUpdateSupplementaryEquipmentSlotItem,
   onUpdateMoney,
 }: CharacterInventorySectionProps) {
   const itemRulesContext = {
@@ -164,6 +178,7 @@ export function CharacterInventorySection({
       .filter((itemId): itemId is string => typeof itemId === "string" && itemId.trim().length > 0)
   );
   const unequippedReferencedItems = sortedReferencedItems.filter((item) => !equippedItemIds.has(item.id));
+  const currentStrength = getCurrentStatValue(sheetState, "STR", itemsById);
 
   return (
     <article className="sheet-card equipment-card">
@@ -181,57 +196,34 @@ export function CharacterInventorySection({
               occupancy && !occupancy.isAnchorSlot && occupancy.anchorSlot
                 ? getEquipmentSlotLabel(occupancy.anchorSlot)
                 : null;
+            const hasOwnedItemCard = item ? ownedItemCardIds.has(item.id) : false;
+            const visibleItem = item
+              ? getViewerFacingItemRecord(item, {
+                  ...itemRulesContext,
+                  hasOwnedItemCard,
+                  revealAll: revealAllItemBonusDetails,
+                })
+              : null;
 
-            return isSheetEditMode ? (
-              <div key={slotId} className="equipment-compact-row equipment-compact-row-edit">
-                <div className="equipment-compact-main">
-                  <strong>{label}</strong>
-                  {occupancy && !occupancy.isAnchorSlot ? (
-                    <span className="equipment-line-detail">
-                      Occupied by {item?.name ?? "equipped item"} via {followerAnchorLabel ?? "anchor"}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="equipment-inline-controls">
-                  <select
-                    className="sheet-meta-input"
-                    value={entry?.itemId ?? ""}
-                    onChange={(event) =>
-                      isWeaponHandSlotId(slotId)
-                        ? onUpdateWeaponHandSlotItem(slotId, event.target.value)
-                        : isSupplementaryEquipmentSlotId(slotId)
-                          ? onUpdateSupplementaryEquipmentSlotItem(slotId, event.target.value)
-                          : onUpdateMainEquipmentSlotItem(slotId, event.target.value)
-                    }
-                  >
-                    <option value="">No item</option>
-                    {sortedReferencedItems.map((referencedItem) => (
-                      <option key={referencedItem.id} value={referencedItem.id}>
-                        {referencedItem.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            ) : (
+            return (
               <div key={slotId} className="equipment-compact-row">
                 <div className="equipment-compact-main">
-                      <strong>{label}</strong>
-                      <span className="equipment-line-detail">
-                        {occupancy && !occupancy.isAnchorSlot
-                          ? `Occupied by ${item?.name ?? "equipped item"}`
-                          : item?.name ?? "Open Slot"}
-                      </span>
-                      {occupancy && !occupancy.isAnchorSlot ? (
-                        <small className="equipment-state-line">
-                          Locked by {followerAnchorLabel ?? "anchor slot"}.
-                        </small>
-                      ) : null}
+                  <strong>{label}</strong>
+                  <span className="equipment-line-detail">
+                    {occupancy && !occupancy.isAnchorSlot
+                      ? `Occupied by ${visibleItem?.name ?? "equipped item"}`
+                      : visibleItem?.name ?? "Open Slot"}
+                  </span>
+                  {occupancy && !occupancy.isAnchorSlot ? (
+                    <small className="equipment-state-line">
+                      Locked by {followerAnchorLabel ?? "anchor slot"}.
+                    </small>
+                  ) : null}
                 </div>
                 <div className="equipment-read-meta">
                   {item && (!occupancy || occupancy.isAnchorSlot) ? (
                     (() => {
-                      const hasOwnedItemCard = ownedItemCardIds.has(item.id);
+                      const displayItem = visibleItem ?? item;
                       const canShowBonusDetails = canViewerSeeItemBonusDetails(
                         item,
                         characterId,
@@ -245,7 +237,7 @@ export function CharacterInventorySection({
                       return (
                         <>
                           <em>
-                            {getItemCompactHeaderSummary(item, {
+                            {getItemCompactHeaderSummary(displayItem, {
                               ...itemRulesContext,
                               includeBonus: canShowBonusDetails,
                             })}
@@ -265,7 +257,7 @@ export function CharacterInventorySection({
                                 disabled={!canIdentify}
                                 onClick={() => onIdentifySharedItem(item.id)}
                               >
-                                Identify
+                                Artifact Appraisal
                               </button>
                             ) : null}
                           </div>
@@ -313,6 +305,11 @@ export function CharacterInventorySection({
           <div className="equipment-compact-list">
             {unequippedReferencedItems.map((item) => {
               const hasOwnedItemCard = ownedItemCardIds.has(item.id);
+              const visibleItem = getViewerFacingItemRecord(item, {
+                ...itemRulesContext,
+                hasOwnedItemCard,
+                revealAll: revealAllItemBonusDetails,
+              });
               const canShowBonusDetails = canViewerSeeItemBonusDetails(
                 item,
                 characterId,
@@ -330,13 +327,23 @@ export function CharacterInventorySection({
                 );
               const isCarried = sheetState.inventoryItemIds.includes(item.id);
               const isEquipped = equippedSlots.length > 0;
+              const meetsStrengthRequirement = canCharacterMeetItemStrengthRequirement(
+                sheetState,
+                item,
+                itemsById
+              );
+              const strengthRequirementHint =
+                typeof item.combatSpec?.minimumStrength === "number" &&
+                !meetsStrengthRequirement
+                  ? `Requires STR ${item.combatSpec.minimumStrength}. Current STR ${currentStrength}.`
+                  : undefined;
 
               return (
                 <div key={item.id} className="equipment-compact-row">
                   <div className="equipment-compact-main">
-                    <strong>{item.name}</strong>
+                    <strong>{visibleItem.name}</strong>
                     <span className="equipment-line-detail">
-                      {getItemCompactHeaderSummary(item, {
+                      {getItemCompactHeaderSummary(visibleItem, {
                         ...itemRulesContext,
                         includeBonus: canShowBonusDetails,
                       })}
@@ -367,17 +374,21 @@ export function CharacterInventorySection({
                           <button
                             type="button"
                             className="equipment-inline-button"
+                            disabled={!meetsStrengthRequirement}
+                            title={strengthRequirementHint}
                             onClick={() => onEquipSharedItem(item.id, "weapon_primary")}
                           >
                             Primary
                           </button>
                           {item.combatSpec?.handsRequired !== 2 ? (
-                            <button
-                              type="button"
-                              className="equipment-inline-button"
-                              onClick={() => onEquipSharedItem(item.id, "weapon_secondary")}
-                            >
-                              Secondary
+                              <button
+                                type="button"
+                                className="equipment-inline-button"
+                                disabled={!meetsStrengthRequirement}
+                                title={strengthRequirementHint}
+                                onClick={() => onEquipSharedItem(item.id, "weapon_secondary")}
+                              >
+                                Secondary
                             </button>
                           ) : null}
                         </>
@@ -386,6 +397,8 @@ export function CharacterInventorySection({
                         <button
                           type="button"
                           className="equipment-inline-button"
+                          disabled={!meetsStrengthRequirement}
+                          title={strengthRequirementHint}
                           onClick={() => onEquipSharedItem(item.id, "weapon_secondary")}
                         >
                           Equip
@@ -401,6 +414,8 @@ export function CharacterInventorySection({
                         <button
                           type="button"
                           className="equipment-inline-button"
+                          disabled={!meetsStrengthRequirement}
+                          title={strengthRequirementHint}
                           onClick={() => onEquipSharedItem(item.id)}
                         >
                           Equip
@@ -414,7 +429,7 @@ export function CharacterInventorySection({
                             disabled={!canIdentify}
                             onClick={() => onIdentifySharedItem(item.id)}
                           >
-                            Identify
+                            Artifact Appraisal
                           </button>
                         </div>
                       ) : null}

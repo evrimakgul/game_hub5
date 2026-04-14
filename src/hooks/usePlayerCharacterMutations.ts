@@ -2,19 +2,13 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import {
-  applyKnowledgeBatch,
   characterOwnsItemKnowledgeCard,
-  createItemKnowledgeRevision,
-  createItemKnowledgeShareResult,
-  findKnowledgeEntityBySubjectKey,
 } from "../lib/knowledge.ts";
 import {
   buildItemIndex,
-  canCharacterIdentifyItem,
   getCharacterArtifactAppraisalLevel,
   getItemAllowedEquipSlots,
   getItemMechanicalRole,
-  identifyItemForCharacter,
   maskItemForCharacter,
   retypeSharedItemRecord,
 } from "../lib/items.ts";
@@ -100,6 +94,11 @@ type UsePlayerCharacterMutationsParams = {
   updateKnowledgeState: (
     updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
   ) => void;
+  executeArtifactAppraisal: (args: {
+    casterCharacterId: string;
+    itemId: string;
+    artifactAppraisalLevel: number;
+  }) => string | null;
   createItem: (
     blueprintId: ItemBlueprintId,
     overrides?: Partial<
@@ -183,6 +182,7 @@ export function usePlayerCharacterMutations({
   updateCharacter,
   knowledgeState,
   updateKnowledgeState,
+  executeArtifactAppraisal,
   createItem,
   updateItem,
   deleteItem,
@@ -524,59 +524,15 @@ export function usePlayerCharacterMutations({
     }
 
     const artifactAppraisalLevel = getCharacterArtifactAppraisalLevel(sheetState);
-    const hasOwnedItemCard = characterOwnsItemKnowledgeCard(
-      knowledgeState,
-      activeCharacter.id,
-      itemId
-    );
-    if (
-      !hasOwnedItemCard &&
-      !canCharacterIdentifyItem(currentItem, artifactAppraisalLevel)
-    ) {
+    const hasOwnedItemCard = characterOwnsItemKnowledgeCard(knowledgeState, activeCharacter.id, itemId);
+    if (!hasOwnedItemCard && artifactAppraisalLevel <= 0) {
       return;
     }
-
-    let nextKnowledgeState = knowledgeState;
-    let entity = findKnowledgeEntityBySubjectKey(nextKnowledgeState, "item", currentItem.id);
-    let revision = null;
-    if (entity) {
-      const entityId = entity.id;
-      revision =
-        nextKnowledgeState.knowledgeRevisions
-          .filter((entry) => entry.entityId === entityId)
-          .sort((left, right) => right.revisionNumber - left.revisionNumber)[0] ?? null;
-    }
-
-    if (entity === null || revision === null) {
-      const created = createItemKnowledgeRevision({
-        state: nextKnowledgeState,
-        item: currentItem,
-        createdByCharacterId: activeCharacter.id,
-        sourceType: "spell",
-        sourceSpellName: `Artifact Appraisal Lv ${artifactAppraisalLevel}`,
-        context: itemRulesContext,
-      });
-      nextKnowledgeState = applyKnowledgeBatch(nextKnowledgeState, created.batch);
-      entity = created.entity;
-      revision = created.revision;
-    }
-
-    if (!entity || !revision) {
-      return;
-    }
-
-    const revealResult = createItemKnowledgeShareResult({
-      state: nextKnowledgeState,
-      item: currentItem,
-      entity,
-      revision,
-      sourceOwnerCharacterId: null,
-      sourceOwnerName: "Artifact Appraisal",
-      recipientCharacters: [activeCharacter],
+    executeArtifactAppraisal({
+      casterCharacterId: activeCharacter.id,
+      itemId,
+      artifactAppraisalLevel,
     });
-
-    updateKnowledgeState(applyKnowledgeBatch(nextKnowledgeState, revealResult.batch));
-    setItemState(itemId, revealResult.item);
   }
 
   function maskSharedItem(itemId: string): void {

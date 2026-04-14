@@ -280,6 +280,44 @@ This roadmap is the active implementation source of truth for this branch.
 - Existing identify / mask item behavior remains intact.
 - Full `Artifact Appraisal` runtime integration remains deferred to a later pass.
 
+## Completed Follow-Up: World Casting V1
+
+### 9.1 `Known Powers` World Cast Surface
+- Character sheets now expose out-of-combat `Use` actions inline in `Known Powers`.
+- Clicking `Use` opens a small inline cast panel for that specific power row.
+- The world-cast panel only exposes fields required by the selected supported variant, such as target and stat choice.
+- Variants that remain encounter-only are shown as unavailable outside combat with explicit copy.
+
+### 9.2 Shared Casting Core
+- Casting now declares an explicit environment: `world` or `encounter`.
+- Shared cast-form state and shared prepared-cast request execution now sit under both character-sheet and encounter casting.
+- Encounter casting remains the specialized adapter for initiative, turn state, combat-only validation, and other encounter semantics.
+
+### 9.3 World Execution Backend
+- A dedicated world execution path now applies supported prepared cast results directly to app state.
+- World execution currently supports:
+  - mana spend
+  - healing and resource changes
+  - persistent sheet-level active effects
+  - status tags
+  - usage counters
+  - history rows
+  - knowledge updates
+- World execution rejects encounter-only payloads such as damage applications, summon changes, ongoing encounter state changes, and encounter activity log entries.
+
+### 9.4 Current World-Supported Variant Scope
+- World casting V1 currently supports:
+  - `Assess Entity`
+  - `Body Reinforcement`
+  - `Healing Touch`
+  - `Luminous Restoration`
+- Hostile, summon, aura, multi-target, and timing-sensitive variants remain encounter-only in this pass.
+
+### 9.5 `Artifact Appraisal` Backend Unification
+- Inventory `Identify` remains the user-facing shortcut for `Artifact Appraisal`.
+- The shortcut now executes through the same shared world-casting backend instead of a separate item-only implementation path.
+- Full general `AA` interaction UX and broader multi-target reveal/share behavior remain deferred.
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`

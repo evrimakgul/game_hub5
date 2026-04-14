@@ -32,7 +32,12 @@ import {
   type PersistedCharacterState,
   writePersistedCharactersToStorage,
 } from "./appFlowPersistence";
+import { WorldExecutionEngine } from "../engine/worldExecutionEngine.ts";
 import { setCharacterSupplementarySlotEnabled as setCharacterSupplementarySlotEnabledOnSheet } from "../mutations/characterItemMutations.ts";
+import {
+  executeArtifactAppraisalWorldCast,
+  prepareWorldCastRequest,
+} from "../lib/worldCasting.ts";
 import {
   isCharacterOwnerRole,
   type CharacterOwnerRole,
@@ -47,6 +52,7 @@ import type {
   SharedItemRecord,
   SupplementaryEquipmentSlotId,
 } from "../types/items.ts";
+import type { WorldCastRequestPayload } from "../lib/powerCasting.ts";
 import type {
   KnowledgeEntity,
   KnowledgeOwnership,
@@ -137,6 +143,12 @@ type AppFlowContextValue = {
   updateKnowledgeState: (
     updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
   ) => void;
+  executeWorldCast: (payload: WorldCastRequestPayload) => string | null;
+  executeArtifactAppraisal: (args: {
+    casterCharacterId: string;
+    itemId: string;
+    artifactAppraisalLevel: number;
+  }) => string | null;
   beginCombatEncounter: (encounter: CombatEncounterState) => void;
   updateCombatEncounter: (
     updater:
@@ -706,6 +718,63 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     setActiveCombatEncounter(encounter);
   }
 
+  function executeWorldCast(payload: WorldCastRequestPayload): string | null {
+    const prepared = prepareWorldCastRequest({
+      ...payload,
+      itemsById: payload.itemsById ?? buildItemIndex(items),
+    });
+    if ("error" in prepared) {
+      return prepared.error;
+    }
+
+    const engine = new WorldExecutionEngine({
+      characters,
+      knowledgeState,
+      itemsById: payload.itemsById ?? buildItemIndex(items),
+    });
+    const execution = engine.executePreparedRequest(prepared.request);
+    if ("error" in execution) {
+      return execution.error;
+    }
+
+    replaceCharacters(execution.result.characters);
+    updateKnowledgeState(execution.result.knowledgeState);
+    return null;
+  }
+
+  function executeArtifactAppraisal(args: {
+    casterCharacterId: string;
+    itemId: string;
+    artifactAppraisalLevel: number;
+  }): string | null {
+    const casterCharacter =
+      characters.find((character) => character.id === args.casterCharacterId) ?? null;
+    const item = items.find((entry) => entry.id === args.itemId) ?? null;
+
+    if (!casterCharacter || !item) {
+      return "The selected character or item is no longer available.";
+    }
+
+    const result = executeArtifactAppraisalWorldCast({
+      casterCharacter,
+      item,
+      artifactAppraisalLevel: args.artifactAppraisalLevel,
+      knowledgeState,
+      context: {
+        itemBlueprints,
+        itemCategoryDefinitions,
+        itemSubcategoryDefinitions,
+      },
+    });
+    if ("error" in result) {
+      return result.error;
+    }
+
+    updateKnowledgeState(result.knowledgeState);
+    updateItem(item.id, result.item);
+    return null;
+  }
+
   function updateCombatEncounter(
     updater:
       | CombatEncounterState
@@ -762,6 +831,8 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         setCharacterSupplementarySlotEnabled,
         replaceCharacters,
         updateKnowledgeState,
+        executeWorldCast,
+        executeArtifactAppraisal,
         beginCombatEncounter,
         updateCombatEncounter,
         clearCombatEncounter,

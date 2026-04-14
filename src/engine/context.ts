@@ -3,15 +3,17 @@ import type { ActivePowerEffect } from "../types/activePowerEffects.ts";
 import type { CharacterRecord, StatId } from "../types/character.ts";
 import type {
   CastOutcomeState,
-  CastRequestPayload,
   EncounterParticipantView,
   PreparedCastRequest,
 } from "../types/combatEncounterView.ts";
 import type { SharedItemRecord } from "../types/items.ts";
 import type { CastPowerMode, CastPowerVariantId } from "../powers/spellTypes.ts";
+import type { PowerUseEnvironment } from "../lib/powerCasting.ts";
+import type { DamageTypeId } from "../rules/resistances.ts";
 
 export type ActionContext = {
-  payload: CastRequestPayload | null;
+  environment: PowerUseEnvironment;
+  payload: unknown;
   casterCharacter: CharacterRecord;
   casterName: string;
   selectedPower: PowerEntry | null;
@@ -28,7 +30,7 @@ export type ActionContext = {
   healingAllocations: Record<string, number>;
   selectedStatId: StatId | null;
   castMode: CastPowerMode;
-  selectedDamageType: CastRequestPayload["selectedDamageType"];
+  selectedDamageType: DamageTypeId | null;
   bonusManaSpend: number;
   selectedSummonOptionId: string | null;
 };

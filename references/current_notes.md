@@ -12,6 +12,7 @@ This file tracks active reminders for the current implementation block.
 - The anchor-slot / multi-slot equipment pass is now complete.
 - The hand-state combat cleanup and classic ranged split pass is now complete.
 - The supplementary-slot and item-knowledge UX pass is now complete.
+- The World Casting V1 pass is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -43,6 +44,10 @@ This file tracks active reminders for the current implementation block.
 - Item knowledge cards now exist as standalone `KnowledgeEntity.type = "item"` revisions keyed by shared item id.
 - Sharing an item card now also marks that shared item learned and visible for the recipients.
 - Hidden item bonus rendering should key off item-card ownership for the viewer, not a separate raw identify flag. `Artifact Appraisal` should reveal by granting the item card.
+- Character sheets now support limited out-of-combat casting from `Known Powers`.
+- World-cast V1 currently supports `Assess Entity`, `Body Reinforcement`, `Healing Touch`, and `Luminous Restoration`.
+- World-unsupported variants stay visible but unavailable outside combat.
+- Inventory `Identify` now routes through the shared world-casting backend for `Artifact Appraisal`.
 
 ## Known Structural Gaps
 - Shared item editing is still not a full end-state authoring workflow, but item-card generation/share and supplementary-slot activation now exist in the DM item interactions hub.
@@ -52,8 +57,9 @@ This file tracks active reminders for the current implementation block.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
 - The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
 - Classic bow / crossbow action-cost and movement rules are still represented only as visible notes; runtime timing support remains deferred to the later combat-action pass.
-- Full `Artifact Appraisal` runtime integration remains deferred.
+- Full `Artifact Appraisal` interaction expansion remains deferred beyond the current inventory shortcut + shared backend path.
 - `Assess Entity` should keep card output totals-only for entities without exposing hidden item bonus details or item-card internals.
+- General out-of-combat casting remains intentionally narrow in V1; hostile, summon, aura, multi-target, and timing-sensitive variants are still encounter-only.
 
 ## Knowledge System V1
 - Keep `History` as an event log.

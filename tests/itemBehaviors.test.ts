@@ -11,6 +11,8 @@ import {
   createItemSubcategoryDefinitionRecord,
   createSharedItemRecord,
   getItemCompactHeaderSummary,
+  getItemVisibleRequirements,
+  getViewerFacingItemRecord,
   normalizeItemCustomPropertyRecords,
   setProfileNotes,
   setProfileUtilityTraits,
@@ -22,6 +24,20 @@ import {
   setCharacterWeaponHandSlotItem,
 } from "../src/mutations/characterItemMutations.ts";
 import { runTestSuite } from "./harness.ts";
+
+function createSheetWithStrength(strength: number) {
+  const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+  return {
+    ...sheet,
+    statState: {
+      ...sheet.statState,
+      STR: {
+        ...sheet.statState.STR,
+        base: strength,
+      },
+    },
+  };
+}
 
 export async function runItemBehaviorTests(): Promise<void> {
   await runTestSuite("itemBehaviors", [
@@ -119,7 +135,7 @@ export async function runItemBehaviorTests(): Promise<void> {
           name: "Hidden Blade",
           bonusProfile: {
             ...createEmptyBonusProfile(),
-            derivedBonuses: { meleeDamage: 2 },
+            derivedBonuses: { melee_damage: 2 },
           },
           knowledge: {
             learnedCharacterIds: ["player-1"],
@@ -195,8 +211,9 @@ export async function runItemBehaviorTests(): Promise<void> {
           name: "Tower Shield",
         });
         const itemsById = buildItemIndex([greatsword, shield]);
+        const strongSheet = createSheetWithStrength(4);
         const sheetWithWeapon = setCharacterWeaponHandSlotItem(
-          PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          strongSheet,
           "weapon_primary",
           greatsword.id,
           itemsById
@@ -254,6 +271,95 @@ export async function runItemBehaviorTests(): Promise<void> {
       },
     },
     {
+      name: "minimum STR blocks equipping oversized weapons until the requirement is met",
+      run: () => {
+        const oversized = createSharedItemRecord("melee:oversized", {
+          id: "weapon-oversized-strength",
+          name: "Oversized Blade",
+        });
+        const itemsById = buildItemIndex([oversized]);
+        const weakSheet = createSheetWithStrength(0);
+        const strongSheet = createSheetWithStrength(8);
+
+        const blockedSheet = setCharacterWeaponHandSlotItem(
+          weakSheet,
+          "weapon_primary",
+          oversized.id,
+          itemsById
+        );
+        const equippedSheet = setCharacterWeaponHandSlotItem(
+          strongSheet,
+          "weapon_primary",
+          oversized.id,
+          itemsById
+        );
+
+        assert.equal(
+          blockedSheet.equipment.find((entry) => entry.slot === "weapon_primary")?.itemId ?? null,
+          null
+        );
+        assert.equal(
+          equippedSheet.equipment.find((entry) => entry.slot === "weapon_primary")?.itemId,
+          oversized.id
+        );
+        assert.equal(
+          equippedSheet.equipment.find((entry) => entry.slot === "weapon_secondary")?.itemId,
+          oversized.id
+        );
+      },
+    },
+    {
+      name: "visible requirements prefer canonical minimum STR over stale manual lines",
+      run: () => {
+        const oversized = createSharedItemRecord("melee:oversized", {
+          id: "weapon-requirement-dedupe",
+          name: "Oversized Blade",
+        });
+        const updated = {
+          ...oversized,
+          combatSpec: {
+            ...oversized.combatSpec,
+            minimumStrength: 8,
+          },
+          requirements: ["Minimum STR 6 to wield.", "Minimum STR 8 to wield."],
+        };
+
+        assert.deepEqual(getItemVisibleRequirements(updated), ["Minimum STR 8 to wield."]);
+        assert.match(getItemCompactHeaderSummary(updated), /Minimum STR 8 to wield\./);
+        assert.doesNotMatch(getItemCompactHeaderSummary(updated), /Minimum STR 6 to wield\./);
+      },
+    },
+    {
+      name: "viewer without an item card sees the concealed blueprint-facing version plus visible instance note",
+      run: () => {
+        const item = createSharedItemRecord("melee:oversized", {
+          id: "concealed-item-1",
+          name: "cok saasali bir kilic",
+          baseDescription: "mystical whisper",
+          isArtifact: true,
+          bonusProfile: {
+            ...createEmptyBonusProfile(),
+            statBonuses: { STR: 3 },
+            derivedBonuses: { melee_damage: 3 },
+          },
+        });
+
+        const concealed = getViewerFacingItemRecord(item, {
+          hasOwnedItemCard: false,
+          revealAll: false,
+        });
+
+        assert.equal(concealed.name, "Oversized Weapon");
+        assert.equal(concealed.baseDescription, "mystical whisper");
+        assert.equal(concealed.isArtifact, false);
+        assert.deepEqual(concealed.bonusProfile, createEmptyBonusProfile());
+        assert.equal(concealed.customProperties.length, 0);
+        assert.match(getItemCompactHeaderSummary(concealed), /mystical whisper/);
+        assert.doesNotMatch(getItemCompactHeaderSummary(concealed), /Bonus:/);
+        assert.doesNotMatch(getItemCompactHeaderSummary(concealed), /cok saasali bir kilic/);
+      },
+    },
+    {
       name: "shield summaries use the secondary hand slot label",
       run: () => {
         const shield = createSharedItemRecord("armor:shield_heavy", {
@@ -275,8 +381,9 @@ export async function runItemBehaviorTests(): Promise<void> {
           name: "Ash Bow",
         });
         const itemsById = buildItemIndex([bow]);
+        const strongSheet = createSheetWithStrength(6);
         const nextSheet = setCharacterWeaponHandSlotItem(
-          PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          strongSheet,
           "weapon_primary",
           bow.id,
           itemsById
@@ -301,8 +408,9 @@ export async function runItemBehaviorTests(): Promise<void> {
           name: "Ash Bow",
         });
         const itemsById = buildItemIndex([bow]);
+        const strongSheet = createSheetWithStrength(6);
         const equippedSheet = setCharacterWeaponHandSlotItem(
-          PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          strongSheet,
           "weapon_primary",
           bow.id,
           itemsById

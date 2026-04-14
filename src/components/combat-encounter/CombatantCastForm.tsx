@@ -74,17 +74,17 @@ export function CombatantCastForm({ state, embedded = false }: CombatantCastForm
                 {state.targetMode === "multiple" ? (
                   <>
                     <div className="dm-target-multi-grid">
-                      {state.targetOptions.map(({ participant }) => {
-                        const isSelected = state.selectedTargetIds.includes(participant.characterId);
+                      {state.targetOptions.map((option) => {
+                        const isSelected = state.selectedTargetIds.includes(option.id);
 
                         return (
                           <button
-                            key={participant.characterId}
+                            key={option.id}
                             type="button"
                             className={`dm-target-chip${isSelected ? " is-selected" : ""}`}
-                            onClick={() => state.toggleTarget(participant.characterId)}
+                            onClick={() => state.toggleTarget(option.id)}
                           >
-                            {participant.displayName}
+                            {option.label}
                           </button>
                         );
                       })}
@@ -100,9 +100,9 @@ export function CombatantCastForm({ state, embedded = false }: CombatantCastForm
                     value={state.resolvedSingleTargetId}
                     onChange={(event) => state.selectSingleTarget(event.target.value)}
                   >
-                    {state.targetOptions.map(({ participant }) => (
-                      <option key={participant.characterId} value={participant.characterId}>
-                        {participant.displayName}
+                    {state.targetOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
                       </option>
                     ))}
                   </select>
@@ -213,8 +213,7 @@ export function CombatantCastForm({ state, embedded = false }: CombatantCastForm
                 <div className="dm-healing-allocation-grid">
                   {state.resolvedTargetIds.map((targetId) => {
                     const targetLabel =
-                      state.targetOptions.find(({ participant }) => participant.characterId === targetId)
-                        ?.participant.displayName ?? targetId;
+                      state.targetOptions.find((option) => option.id === targetId)?.label ?? targetId;
 
                     return (
                       <label key={targetId} className="dm-field">

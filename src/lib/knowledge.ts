@@ -35,12 +35,14 @@ import { buildCharacterDerivedValues } from "../config/characterRuntime.ts";
 import { buildCharacterEncounterSnapshot } from "../rules/combatEncounter.ts";
 import { getCrAndRankFromXpUsed } from "../rules/xpTables.ts";
 import {
+  forgetItemForCharacter,
   getItemBaseVisibleStats,
   getItemBlueprintLabel,
   getItemCompactBonusSummary,
   getItemCompactHeaderSummary,
   getItemPropertyPoints,
   getItemTierLabel,
+  getItemVisibleRequirements,
   identifyItemForCharacter,
 } from "./items.ts";
 
@@ -827,7 +829,7 @@ export function buildItemKnowledgeDraftFromItem(
     createSection(
       "Requirements",
       "custom",
-      item.requirements.map((value) => ({ value }))
+      getItemVisibleRequirements(item).map((value) => ({ value }))
     ),
     createSection(
       "Visible Notes",
@@ -1289,6 +1291,40 @@ export function createKnowledgeShareResult(args: {
   };
 }
 
+export function revokeKnowledgeRevisionOwnerships(args: {
+  state: KnowledgeState;
+  revisionId: string;
+  ownerCharacterIds: string[];
+}): {
+  state: KnowledgeState;
+  removedOwnerships: KnowledgeOwnership[];
+} {
+  const ownerCharacterIds = new Set(args.ownerCharacterIds);
+  const removedOwnerships = args.state.knowledgeOwnerships.filter(
+    (ownership) =>
+      ownership.revisionId === args.revisionId && ownerCharacterIds.has(ownership.ownerCharacterId)
+  );
+
+  if (removedOwnerships.length === 0) {
+    return {
+      state: args.state,
+      removedOwnerships: [],
+    };
+  }
+
+  return {
+    state: {
+      ...args.state,
+      knowledgeOwnerships: args.state.knowledgeOwnerships.filter(
+        (ownership) =>
+          ownership.revisionId !== args.revisionId ||
+          !ownerCharacterIds.has(ownership.ownerCharacterId)
+      ),
+    },
+    removedOwnerships,
+  };
+}
+
 export function createItemKnowledgeShareResult(args: {
   state: KnowledgeState;
   item: SharedItemRecord;
@@ -1320,6 +1356,37 @@ export function createItemKnowledgeShareResult(args: {
       (currentItem, character) => identifyItemForCharacter(currentItem, character.id),
       args.item
     ),
+  };
+}
+
+export function revokeItemKnowledgeShareResult(args: {
+  state: KnowledgeState;
+  item: SharedItemRecord;
+  revision: KnowledgeRevision;
+  recipientCharacterIds: string[];
+}): {
+  state: KnowledgeState;
+  item: SharedItemRecord;
+  revokedCharacterIds: string[];
+} {
+  const revoked = revokeKnowledgeRevisionOwnerships({
+    state: args.state,
+    revisionId: args.revision.id,
+    ownerCharacterIds: args.recipientCharacterIds,
+  });
+
+  const item = revoked.removedOwnerships.reduce((currentItem, ownership) => {
+    if (characterOwnsItemKnowledgeCard(revoked.state, ownership.ownerCharacterId, args.item.id)) {
+      return currentItem;
+    }
+
+    return forgetItemForCharacter(currentItem, ownership.ownerCharacterId);
+  }, args.item);
+
+  return {
+    state: revoked.state,
+    item,
+    revokedCharacterIds: revoked.removedOwnerships.map((ownership) => ownership.ownerCharacterId),
   };
 }
 

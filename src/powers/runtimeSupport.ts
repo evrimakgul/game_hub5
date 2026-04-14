@@ -33,6 +33,8 @@ import {
   LIGHT_SUPPORT_AURA_SPELL_NAME,
   SHADOW_CONTROL_AURA_SPELL_NAME,
 } from "./spellLabels.ts";
+import { LogEffect } from "../engine/effects.ts";
+import type { ActionContext } from "../engine/context.ts";
 
 export function buildEncounterActivityLogEntry(summary: string) {
   return {
@@ -40,6 +42,15 @@ export function buildEncounterActivityLogEntry(summary: string) {
     createdAt: new Date().toISOString(),
     summary,
   };
+}
+
+export function buildEnvironmentLogEffects(
+  context: ActionContext,
+  summary: string
+): LogEffect[] {
+  return context.environment === "encounter"
+    ? [new LogEffect(buildEncounterActivityLogEntry(summary))]
+    : [];
 }
 
 export function joinTargetNames(targets: CharacterRecord[]): string {

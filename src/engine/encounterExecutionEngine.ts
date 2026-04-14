@@ -1,18 +1,7 @@
 import { buildCharacterDerivedValues } from "../config/characterRuntime.ts";
-import { prependGameHistoryEntry } from "../lib/historyEntries.ts";
 import { createTimestampedId } from "../lib/ids.ts";
-import {
-  applyKnowledgeBatch,
-  buildLinkedCharacterKnowledgeBatchFromIntelEntry,
-} from "../lib/knowledge.ts";
-import {
-  incrementPerTargetDailyPowerUsageCount,
-  POWER_USAGE_KEYS,
-  incrementPowerUsageCount,
-  setLongRestSelection,
-} from "../lib/powerUsage.ts";
+import { POWER_USAGE_KEYS, incrementPowerUsageCount } from "../lib/powerUsage.ts";
 import { getBruteDefianceState } from "../lib/combatEncounterSpecialActions.ts";
-import { applyDamageToSheet, applyHealingToSheet } from "../rules/combatResolution.ts";
 import {
   applyActivePowerEffect,
   doesActivePowerEffectConflict,
@@ -25,13 +14,21 @@ import { getAuraSelectedTargetIds } from "../powers/runtimeSupport.ts";
 import type { CharacterRecord } from "../types/character.ts";
 import type { ActivePowerEffect } from "../types/activePowerEffects.ts";
 import type { CombatEncounterState, EncounterOngoingState } from "../types/combatEncounter.ts";
-import type { PreparedCastRequest } from "../types/combatEncounterView.ts";
+import type { CharacterSheetUpdater, PreparedCastRequest } from "../types/combatEncounterView.ts";
 import type { SharedItemRecord } from "../types/items.ts";
 import type { KnowledgeState } from "../types/knowledge.ts";
-
-type CharacterSheetUpdater =
-  | CharacterRecord["sheet"]
-  | ((current: CharacterRecord["sheet"]) => CharacterRecord["sheet"]);
+import {
+  appendPreparedHistoryEntry,
+  applyPreparedDamage,
+  applyPreparedEffect,
+  applyPreparedHealing,
+  applyPreparedHistoryEntries,
+  applyPreparedResourceChange,
+  applyPreparedStatusTagChange,
+  applyPreparedUsageCounterChange,
+  applySheetUpdater,
+  normalizeStatusTagText,
+} from "./preparedCastShared.ts";
 
 export type EncounterExecutionResult = {
   characters: CharacterRecord[];
@@ -45,17 +42,6 @@ type EncounterExecutionEngineArgs = {
   knowledgeState: KnowledgeState;
   itemsById: Record<string, SharedItemRecord>;
 };
-
-function applySheetUpdater(
-  currentSheet: CharacterRecord["sheet"],
-  updater: CharacterSheetUpdater
-): CharacterRecord["sheet"] {
-  return typeof updater === "function" ? updater(currentSheet) : updater;
-}
-
-function normalizeStatusTagText(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, "_");
-}
 
 function buildEncounterLogEntry(summary: string) {
   return {
@@ -104,68 +90,33 @@ export class EncounterExecutionEngine {
     }
     this.updateEncounterCharacter(casterCharacter.id, () => spentMana.sheet);
 
-    const resolvedHistoryEntries = request.historyEntries.map((item) => {
-      const historyEntry = item.entry;
-      if (historyEntry.type !== "intel_snapshot" || !historyEntry.targetCharacterId) {
-        return item;
-      }
-
-      const targetCharacter =
-        this.characters.find((entry) => entry.id === historyEntry.targetCharacterId) ??
+    const preparedHistory = applyPreparedHistoryEntries({
+      request,
+      knowledgeState: this.knowledgeState,
+      casterCharacter,
+      resolveCharacter: (characterId) =>
+        this.characters.find((entry) => entry.id === characterId) ??
         this.encounter.transientCombatants
-          .filter((entry) => entry.id === historyEntry.targetCharacterId)
+          .filter((entry) => entry.id === characterId)
           .map((entry) => ({
             id: entry.id,
             ownerRole: entry.ownerRole,
             sheet: entry.sheet,
           }))[0] ??
-        null;
-
-      if (!targetCharacter) {
-        return item;
-      }
-
-      const linked = buildLinkedCharacterKnowledgeBatchFromIntelEntry({
-        state: this.knowledgeState,
-        casterCharacter,
-        targetCharacter,
-        entry: historyEntry,
-      });
-      this.knowledgeState = applyKnowledgeBatch(this.knowledgeState, linked.batch);
-
-      return {
-        ...item,
-        entry: linked.entry,
-      };
+        null,
     });
+    this.knowledgeState = preparedHistory.knowledgeState;
 
-    resolvedHistoryEntries.forEach((item) => {
+    preparedHistory.historyEntries.forEach((item) => {
       this.updateEncounterCharacter(item.characterId, (currentSheet) => ({
-        ...currentSheet,
-        gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], item.entry),
+        ...appendPreparedHistoryEntry(currentSheet, item.entry),
       }));
     });
 
     request.resourceChanges.forEach((change) => {
-      this.updateEncounterCharacter(change.characterId, (currentSheet) => {
-        const derived = buildCharacterDerivedValues(currentSheet, this.itemsById);
-        const currentValue =
-          change.field === "currentMana" ? derived.currentMana : currentSheet[change.field];
-        const rawNextValue =
-          change.operation === "set" ? change.value : currentValue + change.value;
-        const nextValue =
-          change.field === "currentMana"
-            ? Math.max(0, Math.min(Math.trunc(rawNextValue), derived.maxMana))
-            : change.field === "temporaryHp"
-              ? Math.max(0, Math.trunc(rawNextValue))
-              : Math.trunc(rawNextValue);
-
-        return {
-          ...currentSheet,
-          [change.field]: nextValue,
-          ...(change.field === "currentMana" ? { manaInitialized: true } : null),
-        };
-      });
+      this.updateEncounterCharacter(change.characterId, (currentSheet) =>
+        applyPreparedResourceChange(currentSheet, change, this.itemsById)
+      );
     });
 
     request.statusTagChanges.forEach((change) => this.applyStatusTagChange(change));
@@ -173,22 +124,13 @@ export class EncounterExecutionEngine {
 
     request.healingApplications.forEach((application) => {
       this.updateEncounterCharacter(application.targetCharacterId, (currentSheet) =>
-        applyHealingToSheet(currentSheet, application.amount, {
-          temporaryHpCap: application.temporaryHpCap,
-          itemsById: this.itemsById,
-        }).sheet
+        applyPreparedHealing(currentSheet, application, this.itemsById)
       );
     });
 
     request.damageApplications.forEach((application) => {
       this.updateEncounterCharacter(application.targetCharacterId, (currentSheet) =>
-        applyDamageToSheet(currentSheet, {
-          rawAmount: application.rawAmount,
-          damageType: application.damageType,
-          mitigationChannel: application.mitigationChannel,
-          armorPenetration: application.armorPenetration,
-          itemsById: this.itemsById,
-        }).sheet
+        applyPreparedDamage(currentSheet, application, this.itemsById)
       );
     });
 
@@ -256,7 +198,7 @@ export class EncounterExecutionEngine {
 
     request.effects.forEach((effect) => {
       this.updateEncounterCharacter(effect.targetCharacterId, (currentSheet) =>
-        applyActivePowerEffect(currentSheet, effect)
+        applyPreparedEffect(currentSheet, effect)
       );
     });
 
@@ -490,67 +432,17 @@ export class EncounterExecutionEngine {
   private applyStatusTagChange(
     change: PreparedCastRequest["statusTagChanges"][number]
   ): void {
-    this.updateEncounterCharacter(change.characterId, (currentSheet) => {
-      if (change.operation === "add") {
-        const alreadyExists = currentSheet.statusTags.some(
-          (tag) =>
-            tag.id === change.tag.id ||
-            normalizeStatusTagText(tag.label) === normalizeStatusTagText(change.tag.label)
-        );
-        if (alreadyExists) {
-          return currentSheet;
-        }
-
-        return {
-          ...currentSheet,
-          statusTags: [...currentSheet.statusTags, change.tag],
-        };
-      }
-
-      return {
-        ...currentSheet,
-        statusTags: currentSheet.statusTags.filter(
-          (tag) =>
-            tag.id !== change.tag.id &&
-            normalizeStatusTagText(tag.label) !== normalizeStatusTagText(change.tag.label)
-        ),
-      };
-    });
+    this.updateEncounterCharacter(change.characterId, (currentSheet) =>
+      applyPreparedStatusTagChange(currentSheet, change)
+    );
   }
 
   private applyUsageCounterChange(
     change: PreparedCastRequest["usageCounterChanges"][number]
   ): void {
-    this.updateEncounterCharacter(change.characterId, (currentSheet) => {
-      if (change.operation === "setSelection") {
-        return {
-          ...currentSheet,
-          powerUsageState: setLongRestSelection(
-            currentSheet.powerUsageState,
-            change.key,
-            change.value
-          ),
-        };
-      }
-
-      return {
-        ...currentSheet,
-        powerUsageState:
-          change.scope === "perTargetDaily"
-            ? incrementPerTargetDailyPowerUsageCount(
-                currentSheet.powerUsageState,
-                change.key,
-                change.targetCharacterId ?? "",
-                change.amount
-              )
-            : incrementPowerUsageCount(
-                currentSheet.powerUsageState,
-                change.scope,
-                change.key,
-                change.amount
-              ),
-      };
-    });
+    this.updateEncounterCharacter(change.characterId, (currentSheet) =>
+      applyPreparedUsageCounterChange(currentSheet, change)
+    );
   }
 
   private mergeEncounterStructuralChanges(

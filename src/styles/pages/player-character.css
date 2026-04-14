@@ -488,6 +488,38 @@
   cursor: not-allowed;
 }
 
+.row-actions .power-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  width: auto !important;
+  height: 34px !important;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(126, 65, 34, 0.96), rgba(109, 64, 33, 0.92)) !important;
+  color: #fffaf3 !important;
+  border-color: rgba(109, 64, 33, 0.7) !important;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.row-actions .power-action-button.is-secondary {
+  background: rgba(255, 251, 245, 0.95);
+  color: #fffaf3 !important;
+  border-color: rgba(109, 64, 33, 0.35) !important;
+}
+
+.row-actions .power-action-button:disabled {
+  background: rgba(255, 255, 255, 0.82);
+  color: rgba(109, 64, 33, 0.65) !important;
+  border-color: rgba(109, 64, 33, 0.25) !important;
+}
+
 .stat-row em,
 .skill-row em,
 .power-row em,

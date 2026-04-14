@@ -71,6 +71,7 @@ function createActionContext(args: {
   };
 
   return {
+    environment: "encounter",
     payload: null,
     casterCharacter: args.caster,
     casterName: args.caster.sheet.name,

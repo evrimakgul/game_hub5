@@ -13,6 +13,7 @@ import {
   findKnowledgeEntityBySubjectKey,
   getKnowledgeEntityById,
   getKnowledgeRevisionById,
+  revokeItemKnowledgeShareResult,
 } from "../lib/knowledge.ts";
 import {
   buildItemIndex,
@@ -223,6 +224,22 @@ export function DmItemInteractionsPage() {
     appendHistoryEntries(result.historyEntries);
   }
 
+  function handleUnshareSelectedRevision(): void {
+    if (!selectedItem || !selectedRevision || selectedRecipients.length === 0) {
+      return;
+    }
+
+    const result = revokeItemKnowledgeShareResult({
+      state: knowledgeState,
+      item: selectedItem,
+      revision: selectedRevision,
+      recipientCharacterIds: selectedRecipients.map((character) => character.id),
+    });
+
+    updateKnowledgeState(result.state);
+    updateItem(selectedItem.id, result.item);
+  }
+
   function handleDeleteSelectedRevision(): void {
     if (!selectedRevision) {
       return;
@@ -390,6 +407,14 @@ export function DmItemInteractionsPage() {
                     onClick={handleShareSelectedRevision}
                   >
                     Share To Selected
+                  </button>
+                  <button
+                    type="button"
+                    className="flow-secondary"
+                    disabled={!selectedRevision || selectedRecipients.length === 0}
+                    onClick={handleUnshareSelectedRevision}
+                  >
+                    Unshare From Selected
                   </button>
                   {pendingDeleteRevisionId === selectedRevision?.id ? (
                     <>

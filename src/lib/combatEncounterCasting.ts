@@ -1,6 +1,4 @@
 import type { ActionContext } from "../engine/context.ts";
-import { executeAction } from "../engine/effectExecutor.ts";
-import { createActionForContext } from "../powers/registry.ts";
 import {
   buildAssessEntityHistoryEntry,
   buildDefaultHealingAllocations,
@@ -14,6 +12,7 @@ import {
   isSummonedEncounterTarget,
   isTargetAffectedByAuraSource,
 } from "../powers/runtimeSupport.ts";
+import { executePreparedCastForContext } from "./powerCasting.ts";
 import type {
   CastRequestPayload,
   EncounterParticipantView,
@@ -74,6 +73,7 @@ function buildActionContext(
   }
 
   return {
+    environment: "encounter",
     payload,
     casterCharacter: payload.casterCharacter,
     casterName: payload.casterCharacter.sheet.name.trim() || payload.casterDisplayName,
@@ -110,20 +110,10 @@ export function prepareCastRequest(
     return contextResult;
   }
 
-  const action = createActionForContext(contextResult);
-  if (!action) {
-    return {
-      error: `${payload.selectedPower.name} does not have a supported spell implementation.`,
-    };
-  }
-
-  try {
-    return executeAction(action, contextResult);
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Failed to prepare cast request.",
-    };
-  }
+  return executePreparedCastForContext(
+    contextResult,
+    `${payload.selectedPower.name} does not have a supported spell implementation.`
+  );
 }
 
 export {

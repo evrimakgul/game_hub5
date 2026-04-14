@@ -22,6 +22,9 @@
 - `EQUIP-SUP-01` completed. Supplementary `orbital`, `earring`, and `charm/talisman` slots now use persisted per-character activation state, remain hidden until enabled, and disabling an active slot clears only that equipment slot.
 - `B01` completed for item cards. Added an item-focused DM interaction hub that can activate supplementary slots for selected characters, generate or refresh canonical item knowledge cards, inspect item revisions, and share one item card revision to multiple characters at once while also syncing item learned/visible state.
 
+### Group 6: World Casting V1
+- `WORLD-CAST-V1-01` completed. `Known Powers` now exposes inline out-of-combat `Use` panels on the character sheet, backed by a shared `world` / `encounter` casting core. World casting V1 currently supports `Assess Entity`, `Body Reinforcement`, `Healing Touch`, and `Luminous Restoration`; encounter-only variants stay visible but unavailable outside combat. Inventory `Identify` now routes through the same shared world-casting backend for `Artifact Appraisal`.
+
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion
 - `CHAR-APPAREL-01` During future character-creation / encounter-creation work, add an `unarmored humanoid baseline` rule so humanoid characters can receive `+3 Initiative` to their naked-state baseline when no chest armor is equipped, while mobs/animals can intentionally have no clothing-based baseline but still optionally equip armor or weapons. Implement with a per-character/template flag such as `apparelMode: humanoid | none`.

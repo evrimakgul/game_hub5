@@ -1,5 +1,16 @@
 # Task Log
 
+## 2026-04-12
+
+- `WORLD-CAST-V1-01` completed.
+  - Added a shared casting environment model so cast preparation can target either `world` or `encounter`.
+  - Added reusable cast-form state and refactored encounter casting to reuse the shared request-building path.
+  - Added out-of-combat `Use` actions inline under `Known Powers` on the character sheet.
+  - World casting V1 now supports `Assess Entity`, `Body Reinforcement`, `Healing Touch`, and `Luminous Restoration`.
+  - Added a dedicated world execution path for mana spend, healing/resource changes, active effects, status tags, usage counters, history rows, and knowledge updates while rejecting encounter-only payloads.
+  - Moved inventory `Identify` onto the shared world-casting backend for `Artifact Appraisal` while keeping the item shortcut UI.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
 ## 2026-04-11
 
 - `EQUIP-SUP-01` and `B01` completed together as Milestone 3.

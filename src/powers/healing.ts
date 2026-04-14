@@ -7,7 +7,6 @@ import {
   DamageEffect,
   HealingEffect,
   HistoryEffect,
-  LogEffect,
   StatusRemovalEffect,
   UsageCounterEffect,
 } from "../engine/effects.ts";
@@ -15,7 +14,7 @@ import { buildHealingCastResolution } from "../rules/powerEffects.ts";
 import type { ActionContext } from "../engine/context.ts";
 import { createEmptyPassiveProviderResult } from "./passiveSupport.ts";
 import {
-  buildEncounterActivityLogEntry,
+  buildEnvironmentLogEffects,
   buildStatusRemovalChanges,
   joinTargetNames,
 } from "./runtimeSupport.ts";
@@ -185,12 +184,11 @@ abstract class BaseHealingSpellAction extends RestorationSpellAction {
             ]
           : []
       ),
-      new LogEffect(
-        buildEncounterActivityLogEntry(
-          `${this.spellLabel}: ${context.casterName} affected ${joinTargetNames(
-            context.finalTargets
-          )}.`
-        )
+      ...buildEnvironmentLogEffects(
+        context,
+        `${this.spellLabel}: ${context.casterName} affected ${joinTargetNames(
+          context.finalTargets
+        )}.`
       ),
     ];
   }

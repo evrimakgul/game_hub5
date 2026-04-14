@@ -1,8 +1,11 @@
 import { buildCharacterDerivedValues } from "../config/characterRuntime.ts";
 import { getCrAndRankFromXpUsed } from "../rules/xpTables.ts";
 import { KnowledgeSpellAction } from "../engine/actions.ts";
-import { HistoryEffect, LogEffect } from "../engine/effects.ts";
-import { buildAssessEntityHistoryEntry, buildEncounterActivityLogEntry } from "./runtimeSupport.ts";
+import { HistoryEffect } from "../engine/effects.ts";
+import {
+  buildAssessEntityHistoryEntry,
+  buildEnvironmentLogEffects,
+} from "./runtimeSupport.ts";
 import { createEmptyPassiveProviderResult, createSkillSource } from "./passiveSupport.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 import type { ActionContext } from "../engine/context.ts";
@@ -60,12 +63,11 @@ class AssessEntitySpellAction extends KnowledgeSpellAction {
     this.setManaCost(0);
 
     return [
-      new LogEffect(
-        buildEncounterActivityLogEntry(
-          `Assess Entity: ${context.casterName} read ${
-            targetCharacter.sheet.name.trim() || targetCharacter.id
-          }.`
-        )
+      ...buildEnvironmentLogEffects(
+        context,
+        `Assess Entity: ${context.casterName} read ${
+          targetCharacter.sheet.name.trim() || targetCharacter.id
+        }.`
       ),
       new HistoryEffect({
         characterId: context.casterCharacter.id,

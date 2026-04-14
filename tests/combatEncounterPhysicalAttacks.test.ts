@@ -245,18 +245,21 @@ export async function runCombatEncounterPhysicalAttackTests(): Promise<void> {
         ] as const;
 
         cases.forEach(({ blueprintId, itemId, expected }) => {
+          const character = createCharacterRecord(`user-${itemId}`, itemId, "player", {
+            stats: { STR: 8, DEX: 3 },
+          });
           const item = createSharedItemRecord(blueprintId, {
             id: itemId,
             name: itemId,
           });
           const itemsById = buildItemIndex([item]);
-          const equipped = setCharacterWeaponHandSlotItem(
-            PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          character.sheet = setCharacterWeaponHandSlotItem(
+            character.sheet,
             "weapon_primary",
             item.id,
             itemsById
           );
-          const profile = getResolvedPhysicalAttackProfile(equipped, itemsById);
+          const profile = getResolvedPhysicalAttackProfile(character.sheet, itemsById);
 
           assert.equal(profile.id, "ranged");
           assert.equal(profile.baseDamagePool, expected);

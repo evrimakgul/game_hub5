@@ -1,7 +1,12 @@
 import { BuffSpellAction } from "../engine/actions.ts";
-import { BuffEffect, LogEffect } from "../engine/effects.ts";
+import { BuffEffect } from "../engine/effects.ts";
 import { createEmptyPassiveProviderResult } from "./passiveSupport.ts";
-import { buildEncounterActivityLogEntry, getGenericBuffActionLabel, getReplacementWarnings, joinTargetNames } from "./runtimeSupport.ts";
+import {
+  buildEnvironmentLogEffects,
+  getGenericBuffActionLabel,
+  getReplacementWarnings,
+  joinTargetNames,
+} from "./runtimeSupport.ts";
 import { PowerPassiveProvider, type PowerModule } from "./types.ts";
 import type { ActionContext } from "../engine/context.ts";
 import { buildActivePowerEffect } from "../rules/powerEffects.ts";
@@ -44,12 +49,11 @@ class BoostPhysiqueSpellAction extends BuffSpellAction {
 
     return [
       new BuffEffect(builtEffect.effect),
-      new LogEffect(
-        buildEncounterActivityLogEntry(
-          `${getGenericBuffActionLabel(selectedPower.id, selectedPower.name)}: ${
-            context.casterName
-          } affected ${joinTargetNames([targetCharacter])}.`
-        )
+      ...buildEnvironmentLogEffects(
+        context,
+        `${getGenericBuffActionLabel(selectedPower.id, selectedPower.name)}: ${
+          context.casterName
+        } affected ${joinTargetNames([targetCharacter])}.`
       ),
     ];
   }

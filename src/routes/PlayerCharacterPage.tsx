@@ -28,6 +28,7 @@ import {
   buildItemIndex,
   getCharacterArtifactAppraisalLevel,
 } from "../lib/items.ts";
+import { type WorldCastRequestPayload } from "../lib/powerCasting.ts";
 import { buildPowerUsageSummary } from "../lib/powerUsage";
 import { resolveDicePool } from "../rules/combat";
 import {
@@ -71,6 +72,8 @@ export function PlayerCharacterPage({
     activeDmCharacter,
     updateCharacter,
     updateKnowledgeState,
+    executeWorldCast,
+    executeArtifactAppraisal,
     createItem,
     updateItem,
     deleteItem,
@@ -245,6 +248,7 @@ export function PlayerCharacterPage({
     updateCharacter,
     knowledgeState,
     updateKnowledgeState,
+    executeArtifactAppraisal,
     itemBlueprints,
     itemCategoryDefinitions,
     itemSubcategoryDefinitions,
@@ -384,6 +388,10 @@ export function PlayerCharacterPage({
     });
   }
 
+  function requestWorldCast(payload: WorldCastRequestPayload): string | null {
+    return executeWorldCast(payload);
+  }
+
   if (!activeCharacter || !activeSheet) {
     return (
       <Navigate
@@ -493,7 +501,10 @@ export function PlayerCharacterPage({
           />
 
           <CharacterPowersSection
+            activeCharacter={activeCharacter}
             sheetState={sheetState}
+            characters={characters}
+            itemsById={itemsById}
             availablePowerOptions={availablePowerOptions}
             pendingPowerId={pendingPowerId}
             xpLeftOver={xpLeftOver}
@@ -504,6 +515,7 @@ export function PlayerCharacterPage({
             onAddPowerOverride={mutations.handleAddPowerOverride}
             onAdjustPower={mutations.adjustPower}
             onAdjustPowerOverride={mutations.adjustPowerOverride}
+            onRequestWorldCast={requestWorldCast}
           />
 
           <CharacterInventorySection

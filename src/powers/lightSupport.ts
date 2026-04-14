@@ -5,11 +5,11 @@ import {
 } from "../rules/powerEffects.ts";
 import { getCurrentStatValue } from "../config/characterRuntime.ts";
 import { AuraSpellAction, RestorationSpellAction } from "../engine/actions.ts";
-import { AuraEffect, LogEffect, ManaEffect } from "../engine/effects.ts";
+import { AuraEffect, ManaEffect } from "../engine/effects.ts";
 import type { ActionContext } from "../engine/context.ts";
 import { createEmptyPassiveProviderResult } from "./passiveSupport.ts";
 import {
-  buildEncounterActivityLogEntry,
+  buildEnvironmentLogEffects,
   getGenericBuffActionLabel,
   getReplacementWarnings,
   joinTargetNames,
@@ -81,12 +81,11 @@ class LetThereBeLightSpellAction extends AuraSpellAction {
           })
         ),
       ]),
-      new LogEffect(
-        buildEncounterActivityLogEntry(
-          `${LIGHT_SUPPORT_AURA_SPELL_NAME}: ${context.casterName} affected ${
-            joinTargetNames(context.finalTargets) || context.casterName
-          }.`
-        )
+      ...buildEnvironmentLogEffects(
+        context,
+        `${LIGHT_SUPPORT_AURA_SPELL_NAME}: ${context.casterName} affected ${
+          joinTargetNames(context.finalTargets) || context.casterName
+        }.`
       ),
     ];
   }
@@ -141,10 +140,9 @@ class LessenDarknessSpellAction extends AuraSpellAction {
             })
           ),
       ]),
-      new LogEffect(
-        buildEncounterActivityLogEntry(
-          `${LIGHT_SUPPORT_DARKNESS_SPELL_NAME}: ${context.casterName} weakened ${selectedTargetIds.length} target(s).`
-        )
+      ...buildEnvironmentLogEffects(
+        context,
+        `${LIGHT_SUPPORT_DARKNESS_SPELL_NAME}: ${context.casterName} weakened ${selectedTargetIds.length} target(s).`
       ),
     ];
   }
@@ -176,12 +174,11 @@ class LuminousRestorationSpellAction extends RestorationSpellAction {
         operation: "adjust",
         value: restoreAmount,
       }),
-      new LogEffect(
-        buildEncounterActivityLogEntry(
-          `${LIGHT_SUPPORT_RESTORE_SPELL_NAME}: ${context.casterName} restored mana to ${
-            targetCharacter.sheet.name.trim() || targetCharacter.id
-          }.`
-        )
+      ...buildEnvironmentLogEffects(
+        context,
+        `${LIGHT_SUPPORT_RESTORE_SPELL_NAME}: ${context.casterName} restored mana to ${
+          targetCharacter.sheet.name.trim() || targetCharacter.id
+        }.`
       ),
     ];
   }

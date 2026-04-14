@@ -1,4 +1,5 @@
 import type { CharacterDraft } from "../config/characterTemplate";
+import { getCurrentStatValue } from "../config/characterRuntime.ts";
 import {
   getEquipmentSlotOccupancy,
   getItemAllowedEquipSlots,
@@ -137,6 +138,19 @@ function clearEquipmentAssignment(
   return removeItemFromEquipmentEntries(sheet, occupancy.itemId);
 }
 
+function canCharacterEquipItemByStats(
+  sheet: CharacterDraft,
+  item: SharedItemRecord,
+  itemsById: Record<string, SharedItemRecord>
+): boolean {
+  const minimumStrength = item.combatSpec?.minimumStrength;
+  if (typeof minimumStrength !== "number") {
+    return true;
+  }
+
+  return getCurrentStatValue(sheet, "STR", itemsById) >= minimumStrength;
+}
+
 function equipCharacterItemToSlot(
   sheet: CharacterDraft,
   requestedSlot: string,
@@ -156,6 +170,10 @@ function equipCharacterItemToSlot(
   const nextItem = itemsById[normalizedItemId] ?? null;
   if (!nextItem) {
     return upsertEquipmentSlotValue(sheet, requestedSlot, normalizedItemId, requestedSlot);
+  }
+
+  if (!canCharacterEquipItemByStats(sheet, nextItem, itemsById)) {
+    return sheet;
   }
 
   const anchorSlot = resolveRequestedAnchorSlot(nextItem, requestedSlot, itemRulesContext);
