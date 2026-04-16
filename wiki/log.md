@@ -16,3 +16,7 @@
 - Updated: `workflow/wiki-maintenance`
 - Updated: `history/thread-chronology`
 - Updated: `history/split-decisions`
+
+## [2026-04-16] refresh | external snapshot fetch blocked
+- Attempted to re-fetch external workflow snapshot sources but the environment has no outbound network access.
+- Marked stale in `raw/source-index.md`: `EXT-KARPATHY-GIST`, `EXT-SKILLS-CLAUDE`, `EXT-SKILLS-README`, `EXT-WIKI-SKILL`, `EXT-WIKI-README`.
