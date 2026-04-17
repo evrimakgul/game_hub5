@@ -3,13 +3,13 @@
 | Source ID | Kind | Collected | Authority | Status | Path | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `DOC-PLAN` | repo doc | n/a | roadmap | active | [references/plan.md](../references/plan.md) | Authoritative implementation roadmap. |
-| `DOC-OBJECTIVE` | repo doc | n/a | current-state | active | [references/project_objective.md](../references/project_objective.md) | Current branch objective and constraints. |
+| `DOC-OBJECTIVE` | repo doc | n/a | current-state | stale | [references/project_objective.md](../references/project_objective.md) | Mostly current, but still describes the older manual `Brute Defiance` trigger after current code/notes returned it to a passive effect. |
 | `DOC-RISKS` | repo doc | n/a | current-state | active | [references/project_risks.md](../references/project_risks.md) | Known delivery and drift risks. |
 | `DOC-NOTES` | repo doc | n/a | current-state | active | [references/current_notes.md](../references/current_notes.md) | Latest completed work, locked rules, and deferred items. |
 | `DOC-HANDOFF-2.1` | repo doc | n/a | provenance | active | [references/session_handoff_2026-03-12.md](../references/session_handoff_2026-03-12.md) | Canonical digest for the `2.1` refactor thread. |
 | `TRACK-CONTEXT` | tracking doc | n/a | provenance | active | [project_tracking/new_thread_context.md](../project_tracking/new_thread_context.md) | Compact thread handoff across later milestones. |
 | `TRACK-TODO` | tracking doc | n/a | roadmap | active | [project_tracking/tasks_todo.md](../project_tracking/tasks_todo.md) | Active and deferred tasks. |
-| `CODEBASE-2026-04-15` | codebase snapshot | 2026-04-15 | current-state | active | [src/](../src/) | Current implementation state and route/runtime shape. |
+| `CODEBASE-2026-04-15` | codebase snapshot | 2026-04-16 | current-state | active | [src/](../src/) | Revalidated current implementation state and route/runtime shape against live code landmarks on 2026-04-16. |
 | `THREAD-1` | codex thread | 2026-04-15 | provenance | active | [raw/codex-threads/thread-1-019ca77c-7815-7461-b355-80823b6ba4fc.md](./codex-threads/thread-1-019ca77c-7815-7461-b355-80823b6ba4fc.md) | Early planning and repo orientation. |
 | `THREAD-1-ORIGINAL` | codex jsonl | 2026-04-15 | provenance | active | [raw/codex-threads/original/thread-1-019ca77c-7815-7461-b355-80823b6ba4fc.jsonl](./codex-threads/original/thread-1-019ca77c-7815-7461-b355-80823b6ba4fc.jsonl) | Original session log. |
 | `THREAD-2` | codex thread | 2026-04-15 | provenance | active | [raw/codex-threads/thread-2-019ccfbc-005a-7950-8563-96d73c891a57.md](./codex-threads/thread-2-019ccfbc-005a-7950-8563-96d73c891a57.md) | Early powers continuation. |
@@ -27,8 +27,8 @@
 | `CHATGPT-1` | chat transcript | 2026-04-15 | workflow | active | [raw/chatgpt/2026-04-15-second-brain-for-codex.md](./chatgpt/2026-04-15-second-brain-for-codex.md) | Karpathy-style second-brain framing for Codex. |
 | `CHATGPT-1A` | chat transcript | 2026-04-15 | workflow | active | [raw/chatgpt/2026-04-15-second-brain-followup-supplement.md](./chatgpt/2026-04-15-second-brain-followup-supplement.md) | Supplemental explanation of setup-vs-usage loop. |
 | `CHATGPT-2` | chat transcript | 2026-04-15 | workflow | active | [raw/chatgpt/2026-04-15-best-llm-wiki-repo.md](./chatgpt/2026-04-15-best-llm-wiki-repo.md) | Comparison of repo patterns and Codex compatibility. |
-| `EXT-KARPATHY-GIST` | external snapshot | 2026-04-15 | workflow | active | [raw/external/2026-04-15-karpathy-llm-wiki-gist.md](./external/2026-04-15-karpathy-llm-wiki-gist.md) | Core raw/wiki/schema pattern and index/log model. |
-| `EXT-SKILLS-CLAUDE` | external snapshot | 2026-04-15 | workflow | active | [raw/external/2026-04-15-andrej-karpathy-skills-claude-md.md](./external/2026-04-15-andrej-karpathy-skills-claude-md.md) | Four coding-behavior principles. |
-| `EXT-SKILLS-README` | external snapshot | 2026-04-15 | workflow | active | [raw/external/2026-04-15-andrej-karpathy-skills-readme.md](./external/2026-04-15-andrej-karpathy-skills-readme.md) | Rationale for the four principles. |
-| `EXT-WIKI-SKILL` | external snapshot | 2026-04-15 | workflow | active | [raw/external/2026-04-15-karpathy-llm-wiki-skill.md](./external/2026-04-15-karpathy-llm-wiki-skill.md) | Ingest/query/lint workflow and index conventions. |
-| `EXT-WIKI-README` | external snapshot | 2026-04-15 | workflow | active | [raw/external/2026-04-15-karpathy-llm-wiki-readme.md](./external/2026-04-15-karpathy-llm-wiki-readme.md) | Practical packaging of the same workflow. |
+| `EXT-KARPATHY-GIST` | external snapshot | 2026-04-16 | workflow | active | [raw/external/2026-04-15-karpathy-llm-wiki-gist.md](./external/2026-04-15-karpathy-llm-wiki-gist.md) | Core raw/wiki/schema pattern and index/log model. Revalidated from the upstream gist on 2026-04-16. |
+| `EXT-SKILLS-CLAUDE` | external snapshot | 2026-04-16 | workflow | active | [raw/external/2026-04-15-andrej-karpathy-skills-claude-md.md](./external/2026-04-15-andrej-karpathy-skills-claude-md.md) | Four coding-behavior principles. Revalidated from upstream on 2026-04-16. |
+| `EXT-SKILLS-README` | external snapshot | 2026-04-16 | workflow | active | [raw/external/2026-04-15-andrej-karpathy-skills-readme.md](./external/2026-04-15-andrej-karpathy-skills-readme.md) | Rationale for the four principles. Revalidated from upstream on 2026-04-16. |
+| `EXT-WIKI-SKILL` | external snapshot | 2026-04-16 | workflow | active | [raw/external/2026-04-15-karpathy-llm-wiki-skill.md](./external/2026-04-15-karpathy-llm-wiki-skill.md) | Ingest/query/lint workflow and index conventions. Revalidated from upstream on 2026-04-16. |
+| `EXT-WIKI-README` | external snapshot | 2026-04-16 | workflow | active | [raw/external/2026-04-15-karpathy-llm-wiki-readme.md](./external/2026-04-15-karpathy-llm-wiki-readme.md) | Practical packaging of the same workflow. Revalidated from upstream on 2026-04-16. |

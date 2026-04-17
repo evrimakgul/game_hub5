@@ -9,7 +9,7 @@ Project-level pages track scope, roadmap, and what is already implemented.
 | Article | Summary | Updated |
 | --- | --- | --- |
 | [game-hub5-overview](./project/game-hub5-overview.md) | High-level product, constraints, architecture posture, and source hierarchy. | 2026-04-15 |
-| [current-objective-and-roadmap](./project/current-objective-and-roadmap.md) | Current branch objective and the near-term roadmap anchored to canonical docs. | 2026-04-15 |
+| [current-objective-and-roadmap](./project/current-objective-and-roadmap.md) | Current branch objective and the near-term roadmap anchored to canonical docs. | 2026-04-16 |
 | [implemented-vs-deferred](./project/implemented-vs-deferred.md) | Snapshot of completed systems versus explicitly deferred work. | 2026-04-15 |
 
 ## Runtime
@@ -49,4 +49,4 @@ History pages track provenance, chronology, and unresolved divergence.
 | Article | Summary | Updated |
 | --- | --- | --- |
 | [thread-chronology](./history/thread-chronology.md) | Ordered summary of Codex threads, ChatGPT chats, and their implementation impact. | 2026-04-15 |
-| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-15 |
+| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-16 |

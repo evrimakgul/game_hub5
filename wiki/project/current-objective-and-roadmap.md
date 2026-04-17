@@ -3,7 +3,7 @@ title: Current Objective And Roadmap
 topic: project
 kind: roadmap
 status: active
-updated: 2026-04-15
+updated: 2026-04-16
 confidence: high
 ---
 
@@ -22,6 +22,7 @@ The current branch objective is no longer broad combat stabilization. The repo h
   - World Casting V1
 - `references/current_notes.md` records successful validation for `typecheck`, `test`, and `build` at the end of the latest major pass.
 - `references/plan.md` is still the authoritative roadmap document even though many previously unfinished items are now complete in code.
+- `references/project_objective.md` is no longer fully aligned with current implementation; it still mentions the older manual `Brute Defiance` trigger while current code/notes record the passive version.
 
 ## Intended Direction
 
@@ -34,11 +35,13 @@ The current branch objective is no longer broad combat stabilization. The repo h
 - Current roadmap interpretation should prefer explicit "active" and "deferred" lists over stale earlier assumptions.
 - Completed domains should be preserved, not reopened casually.
 - The wiki should surface where `references/plan.md` and current implementation no longer line up.
+- The wiki should also surface partial repo-doc drift when a current-state document lags live code or notes.
 - `AA-01` is the clearest currently active functional follow-up.
 
 ## Deferred / Open
 
 - `AA-01` full `Artifact Appraisal` integration.
+- reconcile `references/project_objective.md` with the passive `Brute Defiance` behavior now reflected in code and `references/current_notes.md`
 - `KNOW-V2-01` expand knowledge cards beyond character and item cards.
 - `ITEM-VAL-01` persisted item value support.
 - `COMBAT-ACT-01` timing and action-economy layer.
