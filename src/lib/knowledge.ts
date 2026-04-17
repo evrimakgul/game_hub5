@@ -1134,6 +1134,108 @@ export function characterOwnsItemKnowledgeCard(
   });
 }
 
+export function getLatestKnowledgeRevisionForEntity(
+  state: KnowledgeState,
+  entityId: string
+): KnowledgeRevision | null {
+  return (
+    state.knowledgeRevisions
+      .filter((revision) => revision.entityId === entityId)
+      .sort((left, right) => right.revisionNumber - left.revisionNumber)[0] ?? null
+  );
+}
+
+export function characterOwnsKnowledgeRevision(
+  state: KnowledgeState,
+  ownerCharacterId: string,
+  revisionId: string
+): boolean {
+  return state.knowledgeOwnerships.some(
+    (ownership) =>
+      ownership.ownerCharacterId === ownerCharacterId && ownership.revisionId === revisionId
+  );
+}
+
+function sortRevisionTags(tags: string[]): string[] {
+  return [...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0))].sort();
+}
+
+function areKnowledgeRevisionEntriesEqual(
+  left: KnowledgeRevisionEntry[],
+  right: KnowledgeRevisionEntry[]
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (entry, index) =>
+        entry.label === (right[index]?.label ?? "") && entry.value === (right[index]?.value ?? "")
+    )
+  );
+}
+
+function areKnowledgeRevisionSectionsEqual(
+  left: KnowledgeRevisionSection[],
+  right: KnowledgeRevisionSection[]
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((section, index) => {
+      const other = right[index];
+      if (!other) {
+        return false;
+      }
+
+      return (
+        section.kind === other.kind &&
+        section.title === other.title &&
+        areKnowledgeRevisionEntriesEqual(section.entries, other.entries)
+      );
+    })
+  );
+}
+
+export function doesItemKnowledgeRevisionMatchItem(
+  item: SharedItemRecord,
+  revision: KnowledgeRevision,
+  context: ItemKnowledgeContext = {}
+): boolean {
+  const draft = buildItemKnowledgeDraftFromItem(item, context);
+
+  return (
+    revision.title === draft.title &&
+    revision.summary === draft.summary &&
+    areKnowledgeRevisionSectionsEqual(revision.content, draft.content) &&
+    sortRevisionTags(revision.tags).join("|") === sortRevisionTags(draft.tags).join("|")
+  );
+}
+
+export function characterOwnsCurrentItemKnowledgeCard(args: {
+  state: KnowledgeState;
+  ownerCharacterId: string;
+  item: SharedItemRecord;
+  context?: ItemKnowledgeContext;
+}): boolean {
+  const entity = findKnowledgeEntityBySubjectKey(args.state, "item", args.item.id);
+  if (!entity) {
+    return false;
+  }
+
+  const latestRevision = getLatestKnowledgeRevisionForEntity(args.state, entity.id);
+  if (!latestRevision) {
+    return false;
+  }
+
+  if (!doesItemKnowledgeRevisionMatchItem(args.item, latestRevision, args.context)) {
+    return false;
+  }
+
+  return characterOwnsKnowledgeRevision(
+    args.state,
+    args.ownerCharacterId,
+    latestRevision.id
+  );
+}
+
 export function buildKnowledgeAcquiredHistoryEntry(args: {
   note: string;
   knowledgeLink: KnowledgeHistoryLink;

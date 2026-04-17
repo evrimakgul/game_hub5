@@ -51,7 +51,7 @@ Stable completed systems:
   - `Control Entity` uses `CHA + INT` at levels `1-3`.
   - `Control Entity` uses `CHA + INT + CC level` at levels `4-5`.
   - `Awakened Insight` currently grants temporary inspiration; uninspired-status interaction is still deferred.
-  - `Artifact Appraisal` exists in source but full integration was deferred until item mechanics/UI expansion.
+  - `Artifact Appraisal` now routes through inventory `Identify` on the shared world/item-knowledge path and grants the current canonical item-card revision.
 
 Previous item baseline before the current refactor:
 - Shared item records already existed outside character sheets.
@@ -142,7 +142,6 @@ Audit these code paths first:
 
 Relevant deferred TODOs:
 - `B01`: Expand shared item UI into a full item-authoring and multi-target knowledge-sharing flow.
-- `AA-01`: Full `Artifact Appraisal (AA)` integration after item mechanics/UI are ready.
 - `KNOW-V2-01`: Expand knowledge cards beyond character cards.
 - `ITEM-REFAC-01`: Replace fixed item category/subtype assumptions with persisted DM-defined category and subcategory definitions.
 - `ITEM-MULTISLOT-01`: Add first-class multi-slot occupancy after the category/subcategory refactor.
@@ -165,7 +164,6 @@ Decisions to make before coding:
 - After the refactor, continue with the remaining item-system feature work:
   - richer item creation and assignment flows
   - item buff application polish
-  - `Artifact Appraisal`
   - later knowledge-card expansion for items
 - For future humanoid-vs-mob apparel logic, the current recommended implementation hint is a per-character/template flag such as `apparelMode: humanoid | none`.
 - For future action-economy work, keep the already-discussed topics together: `attacks per standard action`, `action budget`, `action cost`, `weapon speed`, and a possible timing engine.

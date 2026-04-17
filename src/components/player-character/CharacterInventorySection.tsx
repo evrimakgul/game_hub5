@@ -108,7 +108,7 @@ type CharacterInventorySectionProps = {
   itemBlueprints: ItemBlueprintRecord[];
   itemCategoryDefinitions: ItemCategoryDefinition[];
   itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
-  ownedItemCardIds: Set<string>;
+  ownedCurrentItemCardIds: Set<string>;
   revealAllItemBonusDetails: boolean;
   artifactAppraisalLevel: number;
   isSheetEditMode: boolean;
@@ -131,7 +131,7 @@ export function CharacterInventorySection({
   itemBlueprints,
   itemCategoryDefinitions,
   itemSubcategoryDefinitions,
-  ownedItemCardIds,
+  ownedCurrentItemCardIds,
   revealAllItemBonusDetails,
   artifactAppraisalLevel,
   isSheetEditMode,
@@ -196,11 +196,11 @@ export function CharacterInventorySection({
               occupancy && !occupancy.isAnchorSlot && occupancy.anchorSlot
                 ? getEquipmentSlotLabel(occupancy.anchorSlot)
                 : null;
-            const hasOwnedItemCard = item ? ownedItemCardIds.has(item.id) : false;
+            const hasOwnedCurrentItemCard = item ? ownedCurrentItemCardIds.has(item.id) : false;
             const visibleItem = item
               ? getViewerFacingItemRecord(item, {
                   ...itemRulesContext,
-                  hasOwnedItemCard,
+                  hasOwnedItemCard: hasOwnedCurrentItemCard,
                   revealAll: revealAllItemBonusDetails,
                 })
               : null;
@@ -227,11 +227,10 @@ export function CharacterInventorySection({
                       const canShowBonusDetails = canViewerSeeItemBonusDetails(
                         item,
                         characterId,
-                        hasOwnedItemCard,
+                        hasOwnedCurrentItemCard,
                         revealAllItemBonusDetails
                       );
                       const canIdentify =
-                        !hasOwnedItemCard &&
                         canCharacterIdentifyItem(item, artifactAppraisalLevel);
 
                       return (
@@ -250,11 +249,12 @@ export function CharacterInventorySection({
                             >
                               Unequip
                             </button>
-                            {!revealAllItemBonusDetails && !hasOwnedItemCard ? (
+                            {!revealAllItemBonusDetails &&
+                            !hasOwnedCurrentItemCard &&
+                            canIdentify ? (
                               <button
                                 type="button"
                                 className="equipment-inline-button"
-                                disabled={!canIdentify}
                                 onClick={() => onIdentifySharedItem(item.id)}
                               >
                                 Artifact Appraisal
@@ -304,22 +304,20 @@ export function CharacterInventorySection({
         ) : (
           <div className="equipment-compact-list">
             {unequippedReferencedItems.map((item) => {
-              const hasOwnedItemCard = ownedItemCardIds.has(item.id);
+              const hasOwnedCurrentItemCard = ownedCurrentItemCardIds.has(item.id);
               const visibleItem = getViewerFacingItemRecord(item, {
                 ...itemRulesContext,
-                hasOwnedItemCard,
+                hasOwnedItemCard: hasOwnedCurrentItemCard,
                 revealAll: revealAllItemBonusDetails,
               });
               const canShowBonusDetails = canViewerSeeItemBonusDetails(
                 item,
                 characterId,
-                hasOwnedItemCard,
+                hasOwnedCurrentItemCard,
                 revealAllItemBonusDetails
               );
               const visibleBonusNotes = canShowBonusDetails ? [...item.bonusProfile.notes] : [];
-              const canIdentify =
-                !hasOwnedItemCard &&
-                canCharacterIdentifyItem(item, artifactAppraisalLevel);
+              const canIdentify = canCharacterIdentifyItem(item, artifactAppraisalLevel);
               const equippedSlots = (sheetState.equipment ?? [])
                 .filter((entry) => entry.itemId === item.id)
                 .map((entry) =>
@@ -421,12 +419,13 @@ export function CharacterInventorySection({
                           Equip
                         </button>
                       ) : null}
-                      {!revealAllItemBonusDetails && !hasOwnedItemCard ? (
+                      {!revealAllItemBonusDetails &&
+                      !hasOwnedCurrentItemCard &&
+                      canIdentify ? (
                         <div className="equipment-inline-actions">
                           <button
                             type="button"
                             className="equipment-inline-button"
-                            disabled={!canIdentify}
                             onClick={() => onIdentifySharedItem(item.id)}
                           >
                             Artifact Appraisal

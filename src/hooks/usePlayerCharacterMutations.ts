@@ -2,10 +2,8 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { buildCharacterDerivedValues } from "../config/characterRuntime";
 import {
-  characterOwnsItemKnowledgeCard,
-} from "../lib/knowledge.ts";
-import {
   buildItemIndex,
+  canCharacterIdentifyItem,
   getCharacterArtifactAppraisalLevel,
   getItemAllowedEquipSlots,
   getItemMechanicalRole,
@@ -60,7 +58,6 @@ import type {
   SupplementaryEquipmentSlotId,
   WeaponHandSlotId,
 } from "../types/items.ts";
-import type { KnowledgeState } from "../types/knowledge.ts";
 import type { PowerUsageResetScope } from "../types/powerUsage";
 
 type CharacterSheetUpdater =
@@ -90,10 +87,6 @@ type UsePlayerCharacterMutationsParams = {
   pendingPowerId: string;
   sessionNotes: string;
   updateCharacter: (characterId: string, updater: CharacterSheetUpdater) => void;
-  knowledgeState: KnowledgeState;
-  updateKnowledgeState: (
-    updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
-  ) => void;
   executeArtifactAppraisal: (args: {
     casterCharacterId: string;
     itemId: string;
@@ -180,8 +173,6 @@ export function usePlayerCharacterMutations({
   pendingPowerId,
   sessionNotes,
   updateCharacter,
-  knowledgeState,
-  updateKnowledgeState,
   executeArtifactAppraisal,
   createItem,
   updateItem,
@@ -524,8 +515,7 @@ export function usePlayerCharacterMutations({
     }
 
     const artifactAppraisalLevel = getCharacterArtifactAppraisalLevel(sheetState);
-    const hasOwnedItemCard = characterOwnsItemKnowledgeCard(knowledgeState, activeCharacter.id, itemId);
-    if (!hasOwnedItemCard && artifactAppraisalLevel <= 0) {
+    if (!canCharacterIdentifyItem(currentItem, artifactAppraisalLevel)) {
       return;
     }
     executeArtifactAppraisal({

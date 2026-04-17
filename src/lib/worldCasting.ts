@@ -2,10 +2,11 @@ import type { ActionContext } from "../engine/context.ts";
 import { isUndeadSheet } from "../rules/combatResolution.ts";
 import {
   applyKnowledgeBatch,
-  characterOwnsItemKnowledgeCard,
   createItemKnowledgeRevision,
   createItemKnowledgeShareResult,
+  doesItemKnowledgeRevisionMatchItem,
   findKnowledgeEntityBySubjectKey,
+  getLatestKnowledgeRevisionForEntity,
 } from "../lib/knowledge.ts";
 import { canCharacterIdentifyItem } from "./items.ts";
 import {
@@ -186,32 +187,22 @@ export function executeArtifactAppraisalWorldCast(args: {
   | {
       knowledgeState: KnowledgeState;
       item: SharedItemRecord;
+      historyEntries: Array<{ characterId: string; entry: CharacterRecord["sheet"]["gameHistory"][number] }>;
     } {
-  const hasOwnedItemCard = characterOwnsItemKnowledgeCard(
-    args.knowledgeState,
-    args.casterCharacter.id,
-    args.item.id
-  );
-  if (
-    !hasOwnedItemCard &&
-    !canCharacterIdentifyItem(args.item, args.artifactAppraisalLevel)
-  ) {
+  if (!canCharacterIdentifyItem(args.item, args.artifactAppraisalLevel)) {
     return { error: "Artifact Appraisal is unavailable." };
   }
 
   let nextKnowledgeState = args.knowledgeState;
   let entity = findKnowledgeEntityBySubjectKey(nextKnowledgeState, "item", args.item.id);
-  let revision = null;
+  let revision =
+    entity !== null ? getLatestKnowledgeRevisionForEntity(nextKnowledgeState, entity.id) : null;
 
-  if (entity) {
-    const entityId = entity.id;
-    revision =
-      nextKnowledgeState.knowledgeRevisions
-        .filter((entry) => entry.entityId === entityId)
-        .sort((left, right) => right.revisionNumber - left.revisionNumber)[0] ?? null;
-  }
-
-  if (entity === null || revision === null) {
+  if (
+    entity === null ||
+    revision === null ||
+    !doesItemKnowledgeRevisionMatchItem(args.item, revision, args.context)
+  ) {
     const created = createItemKnowledgeRevision({
       state: nextKnowledgeState,
       item: args.item,
@@ -242,5 +233,6 @@ export function executeArtifactAppraisalWorldCast(args: {
   return {
     knowledgeState: applyKnowledgeBatch(nextKnowledgeState, revealResult.batch),
     item: revealResult.item,
+    historyEntries: revealResult.historyEntries,
   };
 }

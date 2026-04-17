@@ -68,8 +68,8 @@ This roadmap is the active implementation source of truth for this branch.
 ### 2.4 Item Knowledge and `AA`
 - Track item bonus knowledge per character, not globally.
 - Model identify, mask, and share knowledge state now at the data/rules level.
-- Keep only a minimal sheet-facing identify / mask surface for now.
-- Full multi-target share flow and richer `AA` interaction UI remain deferred.
+- Keep inventory `Identify` as the sheet-facing `Artifact Appraisal` shortcut.
+- Reuse the standalone item-card revision and sharing infrastructure instead of creating a parallel `AA` system.
 
 ### 2.5 Engine Alignment
 - Item bonuses must apply based on the character currently using / equipping the item, not the owner.
@@ -278,7 +278,10 @@ This roadmap is the active implementation source of truth for this branch.
 - Sharing an item card grants knowledge ownerships to all selected recipients without cloning the revision.
 - Item-card sharing now also marks the shared item as learned and visible for those recipients.
 - Existing identify / mask item behavior remains intact.
-- Full `Artifact Appraisal` runtime integration remains deferred to a later pass.
+- Successful `Artifact Appraisal` now grants ownership of the current canonical item-card revision for the viewer.
+- If the shared item has changed since the latest canonical revision, `Artifact Appraisal` refreshes the canonical revision first and then grants that later revision.
+- Successful `Artifact Appraisal` also appends linked history rows to the exact granted item-card revision.
+- Hidden item bonus visibility now keys off ownership of the current item-card revision rather than any stale older revision.
 
 ## Completed Follow-Up: World Casting V1
 
@@ -315,8 +318,10 @@ This roadmap is the active implementation source of truth for this branch.
 
 ### 9.5 `Artifact Appraisal` Backend Unification
 - Inventory `Identify` remains the user-facing shortcut for `Artifact Appraisal`.
-- The shortcut now executes through the same shared world-casting backend instead of a separate item-only implementation path.
-- Full general `AA` interaction UX and broader multi-target reveal/share behavior remain deferred.
+- The shortcut now executes through the shared world-casting backend and item-knowledge plumbing instead of a separate item-only implementation path.
+- `Artifact Appraisal` now grants the viewer the current canonical item-card revision, refreshing canonical content first when the shared item no longer matches the latest revision.
+- Successful `Artifact Appraisal` writes linked history rows to the granted revision.
+- General multi-recipient distribution continues to reuse the DM item interactions hub and the existing knowledge share flow instead of introducing a second AA-specific sharing surface.
 
 ## Validation
 - After each meaningful task group run:
@@ -336,6 +341,5 @@ This roadmap is the active implementation source of truth for this branch.
   - current implementation still uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
   - the recorded alternative is a dedicated aura builder such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`
 - Full item-authoring workflow and richer item bonus editors.
-- Full `Artifact Appraisal` runtime and richer `AA` interaction UI.
 - Encounter persistence and backend sync.
 - Player-side encounter UI.

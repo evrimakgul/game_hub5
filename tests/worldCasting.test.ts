@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import { WorldExecutionEngine } from "../src/engine/worldExecutionEngine.ts";
-import { createEmptyKnowledgeState, characterOwnsItemKnowledgeCard } from "../src/lib/knowledge.ts";
+import {
+  characterOwnsCurrentItemKnowledgeCard,
+  characterOwnsItemKnowledgeCard,
+  createEmptyKnowledgeState,
+} from "../src/lib/knowledge.ts";
 import {
   type WorldCastRequestPayload,
   getPreferredCastPowerVariantForEnvironment,
@@ -307,7 +311,7 @@ export async function runWorldCastingTests(): Promise<void> {
       },
     },
     {
-      name: "Artifact Appraisal world backend grants the item card and reveals the item",
+      name: "Artifact Appraisal world backend grants the item card, reveals the item, and writes linked history",
       run: () => {
         const caster = createCharacterRecord("caster", "Scholar", "player");
         const item = createSharedItemRecord("weapon:one_handed", {
@@ -346,8 +350,88 @@ export async function runWorldCastingTests(): Promise<void> {
           characterOwnsItemKnowledgeCard(result.knowledgeState, caster.id, item.id),
           true
         );
+        assert.equal(result.historyEntries.length, 1);
+        assert.equal(result.historyEntries[0]?.characterId, caster.id);
+        assert.ok(result.historyEntries[0]?.entry.knowledgeLink);
         assert.ok(result.item.knowledge.learnedCharacterIds.includes(caster.id));
         assert.ok(result.item.knowledge.visibleCharacterIds.includes(caster.id));
+      },
+    },
+    {
+      name: "Artifact Appraisal refreshes a stale item card into a later revision",
+      run: () => {
+        const caster = createCharacterRecord("caster-refresh", "Scholar", "player");
+        const baseItem = createSharedItemRecord("weapon:one_handed", {
+          id: "item-refresh-1",
+          name: "Relic Blade",
+          bonusProfile: {
+            notes: ["Dormant edge"],
+            statBonuses: {},
+            skillBonuses: {},
+            derivedBonuses: { melee_damage: 1 },
+            resistanceBonuses: {},
+            powerBonuses: {},
+            spellBonuses: {},
+            utilityTraits: [],
+          },
+        });
+        const initialResult = executeArtifactAppraisalWorldCast({
+          casterCharacter: caster,
+          item: baseItem,
+          artifactAppraisalLevel: 3,
+          knowledgeState: createEmptyKnowledgeState(),
+          context: {
+            itemBlueprints: [],
+            itemCategoryDefinitions: [],
+            itemSubcategoryDefinitions: [],
+          },
+        });
+
+        assert.ok(!("error" in initialResult));
+        if ("error" in initialResult) {
+          return;
+        }
+
+        const refreshedItem = {
+          ...baseItem,
+          bonusProfile: {
+            ...baseItem.bonusProfile,
+            notes: ["Awakened edge"],
+            derivedBonuses: { melee_damage: 3 },
+          },
+        };
+        const refreshedResult = executeArtifactAppraisalWorldCast({
+          casterCharacter: caster,
+          item: refreshedItem,
+          artifactAppraisalLevel: 3,
+          knowledgeState: initialResult.knowledgeState,
+          context: {
+            itemBlueprints: [],
+            itemCategoryDefinitions: [],
+            itemSubcategoryDefinitions: [],
+          },
+        });
+
+        assert.ok(!("error" in refreshedResult));
+        if ("error" in refreshedResult) {
+          return;
+        }
+
+        assert.equal(refreshedResult.knowledgeState.knowledgeRevisions.length, 2);
+        assert.equal(refreshedResult.historyEntries.length, 1);
+        assert.equal(
+          characterOwnsCurrentItemKnowledgeCard({
+            state: refreshedResult.knowledgeState,
+            ownerCharacterId: caster.id,
+            item: refreshedItem,
+            context: {
+              itemBlueprints: [],
+              itemCategoryDefinitions: [],
+              itemSubcategoryDefinitions: [],
+            },
+          }),
+          true
+        );
       },
     },
   ]);

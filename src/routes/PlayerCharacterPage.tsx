@@ -17,7 +17,7 @@ import { PLAYER_CHARACTER_TEMPLATE } from "../config/characterTemplate";
 import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
 import {
-  characterOwnsItemKnowledgeCard,
+  characterOwnsCurrentItemKnowledgeCard,
   getKnowledgeEntityById,
   getKnowledgeGroupsForOwner,
   getKnowledgeRevisionById,
@@ -191,18 +191,36 @@ export function PlayerCharacterPage({
     knowledgeRevisions,
     knowledgeOwnerships,
   };
-  const ownedItemCardIds = useMemo(
+  const ownedCurrentItemCardIds = useMemo(
     () =>
       activeCharacter
         ? new Set(
             items
               .filter((item) =>
-                characterOwnsItemKnowledgeCard(knowledgeState, activeCharacter.id, item.id)
+                characterOwnsCurrentItemKnowledgeCard({
+                  state: knowledgeState,
+                  ownerCharacterId: activeCharacter.id,
+                  item,
+                  context: {
+                    itemBlueprints,
+                    itemCategoryDefinitions,
+                    itemSubcategoryDefinitions,
+                  },
+                })
               )
               .map((item) => item.id)
           )
         : new Set<string>(),
-    [activeCharacter, items, knowledgeEntities, knowledgeOwnerships, knowledgeRevisions]
+    [
+      activeCharacter,
+      itemBlueprints,
+      itemCategoryDefinitions,
+      itemSubcategoryDefinitions,
+      items,
+      knowledgeEntities,
+      knowledgeOwnerships,
+      knowledgeRevisions,
+    ]
   );
   const activeKnowledgeOwnerships =
     activeCharacter
@@ -246,8 +264,6 @@ export function PlayerCharacterPage({
     pendingPowerId,
     sessionNotes,
     updateCharacter,
-    knowledgeState,
-    updateKnowledgeState,
     executeArtifactAppraisal,
     itemBlueprints,
     itemCategoryDefinitions,
@@ -525,7 +541,7 @@ export function PlayerCharacterPage({
             itemBlueprints={itemBlueprints}
             itemCategoryDefinitions={itemCategoryDefinitions}
             itemSubcategoryDefinitions={itemSubcategoryDefinitions}
-            ownedItemCardIds={ownedItemCardIds}
+            ownedCurrentItemCardIds={ownedCurrentItemCardIds}
             revealAllItemBonusDetails={isDmView}
             artifactAppraisalLevel={artifactAppraisalLevel}
             isSheetEditMode={isSheetEditMode}

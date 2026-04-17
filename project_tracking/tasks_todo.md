@@ -1,6 +1,6 @@
 # Tasks TODO
 ## Active
-- `AA-01` Implement full `Artifact Appraisal (AA)` integration on top of the now-live item-card generation/share flow. Keep it aligned with the current item knowledge model, support multi-target reveal/share where appropriate, and avoid duplicating the new item knowledge infrastructure.
+- No active implementation item is currently recorded. The next queued follow-up remains the deferred list below.
 
 ## Completed
 ### Group 1: Encounter Cast UI Standardization
@@ -24,6 +24,9 @@
 
 ### Group 6: World Casting V1
 - `WORLD-CAST-V1-01` completed. `Known Powers` now exposes inline out-of-combat `Use` panels on the character sheet, backed by a shared `world` / `encounter` casting core. World casting V1 currently supports `Assess Entity`, `Body Reinforcement`, `Healing Touch`, and `Luminous Restoration`; encounter-only variants stay visible but unavailable outside combat. Inventory `Identify` now routes through the same shared world-casting backend for `Artifact Appraisal`.
+
+### Group 7: Artifact Appraisal Integration
+- `AA-01` completed. Inventory `Identify` now finishes the `Artifact Appraisal` flow on top of the live item-knowledge model: it grants or refreshes the current canonical item-card revision, writes linked history rows to the granted revision, and keeps hidden item bonus visibility keyed to ownership of the current revision instead of any stale older revision. Multi-recipient sharing continues to reuse the existing DM item-card share flow.
 
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion

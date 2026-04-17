@@ -84,8 +84,8 @@
     {
       "id": "CURRENT-06",
       "topic": "Artifact Appraisal",
-      "decision": "Keep Artifact Appraisal deferred until item mechanics and item UI are ready.",
-      "reason": "The source defines Artifact Appraisal, but the current power/spell ingestion references are focused on implemented combat and runtime behavior."
+      "decision": "Artifact Appraisal now uses the inventory Identify shortcut on top of the shared world-casting and item-knowledge path.",
+      "reason": "This keeps appraisal aligned with canonical item-card revision refresh, linked history rows, and existing DM share flows without adding a separate generic cast-form UI."
     },
     {
       "id": "CURRENT-07",

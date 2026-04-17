@@ -1,5 +1,14 @@
 # Task Log
 
+## 2026-04-16
+
+- `AA-01` completed.
+  - Completed the full `Artifact Appraisal` integration on the shared world-casting and item-knowledge path without adding a parallel AA-specific system.
+  - `Artifact Appraisal` now grants ownership of the current canonical item-card revision, refreshing the canonical revision first when the shared item has changed since the latest card.
+  - Successful appraisals now append linked history rows to the exact granted revision.
+  - Player inventory visibility for hidden item bonuses now keys off ownership of the current item-card revision instead of any stale older revision.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
 ## 2026-04-12
 
 - `WORLD-CAST-V1-01` completed.

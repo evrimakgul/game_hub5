@@ -13,6 +13,7 @@ This file tracks active reminders for the current implementation block.
 - The hand-state combat cleanup and classic ranged split pass is now complete.
 - The supplementary-slot and item-knowledge UX pass is now complete.
 - The World Casting V1 pass is now complete.
+- The `AA-01` Artifact Appraisal integration pass is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -43,7 +44,11 @@ This file tracks active reminders for the current implementation block.
 - Supplementary `orbital`, `earring`, and `charm/talisman` slots now use persisted per-character activation and stay hidden until enabled.
 - Item knowledge cards now exist as standalone `KnowledgeEntity.type = "item"` revisions keyed by shared item id.
 - Sharing an item card now also marks that shared item learned and visible for the recipients.
-- Hidden item bonus rendering should key off item-card ownership for the viewer, not a separate raw identify flag. `Artifact Appraisal` should reveal by granting the item card.
+- Inventory `Identify` remains the user-facing `Artifact Appraisal` shortcut.
+- Successful `Artifact Appraisal` now grants ownership of the current canonical item-card revision for the viewer.
+- If the shared item has changed since the latest canonical revision, `Artifact Appraisal` refreshes the canonical revision first and then grants that later revision.
+- Successful `Artifact Appraisal` appends a linked history row to the granted knowledge revision.
+- Hidden item bonus rendering now keys off ownership of the current item-card revision for the viewer, not a separate raw identify flag or any stale older revision.
 - Character sheets now support limited out-of-combat casting from `Known Powers`.
 - World-cast V1 currently supports `Assess Entity`, `Body Reinforcement`, `Healing Touch`, and `Luminous Restoration`.
 - World-unsupported variants stay visible but unavailable outside combat.
@@ -57,7 +62,6 @@ This file tracks active reminders for the current implementation block.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
 - The four reverse-engineered power/spell ingestion reference JSON files now describe the updated cast UI / aura lifecycle / summon-dismiss behavior.
 - Classic bow / crossbow action-cost and movement rules are still represented only as visible notes; runtime timing support remains deferred to the later combat-action pass.
-- Full `Artifact Appraisal` interaction expansion remains deferred beyond the current inventory shortcut + shared backend path.
 - `Assess Entity` should keep card output totals-only for entities without exposing hidden item bonus details or item-card internals.
 - General out-of-combat casting remains intentionally narrow in V1; hostile, summon, aura, multi-target, and timing-sensitive variants are still encounter-only.
 
@@ -82,7 +86,7 @@ This file tracks active reminders for the current implementation block.
   - legacy embedded intel history rows are intentionally removed during hydration
 
 ## Deferred But Recorded
-- Full item-authoring UX and full `AA` runtime integration remain deferred.
+- Full item-authoring UX remains deferred.
 - Future creation/template work should distinguish humanoid apparel logic from mobs/animals:
   - humanoids can use default clothing and naked-state initiative rules
   - beasts/mobs can intentionally have no clothing baseline

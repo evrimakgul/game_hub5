@@ -742,6 +742,17 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     return null;
   }
 
+  function appendHistoryEntries(
+    entries: Array<{ characterId: string; entry: CharacterRecord["sheet"]["gameHistory"][number] }>
+  ): void {
+    entries.forEach(({ characterId, entry }) => {
+      updateCharacter(characterId, (currentSheet) => ({
+        ...currentSheet,
+        gameHistory: [entry, ...(currentSheet.gameHistory ?? [])],
+      }));
+    });
+  }
+
   function executeArtifactAppraisal(args: {
     casterCharacterId: string;
     itemId: string;
@@ -772,6 +783,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
 
     updateKnowledgeState(result.knowledgeState);
     updateItem(item.id, result.item);
+    appendHistoryEntries(result.historyEntries);
     return null;
   }
 
