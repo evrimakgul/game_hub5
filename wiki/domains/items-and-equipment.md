@@ -3,7 +3,7 @@ title: Items And Equipment
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-15
+updated: 2026-04-16
 confidence: high
 ---
 
@@ -18,12 +18,14 @@ The item system has already crossed the important architecture boundary: items a
 - `src/state/appFlow.tsx` and `src/state/appFlowPersistence.ts` persist item definitions, blueprints, instances, and migration/backfill behavior.
 - Supplementary `orbital`, `earring`, and `charm/talisman` slots are live and per-character activatable.
 - Item knowledge cards exist as standalone knowledge revisions keyed by shared item id.
+- Inventory `Identify` now completes `Artifact Appraisal` on top of the same item-card system, granting or refreshing the current canonical item-card revision and appending linked history rows.
 - Locked current item behavior includes:
   - PP-driven tiering
   - `unarmed` versus `brawl` distinction
   - shields resolving to secondary hand
   - anchor-slot canonical occupancy
   - crossbow armor penetration reducing DR during physical attack resolution
+  - hidden item bonus visibility keyed to ownership of the current item-card revision rather than any stale older revision
 
 ## Intended Direction
 
@@ -36,11 +38,10 @@ The item system has already crossed the important architecture boundary: items a
 - Shared item entities, ownership/possession, equip state, and bonus knowledge are separate concepts.
 - Persisted item category/subcategory definitions drive equip behavior.
 - Multi-slot occupancy resolves through anchor-slot logic.
-- Item-card visibility should key off owned knowledge, not a separate raw identify flag.
+- Item-card visibility should key off owned current knowledge, not a separate raw identify flag or stale revision ownership.
 
 ## Deferred / Open
 
-- `AA-01` full `Artifact Appraisal` interaction expansion remains open.
 - `ITEM-VAL-01` persisted value field remains deferred.
 - Full item-authoring UX polish remains open even though the core architecture is live.
 

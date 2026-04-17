@@ -3,7 +3,7 @@ title: Implemented Vs Deferred
 topic: project
 kind: status
 status: active
-updated: 2026-04-15
+updated: 2026-04-16
 confidence: high
 ---
 
@@ -23,10 +23,10 @@ Implemented and live:
 - Shared items with persisted category/subcategory definitions and blueprint-backed instances.
 - Supplementary slots and anchor-slot occupancy.
 - World Casting V1 for a limited set of supported powers.
+- `Artifact Appraisal` integration through the inventory shortcut, canonical item-card revision refresh, and linked history-entry flow.
 
 Deferred or partial:
 
-- Full `Artifact Appraisal` expansion.
 - Knowledge subject expansion beyond character/item.
 - Encounter persistence beyond current local runtime.
 - Backend sync and realtime assumptions.
@@ -47,7 +47,6 @@ Deferred or partial:
 
 ## Deferred / Open
 
-- `AA-01`
 - `KNOW-V2-01`
 - `ITEM-VAL-01`
 - `COMBAT-ACT-01`

@@ -49,4 +49,4 @@ History pages track provenance, chronology, and unresolved divergence.
 | Article | Summary | Updated |
 | --- | --- | --- |
 | [thread-chronology](./history/thread-chronology.md) | Ordered summary of Codex threads, ChatGPT chats, and their implementation impact. | 2026-04-15 |
-| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-16 |
+| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-17 |

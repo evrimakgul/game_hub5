@@ -3,7 +3,7 @@ title: Game Hub 5 Overview
 topic: project
 kind: overview
 status: active
-updated: 2026-04-15
+updated: 2026-04-16
 confidence: high
 ---
 
@@ -16,6 +16,7 @@ confidence: high
 - The app is a browser-based React/TypeScript project with route-driven player and DM flows.
 - Persistence is local-only and centered in app state plus browser storage.
 - Combat encounter corrections, power-rule reconciliation, Knowledge System V1, item-definition refactor, supplementary slots, and World Casting V1 are already implemented.
+- `Artifact Appraisal` is now fully integrated on the inventory/world-casting item-knowledge path.
 - Shared item entities, persisted item category/subcategory definitions, and revisioned knowledge records are live project concepts, not just planned concepts.
 - Canonical non-code project truth currently lives across `references/` and `project_tracking/`, while detailed provenance lives in historical threads and chats.
 
@@ -40,7 +41,6 @@ confidence: high
 - Player-side encounter UI is still deferred.
 - Knowledge expansion beyond character and item cards remains deferred.
 - The future timing/action-economy layer is still deferred.
-- Full `Artifact Appraisal` workflow expansion is still open.
 
 ## Sources
 

@@ -3,7 +3,7 @@ title: World Casting
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-15
+updated: 2026-04-16
 confidence: high
 ---
 
@@ -20,6 +20,7 @@ World Casting V1 is intentionally narrow. It reuses the shared casting backend, 
   - `Healing Touch`
   - `Luminous Restoration`
 - Inventory `Identify` in `CharacterInventorySection` routes through the shared world-casting backend for `Artifact Appraisal`.
+- Successful `Artifact Appraisal` now grants or refreshes the current canonical item-card revision and appends linked history rows to that granted revision.
 - World casting respects environment support explicitly; unsupported variants return unavailable/error states.
 
 ## Intended Direction
@@ -32,11 +33,10 @@ World Casting V1 is intentionally narrow. It reuses the shared casting backend, 
 
 - World and encounter casting should share a backend path where possible.
 - Unsupported world variants stay visible but unavailable.
-- `Artifact Appraisal` reveal behavior works through knowledge-card ownership, not a separate ad hoc identify state.
+- `Artifact Appraisal` reveal behavior works through current knowledge-card ownership, not a separate ad hoc identify state.
 
 ## Deferred / Open
 
-- Full `AA-01` interaction expansion remains open.
 - General out-of-combat casting remains intentionally limited.
 - Hostile, summon, aura, multi-target, and timing-sensitive world variants remain unsupported.
 

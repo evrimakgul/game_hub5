@@ -3,7 +3,7 @@ title: Knowledge Cards
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-15
+updated: 2026-04-16
 confidence: high
 ---
 
@@ -19,6 +19,7 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 - Item-card management is exposed to DM flows through `src/routes/DmItemInteractionsPage.tsx`.
 - History entries can link to exact knowledge revisions instead of embedding intel as the only durable record.
 - V1 subject coverage is currently character cards and item cards.
+- `Artifact Appraisal` now reuses the same item-card revision model: successful appraisals grant the current canonical item-card revision, refresh stale canonical content when needed, and append linked history rows to the granted revision.
 
 ## Intended Direction
 
@@ -32,6 +33,7 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 - Revisions are immutable snapshots.
 - Ownership is separate from entity/revision existence.
 - Item knowledge and character knowledge share the same underlying model.
+- Current-state item visibility checks should key off the latest relevant owned revision, not merely any historical revision ownership.
 
 ## Deferred / Open
 
