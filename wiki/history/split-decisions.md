@@ -3,7 +3,7 @@ title: Split Decisions
 topic: history
 kind: register
 status: active
-updated: 2026-04-15
+updated: 2026-04-16
 confidence: high
 ---
 
@@ -21,6 +21,7 @@ Open splits:
 | `KNOW-V2-01` | open | Knowledge cards are live for character and item subjects only. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, threads `4` and `6` |
 | `COMBAT-ACT-01` | open | Physical attacks and ranged gear work now, but action cost, timing, weapon speed, and multi-attack throughput are still simplified. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, thread `5` |
 | `PLAN-DRIFT-01` | open | `references/plan.md` remains authoritative, but some earlier unfinished items have already been completed in code and current notes. | `references/plan.md`, `references/current_notes.md`, `references/session_handoff_2026-03-12.md` |
+| `DOC-OBJECTIVE-01` | open | `references/project_objective.md` still describes the older manual `Brute Defiance` trigger, while current code, roadmap, and notes reflect the passive version. | `references/project_objective.md`, `references/plan.md`, `references/current_notes.md`, `src/engine/encounterExecutionEngine.ts` |
 
 Resolved splits:
 
@@ -36,6 +37,7 @@ Resolved splits:
 - `KNOW-V2-01`: expand the existing revision/ownership model to more subject types.
 - `COMBAT-ACT-01`: add a deliberate timing/action-economy layer without regressing current encounter behavior.
 - `PLAN-DRIFT-01`: use this wiki plus current notes/code to reconcile roadmap order before implementation begins.
+- `DOC-OBJECTIVE-01`: reconcile the stale current-state objective doc with the passive `Brute Defiance` behavior already live in code.
 
 ## Key Decisions
 
@@ -45,7 +47,7 @@ Resolved splits:
 
 ## Deferred / Open
 
-- Awaiting eventual user or implementation resolution for: `AA-01`, `KNOW-V2-01`, `COMBAT-ACT-01`, `PLAN-DRIFT-01`.
+- Awaiting eventual user or implementation resolution for: `AA-01`, `KNOW-V2-01`, `COMBAT-ACT-01`, `PLAN-DRIFT-01`, `DOC-OBJECTIVE-01`.
 
 ## Sources
 
