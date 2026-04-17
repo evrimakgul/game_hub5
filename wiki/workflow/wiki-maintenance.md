@@ -3,7 +3,7 @@ title: Wiki Maintenance
 topic: workflow
 kind: workflow
 status: active
-updated: 2026-04-15
+updated: 2026-04-17
 confidence: high
 ---
 
@@ -26,7 +26,7 @@ The wiki uses the Karpathy-style raw/wiki/schema split. `raw/` stores immutable 
 - Ingest should always do both steps: capture the source into `raw/` and update the compiled knowledge in `wiki/`.
 - Query should read `wiki/index.md` first, then the relevant pages, then verify against code/docs if a current-state answer is needed.
 - Lint should keep index, links, raw references, and split tracking healthy.
-- Automation should refresh the wiki hourly on `codex/llm-wiki` and never touch application runtime/source files.
+- Automation should refresh the wiki on `codex/powers-implementation` and never touch application runtime/source files.
 
 ## Key Decisions
 
@@ -39,6 +39,7 @@ The wiki uses the Karpathy-style raw/wiki/schema split. `raw/` stores immutable 
   - mark the source stale in `raw/source-index.md`
   - continue with other sources
 - Allowed wiki-maintenance writes are limited to `raw/`, `wiki/`, `.agents/skills/llm-wiki-maintainer/`, and wiki-specific rules in `AGENTS.md`.
+- The branch/worktree cleanup guidance was captured as durable workflow context so future wiki runs do not recreate a second dedicated wiki branch unless the user explicitly wants that isolation again.
 
 ## Deferred / Open
 
@@ -58,4 +59,5 @@ The wiki uses the Karpathy-style raw/wiki/schema split. `raw/` stores immutable 
 - [EXT-WIKI-SKILL](../../raw/external/2026-04-15-karpathy-llm-wiki-skill.md)
 - [EXT-WIKI-README](../../raw/external/2026-04-15-karpathy-llm-wiki-readme.md)
 - [CHATGPT-2](../../raw/chatgpt/2026-04-15-best-llm-wiki-repo.md)
+- [CHATGPT-3](../../raw/chatgpt/2026-04-16-branch-management-in-codex.md)
 

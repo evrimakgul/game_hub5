@@ -43,3 +43,11 @@
 - Revalidated current repo docs and live code landmarks; `references/project_objective.md` remains the only tracked stale current-state doc because it still describes the older manual `Brute Defiance` trigger.
 - Revalidated all tracked external workflow snapshot URLs against their live upstream sources and kept the existing raw captures active in `raw/source-index.md`.
 - Updated: `history/split-decisions`
+
+## [2026-04-17] refresh | workflow branch policy reconciliation
+- Added the missing `CHATGPT-3` raw source for the branch/worktree cleanup conversation and indexed it in `raw/source-index.md`.
+- Revalidated all tracked external workflow snapshot URLs against their live upstream sources and kept their existing raw captures active.
+- Updated the repo wiki-maintenance rule plus workflow/history pages so wiki refresh work now tracks `codex/powers-implementation` instead of a separate `codex/llm-wiki` lane.
+- Updated: `workflow/codex-operating-rules`
+- Updated: `workflow/wiki-maintenance`
+- Updated: `history/thread-chronology`

@@ -3,7 +3,7 @@ title: Thread Chronology
 topic: history
 kind: chronology
 status: active
-updated: 2026-04-15
+updated: 2026-04-17
 confidence: high
 ---
 
@@ -25,6 +25,7 @@ This page is the ordered provenance map for the repo’s recent evolution. It re
 | `ChatGPT 1` | Second Brain for Codex | Explained Karpathy-style persistent wiki concept for Codex. | Established raw/wiki/schema mental model. |
 | `ChatGPT 1A` | Follow-up supplement | Clarified setup-once versus run-repeatedly workflow. | Made operational usage loop explicit. |
 | `ChatGPT 2` | Best LLM Wiki Repo | Compared repo patterns and Codex compatibility. | Supported repo-tracked wiki decision. |
+| `ChatGPT 3` | Branch Management in Codex | Reconstructed the branch/worktree confusion after wiki setup and recommended collapsing back to `codex/powers-implementation`. | Captured the decision to avoid a separate wiki branch unless the user explicitly asks for isolation again. |
 
 ## Intended Direction
 
@@ -60,4 +61,5 @@ This page is the ordered provenance map for the repo’s recent evolution. It re
 - [CHATGPT-1](../../raw/chatgpt/2026-04-15-second-brain-for-codex.md)
 - [CHATGPT-1A](../../raw/chatgpt/2026-04-15-second-brain-followup-supplement.md)
 - [CHATGPT-2](../../raw/chatgpt/2026-04-15-best-llm-wiki-repo.md)
+- [CHATGPT-3](../../raw/chatgpt/2026-04-16-branch-management-in-codex.md)
 

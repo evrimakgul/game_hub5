@@ -39,8 +39,8 @@ Workflow pages tell Codex how to operate on this repo and this wiki.
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [codex-operating-rules](./workflow/codex-operating-rules.md) | Repo-specific operating policy for implementation and wiki maintenance. | 2026-04-15 |
-| [wiki-maintenance](./workflow/wiki-maintenance.md) | Ingest, query, lint, automation, and allowed-write rules for the wiki. | 2026-04-15 |
+| [codex-operating-rules](./workflow/codex-operating-rules.md) | Repo-specific operating policy for implementation and wiki maintenance. | 2026-04-17 |
+| [wiki-maintenance](./workflow/wiki-maintenance.md) | Ingest, query, lint, automation, and allowed-write rules for the wiki. | 2026-04-17 |
 
 ## History
 
@@ -48,5 +48,5 @@ History pages track provenance, chronology, and unresolved divergence.
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [thread-chronology](./history/thread-chronology.md) | Ordered summary of Codex threads, ChatGPT chats, and their implementation impact. | 2026-04-15 |
+| [thread-chronology](./history/thread-chronology.md) | Ordered summary of Codex threads, ChatGPT chats, and their implementation impact. | 2026-04-17 |
 | [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-17 |

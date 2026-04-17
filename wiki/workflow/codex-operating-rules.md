@@ -3,7 +3,7 @@ title: Codex Operating Rules
 topic: workflow
 kind: workflow
 status: active
-updated: 2026-04-15
+updated: 2026-04-17
 confidence: high
 ---
 
@@ -22,6 +22,7 @@ This repo now has an explicit Codex operating policy: follow the project roadmap
   - Goal-Driven Execution
   - wiki source precedence and split-reporting rules
 - The wiki is now part of normal repo maintenance rather than a side artifact.
+- The branch-management follow-up now treats `codex/powers-implementation` as both the main implementation branch and the wiki refresh branch so automation does not split work into a second lane.
 - Future Codex sessions should query the wiki first and then verify against code/docs when answering current-state questions.
 
 ## Intended Direction
@@ -36,7 +37,7 @@ This repo now has an explicit Codex operating policy: follow the project roadmap
 - Latest current-state truth comes from live code plus active repo docs.
 - Latest approved conversation defines intended direction when it differs from current implementation.
 - Unresolved current-vs-intended gaps must be surfaced to the user instead of being silently flattened.
-- Wiki-only refresh work belongs on `codex/llm-wiki`.
+- Wiki-only refresh work belongs on `codex/powers-implementation`.
 
 ## Deferred / Open
 
@@ -55,4 +56,5 @@ This repo now has an explicit Codex operating policy: follow the project roadmap
 - [EXT-SKILLS-README](../../raw/external/2026-04-15-andrej-karpathy-skills-readme.md)
 - [CHATGPT-1](../../raw/chatgpt/2026-04-15-second-brain-for-codex.md)
 - [CHATGPT-1A](../../raw/chatgpt/2026-04-15-second-brain-followup-supplement.md)
+- [CHATGPT-3](../../raw/chatgpt/2026-04-16-branch-management-in-codex.md)
 

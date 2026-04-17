@@ -30,4 +30,4 @@
 - When current state and intended direction differ, keep both. Record the divergence in `wiki/history/split-decisions.md`.
 - After end-to-end tasks that change rules, architecture, roadmap, or workflow, update the touched wiki pages, refresh the index/log if needed, and report unresolved split decisions to the user.
 - Query the wiki first, then verify against code and canonical repo docs before presenting answers as current fact.
-- Keep wiki automation and large wiki-refresh work on `codex/llm-wiki`. Wiki maintenance may write only `raw/`, `wiki/`, `.agents/skills/llm-wiki-maintainer/`, and wiki-specific rules in this file.
+- Keep wiki automation and large wiki-refresh work on `codex/powers-implementation`. Wiki maintenance may write only `raw/`, `wiki/`, `.agents/skills/llm-wiki-maintainer/`, and wiki-specific rules in this file.
