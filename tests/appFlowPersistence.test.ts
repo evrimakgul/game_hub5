@@ -6,6 +6,7 @@ import {
   hydrateCharacterDraft,
 } from "../src/config/characterTemplate.ts";
 import { getResolvedResistanceLevel } from "../src/config/characterRuntime.ts";
+import { createDefaultAuctionHouseEntries } from "../src/lib/auctionHouse.ts";
 import {
   buildItemIndex,
   createDefaultItemBlueprints,
@@ -14,6 +15,11 @@ import {
   getItemBlueprintOptions,
   createSharedItemRecord,
 } from "../src/lib/items.ts";
+import {
+  createEmptyMobGroup,
+  createEmptyMobTemplate,
+  createEmptyPortalTemplate,
+} from "../src/lib/authoring.ts";
 import {
   CHARACTER_STORAGE_BACKUP_KEY,
   CHARACTER_STORAGE_KEY,
@@ -25,6 +31,7 @@ import {
 import { runTestSuite } from "./harness.ts";
 
 export async function runAppFlowPersistenceTests(): Promise<void> {
+  const defaultAuctionEntries = createDefaultAuctionHouseEntries();
   await runTestSuite("appFlowPersistence", [
     {
       name: "empty persisted state seeds starter items once",
@@ -32,7 +39,44 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         const state = hydratePersistedCharacters(null);
 
         assert.equal(state.items.length, 5);
+        assert.ok(state.auctionEntries.length > 0);
         assert.equal(state.starterItemsInitialized, true);
+      },
+    },
+    {
+      name: "hydratePersistedCharacters derives live auction stock from legacy quantity text",
+      run: () => {
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 9,
+            characters: [],
+            starterItemsInitialized: true,
+            items: [],
+            auctionEntries: [
+              {
+                id: "auction-legacy-1",
+                itemName: "Occult Item",
+                itemQuantity: "too many in stock",
+                bid: 0,
+                buyout: 40,
+                bonus: "Mana +1",
+                typeLabel: "Occult",
+              },
+              {
+                id: "auction-legacy-2",
+                itemName: "Frozen Orb",
+                itemQuantity: "out of stock",
+                bid: 7,
+                buyout: 10,
+                bonus: "7 Cold Damage",
+                typeLabel: "Ammunition",
+              },
+            ],
+          })
+        );
+
+        assert.equal(state.auctionEntries[0]?.stockQuantity, 20);
+        assert.equal(state.auctionEntries[1]?.stockQuantity, 0);
       },
     },
     {
@@ -84,9 +128,12 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
       run: () => {
         const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
         sheet.name = "Writer";
+        sheet.apparelMode = "none";
         const item = createSharedItemRecord("weapon:one_handed", {
           id: "item-1",
           name: "Writer Blade",
+          baseStrength: 4,
+          anchorValueOverride: 123_456,
         });
         const payload = serializePersistedCharacters({
           characters: [{ id: "writer-1", ownerRole: "player", sheet }],
@@ -94,9 +141,13 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
           itemBlueprints: createDefaultItemBlueprints(),
           items: [item],
+          auctionEntries: defaultAuctionEntries,
           knowledgeEntities: [],
           knowledgeRevisions: [],
           knowledgeOwnerships: [],
+          mobTemplates: [],
+          mobGroups: [],
+          portalTemplates: [],
           starterItemsInitialized: true,
           activePlayerCharacterId: "writer-1",
           activeDmCharacterId: null,
@@ -115,9 +166,13 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
             itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
             itemBlueprints: createDefaultItemBlueprints(),
             items: [item],
+            auctionEntries: defaultAuctionEntries,
             knowledgeEntities: [],
             knowledgeRevisions: [],
             knowledgeOwnerships: [],
+            mobTemplates: [],
+            mobGroups: [],
+            portalTemplates: [],
             starterItemsInitialized: true,
             activePlayerCharacterId: "writer-1",
             activeDmCharacterId: null,
@@ -127,6 +182,19 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(payload.version, CHARACTER_DRAFT_SCHEMA_VERSION);
         assert.equal(payload.itemBlueprints?.length, createDefaultItemBlueprints().length);
         assert.equal(payload.itemInstances?.length, 1);
+        assert.equal(
+          (payload.characters[0]?.sheet as { apparelMode?: string } | undefined)?.apparelMode,
+          "none"
+        );
+        assert.equal(
+          (payload.itemInstances?.[0] as { baseStrength?: number } | undefined)?.baseStrength,
+          4
+        );
+        assert.equal(
+          (payload.itemInstances?.[0] as { anchorValueOverride?: number | null } | undefined)
+            ?.anchorValueOverride,
+          123_456
+        );
         assert.equal(payload.starterItemsInitialized, true);
         assert.equal(payload.activePlayerCharacterId, "writer-1");
         assert.equal(payload.characters[0]?.ownerRole, "player");
@@ -138,6 +206,54 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           JSON.parse(writes.get(CHARACTER_STORAGE_BACKUP_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"
         );
+      },
+    },
+    {
+      name: "serialize and hydrate preserve auction entries and auction-linked items",
+      run: () => {
+        const auctionEntries = createDefaultAuctionHouseEntries().slice(0, 2);
+        const item = createSharedItemRecord("occult:one_handed", {
+          id: "auction-linked-item-1",
+          auctionEntryId: auctionEntries[0]?.id ?? null,
+          name: "Auction Wand",
+        });
+        const payload = serializePersistedCharacters({
+          characters: [],
+          itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+          itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
+          itemBlueprints: createDefaultItemBlueprints(),
+          items: [item],
+          auctionEntries,
+          knowledgeEntities: [],
+          knowledgeRevisions: [],
+          knowledgeOwnerships: [],
+          mobTemplates: [],
+          mobGroups: [],
+          portalTemplates: [],
+          starterItemsInitialized: true,
+          activePlayerCharacterId: null,
+          activeDmCharacterId: null,
+        });
+        const hydrated = hydratePersistedCharacters(JSON.stringify(payload));
+
+        assert.equal(payload.auctionEntries?.length, 2);
+        assert.equal(hydrated.auctionEntries.length, 2);
+        assert.equal(hydrated.auctionEntries[0]?.id, auctionEntries[0]?.id);
+        assert.equal(
+          hydrated.items.find((entry) => entry.id === "auction-linked-item-1")?.auctionEntryId,
+          auctionEntries[0]?.id
+        );
+      },
+    },
+    {
+      name: "hydrateCharacterDraft defaults missing apparel mode to humanoid",
+      run: () => {
+        const hydratedSheet = hydrateCharacterDraft({
+          ...PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          apparelMode: undefined,
+        });
+
+        assert.equal(hydratedSheet.apparelMode, "humanoid");
       },
     },
     {
@@ -190,9 +306,13 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
           itemBlueprints: createDefaultItemBlueprints(),
           items: [],
+          auctionEntries: defaultAuctionEntries,
           knowledgeEntities: [],
           knowledgeRevisions: [],
           knowledgeOwnerships: [],
+          mobTemplates: [],
+          mobGroups: [],
+          portalTemplates: [],
           starterItemsInitialized: true,
           activePlayerCharacterId: "support-1",
           activeDmCharacterId: null,
@@ -228,9 +348,13 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
           itemBlueprints: createDefaultItemBlueprints(),
           items: [],
+          auctionEntries: defaultAuctionEntries,
           knowledgeEntities: [],
           knowledgeRevisions: [],
           knowledgeOwnerships: [],
+          mobTemplates: [],
+          mobGroups: [],
+          portalTemplates: [],
           starterItemsInitialized: true,
           activePlayerCharacterId: "archer-2",
           activeDmCharacterId: null,
@@ -253,6 +377,91 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
             ["weapon_secondary", "bow-1", "weapon_primary"],
           ]
         );
+      },
+    },
+    {
+      name: "serialize and hydrate preserve mob, group, and portal authoring content",
+      run: () => {
+        const mobTemplate = createEmptyMobTemplate({ name: "Portal Wolf", challengeRating: 4 });
+        const mobGroup = createEmptyMobGroup({
+          name: "Portal Wolves",
+          targetChallengeRating: 12,
+          partyMeanChallengeRating: 6,
+          members: [
+            {
+              id: "mob-group-member-1",
+              mobTemplateId: mobTemplate.id,
+              quantity: 2,
+              displayNameOverride: "",
+              notes: "",
+              sheetOverrides: null,
+            },
+          ],
+        });
+        const portal = createEmptyPortalTemplate({
+          name: "Grey Sewer",
+          theme: "sewer",
+          partyMeanChallengeRating: 6,
+          stages: [
+            {
+              ...createEmptyPortalTemplate().stages[0]!,
+              targetChallengeRating: 8,
+              groupReferences: [
+                {
+                  id: "portal-stage-group-1",
+                  mobGroupId: mobGroup.id,
+                  quantityMultiplier: 1,
+                  notes: "",
+                },
+              ],
+            },
+            {
+              ...createEmptyPortalTemplate().stages[1]!,
+              title: "Boss Stage",
+              targetChallengeRating: 16,
+              groupReferences: [
+                {
+                  id: "portal-stage-group-2",
+                  mobGroupId: mobGroup.id,
+                  quantityMultiplier: 2,
+                  notes: "",
+                },
+              ],
+              isBossStage: true,
+            },
+          ],
+        });
+
+        const payload = serializePersistedCharacters({
+          characters: [],
+          itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+          itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
+          itemBlueprints: createDefaultItemBlueprints(),
+          items: [],
+          auctionEntries: defaultAuctionEntries,
+          knowledgeEntities: [],
+          knowledgeRevisions: [],
+          knowledgeOwnerships: [],
+          mobTemplates: [mobTemplate],
+          mobGroups: [mobGroup],
+          portalTemplates: [portal],
+          starterItemsInitialized: true,
+          activePlayerCharacterId: null,
+          activeDmCharacterId: null,
+        });
+        const hydrated = hydratePersistedCharacters(JSON.stringify(payload));
+
+        assert.equal(hydrated.mobTemplates.length, 1);
+        assert.equal(hydrated.mobTemplates[0]?.name, "Portal Wolf");
+        assert.equal(hydrated.mobTemplates[0]?.challengeRating, 4);
+        assert.equal(hydrated.mobGroups.length, 1);
+        assert.equal(hydrated.mobGroups[0]?.members[0]?.mobTemplateId, mobTemplate.id);
+        assert.equal(hydrated.mobGroups[0]?.targetChallengeRating, 12);
+        assert.equal(hydrated.mobGroups[0]?.partyMeanChallengeRating, 6);
+        assert.equal(hydrated.portalTemplates.length, 1);
+        assert.equal(hydrated.portalTemplates[0]?.stages[1]?.isBossStage, true);
+        assert.equal(hydrated.portalTemplates[0]?.partyMeanChallengeRating, 6);
+        assert.equal(hydrated.portalTemplates[0]?.stages[0]?.targetChallengeRating, 8);
       },
     },
     {
@@ -664,6 +873,48 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         const itemIndex = buildItemIndex(state.items);
         assert.ok(itemIndex["legacy-item"]);
         assert.ok(itemIndex["current-item"]);
+      },
+    },
+    {
+      name: "hydratePersistedCharacters backfills legacy item value fields",
+      run: () => {
+        const state = hydratePersistedCharacters(
+          JSON.stringify({
+            version: 6,
+            characters: [],
+            starterItemsInitialized: true,
+            items: [
+              {
+                id: "legacy-value-item-1",
+                blueprintId: "melee:one_handed",
+                name: "Legacy Value Blade",
+                isArtifact: false,
+                baseDescription: "",
+                bonusProfile: {
+                  statBonuses: {},
+                  skillBonuses: {},
+                  derivedBonuses: { melee_damage: 1 },
+                  resistanceBonuses: {},
+                  utilityTraits: [],
+                  notes: [],
+                  powerBonuses: {},
+                  spellBonuses: {},
+                },
+                customProperties: [],
+                knowledge: {
+                  learnedCharacterIds: [],
+                  visibleCharacterIds: [],
+                },
+                assignedCharacterId: null,
+              },
+            ],
+          })
+        );
+        const item = buildItemIndex(state.items)["legacy-value-item-1"];
+
+        assert.equal(item?.baseStrength, 0);
+        assert.equal(item?.anchorValueOverride, null);
+        assert.equal(item?.anchorValue, ((2 * 49_977) + 1));
       },
     },
     {

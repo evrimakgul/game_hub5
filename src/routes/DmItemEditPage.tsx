@@ -7,6 +7,7 @@ import {
   createEmptyBonusProfile,
   createItemCustomPropertyRecord,
   getItemBaseVisibleStats,
+  getEffectiveItemAnchorValue,
   getItemBlueprintLabel,
   getItemBlueprintOptions,
   getItemCompactHeaderSummary,
@@ -27,6 +28,8 @@ import {
   setProfileSpellValue,
   setProfileStatValue,
   setProfileUtilityTraits,
+  setSharedItemAnchorValueOverride,
+  setSharedItemBaseStrength,
   setSharedItemDerivedBonus,
   setSharedItemNotes,
   setSharedItemPowerBonus,
@@ -76,6 +79,10 @@ function parseNumericInput(value: string): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+function formatAnchorValue(value: number): string {
+  return value.toLocaleString();
+}
+
 function splitLines(value: string): string[] {
   return value
     .split("\n")
@@ -120,6 +127,7 @@ export function DmItemEditPage() {
     itemBlueprints,
     items,
     createItem,
+    duplicateItem,
     updateItem,
     deleteItem,
     updateItemBlueprint,
@@ -334,6 +342,9 @@ export function DmItemEditPage() {
             <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items")}>
               Items List
             </button>
+            <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/auction-house")}>
+              Auction House
+            </button>
             <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/items/blueprints")}>
               Blueprints
             </button>
@@ -347,9 +358,26 @@ export function DmItemEditPage() {
         </header>
 
         <div className="dm-item-edit-actions">
+          <button type="button" className="flow-secondary" onClick={() => navigate("/dm/auction-house")}>
+            Create From Auction House
+          </button>
           <button type="button" className="flow-primary" onClick={handleCreateNewItem}>
             Create New Item
           </button>
+          {selectedItem ? (
+            <button
+              type="button"
+              className="flow-secondary"
+              onClick={() => {
+                const duplicatedItemId = duplicateItem(selectedItem.id);
+                if (duplicatedItemId) {
+                  setSearchParams({ itemId: duplicatedItemId });
+                }
+              }}
+            >
+              Duplicate Selected Item
+            </button>
+          ) : null}
           {selectedItem ? (
             pendingDeleteId === selectedItem.id ? (
               <div className="delete-confirm-wrap">
@@ -437,6 +465,53 @@ export function DmItemEditPage() {
                       <label className="dm-field">
                         <span>Item Tier</span>
                         <input value={getItemTierLabel(selectedItem)} readOnly className="dm-readonly-input" />
+                      </label>
+                      <label className="dm-field">
+                        <span>Base Strength</span>
+                        <input
+                          type="number"
+                          value={selectedItem.baseStrength}
+                          onChange={(event) =>
+                            updateSelectedItem((currentItem) =>
+                              setSharedItemBaseStrength(
+                                currentItem,
+                                parseNumericInput(event.target.value)
+                              )
+                            )
+                          }
+                        />
+                      </label>
+                      <label className="dm-field">
+                        <span>Computed Anchor Value</span>
+                        <input
+                          value={formatAnchorValue(selectedItem.anchorValue)}
+                          readOnly
+                          className="dm-readonly-input"
+                        />
+                      </label>
+                      <label className="dm-field">
+                        <span>Anchor Value Override</span>
+                        <input
+                          type="number"
+                          value={selectedItem.anchorValueOverride ?? ""}
+                          placeholder="Computed value"
+                          onChange={(event) =>
+                            updateSelectedItem((currentItem) =>
+                              setSharedItemAnchorValueOverride(
+                                currentItem,
+                                parseNumericInput(event.target.value)
+                              )
+                            )
+                          }
+                        />
+                      </label>
+                      <label className="dm-field">
+                        <span>Effective Value</span>
+                        <input
+                          value={formatAnchorValue(getEffectiveItemAnchorValue(selectedItem))}
+                          readOnly
+                          className="dm-readonly-input"
+                        />
                       </label>
                     </div>
 

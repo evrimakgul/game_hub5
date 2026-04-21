@@ -1,5 +1,43 @@
 # Task Log
 
+## 2026-04-20
+
+- `AUCTION-PLAYER-01` completed.
+  - Added `/player/auction-house` as the player-facing shopping route and linked it directly from the player character-sheet inventory section.
+  - Added completed `Bid` and `Buyout` transaction handling that validates stock and character money, creates a shared item from the auction entry, assigns it to the purchasing character, deducts money, and appends a history row.
+  - Added live `stockQuantity` persistence on auction entries while preserving the original source stock text for provenance/import context.
+  - Kept the player-side `Bid` action intentionally simple for this pass: it resolves as an immediate winning-bid completion instead of opening a separate pending-bid lifecycle.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
+## 2026-04-19
+
+- Reopened implementation with Item Creation And Auction House V1.
+  - Added active tracking for:
+    - `ITEM-AUTO-01`
+    - `ITEM-CREATE-01`
+    - `AUCTION-HOUSE-01`
+  - Working assumptions for this pass:
+    - The auction workbook is a source catalog and item-seeding reference, not a full live economy engine yet.
+    - V1 auto-created items should infer the closest current blueprint safely, then preserve raw bonus/remarks text as draft notes/provenance instead of fabricating fully parsed mechanics.
+    - Item creation/edit/delete remains DM-only; player-sheet inventory stays a consumer of assigned shared items.
+    - The repo already contains unrelated uncommitted changes; this pass should work with them and not revert them.
+  - Validation pending until the implementation group lands.
+- `ITEM-AUTO-01`, `ITEM-CREATE-01`, and `AUCTION-HOUSE-01` completed together.
+  - Added a new local-first auction-entry model seeded from `references/originals/Auction House.xlsx`, plus pasted-row/JSON import parsing for replacing the catalog in-browser.
+  - Added `/dm/auction-house` as the DM-side catalog browser with filtering, detail review, linked-item visibility, and create/open item actions.
+  - Added safe auto item creation from auction entries by inferring the nearest existing blueprint, storing the `auctionEntryId` on created shared items, and preserving raw auction bonus text as draft item notes rather than forcing unsafe mechanical parsing.
+  - Expanded DM item creation with duplicate-item and auction-house entrypoints while keeping item authoring DM-only.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
+## 2026-04-17
+
+- `KNOW-V2-01` and `ITEM-VAL-01` completed together.
+  - Added a dedicated DM Knowledge Hub route for `place`, `faction`, `story`, and `custom` knowledge subject authoring, canonical revision creation, and recipient grant/share flows.
+  - Expanded player-visible knowledge browsing so mixed subject types now show type-aware labels while still reusing the existing standalone entity/revision/ownership model.
+  - Added shared-item `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride` persistence, plus DM edit/list display for computed and effective value.
+  - Kept item value as item-instance data, with computed anchor values automatically recomputing on create, hydrate, update, and blueprint-sync paths.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+
 ## 2026-04-16
 
 - `AA-01` completed.

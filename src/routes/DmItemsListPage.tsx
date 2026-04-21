@@ -8,6 +8,7 @@ import {
   getItemCharacterImpactSummary,
   getItemCompactHeaderSummary,
   getItemCustomPropertySummary,
+  getEffectiveItemAnchorValue,
   getItemPropertyPoints,
   getItemPowerBonusSummary,
   getItemSpellBonusSummary,
@@ -39,6 +40,10 @@ function sortCharacters(characters: CharacterRecord[]): CharacterRecord[] {
 
 function formatSummary(lines: string[]): string {
   return lines.length > 0 ? lines.join(" | ") : "None";
+}
+
+function formatAnchorValue(value: number): string {
+  return value.toLocaleString();
 }
 
 function hasAnyBonusValue(item: SharedItemRecord): boolean {
@@ -142,6 +147,9 @@ export function DmItemsListPage() {
               </button>
             )
           ) : null}
+          <button type="button" className="flow-secondary" onClick={() => navigate("/dm/auction-house")}>
+            Auction House
+          </button>
           <button type="button" className="flow-secondary" onClick={() => navigate("/dm/items/blueprints")}>
             Blueprint Management
           </button>
@@ -179,6 +187,7 @@ export function DmItemsListPage() {
                     <span className="dm-item-line-side">
                       <span>PP {getItemPropertyPoints(item)}</span>
                       <span>{getItemTierLabel(item)}</span>
+                      <span>Value {formatAnchorValue(getEffectiveItemAnchorValue(item))}</span>
                       <span>{assignedCharacter?.sheet.name || "Unassigned"}</span>
                     </span>
                   </button>
@@ -186,6 +195,16 @@ export function DmItemsListPage() {
                   {isExpanded ? (
                     <div className="dm-item-line-body">
                       <div className="dm-item-line-grid">
+                        <div>
+                          <strong>Item Value</strong>
+                          <p>
+                            Base Strength {item.baseStrength} | Computed {formatAnchorValue(item.anchorValue)}
+                            {item.anchorValueOverride !== null
+                              ? ` | Override ${formatAnchorValue(item.anchorValueOverride)}`
+                              : ""}
+                            {` | Effective ${formatAnchorValue(getEffectiveItemAnchorValue(item))}`}
+                          </p>
+                        </div>
                         <div>
                           <strong>Base Visible Stats</strong>
                           <p>{formatSummary(getItemBaseVisibleStats(item, itemRulesContext))}</p>

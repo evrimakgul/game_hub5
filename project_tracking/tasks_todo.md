@@ -1,6 +1,6 @@
 # Tasks TODO
 ## Active
-- No active implementation item is currently recorded. The next queued follow-up remains the deferred list below.
+- No active implementation item is currently recorded. `COMBAT-ACT-01` is explicitly deferred to the very end of the project and may be skipped entirely unless priorities change.
 
 ## Completed
 ### Group 1: Encounter Cast UI Standardization
@@ -28,10 +28,21 @@
 ### Group 7: Artifact Appraisal Integration
 - `AA-01` completed. Inventory `Identify` now finishes the `Artifact Appraisal` flow on top of the live item-knowledge model: it grants or refreshes the current canonical item-card revision, writes linked history rows to the granted revision, and keeps hidden item bonus visibility keyed to ownership of the current revision instead of any stale older revision. Multi-recipient sharing continues to reuse the existing DM item-card share flow.
 
+### Group 8: Knowledge Expansion And Item Value
+- `KNOW-V2-01` completed. Knowledge cards now support DM-authored `place`, `faction`, `story`, and `custom` subjects through a dedicated DM Knowledge Hub, while the existing player-side Knowledge Library continues to browse/share/open owned revisions across mixed subject types.
+- `ITEM-VAL-01` completed. Shared items now persist DM-authored `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride`, with DM edit/list surfaces exposing computed and effective value without surfacing those value fields on player item views.
+
+### Group 9: Unarmored Baseline
+- `UNARMORED-BASELINE-01` completed. Characters now persist `apparelMode: humanoid | none`. Clothing / robes remain the existing chest item baseline at `Initiative +2, DR +0`, while humanoid characters with no chest/body item at all now gain a separate naked-state baseline of `+3 Initiative`. Characters using `apparelMode: none` opt out of that naked-state bonus.
+
+### Group 10: Mob, Group, And Portal Authoring Workshop
+- `AUTHORING-WORKSHOP-01` completed. DM tooling now includes dedicated `/dm/mobs`, `/dm/mob-groups`, and `/dm/portals` routes. Mobs persist as standalone `MobTemplate` records with explicit CR and live derived-combat summary output, groups persist as reusable `MobGroup` records with target/party-mean CR controls, portals persist as nested-stage `PortalTemplate` records with portal/stage difficulty controls, `/dm/portals` now supports portal-first `portal_bundle` import/export, and the combat dashboard can export saved groups or portal stages into encounter-owned mob instances without polluting the normal character library.
+
+### Group 11: Player Auction Shopping
+- `AUCTION-PLAYER-01` completed. Player character sheets now link into `/player/auction-house`, auction entries expose completed `Bid` and `Buyout` transactions against character money, purchased items are created/assigned directly into the buying character's shared-item inventory, and auction stock now decrements live until it reaches `0`.
+
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion
-- `CHAR-APPAREL-01` During future character-creation / encounter-creation work, add an `unarmored humanoid baseline` rule so humanoid characters can receive `+3 Initiative` to their naked-state baseline when no chest armor is equipped, while mobs/animals can intentionally have no clothing-based baseline but still optionally equip armor or weapons. Implement with a per-character/template flag such as `apparelMode: humanoid | none`.
-- `KNOW-V2-01` Expand the new knowledge-card system beyond character and item cards so place, faction, story, and custom subjects get first-class creation flows and sheet/browser surfaces.
-- `ITEM-VAL-01` Add a persisted item monetary value field and DM authoring/display support so shared items can carry an explicit `$` valuation for loot, trade, and reward flows.
-- `COMBAT-ACT-01` After item refactoring, design and implement the timing / action-economy extension for `actionBudget`, `action cost`, `weapon speed`, and multi-attack throughput. Preserve the summary of the discussion: this is intended to support characters gaining more than one attack in a standard action, weapons consuming different portions of a turn, and a future timing engine that can express combinations such as slower heavy weapons, faster brawl strings, and expanded character action budgets.
-- `REPO-CLEANUP-01` Deferred cleanup: `python.ipynb` is intentionally allowed in the repo for temporary checking during development, but it must be removed before the project is considered done. Keep new threads aware that the notebook is temporary and should not become a permanent project artifact.
+- `COMBAT-ACT-01` Explicitly defer the timing / action-economy extension for `actionBudget`, `action cost`, `weapon speed`, and multi-attack throughput until the very end of the project, if it is done at all. Preserve the summary of the discussion for future reference only: this would support characters gaining more than one attack in a standard action, weapons consuming different portions of a turn, and a future timing engine that can express combinations such as slower heavy weapons, faster brawl strings, and expanded character action budgets.
+- `PORTAL-RUNNER-01` Deferred follow-up: keep full portal-run state, boss-clear reward activation, exit unlocking, and persistent stage-by-stage run automation out of scope until the authoring workshop and encounter export flow have settled.
+- `REPO-CLEANUP-01` Deferred cleanup: `python.ipynb` is intentionally allowed in the repo for temporary checking during development, but it must be removed as the literal last cleanup step before the project is considered done. Keep new threads aware that the notebook is temporary and should not become a permanent project artifact.

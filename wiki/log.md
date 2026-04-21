@@ -51,3 +51,77 @@
 - Updated: `workflow/codex-operating-rules`
 - Updated: `workflow/wiki-maintenance`
 - Updated: `history/thread-chronology`
+
+## [2026-04-17] refresh | automation rule alignment and provenance revalidation
+- Revalidated the tracked external workflow snapshot URLs again during the automation pass and found no material upstream workflow drift.
+- Aligned the repo-local `llm-wiki-maintainer` skill with the repo/wiki branch policy so automation and local wiki instructions both point at `codex/powers-implementation`.
+- Fixed a minor encoding artifact in `history/thread-chronology`.
+- `DOC-OBJECTIVE-01` remains open: `references/project_objective.md` still lags the passive `Brute Defiance` behavior already reflected in code, roadmap, and notes.
+- Updated: `history/thread-chronology`
+
+## [2026-04-17] refresh | know-v2 and item-value completion reconciliation
+- Reconciled the wiki, roadmap, and tracker pages with the completed `KNOW-V2-01` and `ITEM-VAL-01` implementation.
+- Recorded the new DM Knowledge Hub route, mixed-type knowledge-card coverage, and persisted shared-item value fields as live current-state behavior.
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `project/game-hub5-overview`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/knowledge-cards`
+- Updated: `domains/items-and-equipment`
+- Updated: `history/split-decisions`
+
+## [2026-04-18] refresh | unarmored baseline implementation reconciliation
+- Reconciled the roadmap, tracker, and wiki with the implemented naked-state initiative rule for humanoid characters.
+- Recorded that clothing / robes remain real `Initiative +2, DR +0` chest items, while `apparelMode: humanoid | none` now controls the separate `+3 Initiative` no-chest baseline.
+- Marked `python.ipynb` cleanup as the literal last cleanup step instead of a current milestone item.
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `project/game-hub5-overview`
+- Updated: `domains/items-and-equipment`
+- Updated: `history/split-decisions`
+
+## [2026-04-19] ingest | grey portal content reference
+- Captured the user-provided Grey Portal source into the repo raw layer for future mob/portal authoring work.
+- Added a domain page summarizing the recurring content structure found in the source: real-world portal incidents, theme-linked mob packs, traps, bosses, loot, and closing rewards.
+- Updated: `domains/portal-content-patterns`
+
+## [2026-04-19] refresh | authoring workshop v1 reconciliation
+- Reconciled the roadmap, tracker, and wiki with the shipped mob/group/portal authoring workshop.
+- Recorded the new DM routes, local-first authored-content persistence boundary, manual Codex import/export bridge, and combat-dashboard stage/group export into encounter-owned mobs.
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/game-hub5-overview`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/portal-content-patterns`
+
+## [2026-04-19] refresh | portal-first authoring and CR controls
+- Reconciled the repo docs and wiki with the portal-first `portal_bundle` workflow, explicit CR controls across mobs/groups/portals, and the new live derived-combat summary on mob templates.
+- Recorded that `/dm/portals` is now the preferred Codex generation entrypoint and that bundle imports normalize linked mob/group/portal ids on ingest.
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/game-hub5-overview`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/portal-content-patterns`
+
+## [2026-04-19] refresh | auction-house item creation reconciliation
+- Reconciled the roadmap, tracker, and wiki with the new auction-house catalog flow and DM item-creation shortcuts.
+- Recorded the seeded/persisted auction-entry collection, `/dm/auction-house` route, auction-linked shared item source ids, and the V1 rule that auction bonus text is preserved as draft notes rather than mechanically parsed.
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/items-and-equipment`
+
+## [2026-04-20] ingest | player auction shopping direction
+- Captured the user-approved shift that defines auction house as a player shopping surface rather than a DM-only destination.
+- Added a raw source for the decision and indexed it in `raw/source-index.md`.
+- Updated: `raw/source-index.md`
+
+## [2026-04-20] refresh | player auction shopping reconciliation
+- Reconciled the roadmap, tracker, and wiki with the new player-facing auction-house route, completed bid/buyout transactions, live stock persistence, and direct shared-item assignment into character inventories.
+- Recorded the deliberate current boundary that player-side `Bid` resolves as an immediate winning-bid completion rather than a delayed pending-bid lifecycle.
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/items-and-equipment`

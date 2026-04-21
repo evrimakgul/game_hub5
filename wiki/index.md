@@ -8,9 +8,9 @@ Project-level pages track scope, roadmap, and what is already implemented.
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [game-hub5-overview](./project/game-hub5-overview.md) | High-level product, constraints, architecture posture, and source hierarchy. | 2026-04-15 |
-| [current-objective-and-roadmap](./project/current-objective-and-roadmap.md) | Current branch objective and the near-term roadmap anchored to canonical docs. | 2026-04-16 |
-| [implemented-vs-deferred](./project/implemented-vs-deferred.md) | Snapshot of completed systems versus explicitly deferred work. | 2026-04-15 |
+| [game-hub5-overview](./project/game-hub5-overview.md) | High-level product, constraints, architecture posture, and source hierarchy. | 2026-04-19 |
+| [current-objective-and-roadmap](./project/current-objective-and-roadmap.md) | Current branch objective and the near-term roadmap anchored to canonical docs. | 2026-04-20 |
+| [implemented-vs-deferred](./project/implemented-vs-deferred.md) | Snapshot of completed systems versus explicitly deferred work. | 2026-04-19 |
 
 ## Runtime
 
@@ -18,8 +18,8 @@ Runtime pages track application structure, persistence, and user-facing navigati
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [state-and-persistence](./runtime/state-and-persistence.md) | Local-first app state, hydration flow, and persistence boundaries. | 2026-04-15 |
-| [ui-and-routes-map](./runtime/ui-and-routes-map.md) | Current route map and the main player/DM interaction surfaces. | 2026-04-15 |
+| [state-and-persistence](./runtime/state-and-persistence.md) | Local-first app state, hydration flow, and persistence boundaries. | 2026-04-20 |
+| [ui-and-routes-map](./runtime/ui-and-routes-map.md) | Current route map and the main player/DM interaction surfaces. | 2026-04-20 |
 
 ## Domains
 
@@ -29,8 +29,9 @@ Domain pages capture rules and implementation posture for the main game systems.
 | --- | --- | --- |
 | [combat-encounter](./domains/combat-encounter.md) | Encounter runtime responsibilities, stable combat behavior, and deferred engine work. | 2026-04-15 |
 | [powers-and-casting](./domains/powers-and-casting.md) | Power runtime, cast flow, world-vs-encounter boundaries, and locked source-rule decisions. | 2026-04-15 |
-| [items-and-equipment](./domains/items-and-equipment.md) | Shared items, persisted definitions, equipment occupancy, and item knowledge interactions. | 2026-04-15 |
+| [items-and-equipment](./domains/items-and-equipment.md) | Shared items, persisted definitions, equipment occupancy, and item knowledge interactions. | 2026-04-20 |
 | [knowledge-cards](./domains/knowledge-cards.md) | Revisioned knowledge model, ownership, history linking, and current subject coverage. | 2026-04-15 |
+| [portal-content-patterns](./domains/portal-content-patterns.md) | Authored Grey Portal content patterns: themed portal scenarios, staged mob packs, bosses, loot, and closing rewards. | 2026-04-19 |
 | [world-casting](./domains/world-casting.md) | Out-of-combat casting scope, shared backend path, and known limitations. | 2026-04-15 |
 
 ## Workflow

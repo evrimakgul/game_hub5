@@ -323,6 +323,123 @@ This roadmap is the active implementation source of truth for this branch.
 - Successful `Artifact Appraisal` writes linked history rows to the granted revision.
 - General multi-recipient distribution continues to reuse the DM item interactions hub and the existing knowledge share flow instead of introducing a second AA-specific sharing surface.
 
+### 9.6 `KNOW-V2-01` Knowledge Subject Expansion
+- The standalone knowledge model now covers `place`, `faction`, `story`, and `custom` subjects in addition to character and item cards.
+- DM-only authoring now lives on a dedicated `/dm/knowledge` route instead of overloading the player-sheet character-card editor.
+- New non-character/item subjects create stable reusable subject entities with generated `subjectKey` values, and later canonical revisions attach to the same entity.
+- Saving with recipients grants the same revision to multiple characters through the existing ownership/share model; saving without recipients persists the canonical revision without creating ownerships.
+- The existing player-side Knowledge Library continues to browse, compare, pin, archive, duplicate, share, and open owned revisions across mixed subject types.
+
+### 9.7 `ITEM-VAL-01` Persisted Item Value
+- Shared items now persist `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride` as item-instance fields.
+- `bonusStrength` for anchor-value math remains identical to PP.
+- Computed anchor value now uses `max(1, (((bonusStrength * 49_977) + 1) * (1 + baseStrength)))`.
+- `baseStrength` defaults to `0`, is DM-authored per item, and does not auto-derive from blueprint/base stats in V1.
+- Anchor values now recompute automatically on item create, hydrate, update, retype, and blueprint-sync flows, while `anchorValueOverride` remains the effective displayed value until cleared.
+- DM item edit and list surfaces now expose computed and effective value without surfacing value fields on player item views.
+
+### 9.8 `UNARMORED-BASELINE-01`
+- Characters now persist `apparelMode: humanoid | none` as sheet state.
+- `clothing / robes` remain the existing body-slot item baseline at `Initiative +2, DR +0`.
+- Humanoid characters with no chest/body item equipped now gain a separate naked-state baseline of `+3 Initiative`.
+- Characters using `apparelMode: none` opt out of that naked-state initiative bonus, which keeps beasts/mobs/creatures from inheriting humanoid clothing assumptions by default.
+
+### 9.9 Mob, Group, And Portal Authoring Workshop V1
+- DM tooling now includes three dedicated routes:
+  - `/dm/mobs`
+  - `/dm/mob-groups`
+  - `/dm/portals`
+- Mobs now exist as standalone DM-authored `MobTemplate` records instead of living only in the DM character library.
+- Mob templates persist a character-like sheet core plus mob-only metadata:
+  - challenge rating
+  - theme tags
+  - role
+  - behavior tags
+  - loot
+  - designer notes
+- Mob groups now exist as first-class reusable `MobGroup` records with quantity and member-level override support, plus editable target total CR and party mean CR fields.
+- Portal templates now exist as standalone `PortalTemplate` records with nested `PortalStage` arrays.
+- Portal stages currently support:
+  - scene text
+  - environment tags
+  - target total CR
+  - referenced mob groups with quantity multipliers
+  - traps
+  - chests
+  - objective notes
+  - final-stage boss flag
+- The Codex/manual workflow is now a strict import/export bridge:
+  - `/dm/portals` is now the preferred portal-first entrypoint
+  - the website can now build `portal_bundle` request packets that start from portal concept/theme and carry portal -> stage -> difficulty context
+  - Codex returns strict JSON payloads
+  - the website imports and validates those payloads
+  - `portal_bundle` import now creates linked mobs, groups, and the portal in one pass
+- Authoring difficulty controls now exist across mobs, groups, and portals:
+  - mob CR
+  - group target total CR
+  - group party mean CR
+  - portal party mean CR
+  - per-stage target total CR
+- The mob editor now shows live derived combat summary values using the same character runtime math used elsewhere in the app.
+- Encounter integration now exports saved mob groups or saved portal stages into encounter-owned mob instances for the current combat only.
+- Encounter-owned mob instances now reuse the combat sheet/runtime path without polluting the normal persistent character library.
+- Portal progression remains manual in V1:
+  - author the portal
+  - export one stage into combat
+  - resolve combat
+  - export the next stage later if needed
+
+## Completed Follow-Up: Item Creation And Auction House V1
+
+### 10.1 Auction Entry Model And Import Surface
+- Add local-first auction-entry records sourced from the `Action House` workbook vocabulary and rows.
+- First pass may use pasted/exported row data from the workbook instead of in-browser `.xlsx` parsing.
+- Preserve raw `Bonus`, `Remarks`, `Item Labels`, `Bid`, `Buyout`, and stock text for later rule-complete parsing rather than discarding them.
+
+### 10.2 Auto Item Creation Mechanism
+- DM tooling must create shared item draft records directly from auction entries.
+- Auto-created drafts should infer the closest existing blueprint/category from auction-house vocabulary using current item-definition helpers.
+- Raw imported bonus/effect text should land as draft item notes/provenance in V1 instead of pretending to be fully parsed mechanical bonuses.
+- Auto-created items must retain a stable source link back to the originating auction entry.
+
+### 10.3 Item Creation Workflow Expansion
+- Expand the DM item workflow so item creation is faster than a blank `New Item` flow:
+  - create from auction entry
+  - duplicate an existing shared item
+  - jump directly into detailed item editing after creation
+- Keep item creation, editing, deletion, and assignment DM-only; player/NPC sheet surfaces remain consumers of assigned shared items.
+
+### 10.4 Auction House Route
+- Add a dedicated `/dm/auction-house` route as the catalog-browsing and item-seeding entrypoint.
+- The route should support:
+  - search/filter/select across auction entries
+  - row detail review
+  - create-one / create-many item draft actions
+  - quick navigation into the shared item editor/list after creation
+- Auction pricing/stock are descriptive in V1 only; do not build live bidding, sales, or economy-state automation in this pass.
+
+## Completed Follow-Up: Player Auction Shopping And Stock Transactions
+
+### 10.5 Player Auction Access
+- The auction house is now a player-facing shopping surface rather than a DM-only catalog destination.
+- Player character sheets now expose a direct navigation action into `/player/auction-house`.
+- The player route stays character-specific so purchases resolve against the selected character's money and inventory.
+
+### 10.6 Completed Buyout And Bid Transactions
+- Auction entries now expose live `Buyout` and `Bid` actions to players when the listed price is available.
+- In this pass, the player-side `Bid` action resolves as an immediate completed winning bid rather than a delayed pending-bid system.
+- Completing either action now:
+  - spends character money
+  - creates a new shared item instance from the auction entry
+  - links that item to the purchasing character
+  - appends a character history row for the transaction
+
+### 10.7 Live Stock Enforcement
+- Auction entries now persist live stock counts alongside the original source stock text.
+- Each completed player transaction decrements stock by one.
+- Transactions are blocked when stock is `0`, the price is unavailable, or the character lacks sufficient money.
+- Purchased items now appear in the related character sheet `Items` section through the normal shared-item assignment flow.
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`
@@ -334,12 +451,11 @@ This roadmap is the active implementation source of truth for this branch.
 - Update this roadmap when implementation reality changes.
 
 ## Deferred
-- Future knowledge/intel work should move toward standalone revisioned knowledge cards:
-  - V1 now ships the standalone revisioned character-card system described in `references/knowledge_card_design.md`
-  - remaining follow-up is expanding that model beyond character and item cards to other subject types
+- Future knowledge/intel work should continue building on the standalone revisioned card model rather than inventing parallel subject-specific systems.
 - Aura-builder redesign remains deferred:
   - current implementation still uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
   - the recorded alternative is a dedicated aura builder such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`
-- Full item-authoring workflow and richer item bonus editors.
+- Full item-authoring workflow polish beyond the live DM edit/list/interactions/knowledge/value surfaces.
 - Encounter persistence and backend sync.
 - Player-side encounter UI.
+- `python.ipynb` cleanup remains deferred to the literal last cleanup step.

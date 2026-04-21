@@ -122,6 +122,7 @@ type CharacterInventorySectionProps = {
     itemId: string
   ) => void;
   onUpdateMoney: (value: number) => void;
+  onOpenAuctionHouse?: (() => void) | null;
 };
 
 export function CharacterInventorySection({
@@ -139,6 +140,7 @@ export function CharacterInventorySection({
   onEquipSharedItem,
   onUnequipSharedItem,
   onUpdateMoney,
+  onOpenAuctionHouse,
 }: CharacterInventorySectionProps) {
   const itemRulesContext = {
     itemBlueprints,
@@ -281,6 +283,15 @@ export function CharacterInventorySection({
         <div className="equipment-subsection-head">
           <h3>Items</h3>
           <div className="inventory-header equipment-money-row">
+            {onOpenAuctionHouse ? (
+              <button
+                type="button"
+                className="flow-secondary"
+                onClick={onOpenAuctionHouse}
+              >
+                Auction House
+              </button>
+            ) : null}
             <span>Money</span>
             {isSheetEditMode ? (
               <input

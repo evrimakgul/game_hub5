@@ -60,6 +60,51 @@ export function DmPage() {
           </article>
 
           <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Mob Library</p>
+            <h2>Mob Templates</h2>
+            <p className="dm-summary-line">
+              Build character-like mob sheets, import Codex payloads, and publish reusable mob templates.
+            </p>
+            <button
+              type="button"
+              className="flow-primary"
+              onClick={() => navigate("/dm/mobs")}
+            >
+              Open Mob Library
+            </button>
+          </article>
+
+          <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Mob Groups</p>
+            <h2>Mob Group Library</h2>
+            <p className="dm-summary-line">
+              Assemble saved mobs into reusable encounter packs and merge groups together.
+            </p>
+            <button
+              type="button"
+              className="flow-primary"
+              onClick={() => navigate("/dm/mob-groups")}
+            >
+              Open Mob Groups
+            </button>
+          </article>
+
+          <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Portal Workshop</p>
+            <h2>Portal Templates</h2>
+            <p className="dm-summary-line">
+              Author staged portals, attach saved mob groups, and export stages into combat.
+            </p>
+            <button
+              type="button"
+              className="flow-primary"
+              onClick={() => navigate("/dm/portals")}
+            >
+              Open Portal Workshop
+            </button>
+          </article>
+
+          <article className="sheet-card dm-hub-card">
             <p className="section-kicker">Combat Dashboard</p>
             <h2>Combat Setup</h2>
             <p className="dm-summary-line">
@@ -71,6 +116,21 @@ export function DmPage() {
               onClick={() => navigate("/dm/combat")}
             >
               Open Combat Dashboard
+            </button>
+          </article>
+
+          <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Auction House</p>
+            <h2>Auction House</h2>
+            <p className="dm-summary-line">
+              Browse the seeded auction catalog, import pasted rows, and auto-create shared item drafts.
+            </p>
+            <button
+              type="button"
+              className="flow-primary"
+              onClick={() => navigate("/dm/auction-house")}
+            >
+              Open Auction House
             </button>
           </article>
 
@@ -93,6 +153,13 @@ export function DmPage() {
               onClick={() => navigate("/dm/items")}
             >
               Items List
+            </button>
+            <button
+              type="button"
+              className="flow-secondary"
+              onClick={() => navigate("/dm/auction-house")}
+            >
+              Auction House
             </button>
             <button
               type="button"
@@ -122,6 +189,21 @@ export function DmPage() {
               onClick={() => navigate("/dm/items/interactions")}
             >
               Item Interactions
+            </button>
+          </article>
+
+          <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Knowledge Hub</p>
+            <h2>Knowledge Hub</h2>
+            <p className="dm-summary-line">
+              Author place, faction, story, and custom knowledge revisions, then grant them to selected characters.
+            </p>
+            <button
+              type="button"
+              className="flow-primary"
+              onClick={() => navigate("/dm/knowledge")}
+            >
+              Open Knowledge Hub
             </button>
           </article>
         </section>

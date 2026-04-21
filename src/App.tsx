@@ -4,14 +4,20 @@ import { CombatDashboardPage } from "./routes/CombatDashboardPage";
 import { CombatEncounterPage } from "./routes/CombatEncounterPage";
 import { DmCharacterHubPage } from "./routes/DmCharacterHubPage";
 import { DmBlueprintManagementPage } from "./routes/DmBlueprintManagementPage";
+import { DmAuctionHousePage } from "./routes/DmAuctionHousePage";
 import { DmItemEditPage } from "./routes/DmItemEditPage";
 import { DmItemDefinitionManagementPage } from "./routes/DmItemDefinitionManagementPage";
 import { DmItemInteractionsPage } from "./routes/DmItemInteractionsPage";
 import { DmItemsListPage } from "./routes/DmItemsListPage";
+import { DmKnowledgePage } from "./routes/DmKnowledgePage";
+import { DmMobGroupsPage } from "./routes/DmMobGroupsPage";
+import { DmMobsPage } from "./routes/DmMobsPage";
 import { DmNpcCreatorPage } from "./routes/DmNpcCreatorPage";
 import { DmPage } from "./routes/DmPage";
+import { DmPortalsPage } from "./routes/DmPortalsPage";
 import { LoginPage } from "./routes/LoginPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
+import { PlayerAuctionHousePage } from "./routes/PlayerAuctionHousePage";
 import { PlayerCharacterPage } from "./routes/PlayerCharacterPage";
 import { PlayerHubPage } from "./routes/PlayerHubPage";
 import { RoleSelectPage } from "./routes/RoleSelectPage";
@@ -23,16 +29,22 @@ export default function App() {
       <Route path="/role" element={<RoleSelectPage />} />
       <Route path="/player" element={<PlayerHubPage />} />
       <Route path="/player/character" element={<PlayerCharacterPage viewMode="player" />} />
+      <Route path="/player/auction-house" element={<PlayerAuctionHousePage />} />
       <Route path="/dm" element={<DmPage />} />
       <Route path="/dm/characters" element={<DmCharacterHubPage />} />
       <Route path="/dm/character" element={<PlayerCharacterPage viewMode="dm-readonly" />} />
       <Route path="/dm/npc-creator" element={<DmNpcCreatorPage />} />
       <Route path="/dm/npc-character" element={<PlayerCharacterPage viewMode="dm-editable" />} />
+      <Route path="/dm/mobs" element={<DmMobsPage />} />
+      <Route path="/dm/mob-groups" element={<DmMobGroupsPage />} />
+      <Route path="/dm/portals" element={<DmPortalsPage />} />
       <Route path="/dm/items" element={<DmItemsListPage />} />
+      <Route path="/dm/auction-house" element={<DmAuctionHousePage />} />
       <Route path="/dm/items/edit" element={<DmItemEditPage />} />
       <Route path="/dm/items/blueprints" element={<DmBlueprintManagementPage />} />
       <Route path="/dm/items/definitions" element={<DmItemDefinitionManagementPage />} />
       <Route path="/dm/items/interactions" element={<DmItemInteractionsPage />} />
+      <Route path="/dm/knowledge" element={<DmKnowledgePage />} />
       <Route path="/dm/combat" element={<CombatDashboardPage />} />
       <Route path="/dm/combat/encounter" element={<CombatEncounterPage />} />
       <Route path="*" element={<NotFoundPage />} />

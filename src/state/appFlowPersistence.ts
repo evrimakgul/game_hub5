@@ -20,6 +20,11 @@ import {
   inferItemBlueprintId,
   normalizeCharacterEquipmentAnchors,
 } from "../lib/items.ts";
+import {
+  createDefaultAuctionHouseEntries,
+  normalizeAuctionHouseEntry,
+} from "../lib/auctionHouse.ts";
+import type { AuctionHouseEntry } from "../types/auction.ts";
 import { isCharacterOwnerRole, type CharacterRecord } from "../types/character.ts";
 import type {
   ItemBlueprintRecord,
@@ -34,6 +39,13 @@ import {
   hydrateKnowledgeOwnership,
   hydrateKnowledgeRevision,
 } from "../lib/knowledge.ts";
+import {
+  createEmptyAuthoringState,
+  hydrateMobGroup,
+  hydrateMobTemplate,
+  hydratePortalTemplate,
+} from "../lib/authoring.ts";
+import type { MobGroup, MobTemplate, PortalTemplate } from "../types/authoring.ts";
 
 export const CHARACTER_STORAGE_KEY = "convergence.local.characters";
 export const CHARACTER_STORAGE_BACKUP_KEY = "convergence.local.characters.backup";
@@ -46,9 +58,13 @@ type PersistedCharacterEnvelope = {
   itemBlueprints?: unknown[];
   itemInstances?: unknown[];
   items?: unknown[];
+  auctionEntries?: unknown[];
   knowledgeEntities?: unknown[];
   knowledgeRevisions?: unknown[];
   knowledgeOwnerships?: unknown[];
+  mobTemplates?: unknown[];
+  mobGroups?: unknown[];
+  portalTemplates?: unknown[];
   starterItemsInitialized?: boolean;
   activeCharacterId?: string | null;
   activePlayerCharacterId?: string | null;
@@ -61,9 +77,13 @@ export type PersistedCharacterState = {
   itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   itemBlueprints: ItemBlueprintRecord[];
   items: SharedItemRecord[];
+  auctionEntries: AuctionHouseEntry[];
   knowledgeEntities: KnowledgeEntity[];
   knowledgeRevisions: KnowledgeRevision[];
   knowledgeOwnerships: KnowledgeOwnership[];
+  mobTemplates: MobTemplate[];
+  mobGroups: MobGroup[];
+  portalTemplates: PortalTemplate[];
   starterItemsInitialized: boolean;
   activePlayerCharacterId: string | null;
   activeDmCharacterId: string | null;
@@ -140,7 +160,9 @@ function getEmptyPersistedCharacterState(): PersistedCharacterState {
     itemSubcategoryDefinitions,
     itemBlueprints,
     items: createStarterItemRecords(itemBlueprints),
+    auctionEntries: createDefaultAuctionHouseEntries(),
     ...createEmptyKnowledgeState(),
+    ...createEmptyAuthoringState(),
     starterItemsInitialized: true,
     activePlayerCharacterId: null,
     activeDmCharacterId: null,
@@ -254,9 +276,21 @@ function hydrateItemRecordBestEffort(
       customProperties: Array.isArray(value.customProperties)
         ? (value.customProperties as SharedItemRecord["customProperties"])
         : undefined,
+      baseStrength:
+        typeof value.baseStrength === "number" && Number.isFinite(value.baseStrength)
+          ? Math.trunc(value.baseStrength)
+          : undefined,
+      anchorValueOverride:
+        typeof value.anchorValueOverride === "number" && Number.isFinite(value.anchorValueOverride)
+          ? Math.trunc(value.anchorValueOverride)
+          : null,
       knowledge: isRecord(value.knowledge)
         ? (value.knowledge as SharedItemRecord["knowledge"])
         : undefined,
+      auctionEntryId:
+        typeof value.auctionEntryId === "string" && value.auctionEntryId.trim().length > 0
+          ? value.auctionEntryId
+          : null,
       assignedCharacterId:
         typeof value.assignedCharacterId === "string" && value.assignedCharacterId.trim().length > 0
           ? value.assignedCharacterId
@@ -274,7 +308,10 @@ function hasMeaningfulPersistedData(state: PersistedCharacterState): boolean {
     state.items.some((item) => !starterItemIds.has(item.id)) ||
     state.knowledgeEntities.length > 0 ||
     state.knowledgeRevisions.length > 0 ||
-    state.knowledgeOwnerships.length > 0
+    state.knowledgeOwnerships.length > 0 ||
+    state.mobTemplates.length > 0 ||
+    state.mobGroups.length > 0 ||
+    state.portalTemplates.length > 0
   );
 }
 
@@ -436,6 +473,29 @@ function migrateLegacySheetItems(
   };
 }
 
+function hydrateAuctionEntryBestEffort(value: unknown): AuctionHouseEntry | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return normalizeAuctionHouseEntry({
+    id: value.id,
+    sourceRow: value.sourceRow,
+    bid: value.bid,
+    buyout: value.buyout,
+    itemName: value.itemName,
+    itemQuantity: value.itemQuantity,
+    stockQuantity: value.stockQuantity,
+    itemQuality: value.itemQuality,
+    bodyPart: value.bodyPart,
+    spec: value.spec,
+    bonus: value.bonus,
+    typeLabel: value.typeLabel,
+    remarks: value.remarks,
+    itemLabels: value.itemLabels,
+  });
+}
+
 export function hydratePersistedCharacters(rawValue: string | null): PersistedCharacterState {
   if (!rawValue) {
     return getEmptyPersistedCharacterState();
@@ -488,6 +548,11 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
         .filter((entry): entry is SharedItemRecord => entry !== null)
         .map((entry) => [entry.id, entry])
     ).values()];
+    const auctionEntries = Array.isArray(envelope.auctionEntries)
+      ? envelope.auctionEntries
+          .map((entry) => hydrateAuctionEntryBestEffort(entry))
+          .filter((entry): entry is AuctionHouseEntry => entry !== null)
+      : createDefaultAuctionHouseEntries();
     const knowledgeEntities = Array.isArray(envelope.knowledgeEntities)
       ? envelope.knowledgeEntities
           .map((entry) => safeHydrateEntry(() => hydrateKnowledgeEntity(entry)))
@@ -502,6 +567,21 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
       ? envelope.knowledgeOwnerships
           .map((entry) => safeHydrateEntry(() => hydrateKnowledgeOwnership(entry)))
           .filter((entry): entry is KnowledgeOwnership => entry !== null)
+      : [];
+    const mobTemplates = Array.isArray(envelope.mobTemplates)
+      ? envelope.mobTemplates
+          .map((entry) => safeHydrateEntry(() => hydrateMobTemplate(entry)))
+          .filter((entry): entry is MobTemplate => entry !== null)
+      : [];
+    const mobGroups = Array.isArray(envelope.mobGroups)
+      ? envelope.mobGroups
+          .map((entry) => safeHydrateEntry(() => hydrateMobGroup(entry)))
+          .filter((entry): entry is MobGroup => entry !== null)
+      : [];
+    const portalTemplates = Array.isArray(envelope.portalTemplates)
+      ? envelope.portalTemplates
+          .map((entry) => safeHydrateEntry(() => hydratePortalTemplate(entry)))
+          .filter((entry): entry is PortalTemplate => entry !== null)
       : [];
     const migratedItems: SharedItemRecord[] = [];
     const characters = Array.isArray(envelope.characters)
@@ -566,9 +646,13 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
           : createDefaultItemSubcategoryDefinitions(),
       itemBlueprints,
       items: normalizedItems,
+      auctionEntries,
       knowledgeEntities,
       knowledgeRevisions,
       knowledgeOwnerships,
+      mobTemplates,
+      mobGroups,
+      portalTemplates,
       starterItemsInitialized: true,
       activePlayerCharacterId:
         persistedActivePlayerCharacterId &&
@@ -625,9 +709,13 @@ export function serializePersistedCharacters(
     itemSubcategoryDefinitions: state.itemSubcategoryDefinitions,
     itemBlueprints: state.itemBlueprints,
     itemInstances: state.items,
+    auctionEntries: state.auctionEntries,
     knowledgeEntities: state.knowledgeEntities,
     knowledgeRevisions: state.knowledgeRevisions,
     knowledgeOwnerships: state.knowledgeOwnerships,
+    mobTemplates: state.mobTemplates,
+    mobGroups: state.mobGroups,
+    portalTemplates: state.portalTemplates,
     starterItemsInitialized: state.starterItemsInitialized,
     activePlayerCharacterId: state.activePlayerCharacterId,
     activeDmCharacterId: state.activeDmCharacterId,

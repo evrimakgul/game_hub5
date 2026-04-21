@@ -1658,6 +1658,81 @@ export function getItemPropertyPoints(item: SharedItemRecord): number {
   );
 }
 
+export function normalizeItemBaseStrength(value: unknown): number {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim().length > 0
+        ? Number.parseInt(value, 10)
+        : 0;
+
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.trunc(parsed));
+}
+
+export function normalizeItemAnchorValueOverride(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim().length > 0
+        ? Number.parseInt(value, 10)
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return Math.max(1, Math.trunc(parsed));
+}
+
+export function getComputedItemAnchorValue(
+  item: Pick<SharedItemRecord, "bonusProfile" | "customProperties" | "baseStrength">
+): number {
+  const bonusStrength =
+    getAutomaticPropertyPointsForBonusProfile(normalizeBonusProfile(item.bonusProfile)) +
+    getCustomPropertyPoints(normalizeItemCustomPropertyRecords(item.customProperties));
+  const baseStrength = normalizeItemBaseStrength(item.baseStrength);
+
+  return Math.max(1, (((bonusStrength * 49_977) + 1) * (1 + baseStrength)));
+}
+
+export function getEffectiveItemAnchorValue(
+  item: Pick<
+    SharedItemRecord,
+    "bonusProfile" | "customProperties" | "baseStrength" | "anchorValue" | "anchorValueOverride"
+  >
+): number {
+  return (
+    normalizeItemAnchorValueOverride(item.anchorValueOverride) ??
+    (typeof item.anchorValue === "number" && Number.isFinite(item.anchorValue)
+      ? Math.max(1, Math.trunc(item.anchorValue))
+      : getComputedItemAnchorValue(item))
+  );
+}
+
+function withComputedItemAnchorValue(item: SharedItemRecord): SharedItemRecord {
+  const baseStrength = normalizeItemBaseStrength(item.baseStrength);
+  const anchorValueOverride = normalizeItemAnchorValueOverride(item.anchorValueOverride);
+
+  return {
+    ...item,
+    baseStrength,
+    anchorValue: getComputedItemAnchorValue({
+      bonusProfile: item.bonusProfile,
+      customProperties: item.customProperties,
+      baseStrength,
+    }),
+    anchorValueOverride,
+  };
+}
+
 export function getItemTierLabelFromPropertyPoints(propertyPoints: number): string {
   const effectivePoints = Math.max(0, propertyPoints);
   return (
@@ -2251,9 +2326,13 @@ export function syncSharedItemRecordWithBlueprint(
   const baseProfile = applyBaseOverridesToProfile(blueprint.baseProfile, normalizedOverrides);
   const reconciledOverrides = diffItemBaseProfileAgainstBlueprint(baseProfile, blueprint.baseProfile);
 
-  return {
+  return withComputedItemAnchorValue({
     id: item.id,
     blueprintId: blueprint.id,
+    auctionEntryId:
+      typeof item.auctionEntryId === "string" && item.auctionEntryId.trim().length > 0
+        ? item.auctionEntryId
+        : null,
     name: typeof item.name === "string" ? item.name : blueprint.defaultName,
     isArtifact: item.isArtifact === true,
     category: blueprint.category,
@@ -2266,26 +2345,35 @@ export function syncSharedItemRecordWithBlueprint(
     baseOverrides: reconciledOverrides,
     bonusProfile: normalizedBonusProfile,
     customProperties: normalizedCustomProperties,
+    baseStrength: normalizeItemBaseStrength(item.baseStrength),
+    anchorValue:
+      typeof item.anchorValue === "number" && Number.isFinite(item.anchorValue)
+        ? Math.max(1, Math.trunc(item.anchorValue))
+        : 1,
+    anchorValueOverride: normalizeItemAnchorValueOverride(item.anchorValueOverride),
     knowledge: normalizeItemKnowledgeState(item.knowledge),
     assignedCharacterId:
       typeof item.assignedCharacterId === "string" && item.assignedCharacterId.trim().length > 0
         ? item.assignedCharacterId
         : null,
-  };
+  });
 }
 
 export function createSharedItemRecord(
   blueprintId: ItemBlueprintId,
   overrides: Partial<
-    Pick<
-      SharedItemRecord,
-      | "id"
-      | "name"
-      | "isArtifact"
-      | "baseDescription"
+      Pick<
+        SharedItemRecord,
+        | "id"
+        | "auctionEntryId"
+        | "name"
+        | "isArtifact"
+        | "baseDescription"
       | "baseOverrides"
       | "bonusProfile"
       | "customProperties"
+      | "baseStrength"
+      | "anchorValueOverride"
       | "knowledge"
       | "assignedCharacterId"
     >
@@ -2304,6 +2392,10 @@ export function createSharedItemRecord(
     {
       id: overrides.id ?? createTimestampedId("item"),
       blueprintId: blueprint.id,
+      auctionEntryId:
+        typeof overrides.auctionEntryId === "string" && overrides.auctionEntryId.trim().length > 0
+          ? overrides.auctionEntryId
+          : null,
       name: typeof overrides.name === "string" ? overrides.name : blueprint.defaultName,
       isArtifact: overrides.isArtifact === true,
       category: blueprint.category,
@@ -2316,6 +2408,9 @@ export function createSharedItemRecord(
       baseOverrides: normalizeItemBaseOverrideProfile(overrides.baseOverrides),
       bonusProfile: normalizeBonusProfile(overrides.bonusProfile),
       customProperties: normalizeItemCustomPropertyRecords(overrides.customProperties),
+      baseStrength: normalizeItemBaseStrength(overrides.baseStrength),
+      anchorValue: 1,
+      anchorValueOverride: normalizeItemAnchorValueOverride(overrides.anchorValueOverride),
       knowledge: normalizeItemKnowledgeState(overrides.knowledge),
       assignedCharacterId: overrides.assignedCharacterId ?? null,
     },
@@ -2352,6 +2447,10 @@ export function hydrateSharedItemRecord(
   const hydrated: SharedItemRecord = {
     id: typeof record.id === "string" ? record.id : createTimestampedId("item"),
     blueprintId: effectiveBlueprintId,
+    auctionEntryId:
+      typeof record.auctionEntryId === "string" && record.auctionEntryId.trim().length > 0
+        ? record.auctionEntryId
+        : null,
     name: typeof record.name === "string" ? record.name : blueprint?.defaultName ?? "Item",
     isArtifact:
       typeof record.isArtifact === "boolean"
@@ -2376,6 +2475,12 @@ export function hydrateSharedItemRecord(
     customProperties: legacyCustomProperty
       ? [...normalizeItemCustomPropertyRecords(record.customProperties), legacyCustomProperty]
       : normalizeItemCustomPropertyRecords(record.customProperties),
+    baseStrength: normalizeItemBaseStrength(record.baseStrength),
+    anchorValue:
+      typeof record.anchorValue === "number" && Number.isFinite(record.anchorValue)
+        ? Math.max(1, Math.trunc(record.anchorValue))
+        : 1,
+    anchorValueOverride: normalizeItemAnchorValueOverride(record.anchorValueOverride),
     knowledge: normalizeItemKnowledgeState(record.knowledge as Partial<SharedItemRecord["knowledge"]> | undefined),
     assignedCharacterId:
       typeof record.assignedCharacterId === "string" && record.assignedCharacterId.trim().length > 0
@@ -2679,6 +2784,9 @@ export function getViewerFacingItemRecord(
     name: blueprint.defaultName,
     isArtifact: false,
     baseDescription: item.baseDescription,
+    baseStrength: item.baseStrength,
+    anchorValue: item.anchorValue,
+    anchorValueOverride: item.anchorValueOverride,
     bonusProfile: createEmptyBonusProfile(),
     customProperties: [],
   };
@@ -3130,35 +3238,76 @@ export function setProfileNotes(profile: BonusProfile, notes: string[]): BonusPr
 }
 
 export function setSharedItemStatBonus(item: SharedItemRecord, statId: StatId, value: number | null): SharedItemRecord {
-  return { ...item, bonusProfile: setProfileStatValue(item.bonusProfile, statId, value) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfileStatValue(item.bonusProfile, statId, value),
+  });
 }
 
 export function setSharedItemSkillBonus(item: SharedItemRecord, skillId: string, value: number | null): SharedItemRecord {
-  return { ...item, bonusProfile: setProfileSkillValue(item.bonusProfile, skillId, value) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfileSkillValue(item.bonusProfile, skillId, value),
+  });
 }
 
 export function setSharedItemDerivedBonus(item: SharedItemRecord, targetId: ItemDerivedModifierId, value: number | null): SharedItemRecord {
-  return { ...item, bonusProfile: setProfileDerivedValue(item.bonusProfile, targetId, value) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfileDerivedValue(item.bonusProfile, targetId, value),
+  });
 }
 
 export function setSharedItemResistanceBonus(item: SharedItemRecord, damageTypeId: DamageTypeId, value: number | null): SharedItemRecord {
-  return { ...item, bonusProfile: setProfileResistanceValue(item.bonusProfile, damageTypeId, value) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfileResistanceValue(item.bonusProfile, damageTypeId, value),
+  });
 }
 
 export function setSharedItemPowerBonus(item: SharedItemRecord, powerId: string, value: number | null): SharedItemRecord {
-  return { ...item, bonusProfile: setProfilePowerValue(item.bonusProfile, powerId, value) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfilePowerValue(item.bonusProfile, powerId, value),
+  });
 }
 
 export function setSharedItemSpellBonus(item: SharedItemRecord, spellKey: string, value: number | null): SharedItemRecord {
-  return { ...item, bonusProfile: setProfileSpellValue(item.bonusProfile, spellKey, value) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfileSpellValue(item.bonusProfile, spellKey, value),
+  });
 }
 
 export function setSharedItemNotes(item: SharedItemRecord, notes: string[]): SharedItemRecord {
-  return { ...item, bonusProfile: setProfileNotes(item.bonusProfile, notes) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfileNotes(item.bonusProfile, notes),
+  });
 }
 
 export function setSharedItemUtilityTraits(item: SharedItemRecord, utilityTraits: string[]): SharedItemRecord {
-  return { ...item, bonusProfile: setProfileUtilityTraits(item.bonusProfile, utilityTraits) };
+  return withComputedItemAnchorValue({
+    ...item,
+    bonusProfile: setProfileUtilityTraits(item.bonusProfile, utilityTraits),
+  });
+}
+
+export function setSharedItemBaseStrength(item: SharedItemRecord, value: number | null): SharedItemRecord {
+  return withComputedItemAnchorValue({
+    ...item,
+    baseStrength: normalizeItemBaseStrength(value),
+  });
+}
+
+export function setSharedItemAnchorValueOverride(
+  item: SharedItemRecord,
+  value: number | null
+): SharedItemRecord {
+  return withComputedItemAnchorValue({
+    ...item,
+    anchorValueOverride: normalizeItemAnchorValueOverride(value),
+  });
 }
 
 export function getItemPowerBonusOptions(): ItemOption[] {

@@ -16,6 +16,11 @@ import {
 } from "../config/characterTemplate";
 import { createEmptyKnowledgeState } from "../lib/knowledge.ts";
 import {
+  completeAuctionTransaction as resolveCompletedAuctionTransaction,
+  createDefaultAuctionHouseEntries,
+  normalizeAuctionHouseEntry,
+} from "../lib/auctionHouse.ts";
+import {
   buildItemIndex,
   createItemCategoryDefinitionRecord,
   createItemBlueprintRecord,
@@ -26,6 +31,14 @@ import {
   syncSharedItemRecordWithBlueprint,
   updateBlueprintOverrideList,
 } from "../lib/items.ts";
+import type { AuctionHouseEntry, AuctionTransactionMode } from "../types/auction.ts";
+import {
+  createEmptyMobGroup,
+  createEmptyMobTemplate,
+  normalizeMobTemplateSheet,
+  createEmptyPortalTemplate,
+  type AuthoringContentState,
+} from "../lib/authoring.ts";
 import {
   CHARACTER_STORAGE_KEY,
   readPersistedCharactersFromStorage,
@@ -59,6 +72,8 @@ import type {
   KnowledgeRevision,
   KnowledgeState,
 } from "../types/knowledge.ts";
+import type { MobGroup, MobTemplate, PortalTemplate } from "../types/authoring.ts";
+import { getIsoTimestamp } from "../lib/ids.ts";
 
 export type { CharacterOwnerRole, CharacterRecord } from "../types/character";
 
@@ -73,9 +88,13 @@ type AppFlowContextValue = {
   itemSubcategoryDefinitions: ItemSubcategoryDefinition[];
   itemBlueprints: ItemBlueprintRecord[];
   items: SharedItemRecord[];
+  auctionEntries: AuctionHouseEntry[];
   knowledgeEntities: KnowledgeEntity[];
   knowledgeRevisions: KnowledgeRevision[];
   knowledgeOwnerships: KnowledgeOwnership[];
+  mobTemplates: MobTemplate[];
+  mobGroups: MobGroup[];
+  portalTemplates: PortalTemplate[];
   activePlayerCharacter: CharacterRecord | null;
   activeDmCharacter: CharacterRecord | null;
   activeCombatEncounter: CombatEncounterState | null;
@@ -87,6 +106,7 @@ type AppFlowContextValue = {
     overrides?: Partial<
       Pick<
         SharedItemRecord,
+        | "auctionEntryId"
         | "name"
         | "isArtifact"
         | "baseDescription"
@@ -98,6 +118,7 @@ type AppFlowContextValue = {
       >
     >
   ) => string;
+  duplicateItem: (itemId: string) => string | null;
   updateItem: (
     itemId: string,
     updater: SharedItemRecord | ((current: SharedItemRecord) => SharedItemRecord)
@@ -128,6 +149,13 @@ type AppFlowContextValue = {
   ) => void;
   deleteItemBlueprint: (blueprintId: string) => void;
   assignItemToCharacter: (itemId: string, characterId: string | null) => void;
+  replaceAuctionEntries: (entries: AuctionHouseEntry[]) => void;
+  resetAuctionEntries: () => void;
+  completeAuctionTransaction: (args: {
+    entryId: string;
+    characterId: string;
+    mode: AuctionTransactionMode;
+  }) => { itemId: string; message: string } | { error: string };
   selectCharacter: (characterId: string) => void;
   deleteCharacter: (characterId: string) => void;
   updateCharacter: (
@@ -142,6 +170,29 @@ type AppFlowContextValue = {
   replaceCharacters: (characters: CharacterRecord[]) => void;
   updateKnowledgeState: (
     updater: KnowledgeState | ((current: KnowledgeState) => KnowledgeState)
+  ) => void;
+  createMobTemplate: (overrides?: Partial<MobTemplate>) => string;
+  updateMobTemplate: (
+    mobTemplateId: string,
+    updater: MobTemplate | ((current: MobTemplate) => MobTemplate)
+  ) => void;
+  deleteMobTemplate: (mobTemplateId: string) => void;
+  createMobGroup: (overrides?: Partial<MobGroup>) => string;
+  updateMobGroup: (
+    mobGroupId: string,
+    updater: MobGroup | ((current: MobGroup) => MobGroup)
+  ) => void;
+  deleteMobGroup: (mobGroupId: string) => void;
+  createPortalTemplate: (overrides?: Partial<PortalTemplate>) => string;
+  updatePortalTemplate: (
+    portalTemplateId: string,
+    updater: PortalTemplate | ((current: PortalTemplate) => PortalTemplate)
+  ) => void;
+  deletePortalTemplate: (portalTemplateId: string) => void;
+  updateAuthoringState: (
+    updater:
+      | AuthoringContentState
+      | ((current: AuthoringContentState) => AuthoringContentState)
   ) => void;
   executeWorldCast: (payload: WorldCastRequestPayload) => string | null;
   executeArtifactAppraisal: (args: {
@@ -180,11 +231,17 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
   );
   const [itemBlueprints, setItemBlueprints] = useState<ItemBlueprintRecord[]>(persistedCharacters.itemBlueprints);
   const [items, setItems] = useState<SharedItemRecord[]>(persistedCharacters.items);
+  const [auctionEntries, setAuctionEntries] = useState<AuctionHouseEntry[]>(persistedCharacters.auctionEntries);
   const [starterItemsInitialized] = useState<boolean>(persistedCharacters.starterItemsInitialized);
   const [knowledgeState, setKnowledgeState] = useState<KnowledgeState>({
     knowledgeEntities: persistedCharacters.knowledgeEntities,
     knowledgeRevisions: persistedCharacters.knowledgeRevisions,
     knowledgeOwnerships: persistedCharacters.knowledgeOwnerships,
+  });
+  const [authoringState, setAuthoringState] = useState<AuthoringContentState>({
+    mobTemplates: persistedCharacters.mobTemplates,
+    mobGroups: persistedCharacters.mobGroups,
+    portalTemplates: persistedCharacters.portalTemplates,
   });
   const [activePlayerCharacterId, setActivePlayerCharacterId] = useState<string | null>(
     persistedCharacters.activePlayerCharacterId
@@ -249,13 +306,15 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         itemSubcategoryDefinitions,
         itemBlueprints,
         items,
+        auctionEntries,
         ...knowledgeState,
+        ...authoringState,
         starterItemsInitialized,
         activePlayerCharacterId,
         activeDmCharacterId,
       }
     );
-  }, [activeDmCharacterId, activePlayerCharacterId, characters, itemBlueprints, itemCategoryDefinitions, itemSubcategoryDefinitions, items, knowledgeState, starterItemsInitialized]);
+  }, [activeDmCharacterId, activePlayerCharacterId, auctionEntries, authoringState, characters, itemBlueprints, itemCategoryDefinitions, itemSubcategoryDefinitions, items, knowledgeState, starterItemsInitialized]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -274,10 +333,16 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       setItemSubcategoryDefinitions(nextState.itemSubcategoryDefinitions);
       setItemBlueprints(nextState.itemBlueprints);
       setItems(nextState.items);
+      setAuctionEntries(nextState.auctionEntries);
       setKnowledgeState({
         knowledgeEntities: nextState.knowledgeEntities,
         knowledgeRevisions: nextState.knowledgeRevisions,
         knowledgeOwnerships: nextState.knowledgeOwnerships,
+      });
+      setAuthoringState({
+        mobTemplates: nextState.mobTemplates,
+        mobGroups: nextState.mobGroups,
+        portalTemplates: nextState.portalTemplates,
       });
       setActivePlayerCharacterId((currentActiveCharacterId) =>
         currentActiveCharacterId &&
@@ -339,6 +404,148 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     );
   }
 
+  function createMobTemplate(overrides: Partial<MobTemplate> = {}): string {
+    const nextTemplate = createEmptyMobTemplate(overrides);
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      mobTemplates: [...currentState.mobTemplates, nextTemplate],
+    }));
+    return nextTemplate.id;
+  }
+
+  function updateMobTemplate(
+    mobTemplateId: string,
+    updater: MobTemplate | ((current: MobTemplate) => MobTemplate)
+  ): void {
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      mobTemplates: currentState.mobTemplates.map((template) => {
+        if (template.id !== mobTemplateId) {
+          return template;
+        }
+
+        const nextTemplate =
+          typeof updater === "function" ? updater(template) : updater;
+        return {
+          ...nextTemplate,
+          id: template.id,
+          name: nextTemplate.name.trim() || nextTemplate.sheet.name.trim() || template.name,
+          sheet: normalizeMobTemplateSheet({
+            ...nextTemplate.sheet,
+            name:
+              nextTemplate.name.trim() ||
+              nextTemplate.sheet.name.trim() ||
+              template.sheet.name,
+          }),
+          updatedAt: getIsoTimestamp(),
+        };
+      }),
+    }));
+  }
+
+  function deleteMobTemplate(mobTemplateId: string): void {
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      mobTemplates: currentState.mobGroups.some((group) =>
+        group.members.some((member) => member.mobTemplateId === mobTemplateId)
+      )
+        ? currentState.mobTemplates
+        : currentState.mobTemplates.filter((template) => template.id !== mobTemplateId),
+    }));
+  }
+
+  function createMobGroup(overrides: Partial<MobGroup> = {}): string {
+    const nextGroup = createEmptyMobGroup(overrides);
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      mobGroups: [...currentState.mobGroups, nextGroup],
+    }));
+    return nextGroup.id;
+  }
+
+  function updateMobGroup(
+    mobGroupId: string,
+    updater: MobGroup | ((current: MobGroup) => MobGroup)
+  ): void {
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      mobGroups: currentState.mobGroups.map((group) => {
+        if (group.id !== mobGroupId) {
+          return group;
+        }
+
+        const nextGroup = typeof updater === "function" ? updater(group) : updater;
+        return {
+          ...nextGroup,
+          id: group.id,
+          updatedAt: getIsoTimestamp(),
+        };
+      }),
+    }));
+  }
+
+  function deleteMobGroup(mobGroupId: string): void {
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      mobGroups: currentState.portalTemplates.some((portal) =>
+        portal.stages.some((stage) =>
+          stage.groupReferences.some((reference) => reference.mobGroupId === mobGroupId)
+        )
+      )
+        ? currentState.mobGroups
+        : currentState.mobGroups.filter((group) => group.id !== mobGroupId),
+    }));
+  }
+
+  function createPortalTemplate(overrides: Partial<PortalTemplate> = {}): string {
+    const nextPortal = createEmptyPortalTemplate(overrides);
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      portalTemplates: [...currentState.portalTemplates, nextPortal],
+    }));
+    return nextPortal.id;
+  }
+
+  function updatePortalTemplate(
+    portalTemplateId: string,
+    updater: PortalTemplate | ((current: PortalTemplate) => PortalTemplate)
+  ): void {
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      portalTemplates: currentState.portalTemplates.map((portal) => {
+        if (portal.id !== portalTemplateId) {
+          return portal;
+        }
+
+        const nextPortal = typeof updater === "function" ? updater(portal) : updater;
+        return {
+          ...nextPortal,
+          id: portal.id,
+          updatedAt: getIsoTimestamp(),
+        };
+      }),
+    }));
+  }
+
+  function deletePortalTemplate(portalTemplateId: string): void {
+    setAuthoringState((currentState) => ({
+      ...currentState,
+      portalTemplates: currentState.portalTemplates.filter(
+        (portal) => portal.id !== portalTemplateId
+      ),
+    }));
+  }
+
+  function updateAuthoringState(
+    updater:
+      | AuthoringContentState
+      | ((current: AuthoringContentState) => AuthoringContentState)
+  ): void {
+    setAuthoringState((currentState) =>
+      typeof updater === "function" ? updater(currentState) : updater
+    );
+  }
+
   function stripItemReferencesFromSheet(sheet: CharacterDraft, itemId: string): CharacterDraft {
     return normalizeSheetEquipment({
       ...sheet,
@@ -364,6 +571,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     overrides: Partial<
       Pick<
         SharedItemRecord,
+        | "auctionEntryId"
         | "name"
         | "isArtifact"
         | "baseDescription"
@@ -376,6 +584,32 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     > = {}
   ): string {
     const nextItem = createSharedItemRecord(blueprintId, overrides, itemBlueprints);
+    setItems((currentItems) => [...currentItems, nextItem]);
+    return nextItem.id;
+  }
+
+  function duplicateItem(itemId: string): string | null {
+    const sourceItem = items.find((item) => item.id === itemId) ?? null;
+    if (!sourceItem) {
+      return null;
+    }
+
+    const nextName = sourceItem.name.trim().length > 0 ? `${sourceItem.name} Copy` : "Item Copy";
+    const nextItem = createSharedItemRecord(
+      sourceItem.blueprintId,
+      {
+        auctionEntryId: sourceItem.auctionEntryId,
+        name: nextName,
+        isArtifact: sourceItem.isArtifact,
+        baseDescription: sourceItem.baseDescription,
+        baseOverrides: sourceItem.baseOverrides,
+        bonusProfile: sourceItem.bonusProfile,
+        customProperties: sourceItem.customProperties,
+        baseStrength: sourceItem.baseStrength,
+        anchorValueOverride: sourceItem.anchorValueOverride,
+      },
+      itemBlueprints
+    );
     setItems((currentItems) => [...currentItems, nextItem]);
     return nextItem.id;
   }
@@ -619,6 +853,75 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     );
   }
 
+  function replaceAuctionEntries(entries: AuctionHouseEntry[]): void {
+    setAuctionEntries(entries.map((entry) => normalizeAuctionHouseEntry(entry)));
+  }
+
+  function resetAuctionEntries(): void {
+    setAuctionEntries(createDefaultAuctionHouseEntries());
+  }
+
+  function completeAuctionTransaction(args: {
+    entryId: string;
+    characterId: string;
+    mode: AuctionTransactionMode;
+  }): { itemId: string; message: string } | { error: string } {
+    const character =
+      characters.find((candidate) => candidate.id === args.characterId) ?? null;
+    const entry = auctionEntries.find((candidate) => candidate.id === args.entryId) ?? null;
+
+    if (!character || !entry) {
+      return { error: "The selected character or auction entry is no longer available." };
+    }
+
+    const resolution = resolveCompletedAuctionTransaction({
+      entry,
+      mode: args.mode,
+      characterId: character.id,
+      characterName: character.sheet.name.trim() || "Unnamed Character",
+      characterMoney: character.sheet.money,
+      characterGameDateTime: character.sheet.gameDateTime,
+      itemBlueprints,
+    });
+    if ("error" in resolution) {
+      return resolution;
+    }
+
+    setAuctionEntries((currentEntries) =>
+      currentEntries.map((currentEntry) =>
+        currentEntry.id === entry.id ? resolution.nextEntry : currentEntry
+      )
+    );
+    setItems((currentItems) => [...currentItems, resolution.createdItem]);
+    setCharacters((currentCharacters) =>
+      currentCharacters.map((currentCharacter) => {
+        if (currentCharacter.id !== character.id) {
+          return currentCharacter;
+        }
+
+        return {
+          ...currentCharacter,
+          sheet: normalizeSheetEquipment({
+            ...assignItemReferencesToSheet(
+              currentCharacter.sheet,
+              resolution.createdItem.id
+            ),
+            money: Math.max(0, currentCharacter.sheet.money - resolution.moneySpent),
+            gameHistory: [
+              resolution.historyEntry,
+              ...(currentCharacter.sheet.gameHistory ?? []),
+            ],
+          }),
+        };
+      })
+    );
+
+    return {
+      itemId: resolution.createdItem.id,
+      message: resolution.message,
+    };
+  }
+
   function selectCharacter(characterId: string): void {
     const selectedCharacter = characters.find((character) => character.id === characterId);
     if (!selectedCharacter) {
@@ -815,9 +1118,13 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         itemSubcategoryDefinitions,
         itemBlueprints,
         items,
+        auctionEntries,
         knowledgeEntities: knowledgeState.knowledgeEntities,
         knowledgeRevisions: knowledgeState.knowledgeRevisions,
         knowledgeOwnerships: knowledgeState.knowledgeOwnerships,
+        mobTemplates: authoringState.mobTemplates,
+        mobGroups: authoringState.mobGroups,
+        portalTemplates: authoringState.portalTemplates,
         activePlayerCharacter,
         activeDmCharacter,
         activeCombatEncounter,
@@ -825,6 +1132,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         chooseRole: setRoleChoice,
         createCharacter,
         createItem,
+        duplicateItem,
         updateItem,
         deleteItem,
         createItemCategoryDefinition,
@@ -837,12 +1145,25 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         updateItemBlueprint,
         deleteItemBlueprint,
         assignItemToCharacter,
+        replaceAuctionEntries,
+        resetAuctionEntries,
+        completeAuctionTransaction,
         selectCharacter,
         deleteCharacter,
         updateCharacter,
         setCharacterSupplementarySlotEnabled,
         replaceCharacters,
         updateKnowledgeState,
+        createMobTemplate,
+        updateMobTemplate,
+        deleteMobTemplate,
+        createMobGroup,
+        updateMobGroup,
+        deleteMobGroup,
+        createPortalTemplate,
+        updatePortalTemplate,
+        deletePortalTemplate,
+        updateAuthoringState,
         executeWorldCast,
         executeArtifactAppraisal,
         beginCombatEncounter,

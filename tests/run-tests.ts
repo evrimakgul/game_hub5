@@ -1,4 +1,6 @@
 import { runAppFlowPersistenceTests } from "./appFlowPersistence.test.ts";
+import { runAuthoringTests } from "./authoring.test.ts";
+import { runAuctionHouseTests } from "./auctionHouse.test.ts";
 import { runCharacterRuntimeTests } from "./characterRuntime.test.ts";
 import { runCombatEncounterCastingTests } from "./combatEncounterCasting.test.ts";
 import { runCombatEncounterPhysicalAttackTests } from "./combatEncounterPhysicalAttacks.test.ts";
@@ -20,6 +22,8 @@ async function main(): Promise<void> {
   await runXpTablesTests();
   await runStatsTests();
   await runLibHelpersTests();
+  await runAuthoringTests();
+  await runAuctionHouseTests();
   await runItemBehaviorTests();
   await runKnowledgeTests();
   await runAppFlowPersistenceTests();

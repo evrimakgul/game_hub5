@@ -5,7 +5,7 @@ This file tracks active reminders for the current implementation block.
 ## Active Implementation Block
 - The focused Phase 1 combat encounter completion pass is complete.
 - The follow-up character-sheet and encounter action-flow pass is also complete.
-- Knowledge System V1 is now implemented for character cards.
+- Knowledge System V1 foundations are implemented for standalone character and item cards.
 - The remaining power TODO rewrite pass is now complete.
 - The encounter cast UI standardization, aura lifecycle cleanup, summon dismiss UI, and ingestion reference sync pass is now complete.
 - The persisted item-definition refactor is now complete.
@@ -14,6 +14,10 @@ This file tracks active reminders for the current implementation block.
 - The supplementary-slot and item-knowledge UX pass is now complete.
 - The World Casting V1 pass is now complete.
 - The `AA-01` Artifact Appraisal integration pass is now complete.
+- `KNOW-V2-01` and `ITEM-VAL-01` are now complete.
+- The Mob / Group / Portal Authoring Workshop V1 pass is now complete.
+- Item Creation And Auction House V1 is now complete.
+- Player Auction Shopping follow-up is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -53,10 +57,40 @@ This file tracks active reminders for the current implementation block.
 - World-cast V1 currently supports `Assess Entity`, `Body Reinforcement`, `Healing Touch`, and `Luminous Restoration`.
 - World-unsupported variants stay visible but unavailable outside combat.
 - Inventory `Identify` now routes through the shared world-casting backend for `Artifact Appraisal`.
+- Knowledge cards now support DM-authored `place`, `faction`, `story`, and `custom` subjects through the dedicated DM Knowledge Hub.
+- New non-character/item knowledge subjects use stable standalone entities plus canonical revisions; later revisions stay attached to the same subject entity instead of cloning a new subject.
+- DM-authored `story` knowledge uses `story_reward`; DM-authored `place`, `faction`, and `custom` knowledge use `dm_grant`.
+- Shared items now persist `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride`.
+- `bonusStrength` for item value remains identical to PP.
+- Item anchor value now computes as `max(1, (((bonusStrength * 49_977) + 1) * (1 + baseStrength)))`.
+- `baseStrength` is a DM-authored per-item field that defaults to `0`; item blueprints do not auto-contribute base economic strength in V1.
+- Auction-house rows now persist as standalone local-first catalog entries.
+- Auto-created auction items now infer the closest current blueprint, keep an `auctionEntryId` source link, and preserve raw auction bonus text as draft notes instead of pretending it was fully parsed into mechanics.
+- The auction house is now player-facing through `/player/auction-house` and the player character-sheet `Items` section.
+- Player-side `Buyout` and `Bid` transactions now spend character money, create/assign a shared item to the buying character, append a history row, and decrement live stock by one.
+- Player-side `Bid` currently resolves as an immediate winning-bid completion rather than a delayed pending-bid lifecycle.
+- Auction entries now persist live `stockQuantity` values alongside the original imported stock text.
+- `COMBAT-ACT-01` is intentionally pushed to the very end of the project and may be skipped entirely unless priorities change.
+- Characters now persist `apparelMode: humanoid | none`.
+- `clothing / robes` remain the existing chest-item baseline at `Initiative +2, DR +0`.
+- Humanoid characters with no chest/body item equipped now gain a separate naked-state baseline of `+3 Initiative`.
+- Characters with `apparelMode: none` opt out of that naked-state initiative bonus.
+- DM tooling now includes dedicated `/dm/mobs`, `/dm/mob-groups`, and `/dm/portals` routes.
+- Mobs now persist as standalone `MobTemplate` records with character-like sheet cores plus role / behavior / loot metadata.
+- Mob templates now also persist explicit challenge ratings and show live derived combat summary values in the mob editor.
+- Mob groups now persist as standalone `MobGroup` records with quantity and member-level override support plus editable target total CR and party mean CR fields.
+- Portal templates now persist as standalone `PortalTemplate` records with nested `PortalStage` arrays, portal-level party mean CR, and per-stage target total CR fields.
+- The preferred Codex authoring workflow is now portal-first on `/dm/portals`: the website can build `portal_bundle` request packets, Codex returns strict JSON payloads, and the website can import a full linked portal bundle of mobs, groups, and the portal in one pass.
+- Combat setup can now add saved mob groups or saved portal stages as encounter-owned mob instances without saving those exported mobs into the normal character library.
 
 ## Known Structural Gaps
 - Shared item editing is still not a full end-state authoring workflow, but item-card generation/share and supplementary-slot activation now exist in the DM item interactions hub.
+- Auction-house imports still preserve raw bonus/effect text as draft notes; rule-complete parsing into structured mechanical bonuses remains future work.
+- Player-side bidding does not yet model pending bids, auction timers, losing bids, or delayed settlement; the current UI resolves only completed winning bids.
+- DM tooling now includes a dedicated Knowledge Hub route for non-character/item subject authoring.
 - DM item tooling now includes dedicated definition management for item categories and subcategories.
+- Mob templates currently use a focused mob editor rather than the full player-sheet UI.
+- Portal progression/run-state automation is still manual; V1 exports one stage at a time into the existing combat dashboard instead of owning an end-to-end portal-run state machine.
 - Encounter cast UI now uses a stable `Power > Spell > ...` flow for active casts.
 - Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
@@ -87,12 +121,7 @@ This file tracks active reminders for the current implementation block.
 
 ## Deferred But Recorded
 - Full item-authoring UX remains deferred.
-- Future creation/template work should distinguish humanoid apparel logic from mobs/animals:
-  - humanoids can use default clothing and naked-state initiative rules
-  - beasts/mobs can intentionally have no clothing baseline
-  - both should still be able to equip armor/weapons when explicitly assigned
-  - recommended implementation hint: per-character/template flag such as `apparelMode: humanoid | none`
-- Expansion of the knowledge system beyond character and item cards remains deferred.
+- Full portal-run state, boss-clear reward automation, and exit unlocking remain deferred.
 - Backend sync and encounter persistence remain out of scope.
 
 ## Resolved Design Direction

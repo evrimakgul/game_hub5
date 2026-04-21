@@ -474,6 +474,7 @@ export function PlayerCharacterPage({
           <CharacterIdentitySection
             sheetState={sheetState}
             isSheetEditMode={isSheetEditMode}
+            canEditApparelMode={isDmView}
             onUpdateField={mutations.updateSheetField}
           />
 
@@ -554,6 +555,14 @@ export function PlayerCharacterPage({
               mutations.updateSupplementaryEquipmentSlotItem
             }
             onUpdateMoney={(value) => mutations.updateSheetField("money", value)}
+            onOpenAuctionHouse={
+              !isDmView
+                ? () =>
+                    navigate(
+                      `/player/auction-house?characterId=${encodeURIComponent(activeCharacter.id)}`
+                    )
+                : null
+            }
           />
 
           <CharacterHistorySection

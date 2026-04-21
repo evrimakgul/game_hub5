@@ -212,6 +212,7 @@ export type ItemBlueprintRecord = {
 export type SharedItemRecord = {
   id: string;
   blueprintId: ItemBlueprintId;
+  auctionEntryId: string | null;
   name: string;
   isArtifact: boolean;
   category: ItemCategory;
@@ -224,6 +225,9 @@ export type SharedItemRecord = {
   baseOverrides: ItemBaseOverrideProfile;
   bonusProfile: BonusProfile;
   customProperties: ItemCustomPropertyRecord[];
+  baseStrength: number;
+  anchorValue: number;
+  anchorValueOverride: number | null;
   knowledge: ItemKnowledgeState;
   assignedCharacterId: string | null;
 };
