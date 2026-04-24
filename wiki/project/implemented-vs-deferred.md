@@ -3,7 +3,7 @@ title: Implemented Vs Deferred
 topic: project
 kind: status
 status: active
-updated: 2026-04-16
+updated: 2026-04-20
 confidence: high
 ---
 
@@ -18,19 +18,31 @@ Implemented and live:
 - Local-first character persistence, hydration, and backup recovery.
 - DM and player route flows.
 - Combat encounter runtime with initiative, parties, effects, summons, and logs.
+- Player combat mode with masked initiative/party/activity views, AE-based opponent reveal, local shared encounter state, and own-turn action controls for the viewing character.
 - Power rewrite/reconciliation for the major current power families.
 - Knowledge System V1 with standalone revisioned character and item cards.
+- Knowledge subject expansion for DM-authored place, faction, story, and custom cards through the DM Knowledge Hub.
 - Shared items with persisted category/subcategory definitions and blueprint-backed instances.
+- Shared-item value fields with DM-authored `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride`.
+- Character-level unarmored baseline handling through `apparelMode: humanoid | none`, with a `+3 Initiative` naked-state bonus only for humanoids who have no chest/body item equipped.
+- Standalone DM authoring for:
+  - mob templates
+  - mob CR control plus live derived-combat summary
+  - reusable mob groups
+  - group target/party-mean CR control
+  - portal templates with nested stages
+  - portal/stage difficulty controls
+  - manual Codex request-packet import/export, now including portal-first `portal_bundle` imports
 - Supplementary slots and anchor-slot occupancy.
 - World Casting V1 for a limited set of supported powers.
 - `Artifact Appraisal` integration through the inventory shortcut, canonical item-card revision refresh, and linked history-entry flow.
 
 Deferred or partial:
 
-- Knowledge subject expansion beyond character/item.
 - Encounter persistence beyond current local runtime.
 - Backend sync and realtime assumptions.
-- Player-side encounter UI.
+- Full portal-run state / boss-clear reward automation / exit unlocking.
+- Broader player combat participation beyond the current own-turn action surface.
 - Timing/action-budget engine.
 
 ## Intended Direction
@@ -47,13 +59,11 @@ Deferred or partial:
 
 ## Deferred / Open
 
-- `KNOW-V2-01`
-- `ITEM-VAL-01`
 - `COMBAT-ACT-01`
-- `CHAR-APPAREL-01`
 - backend sync
 - encounter persistence
-- player encounter UI
+- broader player combat participation beyond own-turn controls
+- `REPO-CLEANUP-01`
 
 ## Sources
 

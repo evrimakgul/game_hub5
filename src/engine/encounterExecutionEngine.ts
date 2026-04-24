@@ -63,6 +63,7 @@ export class EncounterExecutionEngine {
       ...args.encounter,
       parties: args.encounter.parties.slice(),
       participants: args.encounter.participants.slice(),
+      encounterOwnedMobs: (args.encounter.encounterOwnedMobs ?? []).slice(),
       transientCombatants: args.encounter.transientCombatants.slice(),
       ongoingStates: args.encounter.ongoingStates.slice(),
       activityLog: args.encounter.activityLog.slice(),
@@ -79,9 +80,9 @@ export class EncounterExecutionEngine {
   executePreparedRequest(
     request: PreparedCastRequest
   ): { error: string } | { result: EncounterExecutionResult } {
-    const casterCharacter = this.characters.find((entry) => entry.id === request.casterCharacterId);
+    const casterCharacter = this.resolveEncounterCharacterRecord(request.casterCharacterId);
     if (!casterCharacter) {
-      return { error: "The casting character no longer resolves to a saved character sheet." };
+      return { error: "The casting character no longer resolves to an encounter sheet." };
     }
 
     const spentMana = spendPowerMana(casterCharacter.sheet, request.manaCost, this.itemsById);
@@ -94,16 +95,7 @@ export class EncounterExecutionEngine {
       request,
       knowledgeState: this.knowledgeState,
       casterCharacter,
-      resolveCharacter: (characterId) =>
-        this.characters.find((entry) => entry.id === characterId) ??
-        this.encounter.transientCombatants
-          .filter((entry) => entry.id === characterId)
-          .map((entry) => ({
-            id: entry.id,
-            ownerRole: entry.ownerRole,
-            sheet: entry.sheet,
-          }))[0] ??
-        null,
+      resolveCharacter: (characterId) => this.resolveEncounterCharacterRecord(characterId),
     });
     this.knowledgeState = preparedHistory.knowledgeState;
 
@@ -407,6 +399,21 @@ export class EncounterExecutionEngine {
       return;
     }
 
+    if ((this.encounter.encounterOwnedMobs ?? []).some((entry) => entry.id === characterId)) {
+      this.encounter = {
+        ...this.encounter,
+        encounterOwnedMobs: (this.encounter.encounterOwnedMobs ?? []).map((entry) =>
+          entry.id === characterId
+            ? {
+                ...entry,
+                sheet: applySheetUpdater(entry.sheet, updater),
+              }
+            : entry
+        ),
+      };
+      return;
+    }
+
     this.encounter = {
       ...this.encounter,
       transientCombatants: this.encounter.transientCombatants.map((entry) =>
@@ -421,12 +428,36 @@ export class EncounterExecutionEngine {
   }
 
   private resolveEncounterSheet(characterId: string): CharacterRecord["sheet"] | null {
+    return this.resolveEncounterCharacterRecord(characterId)?.sheet ?? null;
+  }
+
+  private resolveEncounterCharacterRecord(characterId: string): CharacterRecord | null {
     const persistedCharacter = this.characters.find((entry) => entry.id === characterId);
     if (persistedCharacter) {
-      return persistedCharacter.sheet;
+      return persistedCharacter;
     }
 
-    return this.encounter.transientCombatants.find((entry) => entry.id === characterId)?.sheet ?? null;
+    const ownedMob = (this.encounter.encounterOwnedMobs ?? []).find(
+      (entry) => entry.id === characterId
+    );
+    if (ownedMob) {
+      return {
+        id: ownedMob.id,
+        ownerRole: ownedMob.ownerRole,
+        sheet: ownedMob.sheet,
+      };
+    }
+
+    const transientCombatant = this.encounter.transientCombatants.find(
+      (entry) => entry.id === characterId
+    );
+    return transientCombatant
+      ? {
+          id: transientCombatant.id,
+          ownerRole: transientCombatant.ownerRole,
+          sheet: transientCombatant.sheet,
+        }
+      : null;
   }
 
   private applyStatusTagChange(
@@ -585,7 +616,14 @@ export class EncounterExecutionEngine {
   private scheduleAutomaticBruteDefiance(): ReturnType<typeof buildEncounterLogEntry>[] {
     const logEntries: Array<ReturnType<typeof buildEncounterLogEntry>> = [];
 
-    this.characters.forEach((character) => {
+    [
+      ...this.characters,
+      ...(this.encounter.encounterOwnedMobs ?? []).map((mob) => ({
+        id: mob.id,
+        ownerRole: mob.ownerRole,
+        sheet: mob.sheet,
+      })),
+    ].forEach((character) => {
       const reviveState = getBruteDefianceState(character, this.encounter.ongoingStates);
       if (!reviveState.isAvailable || !reviveState.isEligible) {
         return;

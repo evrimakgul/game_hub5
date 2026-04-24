@@ -5,10 +5,19 @@ import { useAppFlow } from "../state/appFlow";
 
 export function PlayerHubPage() {
   const navigate = useNavigate();
-  const { roleChoice, characters, createCharacter, selectCharacter, deleteCharacter } =
-    useAppFlow();
+  const {
+    roleChoice,
+    characters,
+    activeCombatEncounter,
+    createCharacter,
+    selectCharacter,
+    deleteCharacter,
+  } = useAppFlow();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const playerCharacters = characters.filter((character) => character.ownerRole === "player");
+  const activeCombatCharacterIds = new Set(
+    activeCombatEncounter?.participants.map((participant) => participant.characterId) ?? []
+  );
 
   if (roleChoice !== "player") {
     return <Navigate to="/role" replace />;
@@ -39,6 +48,12 @@ export function PlayerHubPage() {
     setPendingDeleteId(null);
   }
 
+  function handleOpenCombat(characterId: string): void {
+    selectCharacter(characterId);
+    setPendingDeleteId(null);
+    navigate(`/player/combat?characterId=${encodeURIComponent(characterId)}`);
+  }
+
   return (
     <main className="flow-page">
       <section className="flow-card">
@@ -61,13 +76,24 @@ export function PlayerHubPage() {
                   {character.sheet.name.trim() || "Unnamed Character"}
                 </button>
                 {!isDeletePending ? (
-                  <button
-                    type="button"
-                    className="flow-danger"
-                    onClick={() => handleDeletePrompt(character.id)}
-                  >
-                    Delete
-                  </button>
+                  <div className="delete-confirm-wrap">
+                    {activeCombatCharacterIds.has(character.id) ? (
+                      <button
+                        type="button"
+                        className="flow-secondary"
+                        onClick={() => handleOpenCombat(character.id)}
+                      >
+                        Combat Mode
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="flow-danger"
+                      onClick={() => handleDeletePrompt(character.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 ) : (
                   <div className="delete-confirm-wrap">
                     <button

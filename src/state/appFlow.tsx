@@ -250,7 +250,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     persistedCharacters.activeDmCharacterId
   );
   const [activeCombatEncounter, setActiveCombatEncounter] =
-    useState<CombatEncounterState | null>(null);
+    useState<CombatEncounterState | null>(persistedCharacters.activeCombatEncounter);
 
   const activePlayerCharacter = useMemo(
     () => characters.find((character) => character.id === activePlayerCharacterId) ?? null,
@@ -309,12 +309,13 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         auctionEntries,
         ...knowledgeState,
         ...authoringState,
+        activeCombatEncounter,
         starterItemsInitialized,
         activePlayerCharacterId,
         activeDmCharacterId,
       }
     );
-  }, [activeDmCharacterId, activePlayerCharacterId, auctionEntries, authoringState, characters, itemBlueprints, itemCategoryDefinitions, itemSubcategoryDefinitions, items, knowledgeState, starterItemsInitialized]);
+  }, [activeCombatEncounter, activeDmCharacterId, activePlayerCharacterId, auctionEntries, authoringState, characters, itemBlueprints, itemCategoryDefinitions, itemSubcategoryDefinitions, items, knowledgeState, starterItemsInitialized]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -344,6 +345,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
         mobGroups: nextState.mobGroups,
         portalTemplates: nextState.portalTemplates,
       });
+      setActiveCombatEncounter(nextState.activeCombatEncounter);
       setActivePlayerCharacterId((currentActiveCharacterId) =>
         currentActiveCharacterId &&
         nextState.characters.some(

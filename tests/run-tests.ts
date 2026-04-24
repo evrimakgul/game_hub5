@@ -13,6 +13,7 @@ import { runItemBehaviorTests } from "./itemBehaviors.test.ts";
 import { runKnowledgeTests } from "./knowledge.test.ts";
 import { runPowerEffectsTests } from "./powerEffects.test.ts";
 import { runPowerRegistryTests } from "./powerRegistry.test.ts";
+import { runPlayerCombatTests } from "./playerCombat.test.ts";
 import { runStatsTests } from "./stats.test.ts";
 import { runViewModelSelectorTests } from "./viewModelSelectors.test.ts";
 import { runWorldCastingTests } from "./worldCasting.test.ts";
@@ -34,6 +35,7 @@ async function main(): Promise<void> {
   await runCombatEncounterPhysicalAttackTests();
   await runCombatEncounterSpecialActionTests();
   await runCombatEncounterCastingTests();
+  await runPlayerCombatTests();
   await runPowerEffectsTests();
   await runPowerRegistryTests();
   await runWorldCastingTests();

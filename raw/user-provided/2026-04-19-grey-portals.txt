@@ -1,0 +1,582 @@
+  Grey Portal (Loc: istanbul, Kucukcekmece Metro durağı çıkışı, Dönerci içi tuvalet girişi) D:1 (CLOSED)
+
+Portal açılır açılmaz müşterileri dışarı çıkartıp polisi aramışlar. Bu, yaklaşık 40 dakika öncesi. Sahibi döner bıçağını çekip içeri girmeye niyetlenmiş, ancak garsonlar tarafından engellenmiş ve ikna edilmiş. Acilen yardım gönderilmesini bekliyorlar.
+
+Gri renkli sisi andran portal girişi, tuvaletlere giden yolun hemen üzerinde. Oldukça küşük ve dar bir kapı. 60 santim genişliğinde ve 2 metre yüksekliğinde.
+
+İçeri girdiğinde, zifiri karanlığın dışında dikkatinizi ilk çeken, 
+ bir koku. Kanalizasyonda olduğunuzu anlıyorsunuz.  Tek kişinin anca sığabileceği taş bir kaldırım üzerindesiniz ve arka arkaya dizili durumdasınız. ((En önde ve en arkada kim var. Burada formasyon değiştirilebilir.)) Gözleriniz karanlığa alışınca, yanınızdan pis kokulu bir nehrin aktığını görüyorsunuz, ancak görüş alanınız 1 metreden daha az. İleriden fare seslerine benzer sesler geliyor.
+
+1st group of  Mobs:    (4x sewer rat)    Rat:  Str: 1   Dex: 2   Stam: 1   Int: 0   Wits: 1   Per: 2
+Melee: 1     Alertness: 2    Stealth: 2	 
+
+Attack: 3d10 (bite)    Damage: 2d10    AC: 2   HP: 4    DR: 0   
+Special: If one target got damaged 3 times+, roll stam (DC 6 for leptospirosis disease (all physical stats -1 for 3 days unless cured.) 
+Loot: 100% 1 gr gold 
+
+2nd group of mobs:   (2x sewer rat, 2x slime)  Slime:   Str: 0   Dex: 1   Stam: 3   Int: 1   Wits: 2   Per: 1  
+Melee: 0  Ranged: 2    Alertness: 1    Stealth: 3
+
+Attack: 3d10 (Acip splash)     Damage: 4d10 (corrosive)   AC: 1     HP: 8      DR: 1
+Special: Damage (even the target not damaged, cause armor durability reduction) Lightning vulnerability (take 1.5x damage)
+Loot: 100% 3 gr gold  
+
+3rd group of mobs:   (2x sewer rat, 2x giant rat)  Giant Rat:  Str: 2   Dex: 2   Stam: 2   Int: 0   Wits: 2   Per: 2
+Melee: 2    Alertness: 2    Stealth: 3
+
+Attack: 4d10 (bite)     Damage: 3d10     AC: 2   HP: 6    DR: 0
+Special: Wants to be in stealth, can ambush.
+Loot: 70% 2 gr gold / 30% 1 meter long tail (uncommon quality whip type weapon. Damage: +1 (str+3))d10
+
+İleride kaldırım bitiyor ve yandan geçen pis sular, ufak bir havuza dönüşüyor. Boss in stealth.
+
+Boss:  (1xSewer snake)  2 meter long, 20 cm wide poisonous snake  Snake:  Str: 3    Dex: 3   Stam: 4   Int: 1   Wits: 3   Per: 2
+Melee: 3    Alertness: 3    Stealth: 4
+
+Attack: 6d10 (bite)   Damage: 7d10 (poison + bite str+4)
+AC: 3    HP: 10    DR: 2 (natural)
+Special: (if one target takes 3 times poison damage, he incapacitates (till cured))
+Loot: %40  10 gr gold + Common quality snakeskin armor (2 DR) (same with Turkish Army standard armor)),  40% 10 gr gold + Uncommon quality snakeskin armor (3 DR) (same with masterwork Turkish Armor armor), 20% 10 gr gold + Rare quality snakeskin armor (3 DR, +1 HP)
+
+Portal closing reward:   1 XP, 1 inspiration if it is the first grey portal closed
+
+
+Grey Portal (Loc: istanbul, Saray Botanik parkı serası içi) D:1   (CLOSED)
+
+Sera çalışanı bir süredir işe gelmediği için, park ziyaretçileri tarafından keşfedilen bir portal. Gözlerden uzak olduğu için tam olarak ne zaman açıldığı belli değil. Ancak bize ulaşan rapor 3 saat öncesinde bu portalın ilk defa görüldüğü yönünde. Mekana hemen polis ekipleri gönderilip, sivil ziyaretler engellendi. 
+
+Portal yüksekliği yaklaşık 3 metre, genişliği ise 4 metre civarında. Seranın yaklaşık 1/8 ini kaplıyor.
+
+Seraya girdiğinizde nemli hava ve bitki kokusu yüzünüze çarpıyor. Bitkilere çok iyi bakılmamış gibi duruyor, kurumuş bazı çiçekleri ve ev bitkilerini de görüyorsunuz. Daha büyük boyda olan bitkiler ise hala sağlıklı gibi görünüyor. Portal ise, şeffaf muşambanın içinde, ortalarına doğru bir yerde açılmış.
+
+Portaldan girdiğinizde hava yaklaşık 20 derece, güneş tepede ve etraf irili ufaklı bitkilerle dolu. ((Bitkiler koparıldığında hızla solacak ve sonra yaratık cesetleri gibi ortadan kaybolduğu görülecek.)) Sağ ve solu bodur mazı ağaçlarından oluşan doğal bir çitle kaplı koridor gibi. Çitlerin üzerinden athletics zarı ile atlanabilir, bu belki bazı muhtemel ortaya çıkacak olan creatureları pass etmenizi sağlayabilir.
+
+1st group of  Mobs:    (3x seedling)    Seedling:  Str: 0   Dex: 1   Stam: 2   Int: 0   Wits: 0   Per: 2
+Melee: 0    Ranged: 3   Alertness: 0    Stealth: 4
+
+Attack: 4d10 (ranged thorns)    Damage: 5d10    AC: 1   HP: 6    DR: 1   
+Special: Ambushes enemies and takes opportunity. Players require per+alertness with (DC: 7)  to evade this, if they see this type of enemy first time.
+Loot: 90% None  /10% Thorn dagger (common 1 handed melee weapon (str+2)
+
+Trap:  Damage: 5d10 (ivy strike)  Locate: (Per+alertness DC:6 with 2 success)  Disarm: (Dex+alertness with DC:6, with 2 success)
+
+2nd group of mobs:   (2x seedling, 2xminor wood elemental)     Minor wood Elemental:   Str: 3   Dex: 1   Stam: 2   Int: 0   Wits: 1   Per: 2
+
+Melee: 2  Ranged: 0    Alertness: 1    Stealth: 1
+
+Attack: 3d10 (wooden club)     Damage: 5d10 (wooden club)   AC: 1     HP: 8      DR: 2
+Special: Vulnerable to fire (takes 1.5x damage)
+Loot: 90% 1 gr gold  / 10% Uncommon quality wooden club (Str+2+1) damage
+
+3rd group of mobs:  (3x seedling, 3xpoison ivy)  Poison Ivy:   Str: 2   Dex: 2   Stam: 1      Int: 0   Wits: 1   Per: 2
+
+Melee: 2   Ranged: 0   Alertness: 1   Stealth: 2
+Attack: 4d10 (ivy whip)  Damage: 5d10 (ivy whip)   AC: 2    HP: 4    DR: 0
+Special: If someone takes damage, they take extra 1 poison damage.
+Loot: 90% 1 gr gold  / 10% Uncommon quality whip (Str+2+1) damage
+
+4th group of mobs: (4xminor wood elemental)
+
+Boss Pack: (4x seedling, 1x treant)  Treant:  Str: 4   Dex: 1   Stam: 4   Int: 0   Wits: 2   Per: 2
+Melee: 3   Ranged: 0   Alertness: 2    Stealth: 1
+
+Attack: 4d10 (branch slap 2h)    Damage: 11d10 (Branch slap 2h)   AC: 1   HP: 10   DR: 2
+Special: Vulnerable to fire (takes x1.5 damage) / Can sacrifice a seedling to heal itself for 3 damage. (bonus action)
+Loot: 50% Common quality 2 handed staff (Str+6)  40% Uncommon quality 2 handed staff (Str+6, hit+1) +2 gr of gold / 10% Rare quality 2 handed staff (Str+6+hit +2)
+
+Portal closing reward:   1 XP, wooden chest (untrapped, unlocked): Uncommon quality wooden ring of health (HP +1)
+
+
+Grey Portal (Loc: Istanbul, Hisarustu / Rumeli Hisari üst kat) D:1 (CLOSED)
+
+Kaleyi ziyaret eden yerli bir turist tarafından rapor edilmiş ve hemen polisi aramış. İlk rapor edilişi 1 saat önce, 45 dakikadır polis kontrolünde tutuluyor. Kalenin Hisar kısmına sivil giriş yasaklanmış durumda. 
+
+Portal yüksekliği 2 metre, genişliği 1.5 metre civarı. Alt kısmı, yerin birkaç cm daha altına doğru gidiyor. 
+
+İçeri giriyorsunuz. Normalde karanlık bir tünel, fakat, her birkaç metrede bir meşale ile aydınlatılmış. Yer yer duvara çakılı olan metal zincir parçaları ve kelepçeleri görüyorsunuz. Sanki eski zamanlardan kalma kalelerin altındaki hapsaneleri andırıyor. Dikkatinizi çeken, arada sanki çok önceden kalma, kırılıp ufalanmış kemik parçaları ve çevreye saçılmış kan izleri var.
+
+
+1st group of  Mobs:    (2x skeleton)    Skeleton:  Str: 2   Dex: 2   Stam: 2   Int: 0   Wits: 1   Per: 1
+Melee: 2    Ranged: 0   Alertness: 1    Stealth: 2
+
+Attack: 4d10 (1h rusty sword)    Damage: 4d10 (1h rusty sword)     AC: 2   HP: 6    DR: 1   
+Special: Vulnerable to blunt weapons (fist, hammer, staff, mace...) (takes 1.5x damage)
+Loot: 50% 2 gr gold  / 50% Common 1 handed sword (Str +2)
+
+
+2nd group of mobs: (2x skeleton, 2x skeleton mage)  Skeleton Mage:  Str: 1    Dex: 2     Stam: 2   Int: 2   Wits: 2   Per: 2
+Melee: 0    Ranged: 0   Alertness: 2    Stealth: 1
+
+Attack: (ice shard)    Damage: 4 (int+2) (cold damage / stamina soak)     AC: 2   HP: 6         DR: 1   
+Special: Elementalist Rank: ** (cold damage)
+Loot: 80% 4 gr gold  / 20% Common occult item (+1 mana)
+
+Trap: Damage: 5d10 (wall spear)  Locate: (Per+alertness DC:6 with 2 success)  Disarm: (Dex+alertness with DC:6, with 2 success)
+
+Disarm: Gain a common quality spear 2 handed (str+6)
+
+Trap: Damage: 5d10 (wall spear)  Locate: (Per+alertness DC:6 with 1 success (because you have seen this before))  Disarm: (Dex+alertness with DC:6, with 2 success)
+
+Disarm: Gain a common quality spear 2 handed (str+6)
+
+3rd group of mobs: (3x zombie)  Zombie:  Str:3  Dex:1  Stam:4  Int:1  Wits: 1  Per:1
+Melee: 3   Ranged: 0   Alertness: 1   Stealth: 0
+
+Attack: (brawl) 4d10/4d10   Damage: 3d10/3d10   AC: 1  HP: 10  DR:0
+Special: None
+Loot: 100% 3 gr gold
+
+Boss Pack: (2x skeleton, 1x skeleton king) Skeleton King: Str: 3  Dex: 3  Stam: 3  Int: 1  Wits: 2  Per: 2
+Melee: 3   Ranged: 0  Alertness: 1  Stealth: 1
+
+Attack: 6d10 (2h uncommon quality rusty sword(dam +1))    Damage: 10d10 (2h uncommon quality rusty sword(dam +1))     AC: 3   HP: 8    DR: 1   
+Special: Vulnerable to blunt weapons (fist, hammer, staff, mace...) (takes 1.5x damage)
+Loot: 40% 5 gr gold + 2h uncommon quality rusty sword(dam +1) / 40%  10 gr gold +2x2h uncommon quality rusty sword(dam +1) / 20% 10 gr gold + 2 handed rare quality sword (dam +2)
+
+Portal closing reward:   1 XP + small chest (Uncommon bone amulet (your summoned creatures with necromancy have +1 more base HP)
+
+
+Grey Portal (Loc: Istanbul, Mecidiyekoy Merkez camii Şerif. Mimberin yanı) D:2
+
+İmam tarafından rapor edilmiş. Öğle namazı iptal edilip, cemaat dışarı çıkartılıp 200 metre ötedeki camiye yönlendirilmiş. Bu yaklaşık 1 saat önce olmuş. 
+
+Portal, mimberin birkaç metre yanında. Genişliği 2 metre, uzunluğu 1.5 metre görünen kısmı, yerin altına uzanan kısmı var. Ne kadar daha yerin altına gittiği bilinmiyor, ancak depo katından görünmediği için, 50 cm den az olduğu düşünülüyor.
+
+Girişte ayakkabılarınızı çıkarıp, elinizde taşımanız isteniyor portalın yanına kadar. İmam 50 yaşlarında, hafif kırlaşmış sakalı olan, gözlüklü biri. Üzerinde cübbesi var. Yanındaki 4 polisle portalın yanında sohbet ediyor. Polislerden birinin “Hocam, Listerine ile gargara yapsak orucumuz bozulur mu?” diye sorduğunu duyuyorsunuz.
+
+Portaldan içeri girdiğinizde sanki bir yanardağın içindeki mağradasınız. Hava bayat ve sülfür kokusu içeriyor, ayrıca oldukça sıcak. Ortamda kaynağı belli olmayan, loş ve kırmızımsı bir renk var. Tavanın ne kadar yüksek olduğu görülmüyor, ancak 3-4 metreden aha yüksek gibi. Yol genişliği ise 1.5 metre kadar. İki kişi yan yana zorlukla da olsa sığar.
+
+1st group of  Mobs:    (4x red imp)    Red imp:  Str: 1   Dex: 2   Stam: 2   Int: 3   Wits: 3   Per: 2
+Melee: 0    Ranged: 0   Alertness: 2    Stealth: 3
+
+Attack: (firebolt)    Damage: 5 (int+2) (fire damage / stamina soak)     AC: 2   HP: 6    DR: 0   
+Special: Elementalist rank: ** (fire damage) / resist to fire damage
+Loot: None
+
+Chest: (Trapped) Fireball 8d10 (stamina soak) (AoE) Locate: (Per+alertness DC:7 with 2 success Disarm: (Dex+alertness with DC:7, with 2 success)  Loot: Uncommon quality occult item (Mana +2) + 100 gr gold.
+
+2nd group of mobs: (1xlemure)  Lemure  Str: 5    Dex: 2     Stam: 5   Int: 1   Wits: 1   Per: 1
+Melee: 4    Ranged: 0   Alertness: 1    Stealth: 0
+
+Attack: 6d10/6d10(brawl)    Damage: 7d10/7d10 (claw/claw (+2 damage)     AC: 1   HP: 16         DR: 2 (fat)   
+Special: Slow but extra durable (+4 hp), fat and blob (2 DR) / resists fire
+Loot: 60% 10 gr gold / 40% 10 gr gold + (Uncommon quality Humanskin Armor (1 DR, +2 HP))
+
+3rd group of mobs: (2x red imp, 1x hellhound)  Hellhound:  Str: 3   Dex: 3   Stam: 3  Int: 1  Wits: 3  Per: 3
+Melee: 2  Ranged: 0   Alertness: 5(*)   Stealth: 3
+
+Attack: 5d10 (bite)   Damage: 5d10 (+2 teeth)   AC: 3   HP: 8   DR: 1 (thick skin)
+Special: Detects stealth (unless stealth = 5, then DC=7) / resists fire / Aggressive
+Loot: 80% 5 gr gold / 20% 5 gr gold, Rare fang amulet (+1 melee skill)
+
+Boss Pack: (2x hellhound, 1x lesser demon) Lesser Demon: Str: 4  Dex: 4  Stam: 3  Int: 2  Wits: 3  Per: 2
+Melee: 4   Ranged: 0  Alertness: 2  Stealth: 0
+
+Attack: 9d10 (2h rare quality trident(hit +1 dam +1))    Damage: 11d10 (2h uncommon quality trident( hit +1 dam +1))     AC: 4   HP: 8    DR: 2 (thick skin)   
+Special: resist fire / Aggressive
+Loot: 40% 10 gr gold / 2h uncommon quality trident (dam +1) / 40%  10 gr gold / 2 handed rare quality trident (hit +2) /20% 10 gr gold / 2 handed rare quality trident (hit +2), Rare demonskin coat (DR: 2, +2 HP))
+
+Portal closing reward:   1 XP + 1xLesser soul coin (+2 mana, +2 health restore on use) (Single use) (+1 karma if soul is released)
+
+Grey Portal: (Loc: Istanbul, Semih Bayülken Kürek Tesisleri, kayıkhane içi) D:2 (Closed)
+
+Fenerbahce kürek takımı antrenörü tarafından bulunmuş ve ortam boşaltılmış. Takım sayıldığında 2 kişi eksik çıkmış. Kürek takımının 2 üyesinin (üni. öğrencisi) portala girdiğinden şüpheleniliyor. Onun için, 2 saat içerisinde hunter desteği gelmezse, özel harekat ekibi içeri girecek. Dikkat: takımdan 2 kişi hala içeride ise, portal kapasitesi 3 kişi ile sınırlı olabilir.
+
+Portal, 8 tek küreklik kayıkların olduğu yerde açılmış. Yaklaşık 2 metre yüksekliğinde ve 2 metre genişliğinde, kare şekline benzer. Kayıkhane içinde 4 özel harekat askeri hazırlanırken, çevrede de birkaç polis, var.
+
+İçeri girer girmez bir tane, 19-20 yaşlarında erkek ceseti yerde yatıyor olacak ve grup direk insiyatif atacak. Ortam, günbatımı, alacakaranlıkta olan sazlık / bataklık karışımı bir alan. Ortamdaki “tüm” (boss hariç) moblar playerların görüş alanında. Ama içeri girdiği düşünülen diğer kürekçi etrafta yok. (Ölü kayıkçı loot: 15 dolar + 1 handed av bıçağı (str+2 dam))
+
+1st group of mobs: (2x small swamp beast)  Small swamp beast: Str: 3   Dex: 2   Stam: 3  Int: 1  Wits: 2  Per: 2
+Melee: 3  Ranged: 0   Alertness: 2   Stealth: 2
+
+Attack: 5d10/5d10 (claw)   Damage: 4d10 (+1 claw)   AC: 2   HP: 8   DR: 1 (natural)
+Special: Resists acid, vulnerable to lightning
+Loot: 100% 1 meter long ironwood (Uncommon quality 1 handed weapon, +1 damage) 
+
+
+2nd group of mobs: (2x acid imp, 1x medium swamp beast) Acid imp: Str: 1 Dex: 3 Stam: 2 Int: 3 Wits: 3 Per: 2
+Melee – Ranged:- Alertness: 2 Stealth: 1
+Elementalist: * (4 Acid damage)  
+AC: 3    HP: 6     Mana: 4    DR:0
+Special: Resists acid, vulnerable lightning
+Loot: 70% 10 gr gold / 30% 10 gr gold+Common occult item (+1 mana) 
+
+Medium swamp beast: Str: 4 Dex: 3 Stam: 4 Int: 1 Wits: 2 Per: 2 
+Melee: 3 Ranged: 0 Alertness: 2 Stealth: 2
+
+Attack: 6d10/6d10 (claw)    Damage: 6d10 (+ 1 uncommon claw)  AC: 3  HP: 10  DR: 2 (natural)
+Special: Resists acid, vulnerable to lightning
+Loot: 50% 5 gr gold + uncommon clawed glove (+1 hit for brawl attacks) / 50% 10 gr gold + uncommon clawed glove (+1 hit for brawl attacks) + Uncommon bow (+1 hit) 
+
+Boss Pack: (3x acid imp, 1xGiant crodocile boss) Boss is in stealth, req: per+alertness 3 success with DC:6)
+
+
+Giant crocodile: Str: 4 Dex: 3 Stam: 5 Int: 1 Wits: 3 Per: 3
+Melee: 4 Ranged: 0 Alertness: 3  Stealth: 4
+
+Attack: 7d10 (bite)   Damage: 9d10 (monster bite: str+5d10)   
+AC: 3   HP: 12  DR: 3 (Natural)
+Special: Resist acid, resist fire, vulnerable to lightning
+Loot: 60% 20 gr gold + Uncommon croc skin armor (3 DR) + yaralı kayıkçı / 40% Rare croc skin armor (3 DR, +1 melee skill) + sindirilip, özümsenip, bok haline getirilmiş kayıkçı.
+
+
+Portal closing reward:   1 XP + small chest: (Crocodile tooth amulet (uncommon quality):  1 extra damage dice for all melee, brawl, ranged type damage.)
+
+
+Grey Portal: (Loc: Eskişehir yakınları, Porsuk Barajı civarı) D:3 (CLOSED)
+
+Barajda yüzmek için giden çocuklar tarafından ilk defa belirlenmiş. Suyun hafif üzerinde duran, dairesel bir portal. Yeri bildirilmiş, ancak henüz ortama gelen hunter veya askeri personel / jandarma yok.
+
+İçeri girildiğinde, giren 5 kişi, 3 metreye 3 metre büyüklüğünde, kare bir sal üzerinde. Güneş tepede (öğlen güneşi, hava sıcak). Sal yavaşça suyun üzerinde ilerlemeye başlıyor. Yaklaşık 1 dakika sonra:
+
+1st group of mobs: (3x lightning eel, 1xshark): Lightning eel: Str: 1  Dex: 2   Stam: 1   Int: 2 Wits: 2 Per: 2
+Melee: - Ranged: 0 Alertness: 2  Stealth: 2
+Elementalist **        Lightning damage: 4
+AC: 3 (+1 size + in water)   HP: 4   Mana: 4   DR: 0 
+Special: Resist lightning
+Loot: 100% 4 gr gold
+
+
+Shark: Str: 2   Dex: 3   Stam: 3   Int: 1    Wits: 3    Per: 3     Cha: 1   
+Melee: 3  Ranged: 0 Alertness: 2    Stealth: 1   Intimidation: 3
+
+Attack: 6d10      Damage: 5d10 (+3 bite)    AC: 3   DR: 1   HP: 8
+Special: Uses intimidation
+Loot: 50% 2x Shark cartilage pills (+2 HP heal when eaten) Unconscious Aybars / 50% 4x Shark cartilage pills (+2 HP heal when eaten) / Unconscious Aybars
+
+2 dakika salın üzerinde gittikten sonra:
+
+2nd group of mobs: (1x Octupus, 3x sea urchin): Sea urchin: Str: 1  Dex: 2   Stam: 2   Int: 1 Wits: 2 Per: 1
+Melee: - Ranged: 2 Alertness: 1  Stealth: 2
+Attack: 5d10 (needle +1)      Damage: 4d10 (needle +1)
+AC: 3 (+1 size, in water)   HP: 6   DR: 1 (natural) 
+Special: Lightning vulnerability
+Loot: 60% Common bow (5d10 damage) /40% Uncommon bow (5d10 damage, +1 to hit)
+
+Octupus: : Str: 4   Dex: 2   Stam: 4   Int: 2    Wits: 3    Per: 3     
+Melee: 3  Ranged: 0 Alertness: 2    Stealth: 1   
+
+Attack: 5d10/5d10/5d10/5d10 (multi tentacle)     Damage: 5d10 (+1 tentacle)     AC: 2         DR: 1  HP: 10
+Special: Lightning vulnerability
+Loot: 40% 6 gr gold / 40% 10 gr gold / 20% 10 gr gold + Rare eyeglasses (Per +1)
+
+15 dakika gittikten sonra:
+
+3rd group of mobs: (2x shark, 1x mermaid)  Mermaid: Str: 1 Dex: 3 Stam: 2 Int: 3 Wits: 4 Per: 3 Cha: 4 App: 4
+Melee: - Ranged: - Alertness: 2 Stealth:-
+Attack: -    Damage: -   AC: 3   DR: 1 (natural)     HP: 6    Mana: 6
+Crowd Control **  ((Control 1 target + compell (4d10 vs witsd10))) 1 mana / turn
+
+Special: Lightning vulnerability
+Loot: 100% Rare wig (Occupies head/face item slot) (App+1)
+
+20 dakika gittikten sonra:
+
+Boss Pack: (Kame-chan, giant sea turtle) Giant sea turtle: Str: 5   Dex: 2   Stam: 5   Int: 2    Wits: 3    Per: 3     
+Melee: 4  Ranged: 0 Alertness: 2    Stealth: -   
+
+Attack: 8d10/8d10(+2 hit claw)     Damage: 6d10/6d10 (+1 dam claw)  AC: 2      DR: 4  
+HP: 12
+Special: Lightning vulnerability, Fire vulnerability, acid vulnerability
+Loot: 40% 10 gr gold + Uncommon Shell Armor (DR:3) / 40% 10 gr gold + Rare Shell Armor (DR: 2, stam +1) / 20% 10 gr gold + Rare Shell Armor (DR: 2, stam +1) + Heartstone (Teleports the user out of the portal (single use), user appears next to portal entrence, outside.)
+
+
+Portal closing reward:   1 XP, medium chest (Rare Turtleshell Shield DR:2)
+
+
+Grey Portal: (Loc: Kırıkkale, Mehmet Doğan Fen Lisesi) D:3  (Closed)
+
+Portal okulun içinde, koridorların birinin ortasında açılmış. Okul boşaltılmış. Girişte birkaç jandarma var. 2 tane çakma askeri APC park etmiş. Okulun içinde, portal yakınlarına da 4 tane jandarma gelmiş.
+
+
+
+Portal, koridorun ortasında, yaklaşık 3 metre çapında, dairesel bir dumanı andırıyor. İçeri girildiğinde, etraf florasanlarla aydınlatılmış. Bir an için, lan acaba portaldan geçmedik mi diye düşünebilirsiniz, çünkü girilen yer de aynı şekilde bir okul koridoru. Ancak az ilerde, üstlerinde beyaz önlük, ellerinde molotov kokteylleri ve yüzlerinde deli ifadeler olan öğrencileri gördüğünüzde portaldan girilmiş olduğunu kesin olarak anlıyorsunuz.
+
+ Kısa bir koridor, neredeyse ucu görünüyor. Yaklaşık 60 metre ötede boss olarak görünen okul müdürü duruyor. Ancak, ilk grup öğrencilerden hemen sonra, sağ ve solda iki tane sınıf veya oda var girilebilecek.
+
+
+1st group of mobs: (3x crazed student): 
+
+Crazed Student: Str: 1  Dex: 2   Stam: 2   Int: 3 Wits: 2 Per: 2
+Melee: 0 Ranged: 0     Alertness: 2    Stealth: 1   Athletics: 1
+
+Attack: 5d10 (Molotov throw)     Damage: 6d10 (fire damage, soaked with stamina)
+
+AC: 2 		HP: 6   	Mana: -  	 DR: 1 
+Special: Have unlimited molotovs, resist fire, vulnerable to cold
+Loot: 30%  None / 30% 2xMolotov Cocktail  / 40% 2xMolotov cocktail, Uncommon scientist coat (1 DR, +1 Int)
+
+2nd group of mobs (room 1): (2x Nerd in Rage, 1x Lab assistant): 
+
+Nerd in rage:  Str: 4   Dex: 4     Stam: 4   Int: 3 Wits: 2   Per: 1
+Melee: 4     Alertness: 2   Stealth: 1  
+
+Attack: 8d10/8d10 (brawl)     Damage: 4d10/4d10 (brawl)
+AC: 3         HP: 10       Mana:-     DR: 1
+Loot: 50%  5 gr gold, elixir of physical prowess (+1 to physical stats until long rest, or portal long)  /  50% 5 gr gold, Uncommon eyeglasses (+1 Alertness), elixir of physical prowess (+1 to physical stats until long rest, or portal long) 
+
+Lab assistant:  Str: 2   Dex: 2   Stam: 2   Int: 4   Wits: 3   Per: 1
+Alertness: 2   Stealth: 1
+
+Attack: -    Damage: -     AC: 2       DR: 1       HP: 6     Mana: 7/7
+Elementalist 3 (prefers acid damage)
+Elemental acid damage: 6        Cantrip damage: 4
+Special: Elementalist 3 dots, resist acid
+Loot: 100% 10 gr gold, elixir of mental prowess (+1 to mental stats until long rest, or portal long), Rare scientist Robe (1 DR, +1 Int, +1 elementalist damage)
+
+In room 1, players can find a picture of a little girl, reading a book (misc klasöründe resmi var)
+
+3rd group of mobs (room 2): (1 x din öğretmeni+skeleton king, 1 x beden eğtimi öğretmeni, 1 x fen bilgisi öğretmeni)
+
+Din Öğretmeni:  Str: 2    Dex: 4   Stam: 3   Int: 2   Wits: 3   Per: 2
+Melee: 2    Alertness: 2
+AC: 3    HP: 10  DR: 2
+Touch attack: 6d10 (brawl)     Necro drain damage: 5 (stamina soak)
+Necromancer 3
+Special: 3 dots necromancer, has a skeleton king
+Loot: 40% 10 gr gold / 40% 10 gr gold, Common occult item (tesbih) (Mana +1) / 20% 50 gr gold, Uncommon occult item (tesbih) (Mana +2) *
+
+Skeleton King of Din öğretmeni (init. acts just after din öğ.):   Att: 8d10     Dam: 10d10     
+AC: 4    HP: 10  DR: 2
+Special: Crumbles, if Din öğretmeni dies first, resist cold
+Loot: 100% none
+
+Beden eğitimi öğretmeni:     Str: 4     Dex: 4     Stam: 4   Int: 2     Wits: 2     Per: 2
+Melee: 4     Alertness: 2       Stealth: 2  
+
+Attack: 8d10/8d10 (brawl)     Damage: 5d10/5d10 (boxing gloves +1 dam)
+AC: 4         HP: 10       Mana:-     DR: 1
+Loot: 50%  10 gr gold, Uncommon boxing gloves (Damage +1)  / 50% 10 gr gold, Rare boxing gloves (Damage +1), Uncommon aşortman (2 DR, Dex +1)
+
+Fen bilgisi öğretmeni:  Str: 1    Dex: 2    Stam: 2   Int: 4   Wits: 4    Per: 3
+Alertness: 3   
+
+Attack: -    Damage: -      AC: 2      HP: 6    Mana: 10/12    DR: 1
+Elementalist: * / Healing: **
+Elemental fire damage:  5 (1 mn)	Heal amount: 4 (25 m) can spread it up to 4 peep. (2 mn)
+Special: Has elemental attack, heals friendly units.
+Loot: 50% 10 gr gold, Uncommon ring of (mana +1)  / 50% 10 gr gold, Uncommon ring of (mana +1), Uncommon amulet of healing (+1 to healing amount)
+
+In room 2, players can find a picture of a little girl, reading a book (misc klasöründe resmi var)
+
+Boss pack: (1xMüdür, 2xjanitor)   
+
+Müdür:    Str: 4   Dex: 3   Stam: 4     Int: 3   Wits: 3      Per: 4    Cha: 4    App: 3
+
+Melee: 3  Ranged: 0 Alertness: 3    Stealth: - 
+
+Attack: 7d10 (2 handed staff +1 hit +1 dam)     Damage: 11d10   AC: 3    Mana: 7/7
+ HP: 10   DR: 3
+Crowd control ***  (2 targets cc, 4d10 vs wits d10)   
+Special: Can CC 2 people, starts with CC, then goes melee
+Loot: 30% 20 gr gold, Uncommon 2 handed staff +1 hit (str+6d10) / 40%  20 gr gold, Uncommon 2 handed staff +1 hit (str+6d10), Uncommon ring of CC (Adds 1 bonus die to CC charisma skill bonus) / 30% 50 gr gold, Rare 2 handed staff +1 hit, +1 damage (str+7d10),  Rare ring of charisma (+1 Cha)
+
+Janitor: Str: 3  Dex: 3  Stam: 3  Int: 1   Wits: 1  Per: 2  
+Melee: 2  Alertness: 2
+
+Attack: 6d10 (+1 hit 1 handed wrench)  Damage: 5d10   AC: 3  HP: 8  DR: 2
+Loot: 50% Uncommon 1 handed wrench +1 hit / 50% Uncommon 1 handed wrench +1 hit, Uncommon work suit (2 DR, +1 mechanics skill)
+
+
+Portal closing reward:  3 XP
+
+
+
+
+
+
+Greyportal (Eskişehir yakınlarında Beylikova, Sarmaşık köy kıraathanesi) D:3 (Closed)
+
+Bir dayı tarafından keşfedilmiş. Etrafta henüz bir güvenlik önlemi alınmamış. Portal, kıraathanenin içinde. Kıraathaneye girildiğinde, portal bir masanın üzerinde duman şeklinde açık. Ortalama bir oda kapısı boyutlarında.
+
+İçeri girildiğinde, gündüz ve pencere olmadığı halde aydınlık bir ortam.  Sanki 250 metrekarelik büyük bir salondasınız. Salonun 4 köşesinde, 4 tane masa görülüyor. 1 masada 4 kişi okey oynuyor.  2. yüzleri, okudukları gazete tarafından gizli 4 kişi, 3. masada ellerinde yaba olan 4 çiftçi, 4. masada buraya ait değilmiş gibi duran, takımelbiseli ve evrak çantalı bir adam var.  Bunların ilerisinde, ışık biraz loşlaşıyor ve orada, bir çayocağı ve ocağın üzerine eğilmiş, kambur bir adam var.
+
+4. masadaki takım elbiseli adam, ortama girdiğinizden beri direk sizi izliyor.
+
+1.st table: (4x okey players)  Okey player:   Str: 2  Dex: 3   Stam: 3   Int: 2  Wits: 2   Per: 4
+Melee: 2  Alertness: 3
+
+Attack: 6d10 (ıstaka +1 hit)     Damage: 4d10      AC: 3     HP: 8     DR: 1
+Loot: 50% 3 gr gold / 50% 5 gr gold
+
+2nd table: (4x newspaper dudes*)   3xUndead brawler dayı: Str: 3  Dex: 2   Stam: 3   Int: 1   Wits: 1   Per: 1
+Melee: 3
+
+Attack: 5d10/5d10 (brawl)    Damage: 3d10/3d10   AC: 2   HP: 8   DR: 1
+Loot: 50% 3 gr gold / 50% 5 gr gold
+Special: Resist cold
+
+1xLight support undead:  Str: 1   Dex: 2  Stam: 2   Int: 1   Wits: 1   Per: 2
+Melee: 0 
+Light Support: ***
+
++2 hit, +1 DR 50 meter support
+Attack: -   Damage: -   AC: 2  HP: 8    DR: 2
+
+Special: Provides light support to 50 meter area, Resist cold
+Loot: 50% 10 gr gold, Uncommon ring of mana +1 / 50% 10 gr gold, Rare ring of light support (increase light support’s hit bonus by 1 more dice)
+
+3rd table: (4xfarmer dudes): Str: 3  Dex: 3  Stam: 3   Int: 1  Wits: 2   Per: 2
+Melee: 2  Alertness: 2
+
+Attack: 6d10 (2 handed yaba +1 hit)    Damage: 9d10    AC: 3   HP: 8   DR: 1
+Loot: 50% 5 gr gold / 50% 5 gr gold, Uncommon 2 handed yaba (+1 hit) 
+
+4th table: (1x formal dude)  Adam, ortama girdiğinizden beri sizi izlemekte, ancak combatlara hiç müdahale etmedi. Eğer saldırılırsa, dex wits atılarak combata girilecek. Konuşmaya kalkılırsa, adamın bir teklifi olacak.  ((Size 3 seçenek veriyorum. 1. Elimdeki çantayı size veririm, bunu alıp, çayocağındaki buranın sahibine a doğru ilerleyebilirsiniz.  2. Buradan topladığınız tüm eşyaları bana verirseniz, buranın sahibiyle savaşırken size yardım ederim.  3. savaşabiliriz.))  
+
+Formal dude (special character, unreadable with perception):  Str: 2  Dex: 4   Stam: 4   Int: 4   Wits: 5   Per: 5    Cha: 4   App: 4
+Melee –   Ranged: 5   Alertness: 5  Intimidation: 3
+
+Attack: 12d10/12d10 (DC: 7) (2x 1 handed rare pistol unlim ammo, hit +1)   Damage: 5d10
+AC: 4   HP: 10   DR: 3
+Loot: 100% 2xRare pistol (hit + 1, unlimited ammo)
+
+Eğer öldürürlerse, çanta cesetle beraber kaybolacak. Çantayı alma seçilirse, içinde (2500 gr gold, Rare tuxedo / Dress (Dex +1, Stam +1, Ranged skill +1) 
+
+Boss Pack: (The owner): Yakınına gelince yüzünü dönecek. Kambur hali bile, 200 cm civarında, yüzü yarı erimiş, uzun ve dağınık saçlı bir adam.
+
+Str: 5   Dex: 4   Stam: 5   Int: 2   Wits: 3   Per: 3  Cha: 2  App: 1
+Melee: 4  Alertness: 3   Intimidation: 4
+
+İlk turn intimidation (6d10) yapacak.
+Hit: 9d10/9d10 brawl         Dam: 5d10/5d10      AC: 4   HP: 12    DR: 3
+Loot: 40% 20 gr gold, Rare ring of intimidation (Intimidation +1), 40% 20 gr gold, Rare ring of melee (melee +1) / 20% 50 gr gold, Rare ring of intimidation (Intimidation +1), Rare ring of melee (melee +1)
+Special: resist fire, vulnerable to cold
+
+Portal closing reward: 1 XP,    ((If formal dude is alive, Uncommon pistol (unlimited ammo), if formal dude is dead +1 XP more))
+
+
+Grey Portal (Colchester yakınlarında Str GYM in içi)  D: 1 Girişte merdivenlerden çıkılıyor. Daha önce constable lar gelip içeriyi boşaltmış. Bir tek Mike var, onu çıkartamamışlar (gym rat). 4 constable orada bekliyor. Görünürde hunter yok. 
+
+Portal, direk ortada, kardio aletlerinin yanında duruyor. 2.5 metre yüksekliğinde, 1.5 metre genişliğinde gibi.
+
+Mike: 
+
+Str: 5   Dex: 2   Stam: 3   Int: 1   Wits: 2   Per: 2  Cha: 2  App: 2
+Melee: 3  Alertness: 2   Intimidation: 2
+
+Hit: 5d10 (2 handed bar)         Dam: 11d10      AC: 2   HP: 8    DR: 0
+
+İçeri girildiğinde ortam tam eye of the tiger mekanı gibi. İleride dumbell çalışan bi zenci amca var. Biraz ilerisinde bench press basan, holigan tipli bir sarışın birey, onun az ötesinde ip atlayan, asian zayıf bir herif var. Odanın en dibinde ise, masada oturmuş, fish and chips yiyen, üzerinde UNCLE yazan, muhtemelen XXXXL tshirtlü biri oturuyor.
+
+Before 1st pack:  Per+Alertness (DC: 6) Req 2 success.  Tavandan, kafana 60 pound luk bir ağırlık düşüyor (per atılırsa kaçılabilinecek) Damage: 4- DR
+
+
+1st Pack: (Nick the Nigger:)    Str: 4   Dex: 3   Stam: 4   Int: 2   Wits: 2   Per: 2  Cha: 2  App: 3
+Melee: 3  Alertness: 2   Intimidation: 2
+
+
+Hit: 6d10  (common dumbell)         Dam: 6d10 (common dumbell)      AC: 3   HP: 10    DR: 1 (Natural)
+
+Loot: 50% 5 gr gold / 50% 5 gr gold + Uncommon ring of HP (+1 HP)
+
+Nick ile combat başladıktan 1 turn sonra, benchteki elemen kalkıp gelecek. (Auto-join)
+
+(Blonde Samson:)   Str: 5  Dex: 2   Stam: 3   Int: 1   Wits: 2   Per: 1   Cha: 2   App: 2
+
+Melee: 3   Alertness: 1   Intimidation: 3
+
+Hit: 5d10  (olympic barbell)         Dam: 11d10 (olympic barbell)      AC: 2   HP: 8    DR: 1 (Natural)
+
+Loot: 50% 5 gr gold / 50% 5 gr gold + Uncommon Olympic Barbell (+2 HP)
+
+Blonde Samson ile combat başladıktan 1 turn sonra ip atlayan eleman gelecek.
+
+(Chum Sa):   Str: 3   Dex: 4   Stam: 4   Int: 2   Wits: 3   Per: 3    Cha: 2  App: 2
+
+Melee: 4    Alertness: 2    Intimidation: 1
+
+Hit: 8d10/8d10 (brawl)      Damage: 3d10/3d10    AC: 4   HP: 10    DR: 1 (Natural)
+
+Loot: 100% 5 gr gold  + 2x Cultivation pill (single use, 2 HP restore)
+
+
+(Uncle the Boss):  Non-agressive, kendisine saldırılıncaya kadar yemek yemeğe devam ediyor. ((50 turn sonra yemeği bitirecek ve dalacak))
+
+Str: 5+1   Dex: 4   Stam: 5   Int: 2   Wits: 3   Cha: 3    Per: 3   App: 2
+
+Melee: 4    Ranged: 4    Alertness: 3    Intimidation: 1
+
+Ranged:  Hit: 8d10 (shotgun)      Damage: 10d10    AC: 4   HP: 12    DR: 2 
+Melee:    Hit: 8d10 (Rare baseball bat, dam +2)    Damage: 10d10
+
+Loot: 45%  10 gr gold, Uncommon Uncle T-shirt (+1 DR, +1 STR) / 45% 10 gr gold, Rare baseball bat 1 handed (dam +2)(Str+ 4d10) / 10% Uncommon Shotgun (Can be used in portals, unlimited ammo)
+
+Portal Closing Reward:  1 XP, 1000 gr gold
+
+
+Grey Portal (Tekirdağ, Lüleburgaz arası, MarmaraCam ın malzemeleri duran bir yerinde açılmış.) D: 3  (Closed)
+
+Portala girdiğinizde, sanki ortam camdan yapılmış bir depo gibi. Aslında buranın ne kadar büyük veya küçük bir yer olduğu da tam anlaşılamıyor. Yakınlarda birbirinizi görebiliyorsunuz, ancak biraz dağınık bir şekilde sıralanmışsınız, içeri girme sıranızla değil. İçeride sizden başka kimse yok, bu arada. Nereye gitmeniz gerektiği bile pek belli değil gibi. 
+
+1st group of mobs: (Elif, Mehmet, Özan)     
+
+ Elif:     Str: 2		Dex: 2		Stam: 3 	Int: 2 		Wits: 2			Per: 2			Cha: 3		App: 2		Man: 2
+
+Melee: 3
+
+Attack: 8d10 (common 2 handed spear +1)   	  Damage: 8d10	AC: 2		HP: 8
+DR: 2		Soak: 3	Mana: 6/6
+
+Special: Crowd Control 3 (3d10 vs Witsxd10) (Can use CC in or before combat)
+Loot:  100% A glass heart
+
+
+
+Mehmet:  	 Str: 2		Dex: 2		Stam: 2 	Int: 2 		Wits: 2				Per: 3			Cha: 2			App: 3		Man: 2
+
+Alertness: 1
+
+Attack: -	Damage: -		AC: 2			HP: 6			
+Soak: 2		DR: 2		Mana 12/12
+
+HP: 6		 Defense : 2	          Soak: 2     	DR:  2            Mana: 3/6	                      Initiative (Dex+Wits)d10: 4d10
+
+Special: Has a skeleton king (can summon more, if it dies)
+Skeleton King:  Att: 8d10     Dam: 10d10    HP: 10   Soak: 4    DR: 2    (Cost: 3 mana)
+Loot: 100% A glass heart
+
+
+Özan:     Str: 5	Dex: 4		Stam: 4     	Int: 2		Wits: 3		
+Per: 3			Cha: 3		App: 4		Man: 2
+
+Melee: 4		Stealth: 2	Alertness: 2 		Intimidation: 3   
+
+Att: 10d10/10d10		Dam: 5d10/5d10		HP: 10		DR: 1   		 Init: 7d10
+Special: Light Support 3 (always activated) (+2 hit to his group)
+Loot: 100% A glass heart
+
+
+2nd group of mobs: (2x Glass Golem)  Glass Golem:  Str: 5  Dex: 3   Stam: 3   Int: 0   Wits: 0   Per: 0   Cha: 0   App: 0
+
+Melee: 3   Alertness: 0   Intimidation: 0
+
+Attack: 6d10/6d10  (Brawl)         Dam: 7d10/7d10 (Glass fist)      AC: 3   HP: 8    DR: 4 (Natural)
+Special: Resists fire, cold, lightning, acid
+Loot: 100% 2x glass heart
+
+
+Vending Machine (works with glass / flesh hearts):  
+/ Pill of healing (single use) (HP +2 restore): 1 heart    
+/ Uncommon 1 handed club (+1 HP): 2 hearts   
+/  Uncommon Invisible Armor (2 DR) (Armor is invisible): 3 hearts  
+/  Rare 1 handed club (+1 Stamina):   4 hearts   
+/  Rare 2 handed club (+2 Stealth): 5 Hearts    
+/  Uncommon Occult Item (+1 Manipulation):  6 Hearts    
+/  Rare Amulet of Gigantism (+2 Str, +2 HP, -1 Dex):  7 Hearts  
+/  Epic Ring of assassin (+1 Dex, +2 melee) (Un-bounded): 8 Hearts
+
+Notice: Human hearts are also accepted.
+
+Boss Pack: (Mirrored Mage)  :  Str: 0  Dex: 0   Stam: 4   Int: 4   Wits: 4   Per: 4   Cha: 0   App: 0
+
+Melee: 0   Alertness: 4   Intimidation: 0
+Alertness Success: 4
+Elemental Damage: 7 lightning
+Attack: -         Dam: -      AC: 0   HP: 10    DR: 5 (Natural)
+Special: Resists fire, cold, lightning, acid, Unlimited mana,  Elementalist 4
+Loot: 50% 20 gr gold + Rare ring of mana (+2 mana) / 50% 20 gr gold + Rare ring of mana (+2 mana) + Rare glowing Orb (10 meter light source) (floating) (unlimited uses) (works in portals) (follows the owner)
+
+Portal Closing Reward:  1 XP, Rare Glasswool Scarf (Amulet slot) (+1 DR, +1 mana)
+
+Notice: Auto-exit (teleporting out) is disabled. Enter the mirror to exit the portal.

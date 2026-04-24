@@ -3,7 +3,7 @@ title: Split Decisions
 topic: history
 kind: register
 status: active
-updated: 2026-04-17
+updated: 2026-04-18
 confidence: high
 ---
 
@@ -17,8 +17,7 @@ Open splits revalidated on 2026-04-17:
 
 | Split ID | Status | Current State | Source Trail |
 | --- | --- | --- | --- |
-| `KNOW-V2-01` | open | Knowledge cards are live for character and item subjects only. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, threads `4` and `6` |
-| `COMBAT-ACT-01` | open | Physical attacks and ranged gear work now, but action cost, timing, weapon speed, and multi-attack throughput are still simplified. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, thread `5` |
+| `COMBAT-ACT-01` | open | Physical attacks and ranged gear work now, but action cost, timing, weapon speed, and multi-attack throughput are still simplified. This gap is intentionally deferred to the very end of the project and may remain unimplemented. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, thread `5` |
 | `DOC-OBJECTIVE-01` | open | `references/project_objective.md` still describes the older manual `Brute Defiance` trigger, while current code, roadmap, and notes reflect the passive version. | `references/project_objective.md`, `references/plan.md`, `references/current_notes.md`, `src/engine/encounterExecutionEngine.ts` |
 
 Resolved splits:
@@ -27,14 +26,16 @@ Resolved splits:
 | --- | --- | --- |
 | `AA-01` | resolved | Inventory `Identify` remains the user-facing `Artifact Appraisal` surface, now granting or refreshing the current canonical item-card revision, appending linked history rows, and using current-revision ownership for hidden bonus visibility. |
 | `PLAN-DRIFT-01` | resolved | `references/plan.md`, `references/current_notes.md`, and tracker/wiki pages were reconciled to the implemented `AA-01` state, so the roadmap no longer lags this branch on the current milestone. |
+| `KNOW-V2-01` | resolved | The standalone knowledge model now supports DM-authored `place`, `faction`, `story`, and `custom` subjects through `/dm/knowledge`, while the player-side Knowledge Library continues to browse mixed owned revisions. |
+| `ITEM-VAL-01` | resolved | Shared items now persist `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride`, with DM-only value authoring/display on the live item surfaces. |
+| `UNARMORED-BASELINE-01` | resolved | Clothing / robes remain the existing `Initiative +2, DR +0` chest items, while characters now persist `apparelMode: humanoid | none` and humanoid characters with no chest/body item equipped receive a separate `+3 Initiative` naked-state baseline. |
 | `KNOW-HISTORY-01` | resolved | Knowledge moved from history-only storage to standalone revisioned knowledge records plus history links. |
 | `ITEM-MODEL-01` | resolved | Embedded sheet item assumptions were replaced by shared standalone item entities with persisted definitions and blueprint-backed instances. |
 | `AURA-LIFECYCLE-01` | resolved | Aura spells stayed as aura spells; lifecycle and source-linked cleanup were fixed without inventing a new spell class. |
 
 ## Intended Direction
 
-- `KNOW-V2-01`: expand the existing revision/ownership model to more subject types.
-- `COMBAT-ACT-01`: add a deliberate timing/action-economy layer without regressing current encounter behavior.
+- `COMBAT-ACT-01`: keep the timing/action-economy idea recorded, but treat it as endgame-only and optional rather than the default next milestone.
 - `DOC-OBJECTIVE-01`: reconcile the stale current-state objective doc with the passive `Brute Defiance` behavior already live in code.
 
 ## Key Decisions
@@ -45,7 +46,7 @@ Resolved splits:
 
 ## Deferred / Open
 
-- Awaiting eventual user or implementation resolution for: `KNOW-V2-01`, `COMBAT-ACT-01`, `DOC-OBJECTIVE-01`.
+- Awaiting eventual user or implementation resolution for: `COMBAT-ACT-01`, `DOC-OBJECTIVE-01`.
 
 ## Sources
 

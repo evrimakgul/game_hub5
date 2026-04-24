@@ -125,3 +125,24 @@
 - Updated: `runtime/state-and-persistence`
 - Updated: `runtime/ui-and-routes-map`
 - Updated: `domains/items-and-equipment`
+
+## [2026-04-20] ingest | player combat mode direction
+- Captured the user-approved direction that DM-started combat must also expose a player-facing combat mode with masked opponents, visible initiative order, visible encounter activities, and AE-based reveal.
+- Added a raw source for the decision and indexed it in `raw/source-index.md`.
+- Updated: `raw/source-index.md`
+
+## [2026-04-20] refresh | player combat mode reconciliation
+- Reconciled the roadmap, tracker, and wiki with the new `/player/combat` route, local active-encounter persistence, masked player combat presentation, and the explicit V1 boundary that player combat remains read-only.
+- Updated: `project/game-hub5-overview`
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/combat-encounter`
+
+## [2026-04-20] refresh | player combat action-surface correction
+- Reconciled the combat wiki with the shipped player-side action controls on the viewing character's active turn.
+- Recorded that `/player/combat` is no longer purely read-only: it now exposes masked own-turn attack/cast/control-release/summon-dismiss actions while broader timing enforcement still remains deferred.
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/combat-encounter`

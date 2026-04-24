@@ -111,6 +111,12 @@
   color: #2b190f;
 }
 
+.dm-selection-row span small {
+  display: block;
+  margin-top: 4px;
+  color: #7d614e;
+}
+
 .dm-selection-row button {
   padding: 8px 10px;
   border-radius: 10px;

@@ -9,7 +9,7 @@ confidence: high
 
 ## Summary
 
-The route map is already decomposed enough that future work should extend the existing player/DM pages instead of recreating larger monolithic page ownership. `App.tsx` is the route registry, and the auction house is now split between DM authoring and player shopping surfaces.
+The route map is already decomposed enough that future work should extend the existing player/DM pages instead of recreating larger monolithic page ownership. `App.tsx` is the route registry, and both the auction house and combat encounter now have explicit DM-side and player-side surfaces instead of one shared role-unsafe page.
 
 ## Current State
 
@@ -20,6 +20,7 @@ Current route surface from `src/App.tsx`:
 - `/player` -> player hub
 - `/player/character` -> player character sheet
 - `/player/auction-house` -> player auction shopping route tied to a selected character
+- `/player/combat` -> player combat mode tied to a selected combatant character
 - `/dm` -> DM hub
 - `/dm/characters` -> DM character hub
 - `/dm/character` -> DM readonly character view
@@ -41,6 +42,7 @@ Current route surface from `src/App.tsx`:
 Supporting component clusters:
 
 - `src/components/player-character/*` owns character-sheet sections, knowledge UI, history, powers, inventory, and the player-sheet auction-house entry button.
+- `src/routes/PlayerCombatPage.tsx` owns the player-facing masked combat view, own-turn player action surface, and shared encounter-state wiring instead of inventing a second combat system.
 - `src/components/combat-encounter/*` owns encounter runtime interaction surfaces.
 - `src/routes/DmKnowledgePage.tsx` owns DM-only authoring for non-character/item knowledge subjects.
 - `src/routes/DmMobsPage.tsx`, `src/routes/DmMobGroupsPage.tsx`, and `src/routes/DmPortalsPage.tsx` now own the manual mob/group/portal authoring workshop, including CR controls and the portal-first `portal_bundle` request/import flow.
@@ -59,7 +61,10 @@ Supporting component clusters:
 - The auction house now has two distinct routes by responsibility:
   - `/dm/auction-house` for catalog seeding/import and item-draft creation
   - `/player/auction-house` for character-bound shopping transactions
-- The combat system already has a dashboard surface and a dedicated encounter surface.
+- The combat system now has three distinct surfaces by responsibility:
+  - `/dm/combat` for encounter staging and start
+  - `/dm/combat/encounter` for DM-side action execution
+  - `/player/combat` for masked player visibility, own-turn action controls, and AE-based reveal
 - The DM dashboard now also acts as the entry point for the mob library, mob-group library, and portal workshop.
 - `/dm/portals` is now the preferred portal-theme-first Codex generation entrypoint.
 - The combat dashboard is now the place where saved mob groups or saved portal stages get exported into encounter-owned combatants.
@@ -67,7 +72,6 @@ Supporting component clusters:
 
 ## Deferred / Open
 
-- Player-side encounter UI is still missing.
 - Future domain growth may warrant more focused sub-pages, but current decomposition is good enough.
 
 ## Sources
@@ -75,6 +79,7 @@ Supporting component clusters:
 - [src/App.tsx](../../src/App.tsx)
 - [src/routes/PlayerCharacterPage.tsx](../../src/routes/PlayerCharacterPage.tsx)
 - [src/routes/PlayerAuctionHousePage.tsx](../../src/routes/PlayerAuctionHousePage.tsx)
+- [src/routes/PlayerCombatPage.tsx](../../src/routes/PlayerCombatPage.tsx)
 - [src/components/player-character/CharacterInventorySection.tsx](../../src/components/player-character/CharacterInventorySection.tsx)
 - [src/routes/DmItemInteractionsPage.tsx](../../src/routes/DmItemInteractionsPage.tsx)
 - [src/routes/DmKnowledgePage.tsx](../../src/routes/DmKnowledgePage.tsx)
@@ -87,4 +92,5 @@ Supporting component clusters:
 - [THREAD-5](../../raw/codex-threads/thread-5-019d6ae9-438c-7f83-8f48-fdb6648938ef.md)
 - [THREAD-6](../../raw/codex-threads/thread-6-019d7a11-3487-7f20-b7a1-a00b828942d7.md)
 - [USER-AUCTION-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-auction-house-shopping.md)
+- [USER-COMBAT-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-combat-mode.md)
 

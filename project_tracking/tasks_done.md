@@ -54,3 +54,4 @@
 - `ITEM-CREATE-01` Expanded the DM item workflow with create-from-auction and duplicate-item actions while keeping item authoring DM-only.
 - `AUCTION-HOUSE-01` Added a dedicated DM auction-house route with seeded workbook data, pasted-row import/replace support, filtering, detail review, and create/open item actions.
 - `AUCTION-PLAYER-01` Added player-side auction-house access from character sheets, completed bid/buyout shopping transactions, direct purchased-item assignment into character inventories, and live stock depletion rules.
+- `COMBAT-PLAYER-01` Added player-side combat mode with masked initiative/party/activity views, AE-based opponent reveal, player navigation hooks, and local active-encounter persistence shared with the DM combat runtime.

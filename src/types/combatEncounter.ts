@@ -1,4 +1,5 @@
 import type { CharacterOwnerRole } from "./character";
+import type { EncounterOwnedMobInstance } from "./authoring.ts";
 
 export type CombatEncounterOwnerRole = CharacterOwnerRole;
 export type CombatEncounterPartyKind = "players" | "npcs" | "custom";
@@ -99,6 +100,7 @@ export type CombatEncounterState = {
   participants: CombatEncounterParticipant[];
   createdAt: string;
   turnState: CombatEncounterTurnState;
+  encounterOwnedMobs?: EncounterOwnedMobInstance[];
   transientCombatants: EncounterTransientCombatant[];
   ongoingStates: EncounterOngoingState[];
   activityLog: EncounterActivityLogEntry[];

@@ -8,9 +8,9 @@ Project-level pages track scope, roadmap, and what is already implemented.
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [game-hub5-overview](./project/game-hub5-overview.md) | High-level product, constraints, architecture posture, and source hierarchy. | 2026-04-19 |
+| [game-hub5-overview](./project/game-hub5-overview.md) | High-level product, constraints, architecture posture, and source hierarchy. | 2026-04-20 |
 | [current-objective-and-roadmap](./project/current-objective-and-roadmap.md) | Current branch objective and the near-term roadmap anchored to canonical docs. | 2026-04-20 |
-| [implemented-vs-deferred](./project/implemented-vs-deferred.md) | Snapshot of completed systems versus explicitly deferred work. | 2026-04-19 |
+| [implemented-vs-deferred](./project/implemented-vs-deferred.md) | Snapshot of completed systems versus explicitly deferred work. | 2026-04-20 |
 
 ## Runtime
 
@@ -27,7 +27,7 @@ Domain pages capture rules and implementation posture for the main game systems.
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [combat-encounter](./domains/combat-encounter.md) | Encounter runtime responsibilities, stable combat behavior, and deferred engine work. | 2026-04-15 |
+| [combat-encounter](./domains/combat-encounter.md) | Encounter runtime responsibilities, stable combat behavior, and deferred engine work. | 2026-04-20 |
 | [powers-and-casting](./domains/powers-and-casting.md) | Power runtime, cast flow, world-vs-encounter boundaries, and locked source-rule decisions. | 2026-04-15 |
 | [items-and-equipment](./domains/items-and-equipment.md) | Shared items, persisted definitions, equipment occupancy, and item knowledge interactions. | 2026-04-20 |
 | [knowledge-cards](./domains/knowledge-cards.md) | Revisioned knowledge model, ownership, history linking, and current subject coverage. | 2026-04-15 |

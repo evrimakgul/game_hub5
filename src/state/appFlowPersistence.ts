@@ -45,7 +45,20 @@ import {
   hydrateMobTemplate,
   hydratePortalTemplate,
 } from "../lib/authoring.ts";
-import type { MobGroup, MobTemplate, PortalTemplate } from "../types/authoring.ts";
+import type {
+  EncounterOwnedMobInstance,
+  MobGroup,
+  MobTemplate,
+  PortalTemplate,
+} from "../types/authoring.ts";
+import type {
+  CombatEncounterParticipant,
+  CombatEncounterParty,
+  CombatEncounterState,
+  EncounterActivityLogEntry,
+  EncounterOngoingState,
+  EncounterTransientCombatant,
+} from "../types/combatEncounter.ts";
 
 export const CHARACTER_STORAGE_KEY = "convergence.local.characters";
 export const CHARACTER_STORAGE_BACKUP_KEY = "convergence.local.characters.backup";
@@ -65,6 +78,7 @@ type PersistedCharacterEnvelope = {
   mobTemplates?: unknown[];
   mobGroups?: unknown[];
   portalTemplates?: unknown[];
+  activeCombatEncounter?: unknown;
   starterItemsInitialized?: boolean;
   activeCharacterId?: string | null;
   activePlayerCharacterId?: string | null;
@@ -84,6 +98,7 @@ export type PersistedCharacterState = {
   mobTemplates: MobTemplate[];
   mobGroups: MobGroup[];
   portalTemplates: PortalTemplate[];
+  activeCombatEncounter: CombatEncounterState | null;
   starterItemsInitialized: boolean;
   activePlayerCharacterId: string | null;
   activeDmCharacterId: string | null;
@@ -163,6 +178,7 @@ function getEmptyPersistedCharacterState(): PersistedCharacterState {
     auctionEntries: createDefaultAuctionHouseEntries(),
     ...createEmptyKnowledgeState(),
     ...createEmptyAuthoringState(),
+    activeCombatEncounter: null,
     starterItemsInitialized: true,
     activePlayerCharacterId: null,
     activeDmCharacterId: null,
@@ -175,6 +191,30 @@ function getStarterItemIdSet(itemBlueprints: ItemBlueprintRecord[]): Set<string>
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function normalizeStringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function normalizeInteger(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.trunc(value)
+    : fallback;
+}
+
+function normalizeBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function isCombatEncounterPartyKind(
+  value: unknown
+): value is CombatEncounterParty["kind"] {
+  return value === "players" || value === "npcs" || value === "custom";
 }
 
 function inferAssignedCharacterId(
@@ -311,7 +351,8 @@ function hasMeaningfulPersistedData(state: PersistedCharacterState): boolean {
     state.knowledgeOwnerships.length > 0 ||
     state.mobTemplates.length > 0 ||
     state.mobGroups.length > 0 ||
-    state.portalTemplates.length > 0
+    state.portalTemplates.length > 0 ||
+    state.activeCombatEncounter !== null
   );
 }
 
@@ -496,6 +537,271 @@ function hydrateAuctionEntryBestEffort(value: unknown): AuctionHouseEntry | null
   });
 }
 
+function hydrateCombatEncounterPartyBestEffort(
+  value: unknown
+): CombatEncounterParty | null {
+  if (!isRecord(value) || typeof value.partyId !== "string") {
+    return null;
+  }
+
+  return {
+    partyId: value.partyId,
+    label: normalizeString(value.label, value.partyId),
+    kind: isCombatEncounterPartyKind(value.kind) ? value.kind : "custom",
+  };
+}
+
+function hydrateCombatEncounterParticipantBestEffort(
+  value: unknown
+): CombatEncounterParticipant | null {
+  if (
+    !isRecord(value) ||
+    typeof value.characterId !== "string" ||
+    !isCharacterOwnerRole(value.ownerRole)
+  ) {
+    return null;
+  }
+
+  const initiativeFaces = Array.isArray(value.initiativeFaces)
+    ? value.initiativeFaces
+        .filter((entry): entry is number => typeof entry === "number" && Number.isFinite(entry))
+        .map((entry) => Math.trunc(entry))
+    : [];
+
+  return {
+    characterId: value.characterId,
+    ownerRole: value.ownerRole,
+    displayName: normalizeString(value.displayName, value.characterId),
+    initiativePool: normalizeInteger(value.initiativePool),
+    initiativeFaces,
+    initiativeSuccesses: normalizeInteger(value.initiativeSuccesses),
+    dex: normalizeInteger(value.dex),
+    wits: normalizeInteger(value.wits),
+    partyId: normalizeStringOrNull(value.partyId),
+    controllerCharacterId: normalizeStringOrNull(value.controllerCharacterId),
+    summonTemplateId: normalizeStringOrNull(value.summonTemplateId),
+    sourcePowerId: normalizeStringOrNull(value.sourcePowerId),
+  };
+}
+
+function hydrateEncounterTransientCombatantBestEffort(
+  value: unknown
+): EncounterTransientCombatant | null {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    !isCharacterOwnerRole(value.ownerRole) ||
+    typeof value.controllerCharacterId !== "string" ||
+    typeof value.sourcePowerId !== "string" ||
+    typeof value.summonTemplateId !== "string"
+  ) {
+    return null;
+  }
+
+  const rawBuffRules = isRecord(value.buffRules) ? value.buffRules : {};
+
+  return {
+    id: value.id,
+    ownerRole: value.ownerRole,
+    controllerCharacterId: value.controllerCharacterId,
+    sourcePowerId: value.sourcePowerId,
+    sourcePowerLevel: normalizeInteger(value.sourcePowerLevel, 1),
+    summonTemplateId: value.summonTemplateId,
+    buffRules: {
+      canReceiveSingleBuffs: normalizeBoolean(rawBuffRules.canReceiveSingleBuffs),
+      canReceiveGroupBuffs: normalizeBoolean(rawBuffRules.canReceiveGroupBuffs),
+      canBeHealed: normalizeBoolean(rawBuffRules.canBeHealed),
+    },
+    sheet: hydrateCharacterDraft(value.sheet),
+  };
+}
+
+function hydrateEncounterOwnedMobInstanceBestEffort(
+  value: unknown
+): EncounterOwnedMobInstance | null {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    !isCharacterOwnerRole(value.ownerRole) ||
+    typeof value.sourceMobTemplateId !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    ownerRole: value.ownerRole,
+    sourceMobTemplateId: value.sourceMobTemplateId,
+    sourceGroupId: normalizeStringOrNull(value.sourceGroupId),
+    sourcePortalId: normalizeStringOrNull(value.sourcePortalId),
+    sourcePortalStageId: normalizeStringOrNull(value.sourcePortalStageId),
+    displayName: normalizeString(value.displayName, value.id),
+    role:
+      value.role === "brute" ||
+      value.role === "skirmisher" ||
+      value.role === "ranged" ||
+      value.role === "support" ||
+      value.role === "controller" ||
+      value.role === "boss" ||
+      value.role === "custom"
+        ? value.role
+        : "custom",
+    themeTags: Array.isArray(value.themeTags)
+      ? value.themeTags.filter((entry): entry is string => typeof entry === "string")
+      : [],
+    behaviorTags: Array.isArray(value.behaviorTags)
+      ? value.behaviorTags.filter((entry): entry is string => typeof entry === "string")
+      : [],
+    loot: normalizeString(value.loot),
+    notes: normalizeString(value.notes),
+    sheet: hydrateCharacterDraft(value.sheet),
+  };
+}
+
+function hydrateEncounterActivityLogEntryBestEffort(
+  value: unknown
+): EncounterActivityLogEntry | null {
+  if (!isRecord(value) || typeof value.id !== "string") {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    createdAt: normalizeString(value.createdAt),
+    summary: normalizeString(value.summary),
+  };
+}
+
+function hydrateEncounterOngoingStateBestEffort(
+  value: unknown
+): EncounterOngoingState | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.kind !== "string") {
+    return null;
+  }
+
+  switch (value.kind) {
+    case "crowd_control":
+      if (
+        typeof value.casterCharacterId !== "string" ||
+        typeof value.targetCharacterId !== "string"
+      ) {
+        return null;
+      }
+
+      return {
+        id: value.id,
+        kind: "crowd_control",
+        casterCharacterId: value.casterCharacterId,
+        targetCharacterId: value.targetCharacterId,
+        powerLevel: normalizeInteger(value.powerLevel, 1),
+        maintenanceManaCost: normalizeInteger(value.maintenanceManaCost),
+        breaksOnDamageFromCaster: normalizeBoolean(value.breaksOnDamageFromCaster),
+        breaksOnDamageFromOthers: normalizeBoolean(value.breaksOnDamageFromOthers),
+        commandActionType:
+          value.commandActionType === "bonus" ||
+          value.commandActionType === "free" ||
+          value.commandActionType === null
+            ? value.commandActionType
+            : null,
+        summaryNote: normalizeStringOrNull(value.summaryNote),
+      };
+    case "body_reinforcement_revive":
+      if (typeof value.characterId !== "string") {
+        return null;
+      }
+
+      return {
+        id: value.id,
+        kind: "body_reinforcement_revive",
+        characterId: value.characterId,
+        reviveHp: normalizeInteger(value.reviveHp, 1),
+        remainingTurnAdvances: normalizeInteger(value.remainingTurnAdvances, 1),
+      };
+    case "expose_darkness":
+      if (
+        typeof value.casterCharacterId !== "string" ||
+        typeof value.targetCharacterId !== "string"
+      ) {
+        return null;
+      }
+
+      return {
+        id: value.id,
+        kind: "expose_darkness",
+        casterCharacterId: value.casterCharacterId,
+        targetCharacterId: value.targetCharacterId,
+        summaryNote: normalizeStringOrNull(value.summaryNote),
+      };
+    default:
+      return null;
+  }
+}
+
+function hydrateCombatEncounterStateBestEffort(
+  value: unknown
+): CombatEncounterState | null {
+  if (
+    !isRecord(value) ||
+    typeof value.encounterId !== "string" ||
+    !Array.isArray(value.participants)
+  ) {
+    return null;
+  }
+
+  const parties = Array.isArray(value.parties)
+    ? value.parties
+        .map((entry) => hydrateCombatEncounterPartyBestEffort(entry))
+        .filter((entry): entry is CombatEncounterParty => entry !== null)
+    : [];
+  const participants = value.participants
+    .map((entry) => hydrateCombatEncounterParticipantBestEffort(entry))
+    .filter((entry): entry is CombatEncounterParticipant => entry !== null);
+  const rawTurnState = isRecord(value.turnState) ? value.turnState : {};
+
+  if (participants.length === 0) {
+    return null;
+  }
+
+  return {
+    encounterId: value.encounterId,
+    label: normalizeString(value.label, "Combat Encounter"),
+    parties,
+    participants,
+    createdAt: normalizeString(value.createdAt),
+    turnState: {
+      round: Math.max(1, normalizeInteger(rawTurnState.round, 1)),
+      activeParticipantIndex: Math.max(
+        0,
+        Math.min(
+          participants.length - 1,
+          normalizeInteger(rawTurnState.activeParticipantIndex, 0)
+        )
+      ),
+      activeParticipantId: normalizeStringOrNull(rawTurnState.activeParticipantId),
+    },
+    encounterOwnedMobs: Array.isArray(value.encounterOwnedMobs)
+      ? value.encounterOwnedMobs
+          .map((entry) => hydrateEncounterOwnedMobInstanceBestEffort(entry))
+          .filter((entry): entry is EncounterOwnedMobInstance => entry !== null)
+      : [],
+    transientCombatants: Array.isArray(value.transientCombatants)
+      ? value.transientCombatants
+          .map((entry) => hydrateEncounterTransientCombatantBestEffort(entry))
+          .filter((entry): entry is EncounterTransientCombatant => entry !== null)
+      : [],
+    ongoingStates: Array.isArray(value.ongoingStates)
+      ? value.ongoingStates
+          .map((entry) => hydrateEncounterOngoingStateBestEffort(entry))
+          .filter((entry): entry is EncounterOngoingState => entry !== null)
+      : [],
+    activityLog: Array.isArray(value.activityLog)
+      ? value.activityLog
+          .map((entry) => hydrateEncounterActivityLogEntryBestEffort(entry))
+          .filter((entry): entry is EncounterActivityLogEntry => entry !== null)
+      : [],
+  };
+}
+
 export function hydratePersistedCharacters(rawValue: string | null): PersistedCharacterState {
   if (!rawValue) {
     return getEmptyPersistedCharacterState();
@@ -583,6 +889,9 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
           .map((entry) => safeHydrateEntry(() => hydratePortalTemplate(entry)))
           .filter((entry): entry is PortalTemplate => entry !== null)
       : [];
+    const activeCombatEncounter = hydrateCombatEncounterStateBestEffort(
+      envelope.activeCombatEncounter
+    );
     const migratedItems: SharedItemRecord[] = [];
     const characters = Array.isArray(envelope.characters)
       ? envelope.characters.flatMap((entry) => {
@@ -653,6 +962,7 @@ export function hydratePersistedCharacters(rawValue: string | null): PersistedCh
       mobTemplates,
       mobGroups,
       portalTemplates,
+      activeCombatEncounter,
       starterItemsInitialized: true,
       activePlayerCharacterId:
         persistedActivePlayerCharacterId &&
@@ -716,6 +1026,7 @@ export function serializePersistedCharacters(
     mobTemplates: state.mobTemplates,
     mobGroups: state.mobGroups,
     portalTemplates: state.portalTemplates,
+    activeCombatEncounter: state.activeCombatEncounter,
     starterItemsInitialized: state.starterItemsInitialized,
     activePlayerCharacterId: state.activePlayerCharacterId,
     activeDmCharacterId: state.activeDmCharacterId,

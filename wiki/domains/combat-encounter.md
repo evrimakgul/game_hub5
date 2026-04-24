@@ -3,18 +3,20 @@ title: Combat Encounter
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-15
+updated: 2026-04-20
 confidence: high
 ---
 
 ## Summary
 
-Combat encounter is a live, stable runtime surface. The current system already handles prepared cast execution, ongoing effects, summons, status changes, encounter logging, and physical attack resolution from equipped loadout state.
+Combat encounter is a live, stable runtime surface. The current system already handles prepared cast execution, ongoing effects, summons, status changes, encounter logging, physical attack resolution from equipped loadout state, and a player-facing masked combat view layered on top of the same encounter state.
 
 ## Current State
 
 - `src/engine/encounterExecutionEngine.ts` applies prepared requests into character, encounter, and knowledge state.
 - Encounter-visible combat supports initiative ordering, parties, transient combatants, ongoing maintained states, summon lifecycle, aura-linked effects, and encounter activity logs.
+- DM combat continues to run through `/dm/combat/encounter`, while `/player/combat` now exposes a masked player surface over the same encounter with initiative order, encounter activities, AE-based reveal, and turn-limited action controls for the viewing character.
+- `activeCombatEncounter` now persists locally, which is what lets the DM and player routes stay aligned without backend sync.
 - Physical attacks resolve from equipped loadout state through `src/lib/combatEncounterPhysicalAttacks.ts`, including `unarmed`, `brawl`, one-handed, two-handed, oversized, and ranged profiles.
 - Current notes lock in several combat-adjacent rules:
   - negative HP stays valid and visible
@@ -39,8 +41,8 @@ Combat encounter is a live, stable runtime surface. The current system already h
 ## Deferred / Open
 
 - `ARCH-REM-01` controller/engine extraction follow-up remains recorded.
-- Player-side encounter UI remains deferred.
-- Encounter persistence remains deferred.
+- Full timing/action-budget enforcement and broader player-side combat permissions beyond the current own-turn action surface remain deferred.
+- Encounter persistence beyond the current local browser-storage surface remains deferred.
 - `COMBAT-ACT-01` timing/action-budget work remains open.
 
 ## Sources
@@ -48,6 +50,7 @@ Combat encounter is a live, stable runtime surface. The current system already h
 - [references/project_objective.md](../../references/project_objective.md)
 - [references/current_notes.md](../../references/current_notes.md)
 - [src/engine/encounterExecutionEngine.ts](../../src/engine/encounterExecutionEngine.ts)
+- [src/routes/PlayerCombatPage.tsx](../../src/routes/PlayerCombatPage.tsx)
 - [src/lib/combatEncounterPhysicalAttacks.ts](../../src/lib/combatEncounterPhysicalAttacks.ts)
 - [references/session_handoff_2026-03-12.md](../../references/session_handoff_2026-03-12.md)
 
@@ -56,4 +59,5 @@ Combat encounter is a live, stable runtime surface. The current system already h
 - [THREAD-2.1](../../raw/codex-threads/thread-2.1-019cdf06-a91b-7df2-82ee-50051261f7f4.md)
 - [THREAD-3](../../raw/codex-threads/thread-3-019ce29e-55fb-70b1-913c-5307603ac0f6.md)
 - [THREAD-4](../../raw/codex-threads/thread-4-019d567a-df4a-70b0-8e63-b2138fa9b337.md)
+- [USER-COMBAT-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-combat-mode.md)
 

@@ -12,6 +12,7 @@ import {
   createKnowledgeRevisionBatch,
   createKnowledgeShareResult,
   findKnowledgeEntityBySubjectKey,
+  getKnowledgeEntityTypeLabel,
   getKnowledgeGroupsForOwner,
   getKnowledgeOwnershipDisplayLabel,
   type ResolvedKnowledgeOwnership,
@@ -512,6 +513,7 @@ export function CharacterKnowledgeSection({
                 }}
               >
                 <strong>{group.entity.displayName}</strong>
+                <span>{getKnowledgeEntityTypeLabel(group.entity.type)}</span>
                 <span>{group.revisions.length} revision(s)</span>
               </button>
             ))}

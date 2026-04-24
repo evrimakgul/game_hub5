@@ -7,6 +7,7 @@ import {
   createEmptyKnowledgeState,
   createItemKnowledgeRevision,
   createItemKnowledgeShareResult,
+  createKnowledgeRevisionBatchWithoutOwnership,
   createKnowledgeShareResult,
   deleteKnowledgeRevision,
   getKnowledgeGroupsForOwner,
@@ -114,6 +115,133 @@ export async function runKnowledgeTests(): Promise<void> {
           result.historyEntries[0]?.entry.knowledgeLink?.knowledgeRevisionId,
           created.batch.revisions[0]?.id
         );
+      },
+    },
+    {
+      name: "dm-authored non-character knowledge can exist canonically without ownerships",
+      run: () => {
+        const created = createKnowledgeRevisionBatchWithoutOwnership({
+          state: createEmptyKnowledgeState(),
+          entity: {
+            type: "place",
+            subjectKey: "subject-place-1",
+            displayName: "Sunken Port",
+          },
+          createdByCharacterId: null,
+          title: "Sunken Port Card",
+          summary: "A flooded harbor settlement.",
+          content: [],
+          tags: ["place"],
+          sourceType: "dm_grant",
+          lineageMode: "observed",
+          isCanonical: true,
+        });
+
+        assert.equal(created.entity.type, "place");
+        assert.equal(created.batch.revisions.length, 1);
+        assert.equal(created.batch.ownerships.length, 0);
+        assert.equal(created.revision.isCanonical, true);
+      },
+    },
+    {
+      name: "later non-character revisions reuse the same entity",
+      run: () => {
+        const first = createKnowledgeRevisionBatchWithoutOwnership({
+          state: createEmptyKnowledgeState(),
+          entity: {
+            type: "faction",
+            subjectKey: "subject-faction-1",
+            displayName: "Ash Choir",
+          },
+          createdByCharacterId: null,
+          title: "Ash Choir Card",
+          summary: "First draft",
+          content: [],
+          tags: ["faction"],
+          sourceType: "dm_grant",
+          lineageMode: "observed",
+          isCanonical: true,
+        });
+        const stateAfterFirst = applyKnowledgeBatch(createEmptyKnowledgeState(), first.batch);
+        const second = createKnowledgeRevisionBatchWithoutOwnership({
+          state: stateAfterFirst,
+          entity: first.entity,
+          createdByCharacterId: null,
+          title: "Ash Choir Card",
+          summary: "Updated draft",
+          content: [],
+          tags: ["faction"],
+          sourceType: "dm_grant",
+          lineageMode: "updated_scan",
+          isCanonical: true,
+        });
+
+        assert.equal(second.entity.id, first.entity.id);
+        assert.equal(second.revision.revisionNumber, 2);
+      },
+    },
+    {
+      name: "sharing a non-character revision keeps the same revision id and uses type-aware history copy",
+      run: () => {
+        const recipient = createCharacterRecord("recipient-place", "Leyla", "player");
+        const created = createKnowledgeRevisionBatchWithoutOwnership({
+          state: createEmptyKnowledgeState(),
+          entity: {
+            type: "place",
+            subjectKey: "subject-place-2",
+            displayName: "Gilded Bridge",
+          },
+          createdByCharacterId: null,
+          title: "Gilded Bridge Card",
+          summary: "Bridge intel",
+          content: [],
+          tags: ["place"],
+          sourceType: "dm_grant",
+          lineageMode: "observed",
+          isCanonical: true,
+        });
+        const state = applyKnowledgeBatch(createEmptyKnowledgeState(), created.batch);
+        const result = createKnowledgeShareResult({
+          state,
+          entity: created.entity,
+          revision: created.revision,
+          sourceOwnerCharacterId: null,
+          sourceOwnerName: "DM",
+          recipientCharacters: [recipient],
+        });
+
+        assert.equal(result.batch.revisions.length, 0);
+        assert.equal(result.batch.ownerships[0]?.revisionId, created.revision.id);
+        assert.equal(result.historyEntries[0]?.entry.type, "note");
+        assert.match(
+          ("note" in (result.historyEntries[0]?.entry ?? {})
+            ? result.historyEntries[0]?.entry.note
+            : "") ?? "",
+          /Acquired place card Gilded Bridge from DM\./
+        );
+      },
+    },
+    {
+      name: "story knowledge revisions preserve story reward source type",
+      run: () => {
+        const created = createKnowledgeRevisionBatchWithoutOwnership({
+          state: createEmptyKnowledgeState(),
+          entity: {
+            type: "story",
+            subjectKey: "subject-story-1",
+            displayName: "The Broken Pact",
+          },
+          createdByCharacterId: null,
+          title: "The Broken Pact Card",
+          summary: "Story intel",
+          content: [],
+          tags: ["story"],
+          sourceType: "story_reward",
+          lineageMode: "observed",
+          isCanonical: true,
+        });
+
+        assert.equal(created.revision.sourceType, "story_reward");
       },
     },
     {

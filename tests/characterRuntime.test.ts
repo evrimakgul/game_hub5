@@ -217,5 +217,33 @@ export async function runCharacterRuntimeTests(): Promise<void> {
         assert.equal(heavyDerived.damageReduction, 3);
       },
     },
+    {
+      name: "humanoid characters gain +3 initiative only when no chest item is equipped",
+      run: () => {
+        const clothing = createSharedItemRecord("armor:clothing", {
+          id: "armor-clothing-1",
+          name: "Traveler Robes",
+        });
+        const clothingItems = buildItemIndex([clothing]);
+
+        const humanoidSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        const noneSheet = {
+          ...PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          apparelMode: "none" as const,
+        };
+        const clothingSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        clothingSheet.ownedItemIds = [clothing.id];
+        clothingSheet.inventoryItemIds = [clothing.id];
+        clothingSheet.equipment = [{ slot: "body", itemId: clothing.id, anchorSlot: "body" }];
+
+        const humanoidDerived = buildCharacterDerivedValues(humanoidSheet);
+        const noneDerived = buildCharacterDerivedValues(noneSheet);
+        const clothingDerived = buildCharacterDerivedValues(clothingSheet, clothingItems);
+
+        assert.equal(humanoidDerived.initiative, 7);
+        assert.equal(noneDerived.initiative, 4);
+        assert.equal(clothingDerived.initiative, 6);
+      },
+    },
   ]);
 }

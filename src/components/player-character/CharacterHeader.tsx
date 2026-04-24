@@ -17,6 +17,7 @@ type CharacterHeaderProps = {
   adminOverrideError: string | null;
   onNavigateMainMenu: () => void;
   onNavigateBack: () => void;
+  onOpenCombatMode?: (() => void) | null;
   onUpdateField: <K extends keyof CharacterDraft>(field: K, value: CharacterDraft[K]) => void;
   onToggleEditMode: () => void;
   onToggleDmEditMode: () => void;
@@ -42,6 +43,7 @@ export function CharacterHeader({
   adminOverrideError,
   onNavigateMainMenu,
   onNavigateBack,
+  onOpenCombatMode,
   onUpdateField,
   onToggleEditMode,
   onToggleDmEditMode,
@@ -55,6 +57,11 @@ export function CharacterHeader({
         <button type="button" className="sheet-nav-button" onClick={onNavigateMainMenu}>
           Main Menu
         </button>
+        {onOpenCombatMode ? (
+          <button type="button" className="sheet-nav-button" onClick={onOpenCombatMode}>
+            Combat Mode
+          </button>
+        ) : null}
         <button type="button" className="sheet-nav-button" onClick={onNavigateBack}>
           {isDmEditableView ? "NPC Creator" : isDmReadOnlyView ? "Player Characters" : "Player Menu"}
         </button>

@@ -19,6 +19,7 @@ import { LoginPage } from "./routes/LoginPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
 import { PlayerAuctionHousePage } from "./routes/PlayerAuctionHousePage";
 import { PlayerCharacterPage } from "./routes/PlayerCharacterPage";
+import { PlayerCombatPage } from "./routes/PlayerCombatPage";
 import { PlayerHubPage } from "./routes/PlayerHubPage";
 import { RoleSelectPage } from "./routes/RoleSelectPage";
 
@@ -30,6 +31,7 @@ export default function App() {
       <Route path="/player" element={<PlayerHubPage />} />
       <Route path="/player/character" element={<PlayerCharacterPage viewMode="player" />} />
       <Route path="/player/auction-house" element={<PlayerAuctionHousePage />} />
+      <Route path="/player/combat" element={<PlayerCombatPage />} />
       <Route path="/dm" element={<DmPage />} />
       <Route path="/dm/characters" element={<DmCharacterHubPage />} />
       <Route path="/dm/character" element={<PlayerCharacterPage viewMode="dm-readonly" />} />

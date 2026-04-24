@@ -3,7 +3,7 @@ title: Knowledge Cards
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-16
+updated: 2026-04-17
 confidence: high
 ---
 
@@ -17,9 +17,11 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 - `src/lib/knowledge.ts` owns creation, lineage, ownership, sharing, duplication, archival, and history-link helpers.
 - Character sheets expose a dedicated `Knowledge` area through `src/components/player-character/CharacterKnowledgeSection.tsx`.
 - Item-card management is exposed to DM flows through `src/routes/DmItemInteractionsPage.tsx`.
+- Non-character/item subject authoring now lives on `src/routes/DmKnowledgePage.tsx`.
 - History entries can link to exact knowledge revisions instead of embedding intel as the only durable record.
-- V1 subject coverage is currently character cards and item cards.
+- Subject coverage now includes character, item, place, faction, story, and custom cards.
 - `Artifact Appraisal` now reuses the same item-card revision model: successful appraisals grant the current canonical item-card revision, refresh stale canonical content when needed, and append linked history rows to the granted revision.
+- DM-authored `story` cards use `story_reward`; DM-authored `place`, `faction`, and `custom` cards use `dm_grant`.
 
 ## Intended Direction
 
@@ -37,8 +39,7 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 
 ## Deferred / Open
 
-- `KNOW-V2-01` expansion to place, faction, story, and custom subjects.
-- Additional creation/template flows beyond the current character/item surfaces.
+- Additional creation/template polish beyond the live character, item, and DM Knowledge Hub surfaces.
 
 ## Sources
 
@@ -49,6 +50,7 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 - [src/components/player-character/CharacterKnowledgeSection.tsx](../../src/components/player-character/CharacterKnowledgeSection.tsx)
 - [src/components/player-character/CharacterHistorySection.tsx](../../src/components/player-character/CharacterHistorySection.tsx)
 - [src/routes/DmItemInteractionsPage.tsx](../../src/routes/DmItemInteractionsPage.tsx)
+- [src/routes/DmKnowledgePage.tsx](../../src/routes/DmKnowledgePage.tsx)
 
 ## Raw
 

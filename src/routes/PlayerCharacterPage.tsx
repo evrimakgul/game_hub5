@@ -70,6 +70,7 @@ export function PlayerCharacterPage({
     knowledgeOwnerships,
     activePlayerCharacter,
     activeDmCharacter,
+    activeCombatEncounter,
     updateCharacter,
     updateKnowledgeState,
     executeWorldCast,
@@ -119,6 +120,12 @@ export function PlayerCharacterPage({
     queriedCharacter ?? (isDmEditableView ? activeDmCharacter : activePlayerCharacter);
   const activeSheet = activeCharacter?.sheet ?? null;
   const sheetState = activeSheet ?? PLAYER_CHARACTER_TEMPLATE.createInstance();
+  const isPlayerCombatant =
+    !isDmView &&
+    activeCharacter !== null &&
+    (activeCombatEncounter?.participants.some(
+      (participant) => participant.characterId === activeCharacter.id
+    ) ?? false);
 
   useEffect(() => {
     function handleMouseMove(event: globalThis.MouseEvent): void {
@@ -461,6 +468,14 @@ export function PlayerCharacterPage({
             navigate(
               isDmEditableView ? "/dm/npc-creator" : isDmReadOnlyView ? "/dm/characters" : "/player"
             )
+          }
+          onOpenCombatMode={
+            isPlayerCombatant
+              ? () =>
+                  navigate(
+                    `/player/combat?characterId=${encodeURIComponent(activeCharacter.id)}`
+                  )
+              : null
           }
           onUpdateField={mutations.updateSheetField}
           onToggleEditMode={handleToggleEditMode}

@@ -8,6 +8,14 @@ export const KNOWLEDGE_ENTITY_TYPES = [
 ] as const;
 export type KnowledgeEntityType = (typeof KNOWLEDGE_ENTITY_TYPES)[number];
 
+export const DM_KNOWLEDGE_ENTITY_TYPES = [
+  "place",
+  "faction",
+  "story",
+  "custom",
+] as const;
+export type DmKnowledgeEntityType = (typeof DM_KNOWLEDGE_ENTITY_TYPES)[number];
+
 export const KNOWLEDGE_SOURCE_TYPES = [
   "spell",
   "share",
@@ -104,6 +112,10 @@ export type KnowledgeState = {
 
 export function isKnowledgeEntityType(value: unknown): value is KnowledgeEntityType {
   return typeof value === "string" && KNOWLEDGE_ENTITY_TYPES.includes(value as KnowledgeEntityType);
+}
+
+export function isDmKnowledgeEntityType(value: unknown): value is DmKnowledgeEntityType {
+  return typeof value === "string" && DM_KNOWLEDGE_ENTITY_TYPES.includes(value as DmKnowledgeEntityType);
 }
 
 export function isKnowledgeSourceType(value: unknown): value is KnowledgeSourceType {

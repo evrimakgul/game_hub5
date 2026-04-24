@@ -9,11 +9,12 @@ confidence: high
 
 ## Summary
 
-`game_hub5` is currently a local-first stateful app. The central runtime owns characters, item definitions, item blueprints, shared item instances, auction catalog entries, knowledge records, and the new mob/group/portal authoring records in memory, then persists them to browser storage with best-effort hydration and backup recovery.
+`game_hub5` is currently a local-first stateful app. The central runtime owns characters, item definitions, item blueprints, shared item instances, auction catalog entries, knowledge records, authored mob/group/portal content, and now the active combat encounter in memory, then persists them to browser storage with best-effort hydration and backup recovery.
 
 ## Current State
 
-- `src/state/appFlow.tsx` is the main state hub for characters, item definition records, item blueprints, shared items, auction catalog entries, knowledge state, mob templates, mob groups, portal templates, and active character selection.
+- `src/state/appFlow.tsx` is the main state hub for characters, item definition records, item blueprints, shared items, auction catalog entries, knowledge state, mob templates, mob groups, portal templates, active character selection, and the active combat encounter.
+- `activeCombatEncounter` now also persists as a top-level local state collection so DM and player windows can read the same live encounter.
 - `src/state/appFlowPersistence.ts` handles read/write to browser storage, starter data backfill, and recovery from malformed or older persisted state.
 - `src/config/characterTemplate.ts` contains deep hydration helpers for character drafts, including powers, equipment, knowledge-linked history fields, status tags, and active effects.
 - Persistence is intentionally local-only. There is no live backend authority and no realtime sync contract.
@@ -27,6 +28,9 @@ confidence: high
   - the character sheet for money, inventory links, and history
   - shared items for the purchased item instance
   - auction entries for decremented stock
+- Active combat encounter persistence now mutates a fourth top-level collection:
+  - the encounter itself for round state, activity log, initiative order, and transient combatants
+- Browser `storage` event syncing now also hydrates `activeCombatEncounter`, which is what lets `/dm/combat/encounter` and `/player/combat` stay aligned across local windows.
 - The new authoring content types already use a Supabase-ready row/payload split at the domain layer even though current runtime storage is still browser-local.
 - Authoring persistence now carries explicit difficulty metadata:
   - mob challenge rating
@@ -63,6 +67,7 @@ confidence: high
 - [src/state/appFlow.tsx](../../src/state/appFlow.tsx)
 - [src/state/appFlowPersistence.ts](../../src/state/appFlowPersistence.ts)
 - [src/routes/PlayerAuctionHousePage.tsx](../../src/routes/PlayerAuctionHousePage.tsx)
+- [src/routes/PlayerCombatPage.tsx](../../src/routes/PlayerCombatPage.tsx)
 - [src/config/characterTemplate.ts](../../src/config/characterTemplate.ts)
 - [references/project_objective.md](../../references/project_objective.md)
 - [references/project_risks.md](../../references/project_risks.md)
@@ -73,4 +78,5 @@ confidence: high
 - [THREAD-5](../../raw/codex-threads/thread-5-019d6ae9-438c-7f83-8f48-fdb6648938ef.md)
 - [THREAD-6](../../raw/codex-threads/thread-6-019d7a11-3487-7f20-b7a1-a00b828942d7.md)
 - [USER-AUCTION-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-auction-house-shopping.md)
+- [USER-COMBAT-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-combat-mode.md)
 

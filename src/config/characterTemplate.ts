@@ -116,10 +116,18 @@ export type DmAuditEntry = {
   sourceScreen: string;
 };
 
+export const CHARACTER_APPAREL_MODES = ["humanoid", "none"] as const;
+export type CharacterApparelMode = (typeof CHARACTER_APPAREL_MODES)[number];
+
+export function isCharacterApparelMode(value: unknown): value is CharacterApparelMode {
+  return typeof value === "string" && CHARACTER_APPAREL_MODES.includes(value as CharacterApparelMode);
+}
+
 export type CharacterDraft = {
   name: string;
   concept: string;
   faction: string;
+  apparelMode: CharacterApparelMode;
   age: number | null;
   gameDateTime: string;
   biographyPrimary: string;
@@ -165,7 +173,7 @@ export type PowerBenefitSection = {
   bullets: string[];
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 8;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 9;
 
 function createDefaultEquipmentEntries(): CharacterEquipmentReference[] {
   return MAIN_EQUIPMENT_SLOT_IDS.map((slot) => ({
@@ -432,6 +440,7 @@ export class CharacterSheetTemplate {
       name: "",
       concept: "",
       faction: "",
+      apparelMode: "humanoid",
       age: null,
       gameDateTime: "17.09.2124 - 08:00",
       biographyPrimary: "",
@@ -481,6 +490,9 @@ export const PLAYER_CHARACTER_TEMPLATE = new CharacterSheetTemplate();
 
 export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   const normalizedUsageState = normalizePowerUsageState(sheet.powerUsageState);
+  const normalizedApparelMode = isCharacterApparelMode(sheet.apparelMode)
+    ? sheet.apparelMode
+    : "humanoid";
   const normalizedOwnedItemIds = [...new Set((sheet.ownedItemIds ?? []).filter((entry) => entry.trim().length > 0))];
   const normalizedInventoryItemIds = [...new Set((sheet.inventoryItemIds ?? []).filter((entry) => entry.trim().length > 0))];
   const normalizedActiveItemIds = [...new Set((sheet.activeItemIds ?? []).filter((entry) => entry.trim().length > 0))];
@@ -493,6 +505,7 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   if (hasAwareness && !sheet.awarenessInsightGranted) {
     return {
       ...sheet,
+      apparelMode: normalizedApparelMode,
       powerUsageState: normalizedUsageState,
       ownedItemIds: normalizedOwnedItemIds,
       inventoryItemIds: normalizedInventoryItemIds,
@@ -507,6 +520,7 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   if (!hasAwareness && sheet.awarenessInsightGranted) {
     return {
       ...sheet,
+      apparelMode: normalizedApparelMode,
       powerUsageState: normalizedUsageState,
       ownedItemIds: normalizedOwnedItemIds,
       inventoryItemIds: normalizedInventoryItemIds,
@@ -520,6 +534,7 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
 
   return {
     ...sheet,
+    apparelMode: normalizedApparelMode,
     powerUsageState: normalizedUsageState,
     ownedItemIds: normalizedOwnedItemIds,
     inventoryItemIds: normalizedInventoryItemIds,
@@ -1557,6 +1572,9 @@ export function hydrateCharacterDraft(value: unknown): CharacterDraft {
     name: coerceString(record.name, defaults.name),
     concept: coerceString(record.concept, defaults.concept),
     faction: coerceString(record.faction, defaults.faction),
+    apparelMode: isCharacterApparelMode(record.apparelMode)
+      ? record.apparelMode
+      : defaults.apparelMode,
     age: coerceNullableNumber(record.age, defaults.age),
     gameDateTime: coerceString(record.gameDateTime, defaults.gameDateTime),
     biographyPrimary: coerceString(record.biographyPrimary, defaults.biographyPrimary),

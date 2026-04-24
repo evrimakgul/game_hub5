@@ -9,7 +9,7 @@ confidence: high
 
 ## Summary
 
-The current branch objective is no longer broad combat stabilization, and the repo has now also closed the DM/player auction-house split: DM prepares the catalog and item drafts, while players shop from a live stock-aware auction route. The roadmap should now be read as "preserve the completed systems, then move to the next explicit follow-up without reopening closed foundations."
+The current branch objective is no longer broad combat stabilization, and the repo has now also closed both the DM/player auction-house split and the deferred player combat-view gap. The roadmap should now be read as "preserve the completed systems, then move to the next explicit follow-up without reopening closed foundations."
 
 ## Current State
 
@@ -20,6 +20,7 @@ The current branch objective is no longer broad combat stabilization, and the re
 - `AUTHORING-WORKSHOP-01` is now complete: DM tooling now includes standalone mob templates, reusable mob groups, portal templates with nested stages, a manual Codex import/export bridge, a new portal-first `portal_bundle` workflow on `/dm/portals`, explicit CR controls across mobs/groups/portals, and combat-dashboard export of saved groups or portal stages into encounter-owned mobs.
 - `ITEM-AUTO-01`, `ITEM-CREATE-01`, and `AUCTION-HOUSE-01` are now complete: the repo now persists auction-house catalog entries, exposes `/dm/auction-house`, and lets DMs auto-create shared item drafts from auction rows while preserving raw bonus text as draft notes.
 - `AUCTION-PLAYER-01` is now complete: player character sheets now link into `/player/auction-house`, completed `Bid` and `Buyout` actions spend character money, purchased items land in the buying character's `Items` section, and live auction stock now decrements until it reaches `0`.
+- `COMBAT-PLAYER-01` is now complete: DM-started encounters now also expose `/player/combat`, player character sheets and the player hub now link into `Combat Mode` for participating characters, hidden opponents stay masked unless the viewing character owns `Assess Entity` knowledge for that target, and the active encounter persists locally so DM/player windows stay aligned.
 - No new active implementation item is recorded in `project_tracking/tasks_todo.md`; `COMBAT-ACT-01` is now intentionally parked at the very end of the project and may be skipped entirely unless priorities change.
 - Recent completed milestone groups include:
   - cast UI standardization
@@ -53,6 +54,7 @@ The current branch objective is no longer broad combat stabilization, and the re
 - reconcile `references/project_objective.md` with the passive `Brute Defiance` behavior now reflected in code and `references/current_notes.md`
 - structured parsing of auction-house bonus/effect text into real item mechanics instead of preserved draft-note text
 - richer player-side auction behavior such as pending bids, timers, and delayed bid settlement
+- richer player-side combat participation beyond the current read-only combat view
 - `COMBAT-ACT-01` timing and action-economy layer, explicitly deferred to the end and possibly out of scope.
 - `PORTAL-RUNNER-01` full portal-run state, boss-clear reward automation, exit unlocking, and persistent run orchestration.
 - `REPO-CLEANUP-01` remove temporary `python.ipynb` as the literal last cleanup step.
@@ -64,6 +66,7 @@ The current branch objective is no longer broad combat stabilization, and the re
 - [references/current_notes.md](../../references/current_notes.md)
 - [project_tracking/tasks_todo.md](../../project_tracking/tasks_todo.md)
 - [src/routes/PlayerAuctionHousePage.tsx](../../src/routes/PlayerAuctionHousePage.tsx)
+- [src/routes/PlayerCombatPage.tsx](../../src/routes/PlayerCombatPage.tsx)
 
 ## Raw
 
@@ -72,4 +75,5 @@ The current branch objective is no longer broad combat stabilization, and the re
 - [THREAD-5](../../raw/codex-threads/thread-5-019d6ae9-438c-7f83-8f48-fdb6648938ef.md)
 - [THREAD-6](../../raw/codex-threads/thread-6-019d7a11-3487-7f20-b7a1-a00b828942d7.md)
 - [USER-AUCTION-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-auction-house-shopping.md)
+- [USER-COMBAT-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-combat-mode.md)
 

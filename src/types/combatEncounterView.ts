@@ -16,10 +16,12 @@ import type {
 } from "./combatEncounter";
 import type { SharedItemRecord } from "./items";
 import type { PowerUsageResetScope } from "./powerUsage";
+import type { EncounterOwnedMobInstance } from "./authoring.ts";
 
 export type EncounterParticipantView = {
   participant: CombatEncounterParticipant;
   character: CharacterRecord | null;
+  encounterOwnedMob?: EncounterOwnedMobInstance | null;
   transientCombatant: EncounterTransientCombatant | null;
   snapshot: CharacterEncounterSnapshot | null;
 };

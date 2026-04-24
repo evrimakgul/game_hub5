@@ -60,6 +60,9 @@ export type CharacterDerivedValues = {
   activePowerEffects: ActivePowerEffect[];
 };
 
+const UNARMORED_HUMANOID_INITIATIVE_BONUS = 3;
+const CHEST_EQUIPMENT_SLOT_ALIASES = new Set(["body", "chest", "armor", "chest / body"]);
+
 function sumSources(sources: StatSource[]): number {
   return sources.reduce((total, source) => total + source.value, 0);
 }
@@ -112,6 +115,22 @@ function getItemSources(
       label: modifier.sourceLabel,
       value: modifier.value,
     }));
+}
+
+function hasEquippedChestItem(sheet: CharacterDraft): boolean {
+  return (sheet.equipment ?? []).some((entry) => {
+    if (typeof entry.itemId !== "string" || entry.itemId.trim().length === 0) {
+      return false;
+    }
+
+    return CHEST_EQUIPMENT_SLOT_ALIASES.has(entry.slot.trim().toLowerCase());
+  });
+}
+
+function getUnarmoredHumanoidInitiativeBonus(sheet: CharacterDraft): number {
+  return sheet.apparelMode === "humanoid" && !hasEquippedChestItem(sheet)
+    ? UNARMORED_HUMANOID_INITIATIVE_BONUS
+    : 0;
 }
 
 export function getStatBreakdown(
@@ -293,7 +312,8 @@ export function buildCharacterDerivedValues(
     totalInspiration: sheet.inspiration + inspirationBonus + temporaryInspiration,
     initiative:
       calculateInitiative(currentStats.DEX, currentStats.WITS) +
-      getDerivedModifierTotal(sheet, "initiative", itemsById),
+      getDerivedModifierTotal(sheet, "initiative", itemsById) +
+      getUnarmoredHumanoidInitiativeBonus(sheet),
     movement: "20 + 5",
     movementSelectable: 25,
     armorClass: calculateArmorClass(

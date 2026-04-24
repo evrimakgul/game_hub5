@@ -148,6 +148,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           mobTemplates: [],
           mobGroups: [],
           portalTemplates: [],
+          activeCombatEncounter: null,
           starterItemsInitialized: true,
           activePlayerCharacterId: "writer-1",
           activeDmCharacterId: null,
@@ -173,6 +174,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
             mobTemplates: [],
             mobGroups: [],
             portalTemplates: [],
+            activeCombatEncounter: null,
             starterItemsInitialized: true,
             activePlayerCharacterId: "writer-1",
             activeDmCharacterId: null,
@@ -230,6 +232,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           mobTemplates: [],
           mobGroups: [],
           portalTemplates: [],
+          activeCombatEncounter: null,
           starterItemsInitialized: true,
           activePlayerCharacterId: null,
           activeDmCharacterId: null,
@@ -242,6 +245,94 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(
           hydrated.items.find((entry) => entry.id === "auction-linked-item-1")?.auctionEntryId,
           auctionEntries[0]?.id
+        );
+      },
+    },
+    {
+      name: "serialize and hydrate preserve the active combat encounter",
+      run: () => {
+        const payload = serializePersistedCharacters({
+          characters: [],
+          itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+          itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
+          itemBlueprints: createDefaultItemBlueprints(),
+          items: [],
+          auctionEntries: defaultAuctionEntries,
+          knowledgeEntities: [],
+          knowledgeRevisions: [],
+          knowledgeOwnerships: [],
+          mobTemplates: [],
+          mobGroups: [],
+          portalTemplates: [],
+          activeCombatEncounter: {
+            encounterId: "encounter-1",
+            label: "Warehouse Fight",
+            parties: [
+              { partyId: "party-1", label: "Party 1", kind: "players" },
+              { partyId: "party-2", label: "Party 2", kind: "npcs" },
+            ],
+            participants: [
+              {
+                characterId: "player-1",
+                ownerRole: "player",
+                displayName: "Player One",
+                initiativePool: 6,
+                initiativeFaces: [8, 5, 3, 2, 1, 10],
+                initiativeSuccesses: 3,
+                dex: 3,
+                wits: 3,
+                partyId: "party-1",
+                controllerCharacterId: null,
+                summonTemplateId: null,
+                sourcePowerId: null,
+              },
+              {
+                characterId: "enemy-1",
+                ownerRole: "dm",
+                displayName: "Hidden Enemy",
+                initiativePool: 5,
+                initiativeFaces: [9, 7, 2, 1, 1],
+                initiativeSuccesses: 2,
+                dex: 3,
+                wits: 2,
+                partyId: "party-2",
+                controllerCharacterId: null,
+                summonTemplateId: null,
+                sourcePowerId: null,
+              },
+            ],
+            createdAt: "2026-04-20T12:00:00.000Z",
+            turnState: {
+              round: 1,
+              activeParticipantIndex: 0,
+              activeParticipantId: "player-1",
+            },
+            encounterOwnedMobs: [],
+            transientCombatants: [],
+            ongoingStates: [],
+            activityLog: [
+              {
+                id: "activity-1",
+                createdAt: "2026-04-20T12:01:00.000Z",
+                summary: "Player One acts first.",
+              },
+            ],
+          },
+          starterItemsInitialized: true,
+          activePlayerCharacterId: null,
+          activeDmCharacterId: null,
+        });
+        const hydrated = hydratePersistedCharacters(JSON.stringify(payload));
+
+        assert.equal(hydrated.activeCombatEncounter?.encounterId, "encounter-1");
+        assert.equal(hydrated.activeCombatEncounter?.participants.length, 2);
+        assert.equal(
+          hydrated.activeCombatEncounter?.turnState.activeParticipantId,
+          "player-1"
+        );
+        assert.equal(
+          hydrated.activeCombatEncounter?.activityLog[0]?.summary,
+          "Player One acts first."
         );
       },
     },
@@ -313,6 +404,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           mobTemplates: [],
           mobGroups: [],
           portalTemplates: [],
+          activeCombatEncounter: null,
           starterItemsInitialized: true,
           activePlayerCharacterId: "support-1",
           activeDmCharacterId: null,
@@ -355,6 +447,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           mobTemplates: [],
           mobGroups: [],
           portalTemplates: [],
+          activeCombatEncounter: null,
           starterItemsInitialized: true,
           activePlayerCharacterId: "archer-2",
           activeDmCharacterId: null,
@@ -445,6 +538,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           mobTemplates: [mobTemplate],
           mobGroups: [mobGroup],
           portalTemplates: [portal],
+          activeCombatEncounter: null,
           starterItemsInitialized: true,
           activePlayerCharacterId: null,
           activeDmCharacterId: null,

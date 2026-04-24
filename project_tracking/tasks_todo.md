@@ -41,6 +41,9 @@
 ### Group 11: Player Auction Shopping
 - `AUCTION-PLAYER-01` completed. Player character sheets now link into `/player/auction-house`, auction entries expose completed `Bid` and `Buyout` transactions against character money, purchased items are created/assigned directly into the buying character's shared-item inventory, and auction stock now decrements live until it reaches `0`.
 
+### Group 12: Player Combat Mode
+- `COMBAT-PLAYER-01` completed. DM-started encounters now also expose a player-facing `/player/combat` route, player hubs and character sheets now link into `Combat Mode` for participating characters, opponent identity stays masked unless that viewer owns `Assess Entity` knowledge for the target, the player activity log is sanitized, and active encounter state now persists locally so DM/player windows share the same live fight.
+
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion
 - `COMBAT-ACT-01` Explicitly defer the timing / action-economy extension for `actionBudget`, `action cost`, `weapon speed`, and multi-attack throughput until the very end of the project, if it is done at all. Preserve the summary of the discussion for future reference only: this would support characters gaining more than one attack in a standard action, weapons consuming different portions of a turn, and a future timing engine that can express combinations such as slower heavy weapons, faster brawl strings, and expanded character action budgets.

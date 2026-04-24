@@ -159,12 +159,23 @@ export function CombatEncounterPage() {
 
   const encounterParticipants: EncounterParticipantView[] = activeCombatEncounter.participants.map(
     (participant) => {
+      const encounterOwnedMob =
+        (activeCombatEncounter.encounterOwnedMobs ?? []).find(
+          (entry) => entry.id === participant.characterId
+        ) ?? null;
       const transientCombatant =
         activeCombatEncounter.transientCombatants.find(
           (entry) => entry.id === participant.characterId
         ) ?? null;
       const character =
         characters.find((entry) => entry.id === participant.characterId) ??
+        (encounterOwnedMob
+          ? {
+              id: encounterOwnedMob.id,
+              ownerRole: encounterOwnedMob.ownerRole,
+              sheet: encounterOwnedMob.sheet,
+            }
+          : null) ??
         (transientCombatant
           ? {
               id: transientCombatant.id,
@@ -177,6 +188,7 @@ export function CombatEncounterPage() {
       return {
         participant,
         character,
+        encounterOwnedMob,
         transientCombatant,
         snapshot,
       };
@@ -235,6 +247,10 @@ export function CombatEncounterPage() {
   }, [selectedCombatantId]);
 
   function openCharacterSheet(characterId: string, ownerRole: "player" | "dm"): void {
+    if (!characters.some((entry) => entry.id === characterId)) {
+      return;
+    }
+
     const routePath = ownerRole === "dm" ? "/dm/npc-character" : "/dm/character";
     const popupUrl = `${routePath}?characterId=${encodeURIComponent(characterId)}`;
 
@@ -263,6 +279,21 @@ export function CombatEncounterPage() {
   ): void {
     if (characters.some((entry) => entry.id === characterId)) {
       updateCharacter(characterId, updater);
+      return;
+    }
+
+    if (encounterParticipants.some((entry) => entry.encounterOwnedMob?.id === characterId)) {
+      updateCombatEncounter((currentEncounter) => ({
+        ...currentEncounter,
+        encounterOwnedMobs: (currentEncounter.encounterOwnedMobs ?? []).map((entry) =>
+          entry.id === characterId
+            ? {
+                ...entry,
+                sheet: applySheetUpdater(entry.sheet, updater),
+              }
+            : entry
+        ),
+      }));
       return;
     }
 

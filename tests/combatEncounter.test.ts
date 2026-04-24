@@ -40,6 +40,40 @@ export async function runCombatEncounterTests(): Promise<void> {
       },
     },
     {
+      name: "combat encounters can include encounter-owned mob instances",
+      run: () => {
+        const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        sheet.name = "Grey Wolf";
+        sheet.statState.DEX.base = 3;
+        sheet.statState.WITS.base = 2;
+        const encounter = createCombatEncounter(
+          "Mob Encounter",
+          [buildEncounterParticipantInput("mob-1", "dm", sheet, "party-2")],
+          [{ partyId: "party-2", label: "Party 2", kind: "npcs" }],
+          [
+            {
+              id: "mob-1",
+              ownerRole: "dm",
+              sourceMobTemplateId: "mob-template-1",
+              sourceGroupId: "mob-group-1",
+              sourcePortalId: null,
+              sourcePortalStageId: null,
+              displayName: "Grey Wolf",
+              role: "brute",
+              themeTags: ["forest"],
+              behaviorTags: ["ambush"],
+              loot: "",
+              notes: "",
+              sheet,
+            },
+          ]
+        );
+
+        assert.equal(encounter.encounterOwnedMobs?.length, 1);
+        assert.equal(encounter.encounterOwnedMobs?.[0]?.displayName, "Grey Wolf");
+      },
+    },
+    {
       name: "character encounter snapshot hides normal resistances and exposes highlighted skills",
       run: () => {
         const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();

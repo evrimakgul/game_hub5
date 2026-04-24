@@ -6,6 +6,7 @@ import type {
 } from "../../types/knowledge.ts";
 import {
   buildKnowledgeRevisionLabel,
+  getKnowledgeEntityTypeLabel,
   getKnowledgeOwnershipDisplayLabel,
 } from "../../lib/knowledge.ts";
 
@@ -49,8 +50,9 @@ export function KnowledgeCardView({
           <h3>{displayLabel}</h3>
         </div>
         <div className="knowledge-card-meta">
+          <span>{getKnowledgeEntityTypeLabel(entity.type)}</span>
           <span>{buildKnowledgeRevisionLabel(revision)}</span>
-          <span>{revision.sourceSpellName ?? revision.sourceType}</span>
+          <span>{revision.sourceSpellName ?? revision.sourceType.replaceAll("_", " ")}</span>
         </div>
       </header>
 

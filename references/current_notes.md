@@ -18,6 +18,7 @@ This file tracks active reminders for the current implementation block.
 - The Mob / Group / Portal Authoring Workshop V1 pass is now complete.
 - Item Creation And Auction House V1 is now complete.
 - Player Auction Shopping follow-up is now complete.
+- Player Combat Mode V1 is now complete.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -70,6 +71,9 @@ This file tracks active reminders for the current implementation block.
 - Player-side `Buyout` and `Bid` transactions now spend character money, create/assign a shared item to the buying character, append a history row, and decrement live stock by one.
 - Player-side `Bid` currently resolves as an immediate winning-bid completion rather than a delayed pending-bid lifecycle.
 - Auction entries now persist live `stockQuantity` values alongside the original imported stock text.
+- Active combat encounters now persist in the local-first app-state payload so DM and player browser windows can read the same live encounter.
+- Player combat mode now lives at `/player/combat` and shows initiative order, masked party health bars, and encounter activities for the selected player combatant.
+- Hidden opponents now stay masked as `Opponent N` on the player combat route unless the viewing character owns an `Assess Entity` knowledge card for that target.
 - `COMBAT-ACT-01` is intentionally pushed to the very end of the project and may be skipped entirely unless priorities change.
 - Characters now persist `apparelMode: humanoid | none`.
 - `clothing / robes` remain the existing chest-item baseline at `Initiative +2, DR +0`.
@@ -91,6 +95,7 @@ This file tracks active reminders for the current implementation block.
 - DM item tooling now includes dedicated definition management for item categories and subcategories.
 - Mob templates currently use a focused mob editor rather than the full player-sheet UI.
 - Portal progression/run-state automation is still manual; V1 exports one stage at a time into the existing combat dashboard instead of owning an end-to-end portal-run state machine.
+- Player combat mode is read-only in V1; player-side action execution still lives on the DM encounter runtime.
 - Encounter cast UI now uses a stable `Power > Spell > ...` flow for active casts.
 - Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.
@@ -122,7 +127,7 @@ This file tracks active reminders for the current implementation block.
 ## Deferred But Recorded
 - Full item-authoring UX remains deferred.
 - Full portal-run state, boss-clear reward automation, and exit unlocking remain deferred.
-- Backend sync and encounter persistence remain out of scope.
+- Backend sync and richer encounter persistence beyond the current local browser-storage surface remain out of scope.
 
 ## Resolved Design Direction
 - Aura spells should stay modeled as dedicated aura spells, not as normal targeted buffs.

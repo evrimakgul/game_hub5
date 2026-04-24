@@ -448,6 +448,29 @@ export function getNextKnowledgeRevisionNumber(
     : Math.max(...revisions.map((revision) => revision.revisionNumber)) + 1;
 }
 
+export function getKnowledgeEntityTypeLabel(type: KnowledgeEntity["type"]): string {
+  switch (type) {
+    case "character":
+      return "Character";
+    case "item":
+      return "Item";
+    case "place":
+      return "Place";
+    case "faction":
+      return "Faction";
+    case "story":
+      return "Story";
+    case "custom":
+      return "Custom";
+    default:
+      return type;
+  }
+}
+
+export function getKnowledgeCardLabel(type: KnowledgeEntity["type"]): string {
+  return `${getKnowledgeEntityTypeLabel(type).toLowerCase()} card`;
+}
+
 export function buildKnowledgeRevisionLabel(revision: KnowledgeRevision): string {
   const base = `v${revision.revisionNumber}`;
   if (revision.lineageMode === "edited_copy") {
@@ -649,7 +672,7 @@ function ensureItemKnowledgeEntity(args: {
   };
 }
 
-export function createKnowledgeRevisionBatch(args: {
+export function createKnowledgeRevisionBatchWithoutOwnership(args: {
   state: KnowledgeState;
   entity:
     | KnowledgeEntity
@@ -658,7 +681,6 @@ export function createKnowledgeRevisionBatch(args: {
         subjectKey: string | null;
         displayName: string;
       };
-  ownerCharacterId: string;
   createdByCharacterId: string | null;
   title: string;
   summary: string;
@@ -670,12 +692,10 @@ export function createKnowledgeRevisionBatch(args: {
   parentRevisionId?: string | null;
   lineageMode: KnowledgeLineageMode;
   isCanonical: boolean;
-  acquiredFromCharacterId?: string | null;
   now?: Date;
 }): {
   entity: KnowledgeEntity;
   revision: KnowledgeRevision;
-  ownership: KnowledgeOwnership;
   batch: KnowledgeBatch;
 } {
   const now = args.now ?? new Date();
@@ -708,20 +728,78 @@ export function createKnowledgeRevisionBatch(args: {
     lineageMode: args.lineageMode,
     isCanonical: args.isCanonical,
   });
+
+  return {
+    entity: nextEntity,
+    revision,
+    batch: {
+      entities: [nextEntity],
+      revisions: [revision],
+      ownerships: [],
+    },
+  };
+}
+
+export function createKnowledgeRevisionBatch(args: {
+  state: KnowledgeState;
+  entity:
+    | KnowledgeEntity
+    | {
+        type: KnowledgeEntity["type"];
+        subjectKey: string | null;
+        displayName: string;
+      };
+  ownerCharacterId: string;
+  createdByCharacterId: string | null;
+  title: string;
+  summary: string;
+  content: KnowledgeRevisionSection[];
+  tags: string[];
+  sourceType: KnowledgeSourceType;
+  sourceSpellName?: string | null;
+  sourceHistoryEntryId?: string | null;
+  parentRevisionId?: string | null;
+  lineageMode: KnowledgeLineageMode;
+  isCanonical: boolean;
+  acquiredFromCharacterId?: string | null;
+  now?: Date;
+}): {
+  entity: KnowledgeEntity;
+  revision: KnowledgeRevision;
+  ownership: KnowledgeOwnership;
+  batch: KnowledgeBatch;
+} {
+  const now = args.now ?? new Date();
+  const created = createKnowledgeRevisionBatchWithoutOwnership({
+    state: args.state,
+    entity: args.entity,
+    createdByCharacterId: args.createdByCharacterId,
+    title: args.title,
+    summary: args.summary,
+    content: args.content,
+    tags: args.tags,
+    sourceType: args.sourceType,
+    sourceSpellName: args.sourceSpellName ?? null,
+    sourceHistoryEntryId: args.sourceHistoryEntryId ?? null,
+    parentRevisionId: args.parentRevisionId ?? null,
+    lineageMode: args.lineageMode,
+    isCanonical: args.isCanonical,
+    now,
+  });
   const ownership = createKnowledgeOwnership({
     ownerCharacterId: args.ownerCharacterId,
-    revisionId: revision.id,
+    revisionId: created.revision.id,
     acquiredAt: getIsoTimestamp(now),
     acquiredFromCharacterId: args.acquiredFromCharacterId ?? null,
   });
 
   return {
-    entity: nextEntity,
-    revision,
+    entity: created.entity,
+    revision: created.revision,
     ownership,
     batch: {
-      entities: [nextEntity],
-      revisions: [revision],
+      entities: created.batch.entities,
+      revisions: created.batch.revisions,
       ownerships: [ownership],
     },
   };
@@ -1383,7 +1461,7 @@ export function createKnowledgeShareResult(args: {
       return {
         characterId: ownership.ownerCharacterId,
         entry: buildKnowledgeAcquiredHistoryEntry({
-          note: `Acquired ${args.cardLabel ?? "character card"} ${args.entity.displayName} from ${args.sourceOwnerName}.`,
+          note: `Acquired ${args.cardLabel ?? getKnowledgeCardLabel(args.entity.type)} ${args.entity.displayName} from ${args.sourceOwnerName}.`,
           knowledgeLink,
           gameDateTime: recipient?.sheet.gameDateTime ?? "",
           now,

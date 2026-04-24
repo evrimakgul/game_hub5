@@ -2,6 +2,12 @@
 
 ## 2026-04-20
 
+- `COMBAT-PLAYER-01` completed.
+  - Added `/player/combat` as the player-facing live combat surface and wired `Combat Mode` navigation from the player hub and participating player character sheets.
+  - Added player-safe encounter presentation that keeps initiative order and encounter activities visible while masking unknown opponents as `Opponent N`, hiding raw HP numbers, and only revealing real enemy names plus expand/collapse knowledge cards when the viewer owns `Assess Entity` knowledge for that target.
+  - Persisted `activeCombatEncounter` into the local app-flow storage payload so DM and player windows can read the same encounter state without introducing backend sync.
+  - Kept the current V1 boundary explicit: player combat mode is read-only, and combat actions still execute from the DM encounter runtime.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
 - `AUCTION-PLAYER-01` completed.
   - Added `/player/auction-house` as the player-facing shopping route and linked it directly from the player character-sheet inventory section.
   - Added completed `Bid` and `Buyout` transaction handling that validates stock and character money, creates a shared item from the auction entry, assigns it to the purchasing character, deducts money, and appends a history row.

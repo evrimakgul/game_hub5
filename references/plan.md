@@ -440,6 +440,35 @@ This roadmap is the active implementation source of truth for this branch.
 - Transactions are blocked when stock is `0`, the price is unavailable, or the character lacks sufficient money.
 - Purchased items now appear in the related character sheet `Items` section through the normal shared-item assignment flow.
 
+## Completed Follow-Up: Player Combat Mode V1
+
+### 11.1 DM Start Combat Trigger
+- The combat dashboard now uses an explicit `Start Combat` trigger from the combat-encounter setup card.
+- Starting combat still rolls initiative and opens the DM encounter runtime, but it now also seeds the shared player-facing combat surface from the same live encounter state.
+
+### 11.2 Player Combat Route
+- Players now have a dedicated `/player/combat` route.
+- Player Hub rows and player character sheets now expose `Combat Mode` navigation when that character is part of the active encounter.
+- The player combat route is character-specific so masking and `Assess Entity` reveal rules resolve against the selected player character.
+
+### 11.3 Masked Encounter Presentation
+- Player combat mode now shows:
+  - initiative order
+  - encounter parties
+  - encounter activity history
+- Opponents are masked as pseudo labels such as `Opponent 1`, `Opponent 2`, and opposing party labels are also generalized.
+- Party cards expose health bars only; raw HP numbers are not shown on the player surface.
+- Real opponent names stay hidden unless the viewing character owns knowledge for that target through `Assess Entity`.
+
+### 11.4 AE Reveal And Current V1 Boundary
+- Assessed opponents now expose an inline expand/collapse knowledge-card preview directly inside player combat mode.
+- Encounter activity log output is sanitized on the player route so hidden opponent names are replaced by the same masked labels used elsewhere on the page.
+- Player combat mode is intentionally read-only in V1; action execution still stays on the DM encounter runtime.
+
+### 11.5 Local Encounter Sharing
+- Active combat encounter state now persists in the local-first app state payload.
+- This local persistence keeps DM and player browser windows aligned on the same live encounter without introducing backend sync.
+
 ## Validation
 - After each meaningful task group run:
   - `npm run typecheck`
@@ -456,6 +485,5 @@ This roadmap is the active implementation source of truth for this branch.
   - current implementation still uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
   - the recorded alternative is a dedicated aura builder such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`
 - Full item-authoring workflow polish beyond the live DM edit/list/interactions/knowledge/value surfaces.
-- Encounter persistence and backend sync.
-- Player-side encounter UI.
+- Backend sync and richer encounter persistence beyond the current local browser-storage surface.
 - `python.ipynb` cleanup remains deferred to the literal last cleanup step.

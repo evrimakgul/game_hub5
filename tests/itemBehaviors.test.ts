@@ -10,12 +10,17 @@ import {
   createItemCustomPropertyRecord,
   createItemSubcategoryDefinitionRecord,
   createSharedItemRecord,
+  getComputedItemAnchorValue,
   getItemCompactHeaderSummary,
+  getEffectiveItemAnchorValue,
   getItemVisibleRequirements,
   getViewerFacingItemRecord,
   normalizeItemCustomPropertyRecords,
+  setSharedItemBaseStrength,
   setProfileNotes,
   setProfileUtilityTraits,
+  setSharedItemAnchorValueOverride,
+  setSharedItemDerivedBonus,
   syncSharedItemRecordWithBlueprint,
 } from "../src/lib/items.ts";
 import {
@@ -151,6 +156,64 @@ export async function runItemBehaviorTests(): Promise<void> {
           canViewerSeeItemBonusDetails(item, "player-1", true, false),
           true
         );
+      },
+    },
+    {
+      name: "new shared items default to base strength zero and computed anchor value",
+      run: () => {
+        const item = createSharedItemRecord("weapon:one_handed", {
+          id: "item-anchor-default-1",
+          name: "Anchor Blade",
+        });
+
+        assert.equal(item.baseStrength, 0);
+        assert.equal(item.anchorValueOverride, null);
+        assert.equal(item.anchorValue, 1);
+      },
+    },
+    {
+      name: "item anchor value follows bonus strength and base strength formula",
+      run: () => {
+        const item = setSharedItemBaseStrength(
+          createSharedItemRecord("weapon:one_handed", {
+            id: "item-anchor-formula-1",
+            name: "Formula Blade",
+            bonusProfile: {
+              ...createEmptyBonusProfile(),
+              derivedBonuses: { melee_damage: 2 },
+            },
+          }),
+          3
+        );
+
+        assert.equal(getComputedItemAnchorValue(item), (((4 * 49_977) + 1) * 4));
+        assert.equal(item.anchorValue, (((4 * 49_977) + 1) * 4));
+      },
+    },
+    {
+      name: "editing base strength or PP-affecting bonuses recomputes anchor value while override stays effective",
+      run: () => {
+        const baseItem = createSharedItemRecord("weapon:one_handed", {
+          id: "item-anchor-update-1",
+          name: "Mutable Blade",
+        });
+        const withBaseStrength = setSharedItemBaseStrength(baseItem, 2);
+        const withBonuses = setSharedItemDerivedBonus(withBaseStrength, "melee_damage", 1);
+        const withOverride = setSharedItemAnchorValueOverride(withBonuses, 777_777);
+        const synced = syncSharedItemRecordWithBlueprint(
+          setSharedItemDerivedBonus(withOverride, "melee_damage", 2),
+          createItemBlueprintRecord({
+            id: withOverride.blueprintId,
+            label: "Mutable Blade Blueprint",
+            defaultName: "Mutable Blade",
+          })
+        );
+
+        assert.equal(withBaseStrength.anchorValue, (((0 * 49_977) + 1) * 3));
+        assert.equal(withBonuses.anchorValue, (((2 * 49_977) + 1) * 3));
+        assert.equal(synced.anchorValue, (((4 * 49_977) + 1) * 3));
+        assert.equal(synced.anchorValueOverride, 777_777);
+        assert.equal(getEffectiveItemAnchorValue(synced), 777_777);
       },
     },
     {

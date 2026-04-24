@@ -23,6 +23,7 @@ import type {
 import { createTimestampedId, getIsoTimestamp } from "../lib/ids.ts";
 import { rollD10Faces } from "../lib/dice.ts";
 import type { SharedItemRecord } from "../types/items.ts";
+import type { EncounterOwnedMobInstance } from "../types/authoring.ts";
 const HIGHLIGHTED_SKILL_IDS = ["intimidation", "stealth", "alertness"] as const;
 
 function normalizeStatusTag(value: string): string {
@@ -70,7 +71,8 @@ export function buildEncounterParticipantInput(
 export function createCombatEncounter(
   label: string,
   participants: CombatEncounterParticipantInput[],
-  parties: CombatEncounterParty[] = []
+  parties: CombatEncounterParty[] = [],
+  encounterOwnedMobs: EncounterOwnedMobInstance[] = []
 ): CombatEncounterState {
   if (participants.length === 0) {
     throw new RangeError("Add at least one combatant before starting the encounter.");
@@ -160,6 +162,7 @@ export function createCombatEncounter(
       activeParticipantIndex: 0,
       activeParticipantId: resolvedParticipants[0]?.characterId ?? null,
     },
+    encounterOwnedMobs: encounterOwnedMobs.slice(),
     transientCombatants: [],
     ongoingStates: [],
     activityLog: [],
