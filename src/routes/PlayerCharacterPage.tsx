@@ -469,6 +469,7 @@ export function PlayerCharacterPage({
               isDmEditableView ? "/dm/npc-creator" : isDmReadOnlyView ? "/dm/characters" : "/player"
             )
           }
+          onOpenLiveSession={() => navigate(isDmView ? "/dm/screen" : "/player/session")}
           onOpenCombatMode={
             isPlayerCombatant
               ? () =>

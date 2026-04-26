@@ -22,6 +22,7 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 - Subject coverage now includes character, item, place, faction, story, and custom cards.
 - `Artifact Appraisal` now reuses the same item-card revision model: successful appraisals grant the current canonical item-card revision, refresh stale canonical content when needed, and append linked history rows to the granted revision.
 - DM-authored `story` cards use `story_reward`; DM-authored `place`, `faction`, and `custom` cards use `dm_grant`.
+- Live session sharing and reward card grants now reuse the same ownership model and can write matching Supabase knowledge rows through the realtime session repository.
 
 ## Intended Direction
 
@@ -40,6 +41,7 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 ## Deferred / Open
 
 - Additional creation/template polish beyond the live character, item, and DM Knowledge Hub surfaces.
+- Supabase knowledge row synchronization currently exists for live share/reward flows; broader bidirectional knowledge hydration remains future work.
 
 ## Sources
 
@@ -51,9 +53,12 @@ Knowledge is no longer history-only. The live model uses standalone entities, im
 - [src/components/player-character/CharacterHistorySection.tsx](../../src/components/player-character/CharacterHistorySection.tsx)
 - [src/routes/DmItemInteractionsPage.tsx](../../src/routes/DmItemInteractionsPage.tsx)
 - [src/routes/DmKnowledgePage.tsx](../../src/routes/DmKnowledgePage.tsx)
+- [src/lib/realtimeSessionRepository.ts](../../src/lib/realtimeSessionRepository.ts)
+- [wiki/domains/realtime-sessions.md](./realtime-sessions.md)
 
 ## Raw
 
 - [THREAD-4](../../raw/codex-threads/thread-4-019d567a-df4a-70b0-8e63-b2138fa9b337.md)
 - [THREAD-6](../../raw/codex-threads/thread-6-019d7a11-3487-7f20-b7a1-a00b828942d7.md)
+- [USER-REALTIME-SESSION-2026-04-24](../../raw/user-approved/2026-04-24-realtime-dm-screen-session.md)
 

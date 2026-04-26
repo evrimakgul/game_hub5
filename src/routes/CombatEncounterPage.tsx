@@ -615,6 +615,7 @@ export function CombatEncounterPage() {
           currentRound={currentTurnState.round}
           activeCombatantLabel={activeCombatantLabel}
           onAdvanceTurn={advanceEncounterTurn}
+          onOpenDmScreen={() => navigate("/dm/screen")}
           onOpenCombatDashboard={() => navigate("/dm/combat")}
           onOpenDmDashboard={() => navigate("/dm")}
         />

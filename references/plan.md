@@ -463,11 +463,114 @@ This roadmap is the active implementation source of truth for this branch.
 ### 11.4 AE Reveal And Current V1 Boundary
 - Assessed opponents now expose an inline expand/collapse knowledge-card preview directly inside player combat mode.
 - Encounter activity log output is sanitized on the player route so hidden opponent names are replaced by the same masked labels used elsewhere on the page.
-- Player combat mode is intentionally read-only in V1; action execution still stays on the DM encounter runtime.
+- Player combat mode now exposes own-turn action controls for the selected viewing character, but it is not a full timing/action-budget engine.
 
 ### 11.5 Local Encounter Sharing
 - Active combat encounter state now persists in the local-first app state payload.
 - This local persistence keeps DM and player browser windows aligned on the same live encounter without introducing backend sync.
+
+## Completed Follow-Up: Realtime DM Screen And Session Layer
+
+### 12.1 Supabase Auth And Session Schema
+- Added optional Supabase wiring through `@supabase/supabase-js`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY`.
+- Existing local-only play remains available when Supabase is not configured.
+- Added SQL migration coverage for profiles, campaigns, campaign members, game sessions, session characters, session events, pins, and session knowledge records.
+- RLS policies are campaign/session membership based, with DM management access and player-limited row access.
+
+### 12.2 DM Screen
+- Added `/dm/screen` as the live table control surface.
+- The DM Screen supports campaign/session creation, member linking by Supabase user id, local character sync, secret/global rolls, event feed, sharing, rewards, pins, session notes, participant status, and combat shortcuts.
+- DM rolls can be public or DM-only and are persisted as session events.
+
+### 12.3 Player Session
+- Added `/player/session` for players to join live sessions.
+- Players can publish their active character, send hidden rolls to DM, share text or owned cards publicly or to selected characters, and follow filtered session events.
+- Character sheets, player hub, combat pages, DM dashboard, and combat pages now link into the live session surfaces.
+
+### 12.4 Sharing And Rewards
+- Session events now support `message`, `roll`, `share`, `reward`, `note`, and `pin` kinds with public, limited, DM-only, and DM-and-actor visibility.
+- Card sharing reuses the existing knowledge ownership model and can write matching realtime knowledge rows when Supabase is configured.
+- DM reward packets update XP earned, inspiration, temporary inspiration, money, positive karma, negative karma, notes, optional card grants, character history, DM audit log, session characters, and persistent reward events.
+
+### 12.5 Current V1 Boundary
+- Supabase campaign members are currently added by user UUID, not by email lookup.
+- RLS policies are implemented in SQL and still need manual Supabase local/project verification beyond repository unit tests.
+- Existing local app state remains the offline/dev truth; live DM/player coordination is authoritative only inside configured Supabase sessions.
+
+## Planned Follow-Up: Personalized Page Design And Auto-Design
+
+### 13.1 View Profile Foundation
+- Add a persisted `ViewProfile` model for browser-local personalization.
+- Scope profiles by role, route/page, and optionally character id where the page is character-specific.
+- Include schema versioning, defaults, reset behavior, and migration-safe hydration.
+- Store only safe design tokens and layout preferences, not arbitrary user CSS or JavaScript.
+- Define a shared CSS-variable contract for:
+  - theme palette
+  - accent color
+  - density
+  - font scale
+  - panel style
+  - spacing
+  - motion level
+
+### 13.2 Safe Manual Customization
+- Add an Appearance/Layout drawer reachable from player and DM surfaces.
+- Support live preview, save, reset, and profile switching.
+- Manual controls should include:
+  - theme
+  - density
+  - font scale
+  - section collapse state
+  - section pinning
+  - allowed section hiding
+  - allowed section ordering
+- Keep customization constrained by the page section registry.
+
+### 13.3 Page Layout Registry
+- Add a per-page registry of customizable sections.
+- Each section should declare whether it is:
+  - required
+  - optional
+  - hideable
+  - reorderable
+  - collapsible
+  - required during active combat
+- Implement pages in this order:
+  - player character sheet
+  - player combat mode
+  - player auction house
+  - DM dashboard
+  - DM combat encounter
+  - DM authoring pages
+
+### 13.4 Presets
+- Add reversible presets before full auto-design.
+- Initial presets:
+  - combat-focused
+  - story-focused
+  - caster
+  - inventory-heavy
+  - DM operations
+  - minimal
+- Presets should explain what they changed and allow returning to the previous profile.
+
+### 13.5 Auto-Design Recommendations
+- Auto-design should recommend a preset plus layout rather than generating unconstrained UI.
+- Recommendation inputs can include:
+  - role
+  - current page
+  - character powers
+  - inventory/equipment emphasis
+  - active combat participation
+  - later usage patterns after usage tracking exists
+- Auto-design must preview changes and require confirmation before saving.
+
+### 13.6 Guardrails And Limits
+- Customization must never reveal hidden combat identity, hidden item bonuses, hidden knowledge, or raw opponent HP.
+- Required combat state cannot be hidden during live combat.
+- Mobile layouts should use stricter allowed layout changes than desktop layouts.
+- V1 remains browser-local until backend/user accounts are reopened.
+- Do not add arbitrary user JavaScript or unrestricted CSS in V1.
 
 ## Validation
 - After each meaningful task group run:
@@ -485,5 +588,5 @@ This roadmap is the active implementation source of truth for this branch.
   - current implementation still uses `buildActivePowerEffect(...)` for both targeted buff spells and aura-source spells
   - the recorded alternative is a dedicated aura builder such as `buildAuraSourceEffect(...)` or `buildAuraSpellEffect(...)`
 - Full item-authoring workflow polish beyond the live DM edit/list/interactions/knowledge/value surfaces.
-- Backend sync and richer encounter persistence beyond the current local browser-storage surface.
+- Richer encounter persistence beyond the current local browser-storage surface for offline/dev mode; live sessions now use the Supabase-backed session layer.
 - `python.ipynb` cleanup remains deferred to the literal last cleanup step.

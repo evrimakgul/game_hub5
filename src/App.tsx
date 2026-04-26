@@ -15,12 +15,14 @@ import { DmMobsPage } from "./routes/DmMobsPage";
 import { DmNpcCreatorPage } from "./routes/DmNpcCreatorPage";
 import { DmPage } from "./routes/DmPage";
 import { DmPortalsPage } from "./routes/DmPortalsPage";
+import { DmScreenPage } from "./routes/DmScreenPage";
 import { LoginPage } from "./routes/LoginPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
 import { PlayerAuctionHousePage } from "./routes/PlayerAuctionHousePage";
 import { PlayerCharacterPage } from "./routes/PlayerCharacterPage";
 import { PlayerCombatPage } from "./routes/PlayerCombatPage";
 import { PlayerHubPage } from "./routes/PlayerHubPage";
+import { PlayerSessionPage } from "./routes/PlayerSessionPage";
 import { RoleSelectPage } from "./routes/RoleSelectPage";
 
 export default function App() {
@@ -29,10 +31,12 @@ export default function App() {
       <Route path="/" element={<LoginPage />} />
       <Route path="/role" element={<RoleSelectPage />} />
       <Route path="/player" element={<PlayerHubPage />} />
+      <Route path="/player/session" element={<PlayerSessionPage />} />
       <Route path="/player/character" element={<PlayerCharacterPage viewMode="player" />} />
       <Route path="/player/auction-house" element={<PlayerAuctionHousePage />} />
       <Route path="/player/combat" element={<PlayerCombatPage />} />
       <Route path="/dm" element={<DmPage />} />
+      <Route path="/dm/screen" element={<DmScreenPage />} />
       <Route path="/dm/characters" element={<DmCharacterHubPage />} />
       <Route path="/dm/character" element={<PlayerCharacterPage viewMode="dm-readonly" />} />
       <Route path="/dm/npc-creator" element={<DmNpcCreatorPage />} />

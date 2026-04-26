@@ -1,6 +1,14 @@
 # Tasks TODO
 ## Active
-- No active implementation item is currently recorded. `COMBAT-ACT-01` is explicitly deferred to the very end of the project and may be skipped entirely unless priorities change.
+- `VIEW-PERSONALIZATION-01` planned next. Add personalized player/DM page design with safe manual controls first, then page layouts, presets, and automatic recommendations.
+
+### Group 14: Personalized View Design
+- `VIEW-PERSONALIZATION-01A` Foundation: define a persisted `ViewProfile` model for role/page/character scoped preferences, add schema versioning, defaults, reset behavior, and a CSS-variable contract for theme, density, font scale, panel style, spacing, and motion.
+- `VIEW-PERSONALIZATION-01B` Safe manual controls: add an Appearance/Layout drawer with live preview, save, reset, theme selection, density, font scale, section collapse, section pinning, allowed section hiding, and reorder controls.
+- `VIEW-PERSONALIZATION-01C` Page layout registry: create a per-page section registry with `required`, `optional`, `hideable`, `reorderable`, and `combatRequired` flags. Start with player character sheet, then extend to player combat, auction house, DM dashboard, and DM authoring pages.
+- `VIEW-PERSONALIZATION-01D` Presets: add role and page presets such as combat-focused, story-focused, caster, inventory-heavy, DM operations, and minimal. Presets should be explainable and reversible.
+- `VIEW-PERSONALIZATION-01E` Auto-design: recommend a preset plus layout from role, page, character powers, inventory emphasis, combat participation, and later usage patterns. Apply only after preview/confirmation.
+- `VIEW-PERSONALIZATION-01F` Guardrails: prevent customization from revealing masked combat data, hidden item bonuses, hidden knowledge, or raw opponent HP. Required live-combat information cannot be hidden. No arbitrary user JavaScript or unrestricted CSS in V1.
 
 ## Completed
 ### Group 1: Encounter Cast UI Standardization
@@ -43,6 +51,9 @@
 
 ### Group 12: Player Combat Mode
 - `COMBAT-PLAYER-01` completed. DM-started encounters now also expose a player-facing `/player/combat` route, player hubs and character sheets now link into `Combat Mode` for participating characters, opponent identity stays masked unless that viewer owns `Assess Entity` knowledge for the target, the player activity log is sanitized, and active encounter state now persists locally so DM/player windows share the same live fight.
+
+### Group 13: Realtime DM/Player Sessions
+- `REALTIME-SESSION-01` completed. Added optional Supabase Auth/client wiring, SQL migrations with RLS policies, realtime repository helpers, `/dm/screen`, `/player/session`, persistent session events, DM-only and DM-and-actor rolls, public/limited text and card sharing, reward packets with audit/history updates, and navigation from DM/player/combat/character surfaces.
 
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion

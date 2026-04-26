@@ -2,6 +2,7 @@ type EncounterTopbarProps = {
   currentRound: number;
   activeCombatantLabel: string | null;
   onAdvanceTurn: () => void;
+  onOpenDmScreen?: () => void;
   onOpenCombatDashboard: () => void;
   onOpenDmDashboard: () => void;
 };
@@ -10,6 +11,7 @@ export function EncounterTopbar({
   currentRound,
   activeCombatantLabel,
   onAdvanceTurn,
+  onOpenDmScreen,
   onOpenCombatDashboard,
   onOpenDmDashboard,
 }: EncounterTopbarProps) {
@@ -27,6 +29,11 @@ export function EncounterTopbar({
         <button type="button" className="sheet-nav-button" onClick={onAdvanceTurn}>
           Advance Turn
         </button>
+        {onOpenDmScreen ? (
+          <button type="button" className="sheet-nav-button" onClick={onOpenDmScreen}>
+            DM Screen
+          </button>
+        ) : null}
         <button type="button" className="sheet-nav-button" onClick={onOpenCombatDashboard}>
           Combat Dashboard
         </button>

@@ -28,8 +28,13 @@
   }
 
   .dm-item-edit-layout,
-  .dm-items-list-grid {
+  .dm-items-list-grid,
+  .dm-screen-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dm-screen-wide {
+    grid-column: span 1;
   }
 
   .dm-item-edit-grid {
@@ -142,6 +147,7 @@
   .dm-hub-grid,
   .dm-setup-grid,
   .dm-dashboard-grid,
+  .dm-screen-grid,
   .dm-option-grid,
   .dm-parameter-grid,
   .dm-two-up,
@@ -149,7 +155,10 @@
   .dm-inline-controls-two-up,
   .dm-item-edit-grid,
   .dm-item-edit-grid-two-up,
-  .dm-items-list-actions {
+  .dm-items-list-actions,
+  .dm-screen-table-row,
+  .dm-screen-reward-grid,
+  .dm-screen-recipient-grid {
     grid-template-columns: 1fr;
   }
 

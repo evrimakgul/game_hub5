@@ -745,6 +745,13 @@ export function PlayerCombatPage() {
             <button
               type="button"
               className="sheet-nav-button"
+              onClick={() => navigate("/player/session")}
+            >
+              Live Session
+            </button>
+            <button
+              type="button"
+              className="sheet-nav-button"
               onClick={() => navigate("/player")}
             >
               Player Hub

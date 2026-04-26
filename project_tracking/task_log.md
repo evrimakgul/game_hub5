@@ -1,5 +1,22 @@
 # Task Log
 
+## 2026-04-24
+
+- `REALTIME-SESSION-01` completed.
+  - Added optional Supabase Auth/client wiring with email/password and Discord OAuth support.
+  - Added SQL migrations for realtime campaign/session/event/character/knowledge tables with RLS policies and realtime publication entries.
+  - Added `/dm/screen` and `/player/session` for live DM/player session operations.
+  - Added persistent session events for secret rolls, player hidden rolls, sharing, pins, and rewards.
+  - Added text/card sharing and reward packet application that updates character history, DM audit entries, local knowledge ownerships, session character rows, and persistent reward events.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- `REALTIME-ACCOUNT-HARDENING-01` completed.
+  - Added sign out / exit to role selection, clarified online-login copy, made profile bootstrap tolerate legacy `profiles.user_id`, restricted DM Screen campaign listing to campaigns where the account is a DM, and added a second migration for profile/schema repair plus player-owned session character inserts.
+  - Validation: `npm run typecheck`, `npm test`, `npm run build`.
+- Added `VIEW-PERSONALIZATION-01` as the next planned implementation item.
+  - Scope: browser-local player/DM personalized page design, safe manual controls, page layout registry, presets, and auto-design recommendations.
+  - Guardrails: no hidden-info leaks, no arbitrary user JS, no unrestricted CSS, required combat information stays visible during live combat, and mobile layouts use stricter constraints.
+  - No runtime implementation or validation was run for this planning-only update.
+
 ## 2026-04-20
 
 - `COMBAT-PLAYER-01` completed.

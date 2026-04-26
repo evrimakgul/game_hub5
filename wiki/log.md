@@ -146,3 +146,27 @@
 - Updated: `project/implemented-vs-deferred`
 - Updated: `runtime/ui-and-routes-map`
 - Updated: `domains/combat-encounter`
+
+## [2026-04-24] ingest | view personalization roadmap
+- Captured the user-approved direction for personalized player/DM page design and auto-design recommendations.
+- Added `VIEW-PERSONALIZATION-01` as an open roadmap split and created the `domains/view-personalization` wiki page.
+- Updated: `raw/source-index.md`
+- Updated: `project/game-hub5-overview`
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/view-personalization`
+- Updated: `history/split-decisions`
+
+## [2026-04-24] refresh | realtime dm/player session implementation
+- Captured the user-approved realtime DM Screen/session plan and reconciled docs with the implemented Supabase-backed session layer.
+- Added the `domains/realtime-sessions` wiki page for Auth, migrations, RLS, session events, secret rolls, sharing, rewards, and current V1 boundaries.
+- Updated: `raw/source-index.md`
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/knowledge-cards`
+- Updated: `domains/realtime-sessions`
+- Updated: `history/split-decisions`

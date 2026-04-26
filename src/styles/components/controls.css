@@ -35,6 +35,44 @@
   color: #2b190f;
 }
 
+.discord-auth-block {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.discord-auth-block span {
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #88654d;
+}
+
+.discord-auth-button {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid rgba(88, 101, 242, 0.24);
+  border-radius: 50%;
+  background: #5865f2;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(88, 101, 242, 0.2);
+}
+
+.discord-auth-button:hover {
+  background: #4752c4;
+}
+
+.discord-auth-icon {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+}
+
 .character-access-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

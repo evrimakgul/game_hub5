@@ -19,6 +19,8 @@ This file tracks active reminders for the current implementation block.
 - Item Creation And Auction House V1 is now complete.
 - Player Auction Shopping follow-up is now complete.
 - Player Combat Mode V1 is now complete.
+- Realtime DM/Player Session V1 is now complete.
+- `VIEW-PERSONALIZATION-01` is now the planned next follow-up: personalized player/DM page design with safe manual controls, page layouts, presets, and automatic recommendations.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
 ## Confirmed Rules For This Block
@@ -74,6 +76,12 @@ This file tracks active reminders for the current implementation block.
 - Active combat encounters now persist in the local-first app-state payload so DM and player browser windows can read the same live encounter.
 - Player combat mode now lives at `/player/combat` and shows initiative order, masked party health bars, and encounter activities for the selected player combatant.
 - Hidden opponents now stay masked as `Opponent N` on the player combat route unless the viewing character owns an `Assess Entity` knowledge card for that target.
+- Supabase-backed live sessions now exist behind `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; local-only play remains available when those env vars are absent.
+- Live session routes are `/dm/screen` and `/player/session`.
+- Session events persist rolls, shares, rewards, notes, and pins with public, limited, DM-only, and DM-and-actor visibility.
+- DM private rolls are `dm_only`; player hidden rolls are `dm_and_actor`.
+- Live card sharing and reward card grants reuse knowledge ownerships and can write matching Supabase knowledge rows.
+- DM reward packets update XP earned, inspiration, temporary inspiration, money, karma, character history, DM audit entries, session character rows, and a persistent reward event.
 - `COMBAT-ACT-01` is intentionally pushed to the very end of the project and may be skipped entirely unless priorities change.
 - Characters now persist `apparelMode: humanoid | none`.
 - `clothing / robes` remain the existing chest-item baseline at `Initiative +2, DR +0`.
@@ -95,7 +103,12 @@ This file tracks active reminders for the current implementation block.
 - DM item tooling now includes dedicated definition management for item categories and subcategories.
 - Mob templates currently use a focused mob editor rather than the full player-sheet UI.
 - Portal progression/run-state automation is still manual; V1 exports one stage at a time into the existing combat dashboard instead of owning an end-to-end portal-run state machine.
-- Player combat mode is read-only in V1; player-side action execution still lives on the DM encounter runtime.
+- Player combat mode has own-turn action controls, but full timing/action-budget enforcement remains deferred.
+- Personalized page design is not implemented yet; it is now tracked as the next planned follow-up.
+- Supabase RLS policies are implemented in migration SQL, but still need manual verification against Supabase local/project roles.
+- DM campaign members are currently added by Supabase user UUID rather than by email lookup.
+- The DM Screen now lists only campaigns where the signed-in account has `campaign_members.role = 'dm'`; player session access remains membership-based so the same account can be a DM in one campaign and a player/member in another.
+- Profile bootstrap tolerates both `profiles.id` and older `profiles.user_id` schemas so a malformed profile table no longer blocks sign-in.
 - Encounter cast UI now uses a stable `Power > Spell > ...` flow for active casts.
 - Aura behavior now uses explicit beneficiary selection where needed and keeps linked effects tied to the caster-owned aura source.
 - `Necromancy` and `Shadow Control` summon dismissal is now exposed as contextual caster action UI.

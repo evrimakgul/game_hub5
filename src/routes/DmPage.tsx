@@ -30,6 +30,21 @@ export function DmPage() {
 
         <section className="dm-hub-grid">
           <article className="sheet-card dm-hub-card">
+            <p className="section-kicker">Live Table</p>
+            <h2>DM Screen</h2>
+            <p className="dm-summary-line">
+              Manage live sessions, secret rolls, sharing, rewards, notes, and active table context.
+            </p>
+            <button
+              type="button"
+              className="flow-primary"
+              onClick={() => navigate("/dm/screen")}
+            >
+              Open DM Screen
+            </button>
+          </article>
+
+          <article className="sheet-card dm-hub-card">
             <p className="section-kicker">Player Character Block</p>
             <h2>Player Characters</h2>
             <p className="dm-summary-line">

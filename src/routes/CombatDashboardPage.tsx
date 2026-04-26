@@ -384,6 +384,9 @@ export function CombatDashboardPage() {
             <h1>Combat Dashboard</h1>
           </div>
           <div className="dm-nav-actions">
+            <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm/screen")}>
+              DM Screen
+            </button>
             <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm")}>
               DM Dashboard
             </button>

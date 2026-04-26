@@ -60,6 +60,9 @@ export function PlayerHubPage() {
         <p className="section-kicker">Player</p>
         <h1>Character Access</h1>
         <div className="flow-actions">
+          <button type="button" className="flow-primary" onClick={() => navigate("/player/session")}>
+            Live Session
+          </button>
           <button type="button" className="flow-primary" onClick={handleCreateCharacter}>
             Create New Character
           </button>

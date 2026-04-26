@@ -3,7 +3,7 @@ title: Game Hub 5 Overview
 topic: project
 kind: overview
 status: active
-updated: 2026-04-20
+updated: 2026-04-24
 confidence: high
 ---
 
@@ -23,6 +23,7 @@ confidence: high
 - Shared item entities, persisted item category/subcategory definitions, revisioned knowledge records, and the new mob/group/portal authoring records are live project concepts, not just planned concepts.
 - DM tooling now includes a standalone mob library with live derived-combat summary output, reusable mob groups with CR-budget controls, and a portal workshop that now serves as the portal-first `portal_bundle` Codex entrypoint before manual stage export into the combat dashboard.
 - Combat now has both a DM encounter runtime and a player-facing masked combat mode, with the active encounter shared through local persisted app state.
+- Personalized player/DM page design is now a planned near-term follow-up, not an implemented system.
 - Canonical non-code project truth currently lives across `references/` and `project_tracking/`, while detailed provenance lives in historical threads and chats.
 
 ## Intended Direction
@@ -32,6 +33,7 @@ confidence: high
 - Treat the new authoring workshop as a local-first canonical editor with a manual Codex import/export bridge, not as a live in-app AI chat system.
 - Use this wiki as the durable synthesis layer between raw conversations/docs and future implementation.
 - Keep "current implementation state" and "intended direction" separate whenever the code has not yet caught up with the latest decision.
+- Add view personalization through constrained profiles, registered page sections, presets, and auto-design recommendations while preserving hidden-information rules.
 
 ## Key Decisions
 
@@ -47,6 +49,7 @@ confidence: high
 - Full backend sync and richer encounter persistence beyond the current local browser-storage surface remain out of scope.
 - The future timing/action-economy layer is still deferred.
 - `python.ipynb` cleanup remains deferred to the literal last cleanup step.
+- `VIEW-PERSONALIZATION-01` is open as the next planned user-facing UX system.
 
 ## Sources
 
@@ -54,6 +57,7 @@ confidence: high
 - [references/current_notes.md](../../references/current_notes.md)
 - [references/project_risks.md](../../references/project_risks.md)
 - [project_tracking/tasks_todo.md](../../project_tracking/tasks_todo.md)
+- [wiki/domains/view-personalization.md](../domains/view-personalization.md)
 - [src/App.tsx](../../src/App.tsx)
 - [src/state/appFlow.tsx](../../src/state/appFlow.tsx)
 
@@ -66,5 +70,6 @@ confidence: high
 - [THREAD-5](../../raw/codex-threads/thread-5-019d6ae9-438c-7f83-8f48-fdb6648938ef.md)
 - [THREAD-6](../../raw/codex-threads/thread-6-019d7a11-3487-7f20-b7a1-a00b828942d7.md)
 - [USER-COMBAT-PLAYER-2026-04-20](../../raw/user-approved/2026-04-20-player-combat-mode.md)
+- [USER-VIEW-PERSONALIZATION-2026-04-24](../../raw/user-approved/2026-04-24-view-personalization-roadmap.md)
 - [EXT-KARPATHY-GIST](../../raw/external/2026-04-15-karpathy-llm-wiki-gist.md)
 
