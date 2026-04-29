@@ -3,7 +3,7 @@ title: Wiki Maintenance
 topic: workflow
 kind: workflow
 status: active
-updated: 2026-04-17
+updated: 2026-04-27
 confidence: high
 ---
 
@@ -20,6 +20,7 @@ The wiki uses the Karpathy-style raw/wiki/schema split. `raw/` stores immutable 
   - metadata: `title`, `topic`, `kind`, `status`, `updated`, `confidence`
   - sections: `Summary`, `Current State`, `Intended Direction`, `Key Decisions`, `Deferred / Open`, `Sources`, `Raw`
 - There is no embedding store or separate RAG layer in V1.
+- `AGENTS.md` and this workflow page say wiki refresh automation should run on `codex/powers-implementation`; the repo-local skill file still contains a stale `codex/llm-wiki` branch rule, and this run could not update it because local ACL denied writes under `.agents/`.
 
 ## Intended Direction
 
@@ -40,6 +41,7 @@ The wiki uses the Karpathy-style raw/wiki/schema split. `raw/` stores immutable 
   - continue with other sources
 - Allowed wiki-maintenance writes are limited to `raw/`, `wiki/`, `.agents/skills/llm-wiki-maintainer/`, and wiki-specific rules in `AGENTS.md`.
 - The branch/worktree cleanup guidance was captured as durable workflow context so future wiki runs do not recreate a second dedicated wiki branch unless the user explicitly wants that isolation again.
+- External workflow snapshots were revalidated on 2026-04-27 and kept active; no material workflow drift was found.
 
 ## Deferred / Open
 

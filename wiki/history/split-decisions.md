@@ -3,7 +3,7 @@ title: Split Decisions
 topic: history
 kind: register
 status: active
-updated: 2026-04-24
+updated: 2026-04-27
 confidence: high
 ---
 
@@ -13,13 +13,14 @@ This is the living register of gaps between current implementation and intended 
 
 ## Current State
 
-Open splits revalidated on 2026-04-17:
+Open splits revalidated on 2026-04-27:
 
 | Split ID | Status | Current State | Source Trail |
 | --- | --- | --- | --- |
 | `COMBAT-ACT-01` | open | Physical attacks and ranged gear work now, but action cost, timing, weapon speed, and multi-attack throughput are still simplified. This gap is intentionally deferred to the very end of the project and may remain unimplemented. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, thread `5` |
 | `DOC-OBJECTIVE-01` | open | `references/project_objective.md` still describes the older manual `Brute Defiance` trigger, while current code, roadmap, and notes reflect the passive version. | `references/project_objective.md`, `references/plan.md`, `references/current_notes.md`, `src/engine/encounterExecutionEngine.ts` |
 | `VIEW-PERSONALIZATION-01` | open | The user wants personalized player/DM page design soon, but current code has fixed layouts and no persisted view-profile system yet. | `raw/user-approved/2026-04-24-view-personalization-roadmap.md`, `references/plan.md`, `project_tracking/tasks_todo.md` |
+| `WIKI-SKILL-ACL-01` | open | The active wiki branch policy is `codex/powers-implementation`, but `.agents/skills/llm-wiki-maintainer/SKILL.md` still says `codex/llm-wiki`; this run could not update that file because the local ACL denied writes under `.agents/`. | `AGENTS.md`, `.agents/skills/llm-wiki-maintainer/SKILL.md`, `wiki/workflow/wiki-maintenance.md` |
 
 Resolved splits:
 
@@ -40,6 +41,7 @@ Resolved splits:
 - `COMBAT-ACT-01`: keep the timing/action-economy idea recorded, but treat it as endgame-only and optional rather than the default next milestone.
 - `DOC-OBJECTIVE-01`: reconcile the stale current-state objective doc with the passive `Brute Defiance` behavior already live in code.
 - `VIEW-PERSONALIZATION-01`: implement constrained personalized layouts through safe persisted profiles, registered page sections, reversible presets, and auto-design recommendations.
+- `WIKI-SKILL-ACL-01`: update the repo-local skill branch rule once `.agents/` write access is available.
 
 ## Key Decisions
 
@@ -49,10 +51,12 @@ Resolved splits:
 
 ## Deferred / Open
 
-- Awaiting eventual user or implementation resolution for: `COMBAT-ACT-01`, `DOC-OBJECTIVE-01`, `VIEW-PERSONALIZATION-01`.
+- Awaiting eventual user or implementation resolution for: `COMBAT-ACT-01`, `DOC-OBJECTIVE-01`, `VIEW-PERSONALIZATION-01`, `WIKI-SKILL-ACL-01`.
 
 ## Sources
 
+- [AGENTS.md](../../AGENTS.md)
+- [.agents/skills/llm-wiki-maintainer/SKILL.md](../../.agents/skills/llm-wiki-maintainer/SKILL.md)
 - [references/plan.md](../../references/plan.md)
 - [references/current_notes.md](../../references/current_notes.md)
 - [project_tracking/tasks_todo.md](../../project_tracking/tasks_todo.md)

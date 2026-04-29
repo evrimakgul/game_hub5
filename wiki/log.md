@@ -170,3 +170,13 @@
 - Updated: `domains/knowledge-cards`
 - Updated: `domains/realtime-sessions`
 - Updated: `history/split-decisions`
+
+## [2026-04-27] refresh | source revalidation and session hardening notes
+- Revalidated tracked repo docs, current code landmarks, and external workflow snapshots; no material external workflow drift was found.
+- Detected a stale branch rule in `.agents/skills/llm-wiki-maintainer/SKILL.md`; local ACL denied writes under `.agents/`, so the mismatch is recorded as `WIKI-SKILL-ACL-01`.
+- Expanded `domains/realtime-sessions` with the follow-up Supabase account-hardening, campaign-owner membership policy, and owner-membership backfill migrations.
+- Branch checkout and commit creation were blocked by local `.git/index.lock` permission denial, but `main`, `origin/main`, `codex/powers-implementation`, and `origin/codex/powers-implementation` all point at `2fb081d`.
+- Updated: `raw/source-index.md`
+- Updated: `domains/realtime-sessions`
+- Updated: `workflow/wiki-maintenance`
+- Updated: `history/split-decisions`

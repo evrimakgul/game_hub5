@@ -32,7 +32,7 @@ Domain pages capture rules and implementation posture for the main game systems.
 | [items-and-equipment](./domains/items-and-equipment.md) | Shared items, persisted definitions, equipment occupancy, and item knowledge interactions. | 2026-04-20 |
 | [knowledge-cards](./domains/knowledge-cards.md) | Revisioned knowledge model, ownership, history linking, and current subject coverage. | 2026-04-15 |
 | [portal-content-patterns](./domains/portal-content-patterns.md) | Authored Grey Portal content patterns: themed portal scenarios, staged mob packs, bosses, loot, and closing rewards. | 2026-04-19 |
-| [realtime-sessions](./domains/realtime-sessions.md) | Optional Supabase-backed live DM/player sessions, secret rolls, sharing, rewards, events, and RLS-backed tables. | 2026-04-24 |
+| [realtime-sessions](./domains/realtime-sessions.md) | Optional Supabase-backed live DM/player sessions, secret rolls, sharing, rewards, events, and RLS-backed tables. | 2026-04-27 |
 | [view-personalization](./domains/view-personalization.md) | Planned safe personalization system for player/DM themes, layouts, presets, and auto-design recommendations. | 2026-04-24 |
 | [world-casting](./domains/world-casting.md) | Out-of-combat casting scope, shared backend path, and known limitations. | 2026-04-15 |
 
@@ -43,7 +43,7 @@ Workflow pages tell Codex how to operate on this repo and this wiki.
 | Article | Summary | Updated |
 | --- | --- | --- |
 | [codex-operating-rules](./workflow/codex-operating-rules.md) | Repo-specific operating policy for implementation and wiki maintenance. | 2026-04-17 |
-| [wiki-maintenance](./workflow/wiki-maintenance.md) | Ingest, query, lint, automation, and allowed-write rules for the wiki. | 2026-04-17 |
+| [wiki-maintenance](./workflow/wiki-maintenance.md) | Ingest, query, lint, automation, and allowed-write rules for the wiki. | 2026-04-27 |
 
 ## History
 
@@ -52,4 +52,4 @@ History pages track provenance, chronology, and unresolved divergence.
 | Article | Summary | Updated |
 | --- | --- | --- |
 | [thread-chronology](./history/thread-chronology.md) | Ordered summary of Codex threads, ChatGPT chats, and their implementation impact. | 2026-04-17 |
-| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-17 |
+| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-27 |

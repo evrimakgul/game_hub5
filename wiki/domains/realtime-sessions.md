@@ -3,7 +3,7 @@ title: Realtime Sessions
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-24
+updated: 2026-04-27
 confidence: medium
 ---
 
@@ -15,7 +15,11 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 
 - Supabase client wiring lives in `src/lib/supabaseClient.ts` and `src/state/onlineSession.tsx`.
 - Environment gates are `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-- The migration `supabase/migrations/202604240001_realtime_dm_screen.sql` defines profiles, campaigns, campaign members, game sessions, session characters, session events, pins, and knowledge session tables.
+- The base migration `supabase/migrations/202604240001_realtime_dm_screen.sql` defines profiles, campaigns, campaign members, game sessions, session characters, session events, pins, and knowledge session tables.
+- Follow-up migrations harden account access and campaign ownership behavior:
+  - `202604240002_account_access_hardening.sql` tolerates both `profiles.id` and older `profiles.user_id` schemas and adds safer session-character insert policy coverage.
+  - `202604250001_campaign_owner_membership_policy.sql` restores owner-only campaign-member insertion through `public.is_campaign_owner(campaign_id)`.
+  - `202604250002_backfill_campaign_owner_memberships.sql` backfills campaign-owner DM memberships for existing campaigns.
 - Repository helpers live in `src/lib/realtimeSessionRepository.ts`.
 - Session event/reward/share logic lives in `src/lib/realtimeSession.ts`.
 - DM route `/dm/screen` supports campaign/session creation, participant linking, character sync, secret/global rolls, event feed, sharing, reward packets, pins, notes, and combat shortcuts.
@@ -47,7 +51,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Manual Supabase RLS verification remains required.
 - Adding campaign members by email/display-name lookup is not implemented yet.
 - Richer session lifecycle controls beyond active-session creation are future work.
-- Manual Supabase SQL migration `202604240002_account_access_hardening.sql` should be run on projects that already created a legacy `profiles` table.
+- Existing Supabase projects may need the follow-up hardening/owner-membership migrations applied after the base realtime migration.
 
 ## Sources
 
@@ -58,6 +62,9 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - [src/routes/DmScreenPage.tsx](../../src/routes/DmScreenPage.tsx)
 - [src/routes/PlayerSessionPage.tsx](../../src/routes/PlayerSessionPage.tsx)
 - [supabase/migrations/202604240001_realtime_dm_screen.sql](../../supabase/migrations/202604240001_realtime_dm_screen.sql)
+- [supabase/migrations/202604240002_account_access_hardening.sql](../../supabase/migrations/202604240002_account_access_hardening.sql)
+- [supabase/migrations/202604250001_campaign_owner_membership_policy.sql](../../supabase/migrations/202604250001_campaign_owner_membership_policy.sql)
+- [supabase/migrations/202604250002_backfill_campaign_owner_memberships.sql](../../supabase/migrations/202604250002_backfill_campaign_owner_memberships.sql)
 
 ## Raw
 
