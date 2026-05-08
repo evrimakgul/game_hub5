@@ -118,6 +118,17 @@ export type GameSessionRecord = {
   startedAt: string;
   endedAt: string | null;
   sessionNotes: string;
+  sessionNumber: number | null;
+};
+
+export type SessionAttendeeRecord = {
+  sessionId: string;
+  userId: string;
+  role: OnlineSessionRole;
+  displayName: string;
+  selectedCharacterId: string | null;
+  joinedAt: string;
+  addedByUserId: string | null;
 };
 
 export type SessionCharacterRecord = {

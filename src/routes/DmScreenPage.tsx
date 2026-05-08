@@ -19,19 +19,22 @@ import {
 import {
   addCampaignMember,
   createCampaign,
-  createGameSession,
   deleteEmptyCampaign,
+  endCurrentGameSession,
   insertSessionEvent,
   listActiveSessions,
   listCampaignMembers,
   listCampaignsForRole,
+  listSessionAttendees,
   listSessionCharacters,
   listSessionEvents,
+  startCurrentGameSession,
   subscribeToCampaignMembers,
   subscribeToSessionEvents,
   subscribeToSessionCharacters,
   updateGameSessionNotes,
   upsertKnowledgeRecords,
+  upsertSessionAttendee,
   upsertSessionCharacters,
 } from "../lib/realtimeSessionRepository.ts";
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
@@ -48,6 +51,7 @@ import type {
   CampaignRecord,
   GameSessionRecord,
   RewardPacket,
+  SessionAttendeeRecord,
   SessionCharacterRecord,
   SessionEvent,
 } from "../types/realtimeSession.ts";
@@ -111,12 +115,12 @@ export function DmScreenPage() {
   const [campaigns, setCampaigns] = useState<CampaignRecord[]>([]);
   const [sessions, setSessions] = useState<GameSessionRecord[]>([]);
   const [members, setMembers] = useState<CampaignMemberRecord[]>([]);
+  const [sessionAttendees, setSessionAttendees] = useState<SessionAttendeeRecord[]>([]);
   const [sessionCharacters, setSessionCharacters] = useState<SessionCharacterRecord[]>([]);
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [campaignName, setCampaignName] = useState("Convergence Campaign");
-  const [sessionLabel, setSessionLabel] = useState("Live Session");
   const [memberUserId, setMemberUserId] = useState("");
   const [memberDisplayName, setMemberDisplayName] = useState("");
   const [memberCharacterId, setMemberCharacterId] = useState("");
@@ -187,6 +191,7 @@ export function DmScreenPage() {
     if (!client || !selectedCampaignId) {
       setSessions([]);
       setMembers([]);
+      setSelectedSessionId("");
       return;
     }
     const supabase = client;
@@ -201,7 +206,7 @@ export function DmScreenPage() {
         setPanelMessage(sessionResult.error);
       } else {
         setSessions(sessionResult);
-        setSelectedSessionId((current) => current || sessionResult[0]?.id || "");
+        setSelectedSessionId(sessionResult[0]?.id || "");
       }
 
       if ("error" in memberResult) {
@@ -233,15 +238,17 @@ export function DmScreenPage() {
   useEffect(() => {
     if (!client || !selectedSessionId) {
       setEvents([]);
+      setSessionAttendees([]);
       setSessionCharacters([]);
       return;
     }
     const supabase = client;
 
     async function loadSessionDetails(): Promise<void> {
-      const [eventResult, characterResult] = await Promise.all([
+      const [eventResult, characterResult, attendeeResult] = await Promise.all([
         listSessionEvents({ client: supabase, sessionId: selectedSessionId }),
         listSessionCharacters({ client: supabase, sessionId: selectedSessionId }),
+        listSessionAttendees({ client: supabase, sessionId: selectedSessionId }),
       ]);
 
       if ("error" in eventResult) {
@@ -254,6 +261,12 @@ export function DmScreenPage() {
         setPanelMessage(characterResult.error);
       } else {
         setSessionCharacters(characterResult);
+      }
+
+      if ("error" in attendeeResult) {
+        setPanelMessage(attendeeResult.error);
+      } else {
+        setSessionAttendees(attendeeResult);
       }
     }
 
@@ -378,16 +391,14 @@ export function DmScreenPage() {
     setPanelMessage("Player account added.");
   }
 
-  async function handleCreateSession(): Promise<void> {
+  async function handleStartSession(): Promise<void> {
     if (!client || !online.user || !selectedCampaignId) {
       return;
     }
 
-    const result = await createGameSession({
+    const result = await startCurrentGameSession({
       client,
       campaignId: selectedCampaignId,
-      label: sessionLabel.trim() || "Live Session",
-      createdBy: online.user.id,
     });
 
     if ("error" in result) {
@@ -395,9 +406,59 @@ export function DmScreenPage() {
       return;
     }
 
-    setSessions((current) => [result, ...current]);
+    setSessions([result]);
     setSelectedSessionId(result.id);
-    setPanelMessage("Session created.");
+    setPanelMessage("Current session started.");
+  }
+
+  async function handleEndSession(): Promise<void> {
+    if (!client || !selectedCampaignId || !selectedSession) {
+      return;
+    }
+
+    const result = await endCurrentGameSession({
+      client,
+      campaignId: selectedCampaignId,
+    });
+
+    if ("error" in result) {
+      setPanelMessage(result.error);
+      return;
+    }
+
+    setSessions([]);
+    setSelectedSessionId("");
+    setEvents([]);
+    setSessionAttendees([]);
+    setSessionCharacters([]);
+    setPanelMessage(`${result.label} ended.`);
+  }
+
+  async function handleAddMemberToSession(member: CampaignMemberRecord): Promise<void> {
+    if (!client || !online.user || !selectedSessionId) {
+      return;
+    }
+
+    const result = await upsertSessionAttendee({
+      client,
+      sessionId: selectedSessionId,
+      userId: member.userId,
+      role: member.role,
+      displayName: member.displayName || member.userId,
+      selectedCharacterId: member.selectedCharacterId,
+      addedByUserId: online.user.id,
+    });
+
+    if ("error" in result) {
+      setPanelMessage(result.error);
+      return;
+    }
+
+    setSessionAttendees((current) => [
+      ...current.filter((attendee) => attendee.userId !== result.userId),
+      result,
+    ]);
+    setPanelMessage("Campaign member added to current session.");
   }
 
   async function handleSyncCharacters(): Promise<void> {
@@ -410,9 +471,15 @@ export function DmScreenPage() {
         .filter((member) => member.selectedCharacterId)
         .map((member) => [member.selectedCharacterId, member.userId])
     );
+    const syncableCharacters = characters.filter((character) => character.ownerRole === "dm");
+    if (syncableCharacters.length === 0) {
+      setPanelMessage("No local DM/NPC characters to sync.");
+      return;
+    }
+
     const result = await upsertSessionCharacters({
       client,
-      records: characters.map((character) => ({
+      records: syncableCharacters.map((character) => ({
         sessionId: selectedSessionId,
         characterId: character.id,
         ownerUserId: ownerByCharacterId.get(character.id) ?? null,
@@ -838,30 +905,30 @@ export function DmScreenPage() {
                 Delete Selected
               </button>
             </div>
-            <label className="dm-field">
-              <span>Session</span>
-              <select value={selectedSessionId} onChange={(event) => setSelectedSessionId(event.target.value)}>
-                <option value="">Select session</option>
-                {sessions.map((session) => (
-                  <option key={session.id} value={session.id}>
-                    {session.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="dm-screen-row">
+              <strong>Current Session</strong>
+              <span>
+                {selectedSession
+                  ? `${selectedSession.label} | ${new Date(selectedSession.startedAt).toLocaleString()}`
+                  : "No active session"}
+              </span>
+            </div>
             <div className="dm-inline-controls">
-              <input
-                value={sessionLabel}
-                onChange={(event) => setSessionLabel(event.target.value)}
-                placeholder="Session label"
-              />
               <button
                 type="button"
                 className="flow-secondary"
-                onClick={handleCreateSession}
-                disabled={!selectedCampaign}
+                onClick={handleStartSession}
+                disabled={!selectedCampaign || Boolean(selectedSession)}
               >
-                Start
+                Start Session
+              </button>
+              <button
+                type="button"
+                className="flow-secondary"
+                onClick={handleEndSession}
+                disabled={!selectedSession}
+              >
+                End Session
               </button>
             </div>
           </article>
@@ -874,7 +941,21 @@ export function DmScreenPage() {
               {members.map((member) => (
                 <div key={member.userId} className="dm-screen-row">
                   <strong>{member.displayName || member.userId}</strong>
-                  <span>{member.role}</span>
+                  <span>
+                    {sessionAttendees.some((attendee) => attendee.userId === member.userId)
+                      ? "in session"
+                      : member.role}
+                  </span>
+                  {member.role === "player" ? (
+                    <button
+                      type="button"
+                      className="flow-secondary"
+                      disabled={!selectedSessionId}
+                      onClick={() => handleAddMemberToSession(member)}
+                    >
+                      Add To Session
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -920,15 +1001,15 @@ export function DmScreenPage() {
               disabled={!selectedSessionId}
               onClick={handleSyncCharacters}
             >
-              Sync Local Characters To Session
+              Sync Local DM/NPC Characters To Session
             </button>
             <div className="dm-screen-table">
-              {playerCharacters.map((character) => (
+              {sessionCharacters.filter((character) => character.ownerRole === "player").map((character) => (
                 <div key={character.id} className="dm-screen-table-row">
-                  <strong>{getCharacterName(character)}</strong>
-                  <span>XP {character.sheet.xpEarned - character.sheet.xpUsed}</span>
-                  <span>Insp {character.sheet.inspiration} + Temp {character.sheet.temporaryInspiration}</span>
-                  <span>Money {character.sheet.money}</span>
+                  <strong>{character.displayName}</strong>
+                  <span>player</span>
+                  <span>{character.ownerUserId ?? "no account"}</span>
+                  <span>{new Date(character.updatedAt).toLocaleString()}</span>
                 </div>
               ))}
               {dmCharacters.map((character) => (

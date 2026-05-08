@@ -5,6 +5,7 @@ import type {
   CampaignRecord,
   GameSessionRecord,
   OnlineSessionRole,
+  SessionAttendeeRecord,
   SessionCharacterRecord,
   SessionEvent,
 } from "../types/realtimeSession.ts";
@@ -55,6 +56,17 @@ type GameSessionRow = {
   started_at: string;
   ended_at: string | null;
   session_notes: string;
+  session_number: number | null;
+};
+
+type SessionAttendeeRow = {
+  session_id: string;
+  user_id: string;
+  role: OnlineSessionRole;
+  display_name: string;
+  selected_character_id: string | null;
+  joined_at: string;
+  added_by_user_id: string | null;
 };
 
 type SessionCharacterRow = {
@@ -147,6 +159,19 @@ function mapGameSession(row: GameSessionRow): GameSessionRecord {
     startedAt: row.started_at,
     endedAt: row.ended_at,
     sessionNotes: row.session_notes,
+    sessionNumber: row.session_number,
+  };
+}
+
+function mapSessionAttendee(row: SessionAttendeeRow): SessionAttendeeRecord {
+  return {
+    sessionId: row.session_id,
+    userId: row.user_id,
+    role: row.role,
+    displayName: row.display_name,
+    selectedCharacterId: row.selected_character_id,
+    joinedAt: row.joined_at,
+    addedByUserId: row.added_by_user_id,
   };
 }
 
@@ -320,25 +345,31 @@ export async function listCampaignsForRole(args: {
   });
 }
 
-export async function createGameSession(args: {
+export async function startCurrentGameSession(args: {
   client: SupabaseClient;
   campaignId: string;
-  label: string;
-  createdBy: string;
 }): Promise<GameSessionRecord | { error: string }> {
   const { data, error } = await args.client
-    .from("game_sessions")
-    .insert({
-      campaign_id: args.campaignId,
-      label: args.label,
-      created_by: args.createdBy,
-      status: "active",
-    })
-    .select("id, campaign_id, label, status, created_by, started_at, ended_at, session_notes")
-    .single();
+    .rpc("start_current_game_session", { p_campaign_id: args.campaignId })
+    .single<GameSessionRow>();
 
   if (error || !data) {
-    return { error: formatRealtimeSessionError(error, "Failed to create session.") };
+    return { error: formatRealtimeSessionError(error, "Failed to start session.") };
+  }
+
+  return mapGameSession(data);
+}
+
+export async function endCurrentGameSession(args: {
+  client: SupabaseClient;
+  campaignId: string;
+}): Promise<GameSessionRecord | { error: string }> {
+  const { data, error } = await args.client
+    .rpc("end_current_game_session", { p_campaign_id: args.campaignId })
+    .single<GameSessionRow>();
+
+  if (error || !data) {
+    return { error: formatRealtimeSessionError(error, "Failed to end session.") };
   }
 
   return mapGameSession(data);
@@ -350,7 +381,7 @@ export async function listActiveSessions(args: {
 }): Promise<GameSessionRecord[] | { error: string }> {
   const { data, error } = await args.client
     .from("game_sessions")
-    .select("id, campaign_id, label, status, created_by, started_at, ended_at, session_notes")
+    .select("id, campaign_id, label, status, created_by, started_at, ended_at, session_notes, session_number")
     .eq("campaign_id", args.campaignId)
     .eq("status", "active")
     .order("started_at", { ascending: false });
@@ -371,7 +402,7 @@ export async function updateGameSessionNotes(args: {
     .from("game_sessions")
     .update({ session_notes: args.sessionNotes })
     .eq("id", args.sessionId)
-    .select("id, campaign_id, label, status, created_by, started_at, ended_at, session_notes")
+    .select("id, campaign_id, label, status, created_by, started_at, ended_at, session_notes, session_number")
     .single();
 
   if (error || !data) {
@@ -379,6 +410,55 @@ export async function updateGameSessionNotes(args: {
   }
 
   return mapGameSession(data);
+}
+
+export async function listSessionAttendees(args: {
+  client: SupabaseClient;
+  sessionId: string;
+}): Promise<SessionAttendeeRecord[] | { error: string }> {
+  const { data, error } = await args.client
+    .from("session_attendees")
+    .select("session_id, user_id, role, display_name, selected_character_id, joined_at, added_by_user_id")
+    .eq("session_id", args.sessionId)
+    .order("joined_at", { ascending: true });
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to load session attendees.") };
+  }
+
+  return (data ?? []).map(mapSessionAttendee);
+}
+
+export async function upsertSessionAttendee(args: {
+  client: SupabaseClient;
+  sessionId: string;
+  userId: string;
+  role: OnlineSessionRole;
+  displayName: string;
+  selectedCharacterId?: string | null;
+  addedByUserId?: string | null;
+}): Promise<SessionAttendeeRecord | { error: string }> {
+  const { data, error } = await args.client
+    .from("session_attendees")
+    .upsert(
+      {
+        session_id: args.sessionId,
+        user_id: args.userId,
+        role: args.role,
+        display_name: args.displayName,
+        selected_character_id: args.selectedCharacterId ?? null,
+        added_by_user_id: args.addedByUserId ?? args.userId,
+      },
+      { onConflict: "session_id,user_id" }
+    )
+    .select("session_id, user_id, role, display_name, selected_character_id, joined_at, added_by_user_id")
+    .single();
+
+  if (error || !data) {
+    return { error: formatRealtimeSessionError(error, "Failed to update session attendance.") };
+  }
+
+  return mapSessionAttendee(data);
 }
 
 export async function listCampaignMembers(args: {

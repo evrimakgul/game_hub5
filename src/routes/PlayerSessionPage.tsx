@@ -19,11 +19,13 @@ import {
   listActiveSessions,
   listCampaignMembers,
   listCampaigns,
+  listSessionAttendees,
   listSessionCharacters,
   listSessionEvents,
   subscribeToCampaignMembers,
   subscribeToSessionEvents,
   subscribeToSessionCharacters,
+  upsertSessionAttendee,
   upsertKnowledgeRecords,
   upsertSessionCharacters,
 } from "../lib/realtimeSessionRepository.ts";
@@ -35,6 +37,7 @@ import type {
   CampaignMemberRecord,
   CampaignRecord,
   GameSessionRecord,
+  SessionAttendeeRecord,
   SessionCharacterRecord,
   SessionEvent,
 } from "../types/realtimeSession.ts";
@@ -69,6 +72,7 @@ export function PlayerSessionPage() {
   const [campaigns, setCampaigns] = useState<CampaignRecord[]>([]);
   const [sessions, setSessions] = useState<GameSessionRecord[]>([]);
   const [members, setMembers] = useState<CampaignMemberRecord[]>([]);
+  const [sessionAttendees, setSessionAttendees] = useState<SessionAttendeeRecord[]>([]);
   const [sessionCharacters, setSessionCharacters] = useState<SessionCharacterRecord[]>([]);
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
@@ -128,6 +132,7 @@ export function PlayerSessionPage() {
     if (!client || !selectedCampaignId) {
       setSessions([]);
       setMembers([]);
+      setSelectedSessionId("");
       return;
     }
     const supabase = client;
@@ -142,7 +147,7 @@ export function PlayerSessionPage() {
         setPanelMessage(sessionResult.error);
       } else {
         setSessions(sessionResult);
-        setSelectedSessionId((current) => current || sessionResult[0]?.id || "");
+        setSelectedSessionId(sessionResult[0]?.id || "");
       }
 
       if ("error" in memberResult) {
@@ -174,15 +179,17 @@ export function PlayerSessionPage() {
   useEffect(() => {
     if (!client || !selectedSessionId) {
       setEvents([]);
+      setSessionAttendees([]);
       setSessionCharacters([]);
       return;
     }
     const supabase = client;
 
     async function loadSessionDetails(): Promise<void> {
-      const [eventResult, characterResult] = await Promise.all([
+      const [eventResult, characterResult, attendeeResult] = await Promise.all([
         listSessionEvents({ client: supabase, sessionId: selectedSessionId }),
         listSessionCharacters({ client: supabase, sessionId: selectedSessionId }),
+        listSessionAttendees({ client: supabase, sessionId: selectedSessionId }),
       ]);
 
       if ("error" in eventResult) {
@@ -195,6 +202,12 @@ export function PlayerSessionPage() {
         setPanelMessage(characterResult.error);
       } else {
         setSessionCharacters(characterResult);
+      }
+
+      if ("error" in attendeeResult) {
+        setPanelMessage(attendeeResult.error);
+      } else {
+        setSessionAttendees(attendeeResult);
       }
     }
 
@@ -282,6 +295,21 @@ export function PlayerSessionPage() {
       return;
     }
 
+    const attendeeResult = await upsertSessionAttendee({
+      client,
+      sessionId: selectedSessionId,
+      userId: online.user.id,
+      role: "player",
+      displayName: online.profile?.displayName ?? activeCharacterName,
+      selectedCharacterId: activePlayerCharacter.id,
+      addedByUserId: online.user.id,
+    });
+
+    if ("error" in attendeeResult) {
+      setPanelMessage(attendeeResult.error);
+      return;
+    }
+
     const result = await upsertSessionCharacters({
       client,
       records: [
@@ -305,7 +333,38 @@ export function PlayerSessionPage() {
       ...current.filter((entry) => entry.characterId !== activePlayerCharacter.id),
       ...result,
     ]);
+    setSessionAttendees((current) => [
+      ...current.filter((attendee) => attendee.userId !== attendeeResult.userId),
+      attendeeResult,
+    ]);
     setPanelMessage("Character published to the live session.");
+  }
+
+  async function handleJoinSession(): Promise<void> {
+    if (!client || !online.user || !selectedSessionId) {
+      return;
+    }
+
+    const result = await upsertSessionAttendee({
+      client,
+      sessionId: selectedSessionId,
+      userId: online.user.id,
+      role: "player",
+      displayName: online.profile?.displayName ?? online.user.email ?? "Player",
+      selectedCharacterId: activePlayerCharacter?.id ?? null,
+      addedByUserId: online.user.id,
+    });
+
+    if ("error" in result) {
+      setPanelMessage(result.error);
+      return;
+    }
+
+    setSessionAttendees((current) => [
+      ...current.filter((attendee) => attendee.userId !== result.userId),
+      result,
+    ]);
+    setPanelMessage("Joined current session.");
   }
 
   async function handleHiddenRoll(): Promise<void> {
@@ -472,6 +531,14 @@ export function PlayerSessionPage() {
             <button
               type="button"
               className="flow-secondary"
+              disabled={!selectedSessionId}
+              onClick={handleJoinSession}
+            >
+              Join Current Session
+            </button>
+            <button
+              type="button"
+              className="flow-secondary"
               disabled={!selectedSessionId || !activePlayerCharacter}
               onClick={handlePublishCharacter}
             >
@@ -499,19 +566,16 @@ export function PlayerSessionPage() {
                 ))}
               </select>
             </label>
-            <label className="dm-field">
-              <span>Session</span>
-              <select value={selectedSessionId} onChange={(event) => setSelectedSessionId(event.target.value)}>
-                <option value="">Select session</option>
-                {sessions.map((session) => (
-                  <option key={session.id} value={session.id}>
-                    {session.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="dm-screen-row">
+              <strong>Current Session</strong>
+              <span>
+                {selectedSession
+                  ? `${selectedSession.label} | ${new Date(selectedSession.startedAt).toLocaleString()}`
+                  : "No active session"}
+              </span>
+            </div>
             <p className="dm-summary-line">
-              {selectedSession ? selectedSession.sessionNotes || "No session notes yet." : "No active session selected."}
+              {selectedSession ? selectedSession.sessionNotes || "No session notes yet." : "Ask the DM to start the session."}
             </p>
           </article>
 
@@ -604,7 +668,9 @@ export function PlayerSessionPage() {
                 </div>
               ))}
             </div>
-            <p className="dm-summary-line">{members.length} account(s) in this campaign.</p>
+            <p className="dm-summary-line">
+              {sessionAttendees.length} attendee(s) in this session. {members.length} account(s) in this campaign.
+            </p>
           </article>
 
           <article className="sheet-card dm-screen-panel dm-screen-wide">
