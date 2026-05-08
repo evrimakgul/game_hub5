@@ -20,6 +20,7 @@ import {
   addCampaignMember,
   createCampaign,
   createGameSession,
+  deleteEmptyCampaign,
   insertSessionEvent,
   listActiveSessions,
   listCampaignMembers,
@@ -314,6 +315,41 @@ export function DmScreenPage() {
     setMembers([result.member]);
     setSelectedCampaignId(result.campaign.id);
     setPanelMessage("Campaign created.");
+  }
+
+  async function handleDeleteCampaign(): Promise<void> {
+    if (!client || !selectedCampaign) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete campaign "${selectedCampaign.name}"? This only works for campaigns with no sessions.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const result = await deleteEmptyCampaign({
+      client,
+      campaignId: selectedCampaign.id,
+    });
+
+    if (typeof result !== "string") {
+      setPanelMessage(result.error);
+      return;
+    }
+
+    setCampaigns((current) => current.filter((campaign) => campaign.id !== result));
+    setSelectedCampaignId((current) => {
+      if (current !== result) {
+        return current;
+      }
+      return campaigns.find((campaign) => campaign.id !== result)?.id ?? "";
+    });
+    setSelectedSessionId("");
+    setSessions([]);
+    setMembers([]);
+    setPanelMessage("Campaign deleted.");
   }
 
   async function handleAddMember(): Promise<void> {
@@ -792,6 +828,14 @@ export function DmScreenPage() {
               />
               <button type="button" className="flow-secondary" onClick={handleCreateCampaign}>
                 Create
+              </button>
+              <button
+                type="button"
+                className="flow-secondary"
+                disabled={!selectedCampaign}
+                onClick={handleDeleteCampaign}
+              >
+                Delete Selected
               </button>
             </div>
             <label className="dm-field">

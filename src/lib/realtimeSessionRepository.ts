@@ -236,6 +236,21 @@ export async function createCampaign(args: {
   };
 }
 
+export async function deleteEmptyCampaign(args: {
+  client: SupabaseClient;
+  campaignId: string;
+}): Promise<string | { error: string }> {
+  const { data, error } = await args.client.rpc("delete_empty_campaign", {
+    p_campaign_id: args.campaignId,
+  });
+
+  if (error || !data) {
+    return { error: formatRealtimeSessionError(error, "Failed to delete campaign.") };
+  }
+
+  return data as string;
+}
+
 export async function addCampaignMember(args: {
   client: SupabaseClient;
   campaignId: string;
