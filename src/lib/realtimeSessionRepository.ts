@@ -34,6 +34,18 @@ type CampaignMemberWithCampaignRow = CampaignMemberRow & {
   campaigns: CampaignRow | CampaignRow[] | null;
 };
 
+type CreateCampaignWithOwnerRow = {
+  campaign_id: string;
+  campaign_name: string;
+  owner_user_id: string;
+  campaign_created_at: string;
+  member_user_id: string;
+  member_role: OnlineSessionRole;
+  member_display_name: string;
+  member_selected_character_id: string | null;
+  member_joined_at: string;
+};
+
 type GameSessionRow = {
   id: string;
   campaign_id: string;
@@ -193,37 +205,34 @@ export async function createCampaign(args: {
   ownerUserId: string;
   ownerDisplayName: string;
 }): Promise<{ campaign: CampaignRecord; member: CampaignMemberRecord } | { error: string }> {
-  const { data: campaignRow, error: campaignError } = await args.client
-    .from("campaigns")
-    .insert({ name: args.name, owner_user_id: args.ownerUserId })
-    .select("id, name, owner_user_id, created_at")
-    .single();
-
-  if (campaignError || !campaignRow) {
-    return { error: formatRealtimeSessionError(campaignError, "Failed to create campaign.") };
-  }
-
-  const { data: memberRow, error: memberError } = await args.client
-    .from("campaign_members")
-    .insert({
-      campaign_id: campaignRow.id,
-      user_id: args.ownerUserId,
-      role: "dm",
-      display_name: args.ownerDisplayName,
-      selected_character_id: null,
+  const { data, error } = await args.client
+    .rpc("create_campaign_with_owner", {
+      p_campaign_name: args.name,
+      p_owner_display_name: args.ownerDisplayName,
     })
-    .select("campaign_id, user_id, role, display_name, selected_character_id, joined_at")
-    .single();
+    .single<CreateCampaignWithOwnerRow>();
 
-  if (memberError || !memberRow) {
+  if (error || !data) {
     return {
-      error: formatRealtimeSessionError(memberError, "Failed to create campaign membership."),
+      error: formatRealtimeSessionError(error, "Failed to create campaign."),
     };
   }
 
   return {
-    campaign: mapCampaign(campaignRow),
-    member: mapCampaignMember(memberRow),
+    campaign: {
+      id: data.campaign_id,
+      name: data.campaign_name,
+      ownerUserId: data.owner_user_id,
+      createdAt: data.campaign_created_at,
+    },
+    member: {
+      campaignId: data.campaign_id,
+      userId: data.member_user_id,
+      role: data.member_role,
+      displayName: data.member_display_name,
+      selectedCharacterId: data.member_selected_character_id,
+      joinedAt: data.member_joined_at,
+    },
   };
 }
 
