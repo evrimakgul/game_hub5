@@ -8,6 +8,7 @@ type CharacterHistorySectionProps = {
   isReadOnlyView: boolean;
   gameHistory: GameHistoryEntry[];
   knowledgeState: KnowledgeState;
+  mode?: "all" | "notes" | "history";
   onSessionNotesChange: (value: string) => void;
   onAppendHistory: () => void;
   onOpenKnowledgeRevision: (revisionId: string) => void;
@@ -22,46 +23,51 @@ export function CharacterHistorySection({
   isReadOnlyView,
   gameHistory,
   knowledgeState,
+  mode = "all",
   onSessionNotesChange,
   onAppendHistory,
   onOpenKnowledgeRevision,
 }: CharacterHistorySectionProps) {
   return (
     <>
-      <article className="sheet-card notes-card">
-        <p className="section-kicker">Sheet Notes</p>
-        <h2>Session Notes</h2>
-        <textarea
-          className="notes-input"
-          value={sessionNotes}
-          onChange={(event) => onSessionNotesChange(event.target.value)}
-          readOnly={isReadOnlyView}
-        />
-        {!isReadOnlyView ? (
-          <button type="button" className="notes-submit" onClick={onAppendHistory}>
-            Add To Game History
-          </button>
-        ) : null}
-      </article>
+      {mode === "all" || mode === "notes" ? (
+        <article className="sheet-card notes-card">
+          <p className="section-kicker">Sheet Notes</p>
+          <h2>Session Notes</h2>
+          <textarea
+            className="notes-input"
+            value={sessionNotes}
+            onChange={(event) => onSessionNotesChange(event.target.value)}
+            readOnly={isReadOnlyView}
+          />
+          {!isReadOnlyView ? (
+            <button type="button" className="notes-submit" onClick={onAppendHistory}>
+              Add To Game History
+            </button>
+          ) : null}
+        </article>
+      ) : null}
 
-      <article className="sheet-card history-card">
-        <p className="section-kicker">Session Log</p>
-        <h2>Game History</h2>
-        {gameHistory.length === 0 ? (
-          <p className="history-empty">No submitted game history yet.</p>
-        ) : (
-          <div className="history-list">
-            {gameHistory.map((entry) => (
-              <HistoryEntryRow
-                key={getHistoryEntryKey(entry)}
-                entry={entry}
-                knowledgeState={knowledgeState}
-                onOpenKnowledgeRevision={onOpenKnowledgeRevision}
-              />
-            ))}
-          </div>
-        )}
-      </article>
+      {mode === "all" || mode === "history" ? (
+        <article className="sheet-card history-card">
+          <p className="section-kicker">Session Log</p>
+          <h2>Game History</h2>
+          {gameHistory.length === 0 ? (
+            <p className="history-empty">No submitted game history yet.</p>
+          ) : (
+            <div className="history-list">
+              {gameHistory.map((entry) => (
+                <HistoryEntryRow
+                  key={getHistoryEntryKey(entry)}
+                  entry={entry}
+                  knowledgeState={knowledgeState}
+                  onOpenKnowledgeRevision={onOpenKnowledgeRevision}
+                />
+              ))}
+            </div>
+          )}
+        </article>
+      ) : null}
     </>
   );
 }

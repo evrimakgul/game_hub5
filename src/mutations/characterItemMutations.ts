@@ -163,11 +163,15 @@ function equipCharacterItemToSlot(
     return clearEquipmentAssignment(sheet, requestedSlot, itemsById, itemRulesContext);
   }
 
+  const nextItem = itemsById[normalizedItemId] ?? null;
+  if (nextItem && getItemAllowedEquipSlots(nextItem, itemRulesContext).length === 0) {
+    return sheet;
+  }
+
   if (!isCanonicalEquipmentSlotId(requestedSlot)) {
     return upsertEquipmentSlotValue(sheet, requestedSlot, normalizedItemId, null);
   }
 
-  const nextItem = itemsById[normalizedItemId] ?? null;
   if (!nextItem) {
     return upsertEquipmentSlotValue(sheet, requestedSlot, normalizedItemId, requestedSlot);
   }
@@ -315,9 +319,14 @@ export function setCharacterActiveItemState(
   itemId: string,
   isActive: boolean
 ): CharacterDraft {
+  const canActivate = sheet.inventoryItemIds.includes(itemId);
+
   return {
     ...sheet,
-    activeItemIds: isActive ? appendUnique(sheet.activeItemIds, itemId) : removeValue(sheet.activeItemIds, itemId),
+    activeItemIds:
+      isActive && canActivate
+        ? appendUnique(sheet.activeItemIds, itemId)
+        : removeValue(sheet.activeItemIds, itemId),
   };
 }
 

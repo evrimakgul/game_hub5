@@ -241,37 +241,41 @@ export type CharacterEquipmentReference = {
 };
 
 export const MAIN_EQUIPMENT_SLOT_IDS = [
+  "head",
+  "neck",
+  "body",
   "weapon_primary",
   "weapon_secondary",
-  "ring_left",
   "ring_right",
-  "body",
-  "neck",
-  "head",
+  "ring_left",
 ] as const;
 export type MainEquipmentSlotId = (typeof MAIN_EQUIPMENT_SLOT_IDS)[number];
 
 export const MAIN_EQUIPMENT_SLOT_LABELS: Record<MainEquipmentSlotId, string> = {
+  head: "Head",
+  neck: "Neck",
+  body: "Body",
   weapon_primary: "Primary Hand",
   weapon_secondary: "Secondary Hand",
-  ring_left: "Left Ring",
   ring_right: "Right Ring",
-  body: "Chest / Body",
-  neck: "Neck",
-  head: "Head",
+  ring_left: "Left Ring",
 };
 
 export function isMainEquipmentSlotId(value: unknown): value is MainEquipmentSlotId {
   return typeof value === "string" && MAIN_EQUIPMENT_SLOT_IDS.includes(value as MainEquipmentSlotId);
 }
 
-export const SUPPLEMENTARY_EQUIPMENT_SLOT_IDS = ["orbital", "earring", "charm"] as const;
+export const SUPPLEMENTARY_EQUIPMENT_SLOT_IDS = [
+  "earring_right",
+  "earring_left",
+  "orbital",
+] as const;
 export type SupplementaryEquipmentSlotId = (typeof SUPPLEMENTARY_EQUIPMENT_SLOT_IDS)[number];
 
 export const SUPPLEMENTARY_EQUIPMENT_SLOT_LABELS: Record<SupplementaryEquipmentSlotId, string> = {
+  earring_right: "Right Earring",
+  earring_left: "Left Earring",
   orbital: "Orbital",
-  earring: "Earring",
-  charm: "Charm / Talisman",
 };
 
 export const CANONICAL_EQUIPMENT_SLOT_IDS = [
@@ -287,6 +291,19 @@ export function isSupplementaryEquipmentSlotId(value: unknown): value is Supplem
 export function isCanonicalEquipmentSlotId(value: unknown): value is CanonicalEquipmentSlotId {
   return typeof value === "string" && CANONICAL_EQUIPMENT_SLOT_IDS.includes(value as CanonicalEquipmentSlotId);
 }
+
+export const CHARACTER_LOADOUT_SLOT_IDS = [
+  "head",
+  "neck",
+  "body",
+  "weapon_primary",
+  "weapon_secondary",
+  "earring_right",
+  "earring_left",
+  "ring_right",
+  "ring_left",
+  "orbital",
+] as const satisfies readonly CanonicalEquipmentSlotId[];
 
 export const WEAPON_HAND_SLOT_IDS = ["weapon_primary", "weapon_secondary"] as const;
 export type WeaponHandSlotId = (typeof WEAPON_HAND_SLOT_IDS)[number];

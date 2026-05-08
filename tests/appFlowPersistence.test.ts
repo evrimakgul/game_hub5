@@ -389,7 +389,7 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
       name: "supplementary slot enablement persists through serialize and hydrate",
       run: () => {
         const sheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
-        sheet.enabledSupplementarySlotIds = ["orbital", "charm"];
+        sheet.enabledSupplementarySlotIds = ["orbital", "earring_left", "earring_right"];
 
         const payload = serializePersistedCharacters({
           characters: [{ id: "support-1", ownerRole: "player", sheet }],
@@ -414,11 +414,11 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.deepEqual(
           ((payload.characters[0]?.sheet as { enabledSupplementarySlotIds?: string[] } | undefined)
             ?.enabledSupplementarySlotIds ?? []),
-          ["orbital", "charm"]
+          ["orbital", "earring_left", "earring_right"]
         );
         assert.deepEqual(
           hydrated.characters[0]?.sheet.enabledSupplementarySlotIds,
-          ["orbital", "charm"]
+          ["orbital", "earring_left", "earring_right"]
         );
       },
     },
@@ -665,7 +665,11 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(state.items.length, 7);
         assert.equal(state.characters[0]?.sheet.ownedItemIds.length, 2);
         assert.equal(state.characters[0]?.sheet.inventoryItemIds.length, 2);
-        assert.equal(state.characters[0]?.sheet.equipment[0]?.itemId, "item-legacy-1-legacy-equipment-0");
+        assert.equal(
+          state.characters[0]?.sheet.equipment.find((entry) => entry.slot === "weapon_primary")
+            ?.itemId,
+          "item-legacy-1-legacy-equipment-0"
+        );
         const itemIndex = buildItemIndex(state.items);
         assert.equal(itemIndex["item-legacy-1-legacy-inventory-0"]?.knowledge.visibleCharacterIds[0], "legacy-1");
       },

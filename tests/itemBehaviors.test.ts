@@ -13,6 +13,7 @@ import {
   getComputedItemAnchorValue,
   getItemCompactHeaderSummary,
   getEffectiveItemAnchorValue,
+  getItemAllowedEquipSlots,
   getItemVisibleRequirements,
   getViewerFacingItemRecord,
   normalizeItemCustomPropertyRecords,
@@ -522,6 +523,63 @@ export async function runItemBehaviorTests(): Promise<void> {
       },
     },
     {
+      name: "left and right earring slots can hold separate earrings",
+      run: () => {
+        const leftEarring = createSharedItemRecord("rings:earring", {
+          id: "earring-left-1",
+          name: "Moon Stud",
+        });
+        const rightEarring = createSharedItemRecord("rings:earring", {
+          id: "earring-right-1",
+          name: "Sun Stud",
+        });
+        const itemsById = buildItemIndex([leftEarring, rightEarring]);
+        const sheetWithLeft = setCharacterEquipmentSlotItem(
+          PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          "earring_left",
+          leftEarring.id,
+          itemsById
+        );
+        const sheetWithBoth = setCharacterEquipmentSlotItem(
+          sheetWithLeft,
+          "earring_right",
+          rightEarring.id,
+          itemsById
+        );
+
+        assert.equal(
+          sheetWithBoth.equipment.find((entry) => entry.slot === "earring_left")?.itemId,
+          leftEarring.id
+        );
+        assert.equal(
+          sheetWithBoth.equipment.find((entry) => entry.slot === "earring_right")?.itemId,
+          rightEarring.id
+        );
+      },
+    },
+    {
+      name: "talisman items are inventory-active buffs, not equipment-slot items",
+      run: () => {
+        const talisman = createSharedItemRecord("charm:talisman", {
+          id: "talisman-no-slot-1",
+          name: "Quiet Talisman",
+        });
+        const itemsById = buildItemIndex([talisman]);
+        const equippedSheet = setCharacterEquipmentSlotItem(
+          PLAYER_CHARACTER_TEMPLATE.createInstance(),
+          "body",
+          talisman.id,
+          itemsById
+        );
+
+        assert.deepEqual(getItemAllowedEquipSlots(talisman), []);
+        assert.equal(
+          equippedSheet.equipment.find((entry) => entry.slot === "body")?.itemId ?? null,
+          null
+        );
+      },
+    },
+    {
       name: "disabling a supplementary slot clears that equipped slot",
       run: () => {
         const earring = createSharedItemRecord("rings:earring", {
@@ -531,23 +589,23 @@ export async function runItemBehaviorTests(): Promise<void> {
         const itemsById = buildItemIndex([earring]);
         const enabledSheet = {
           ...PLAYER_CHARACTER_TEMPLATE.createInstance(),
-          enabledSupplementarySlotIds: ["earring" as const],
+          enabledSupplementarySlotIds: ["earring_left" as const],
         };
         const equippedSheet = setCharacterEquipmentSlotItem(
           enabledSheet,
-          "earring",
+          "earring_left",
           earring.id,
           itemsById
         );
         const disabledSheet = setCharacterSupplementarySlotEnabled(
           equippedSheet,
-          "earring",
+          "earring_left",
           false
         );
 
         assert.deepEqual(disabledSheet.enabledSupplementarySlotIds, []);
         assert.equal(
-          disabledSheet.equipment.find((entry) => entry.slot === "earring")?.itemId ?? null,
+          disabledSheet.equipment.find((entry) => entry.slot === "earring_left")?.itemId ?? null,
           null
         );
       },

@@ -276,7 +276,7 @@ const DEFAULT_ITEM_SUBCATEGORY_DEFINITION_SEED: ItemSubcategoryDefinition[] = [
     categoryId: "rings",
     name: "Earring",
     mechanicalRole: "accessory",
-    allowedEquipSlots: ["earring"],
+    allowedEquipSlots: ["earring_left", "earring_right"],
     occupiedSlots: [],
   },
   {
@@ -348,7 +348,7 @@ const DEFAULT_ITEM_SUBCATEGORY_DEFINITION_SEED: ItemSubcategoryDefinition[] = [
     categoryId: "charm",
     name: "Talisman",
     mechanicalRole: "accessory",
-    allowedEquipSlots: ["charm"],
+    allowedEquipSlots: [],
     occupiedSlots: [],
   },
 ] as const satisfies ItemSubcategoryDefinition[];
@@ -382,16 +382,38 @@ function sanitizeEditableTextArray(value: unknown): string[] {
   ];
 }
 
+function normalizeEquipSlotAliases(value: unknown): CanonicalEquipmentSlotId[] {
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  const normalized = value.trim().toLowerCase();
+  switch (normalized) {
+    case "earring":
+      return ["earring_left", "earring_right"];
+    case "earring_left":
+    case "left earring":
+    case "earring left":
+      return ["earring_left"];
+    case "earring_right":
+    case "right earring":
+    case "earring right":
+      return ["earring_right"];
+    case "charm":
+    case "talisman":
+    case "charm / talisman":
+      return [];
+    default:
+      return isCanonicalEquipmentSlotId(value) ? [value] : [];
+  }
+}
+
 function sanitizeEquipSlotArray(value: unknown): CanonicalEquipmentSlotId[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  return [
-    ...new Set(
-      value.filter((entry): entry is CanonicalEquipmentSlotId => isCanonicalEquipmentSlotId(entry))
-    ),
-  ];
+  return [...new Set(value.flatMap((entry) => normalizeEquipSlotAliases(entry)))];
 }
 
 function normalizeSubcategoryEquipRules(
@@ -2852,9 +2874,9 @@ export function getEquipmentSlotLabel(slotId: string): string {
         isMainEquipmentSlotId(slotId)
           ? MAIN_EQUIPMENT_SLOT_LABELS[slotId as MainEquipmentSlotId]
           : {
+              earring_right: "Right Earring",
+              earring_left: "Left Earring",
               orbital: "Orbital",
-              earring: "Earring",
-              charm: "Charm / Talisman",
             }[slotId as Exclude<CanonicalEquipmentSlotId, MainEquipmentSlotId>]
       )
     : slotId;
@@ -2948,7 +2970,11 @@ export function getLegacyEquippedWeaponItems(
 }
 
 export function getApplicableItemIds(sheet: CharacterDraft): string[] {
-  return [...new Set([...getEquippedItemIds(sheet), ...(sheet.activeItemIds ?? [])])];
+  const carriedItemIds = new Set(sheet.inventoryItemIds ?? []);
+  const activeCarriedItemIds = (sheet.activeItemIds ?? []).filter((itemId) =>
+    carriedItemIds.has(itemId)
+  );
+  return [...new Set([...getEquippedItemIds(sheet), ...activeCarriedItemIds])];
 }
 
 export function buildCharacterItemModifierSources(

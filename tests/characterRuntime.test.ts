@@ -166,6 +166,45 @@ export async function runCharacterRuntimeTests(): Promise<void> {
       },
     },
     {
+      name: "carried active talismans grant inventory buffs and inactive talismans do not",
+      run: () => {
+        const talisman = createSharedItemRecord("charm:talisman", {
+          id: "talisman-active-1",
+          name: "Spark Talisman",
+          bonusProfile: {
+            statBonuses: {},
+            skillBonuses: {},
+            derivedBonuses: { melee_damage: 2 },
+            resistanceBonuses: {},
+            utilityTraits: ["Inventory Ward"],
+            notes: [],
+            powerBonuses: {},
+            spellBonuses: {},
+          },
+        });
+        const itemsById = buildItemIndex([talisman]);
+        const inactiveSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        inactiveSheet.ownedItemIds = [talisman.id];
+        inactiveSheet.inventoryItemIds = [talisman.id];
+        const activeSheet = {
+          ...inactiveSheet,
+          activeItemIds: [talisman.id],
+        };
+        const notCarriedSheet = {
+          ...inactiveSheet,
+          inventoryItemIds: [],
+          activeItemIds: [talisman.id],
+        };
+
+        assert.equal(buildCharacterDerivedValues(inactiveSheet, itemsById).meleeDamage, 2);
+        assert.equal(buildCharacterDerivedValues(activeSheet, itemsById).meleeDamage, 4);
+        assert.ok(
+          buildCharacterDerivedValues(activeSheet, itemsById).utilityTraits.includes("Inventory Ward")
+        );
+        assert.equal(buildCharacterDerivedValues(notCarriedSheet, itemsById).meleeDamage, 2);
+      },
+    },
+    {
       name: "shield blueprint grants its base defense when equipped in a normal slot",
       run: () => {
         const shield = createSharedItemRecord("armor:shield_light", {

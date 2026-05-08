@@ -173,7 +173,7 @@ export type PowerBenefitSection = {
   bullets: string[];
 };
 
-export const CHARACTER_DRAFT_SCHEMA_VERSION = 9;
+export const CHARACTER_DRAFT_SCHEMA_VERSION = 10;
 
 function createDefaultEquipmentEntries(): CharacterEquipmentReference[] {
   return MAIN_EQUIPMENT_SLOT_IDS.map((slot) => ({
@@ -232,11 +232,19 @@ function normalizeEquipmentEntries(entries: CharacterEquipmentReference[]): Char
       case "orbital":
         return "orbital";
       case "earring":
-        return "earring";
+        return "earring_left";
+      case "earring_left":
+      case "left earring":
+      case "earring left":
+        return "earring_left";
+      case "earring_right":
+      case "right earring":
+      case "earring right":
+        return "earring_right";
       case "charm":
       case "talisman":
       case "charm / talisman":
-        return "charm";
+        return null;
       case "accessory":
         return chooseAccessoryRingSlot();
       default:
@@ -268,18 +276,50 @@ function normalizeEquipmentEntries(entries: CharacterEquipmentReference[]): Char
   return [...MAIN_EQUIPMENT_SLOT_IDS.map((slot) => mainEntries.get(slot)!), ...otherEntries];
 }
 
-function normalizeSupplementarySlotIds(
-  value: SupplementaryEquipmentSlotId[] | undefined
-): SupplementaryEquipmentSlotId[] {
+function normalizeSupplementarySlotIds(value: unknown): SupplementaryEquipmentSlotId[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return [
     ...new Set(
-      value.filter((slotId): slotId is SupplementaryEquipmentSlotId =>
-        isSupplementaryEquipmentSlotId(slotId)
-      )
+      value.flatMap((slotId) => {
+        if (typeof slotId !== "string") {
+          return [];
+        }
+
+        if (isSupplementaryEquipmentSlotId(slotId)) {
+          return [slotId];
+        }
+
+        if (slotId === "earring") {
+          return ["earring_left", "earring_right"] as SupplementaryEquipmentSlotId[];
+        }
+
+        return [];
+      })
+    ),
+  ];
+}
+
+function getLegacyCharmEquipmentItemIds(
+  entries: CharacterEquipmentReference[] | undefined
+): string[] {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      entries.flatMap((entry) => {
+        const normalizedSlot = entry.slot.trim().toLowerCase();
+        const isLegacyCharmSlot =
+          normalizedSlot === "charm" ||
+          normalizedSlot === "talisman" ||
+          normalizedSlot === "charm / talisman";
+        const itemId = entry.itemId?.trim() ?? "";
+        return isLegacyCharmSlot && itemId.length > 0 ? [itemId] : [];
+      })
     ),
   ];
 }
@@ -493,9 +533,29 @@ export function normalizeCharacterDraft(sheet: CharacterDraft): CharacterDraft {
   const normalizedApparelMode = isCharacterApparelMode(sheet.apparelMode)
     ? sheet.apparelMode
     : "humanoid";
-  const normalizedOwnedItemIds = [...new Set((sheet.ownedItemIds ?? []).filter((entry) => entry.trim().length > 0))];
-  const normalizedInventoryItemIds = [...new Set((sheet.inventoryItemIds ?? []).filter((entry) => entry.trim().length > 0))];
-  const normalizedActiveItemIds = [...new Set((sheet.activeItemIds ?? []).filter((entry) => entry.trim().length > 0))];
+  const legacyCharmItemIds = getLegacyCharmEquipmentItemIds(sheet.equipment);
+  const normalizedOwnedItemIds = [
+    ...new Set(
+      [...(sheet.ownedItemIds ?? []), ...legacyCharmItemIds].filter(
+        (entry) => entry.trim().length > 0
+      )
+    ),
+  ];
+  const normalizedInventoryItemIds = [
+    ...new Set(
+      [...(sheet.inventoryItemIds ?? []), ...legacyCharmItemIds].filter(
+        (entry) => entry.trim().length > 0
+      )
+    ),
+  ];
+  const inventoryItemIdSet = new Set(normalizedInventoryItemIds);
+  const normalizedActiveItemIds = [
+    ...new Set(
+      [...(sheet.activeItemIds ?? []), ...legacyCharmItemIds]
+        .filter((entry) => entry.trim().length > 0)
+        .filter((entry) => inventoryItemIdSet.has(entry))
+    ),
+  ];
   const normalizedSupplementarySlotIds = normalizeSupplementarySlotIds(
     sheet.enabledSupplementarySlotIds
   );
