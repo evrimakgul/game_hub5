@@ -93,11 +93,20 @@ export type OnlineProfile = {
   createdAt: string;
 };
 
+export type GameRecord = {
+  id: string;
+  name: string;
+  ownerUserId: string;
+  createdAt: string;
+};
+
 export type CampaignRecord = {
   id: string;
   name: string;
   ownerUserId: string;
   createdAt: string;
+  gameId?: string | null;
+  gameName?: string | null;
 };
 
 export type CampaignMemberRecord = {
@@ -137,6 +146,16 @@ export type SessionCharacterRecord = {
   characterId: string;
   ownerUserId: string | null;
   ownerRole: OnlineSessionRole;
+  displayName: string;
+  sheetPayload: unknown;
+  updatedAt: string;
+};
+
+export type CampaignCharacterRecord = {
+  id: string;
+  campaignId: string;
+  characterId: string;
+  ownerUserId: string;
   displayName: string;
   sheetPayload: unknown;
   updatedAt: string;

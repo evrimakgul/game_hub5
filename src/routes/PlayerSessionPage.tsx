@@ -16,9 +16,10 @@ import {
 } from "../lib/realtimeSession.ts";
 import {
   insertSessionEvent,
+  joinCampaign,
   listActiveSessions,
   listCampaignMembers,
-  listCampaigns,
+  listJoinableCampaigns,
   listSessionAttendees,
   listSessionCharacters,
   listSessionEvents,
@@ -26,6 +27,7 @@ import {
   subscribeToSessionEvents,
   subscribeToSessionCharacters,
   upsertSessionAttendee,
+  upsertCampaignCharacter,
   upsertKnowledgeRecords,
   upsertSessionCharacters,
 } from "../lib/realtimeSessionRepository.ts";
@@ -69,7 +71,7 @@ export function PlayerSessionPage() {
     replaceCharacters,
     updateKnowledgeState,
   } = useAppFlow();
-  const [campaigns, setCampaigns] = useState<CampaignRecord[]>([]);
+  const [campaigns, setCampaigns] = useState<Array<CampaignRecord & { isMember?: boolean }>>([]);
   const [sessions, setSessions] = useState<GameSessionRecord[]>([]);
   const [members, setMembers] = useState<CampaignMemberRecord[]>([]);
   const [sessionAttendees, setSessionAttendees] = useState<SessionAttendeeRecord[]>([]);
@@ -86,6 +88,7 @@ export function PlayerSessionPage() {
   const [shareTargetIds, setShareTargetIds] = useState<string[]>([]);
 
   const selectedSession = sessions.find((session) => session.id === selectedSessionId) ?? null;
+  const selectedCampaign = campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
   const activeCharacterName =
     activePlayerCharacter?.sheet.name.trim() || activePlayerCharacter?.id || "No character selected";
   const visibleEvents = filterSessionEventsForViewer(events, {
@@ -115,7 +118,7 @@ export function PlayerSessionPage() {
     const supabase = client;
 
     async function loadCampaigns(): Promise<void> {
-      const result = await listCampaigns(supabase);
+      const result = await listJoinableCampaigns(supabase);
       if ("error" in result) {
         setPanelMessage(result.error);
         return;
@@ -130,6 +133,12 @@ export function PlayerSessionPage() {
 
   useEffect(() => {
     if (!client || !selectedCampaignId) {
+      setSessions([]);
+      setMembers([]);
+      setSelectedSessionId("");
+      return;
+    }
+    if (selectedCampaign && selectedCampaign.isMember === false) {
       setSessions([]);
       setMembers([]);
       setSelectedSessionId("");
@@ -174,7 +183,7 @@ export function PlayerSessionPage() {
     return () => {
       void memberChannel.unsubscribe();
     };
-  }, [client, selectedCampaignId]);
+  }, [client, selectedCampaign, selectedCampaignId]);
 
   useEffect(() => {
     if (!client || !selectedSessionId) {
@@ -290,8 +299,65 @@ export function PlayerSessionPage() {
     });
   }
 
+  async function handleJoinCampaign(): Promise<void> {
+    if (!client || !online.user || !selectedCampaignId) {
+      return;
+    }
+
+    const result = await joinCampaign({
+      client,
+      campaignId: selectedCampaignId,
+      displayName: online.profile?.displayName ?? online.user.email ?? "Player",
+    });
+
+    if ("error" in result) {
+      setPanelMessage(result.error);
+      return;
+    }
+
+    setCampaigns((current) =>
+      current.map((campaign) =>
+        campaign.id === result.campaignId ? { ...campaign, isMember: true } : campaign
+      )
+    );
+    setMembers((current) => [...current.filter((member) => member.userId !== result.userId), result]);
+    setPanelMessage("Joined campaign.");
+  }
+
+  async function syncActiveCharacterToCampaign(): Promise<boolean> {
+    if (!client || !online.user || !selectedCampaignId || !activePlayerCharacter) {
+      return false;
+    }
+
+    const result = await upsertCampaignCharacter({
+      client,
+      campaignId: selectedCampaignId,
+      characterId: activePlayerCharacter.id,
+      ownerUserId: online.user.id,
+      displayName: activeCharacterName,
+      sheetPayload: activePlayerCharacter.sheet,
+    });
+
+    if ("error" in result) {
+      setPanelMessage(result.error);
+      return false;
+    }
+
+    return true;
+  }
+
   async function handlePublishCharacter(): Promise<void> {
-    if (!client || !online.user || !selectedSessionId || !activePlayerCharacter) {
+    if (!client || !online.user || !selectedCampaignId || !activePlayerCharacter) {
+      return;
+    }
+
+    const synced = await syncActiveCharacterToCampaign();
+    if (!synced) {
+      return;
+    }
+
+    if (!selectedSessionId) {
+      setPanelMessage("Character sheet synced to campaign. No active session to join.");
       return;
     }
 
@@ -337,7 +403,7 @@ export function PlayerSessionPage() {
       ...current.filter((attendee) => attendee.userId !== attendeeResult.userId),
       attendeeResult,
     ]);
-    setPanelMessage("Character published to the live session.");
+    setPanelMessage("Character sheet synced to campaign and current session.");
   }
 
   async function handleJoinSession(): Promise<void> {
@@ -364,6 +430,9 @@ export function PlayerSessionPage() {
       ...current.filter((attendee) => attendee.userId !== result.userId),
       result,
     ]);
+    if (activePlayerCharacter) {
+      await syncActiveCharacterToCampaign();
+    }
     setPanelMessage("Joined current session.");
   }
 
@@ -531,7 +600,15 @@ export function PlayerSessionPage() {
             <button
               type="button"
               className="flow-secondary"
-              disabled={!selectedSessionId}
+              disabled={!selectedCampaign || selectedCampaign.isMember !== false}
+              onClick={handleJoinCampaign}
+            >
+              Join Campaign
+            </button>
+            <button
+              type="button"
+              className="flow-secondary"
+              disabled={!selectedSessionId || selectedCampaign?.isMember === false}
               onClick={handleJoinSession}
             >
               Join Current Session
@@ -539,10 +616,10 @@ export function PlayerSessionPage() {
             <button
               type="button"
               className="flow-secondary"
-              disabled={!selectedSessionId || !activePlayerCharacter}
+              disabled={!selectedCampaignId || selectedCampaign?.isMember === false || !activePlayerCharacter}
               onClick={handlePublishCharacter}
             >
-              Publish Character
+              Sync Character Sheet
             </button>
           </article>
 
@@ -561,7 +638,8 @@ export function PlayerSessionPage() {
                 <option value="">Select campaign</option>
                 {campaigns.map((campaign) => (
                   <option key={campaign.id} value={campaign.id}>
-                    {campaign.name}
+                    {campaign.gameName ? `${campaign.gameName} / ${campaign.name}` : campaign.name}
+                    {campaign.isMember === false ? " (joinable)" : ""}
                   </option>
                 ))}
               </select>

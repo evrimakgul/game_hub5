@@ -1,6 +1,7 @@
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
 import type {
+  CampaignCharacterRecord,
   CampaignMemberRecord,
   CampaignRecord,
   GameSessionRecord,
@@ -20,6 +21,8 @@ type CampaignRow = {
   name: string;
   owner_user_id: string;
   created_at: string;
+  game_id?: string | null;
+  games?: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
 type CampaignMemberRow = {
@@ -45,6 +48,32 @@ type CreateCampaignWithOwnerRow = {
   member_display_name: string;
   member_selected_character_id: string | null;
   member_joined_at: string;
+};
+
+type CreateGameWithCampaignRow = {
+  game_id: string;
+  game_name: string;
+  game_owner_user_id: string;
+  game_created_at: string;
+  campaign_id: string;
+  campaign_name: string;
+  campaign_owner_user_id: string;
+  campaign_created_at: string;
+  member_user_id: string;
+  member_role: OnlineSessionRole;
+  member_display_name: string;
+  member_selected_character_id: string | null;
+  member_joined_at: string;
+};
+
+type JoinableCampaignRow = {
+  campaign_id: string;
+  campaign_name: string;
+  campaign_owner_user_id: string;
+  campaign_created_at: string;
+  game_id: string | null;
+  game_name: string | null;
+  is_member: boolean;
 };
 
 type GameSessionRow = {
@@ -75,6 +104,16 @@ type SessionCharacterRow = {
   character_id: string;
   owner_user_id: string | null;
   owner_role: OnlineSessionRole;
+  display_name: string;
+  sheet_payload: unknown;
+  updated_at: string;
+};
+
+type CampaignCharacterRow = {
+  id: string;
+  campaign_id: string;
+  character_id: string;
+  owner_user_id: string;
   display_name: string;
   sheet_payload: unknown;
   updated_at: string;
@@ -130,11 +169,14 @@ export function formatRealtimeSessionError(
 }
 
 function mapCampaign(row: CampaignRow): CampaignRecord {
+  const game = Array.isArray(row.games) ? row.games[0] : row.games;
   return {
     id: row.id,
     name: row.name,
     ownerUserId: row.owner_user_id,
     createdAt: row.created_at,
+    gameId: row.game_id ?? game?.id ?? null,
+    gameName: game?.name ?? null,
   };
 }
 
@@ -188,6 +230,18 @@ function mapSessionCharacter(row: SessionCharacterRow): SessionCharacterRecord {
   };
 }
 
+function mapCampaignCharacter(row: CampaignCharacterRow): CampaignCharacterRecord {
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    characterId: row.character_id,
+    ownerUserId: row.owner_user_id,
+    displayName: row.display_name,
+    sheetPayload: row.sheet_payload,
+    updatedAt: row.updated_at,
+  };
+}
+
 export function mapSessionEvent(row: SessionEventRow): SessionEvent {
   return {
     id: row.id,
@@ -226,20 +280,51 @@ function toSessionEventRow(event: SessionEvent): Omit<SessionEventRow, "created_
 
 export async function createCampaign(args: {
   client: SupabaseClient;
+  gameName?: string;
   name: string;
   ownerUserId: string;
   ownerDisplayName: string;
 }): Promise<{ campaign: CampaignRecord; member: CampaignMemberRecord } | { error: string }> {
-  const { data, error } = await args.client
-    .rpc("create_campaign_with_owner", {
-      p_campaign_name: args.name,
-      p_owner_display_name: args.ownerDisplayName,
-    })
-    .single<CreateCampaignWithOwnerRow>();
+  const rpcArgs = args.gameName
+    ? {
+        p_game_name: args.gameName,
+        p_campaign_name: args.name,
+        p_owner_display_name: args.ownerDisplayName,
+      }
+    : {
+        p_campaign_name: args.name,
+        p_owner_display_name: args.ownerDisplayName,
+      };
+  const query = args.gameName
+    ? args.client.rpc("create_game_with_campaign", rpcArgs).single<CreateGameWithCampaignRow>()
+    : args.client.rpc("create_campaign_with_owner", rpcArgs).single<CreateCampaignWithOwnerRow>();
+
+  const { data, error } = await query;
 
   if (error || !data) {
     return {
       error: formatRealtimeSessionError(error, "Failed to create campaign."),
+    };
+  }
+
+  if ("game_id" in data) {
+    return {
+      campaign: {
+        id: data.campaign_id,
+        name: data.campaign_name,
+        ownerUserId: data.campaign_owner_user_id,
+        createdAt: data.campaign_created_at,
+        gameId: data.game_id,
+        gameName: data.game_name,
+      },
+      member: {
+        campaignId: data.campaign_id,
+        userId: data.member_user_id,
+        role: data.member_role,
+        displayName: data.member_display_name,
+        selectedCharacterId: data.member_selected_character_id,
+        joinedAt: data.member_joined_at,
+      },
     };
   }
 
@@ -259,6 +344,45 @@ export async function createCampaign(args: {
       joinedAt: data.member_joined_at,
     },
   };
+}
+
+export async function listJoinableCampaigns(
+  client: SupabaseClient
+): Promise<Array<CampaignRecord & { isMember: boolean }> | { error: string }> {
+  const { data, error } = await client.rpc("list_joinable_campaigns");
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to load joinable campaigns.") };
+  }
+
+  return ((data ?? []) as JoinableCampaignRow[]).map((row) => ({
+    id: row.campaign_id,
+    name: row.campaign_name,
+    ownerUserId: row.campaign_owner_user_id,
+    createdAt: row.campaign_created_at,
+    gameId: row.game_id,
+    gameName: row.game_name,
+    isMember: row.is_member,
+  }));
+}
+
+export async function joinCampaign(args: {
+  client: SupabaseClient;
+  campaignId: string;
+  displayName: string;
+}): Promise<CampaignMemberRecord | { error: string }> {
+  const { data, error } = await args.client
+    .rpc("join_campaign", {
+      p_campaign_id: args.campaignId,
+      p_display_name: args.displayName,
+    })
+    .single<CampaignMemberRow>();
+
+  if (error || !data) {
+    return { error: formatRealtimeSessionError(error, "Failed to join campaign.") };
+  }
+
+  return mapCampaignMember(data);
 }
 
 export async function deleteEmptyCampaign(args: {
@@ -311,7 +435,7 @@ export async function listCampaigns(
 ): Promise<CampaignRecord[] | { error: string }> {
   const { data, error } = await client
     .from("campaigns")
-    .select("id, name, owner_user_id, created_at")
+    .select("id, name, owner_user_id, created_at, game_id, games(id, name)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -329,7 +453,7 @@ export async function listCampaignsForRole(args: {
   const { data, error } = await args.client
     .from("campaign_members")
     .select(
-      "campaign_id, user_id, role, display_name, selected_character_id, joined_at, campaigns(id, name, owner_user_id, created_at)"
+      "campaign_id, user_id, role, display_name, selected_character_id, joined_at, campaigns(id, name, owner_user_id, created_at, game_id, games(id, name))"
     )
     .eq("user_id", args.userId)
     .eq("role", args.role)
@@ -388,6 +512,23 @@ export async function listActiveSessions(args: {
 
   if (error) {
     return { error: formatRealtimeSessionError(error, "Failed to load sessions.") };
+  }
+
+  return (data ?? []).map(mapGameSession);
+}
+
+export async function listCampaignSessions(args: {
+  client: SupabaseClient;
+  campaignId: string;
+}): Promise<GameSessionRecord[] | { error: string }> {
+  const { data, error } = await args.client
+    .from("game_sessions")
+    .select("id, campaign_id, label, status, created_by, started_at, ended_at, session_notes, session_number")
+    .eq("campaign_id", args.campaignId)
+    .order("started_at", { ascending: false });
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to load session history.") };
   }
 
   return (data ?? []).map(mapGameSession);
@@ -510,6 +651,54 @@ export async function upsertSessionCharacters(args: {
   }
 
   return (data ?? []).map(mapSessionCharacter);
+}
+
+export async function upsertCampaignCharacter(args: {
+  client: SupabaseClient;
+  campaignId: string;
+  characterId: string;
+  ownerUserId: string;
+  displayName: string;
+  sheetPayload: unknown;
+}): Promise<CampaignCharacterRecord | { error: string }> {
+  const { data, error } = await args.client
+    .from("campaign_characters")
+    .upsert(
+      {
+        campaign_id: args.campaignId,
+        character_id: args.characterId,
+        owner_user_id: args.ownerUserId,
+        display_name: args.displayName,
+        sheet_payload: args.sheetPayload,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "campaign_id,character_id" }
+    )
+    .select("id, campaign_id, character_id, owner_user_id, display_name, sheet_payload, updated_at")
+    .single();
+
+  if (error || !data) {
+    return { error: formatRealtimeSessionError(error, "Failed to update campaign character.") };
+  }
+
+  return mapCampaignCharacter(data);
+}
+
+export async function listCampaignCharacters(args: {
+  client: SupabaseClient;
+  campaignId: string;
+}): Promise<CampaignCharacterRecord[] | { error: string }> {
+  const { data, error } = await args.client
+    .from("campaign_characters")
+    .select("id, campaign_id, character_id, owner_user_id, display_name, sheet_payload, updated_at")
+    .eq("campaign_id", args.campaignId)
+    .order("display_name", { ascending: true });
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to load campaign characters.") };
+  }
+
+  return (data ?? []).map(mapCampaignCharacter);
 }
 
 export async function listSessionCharacters(args: {

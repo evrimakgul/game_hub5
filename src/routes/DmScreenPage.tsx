@@ -22,9 +22,10 @@ import {
   deleteEmptyCampaign,
   endCurrentGameSession,
   insertSessionEvent,
-  listActiveSessions,
+  listCampaignCharacters,
   listCampaignMembers,
   listCampaignsForRole,
+  listCampaignSessions,
   listSessionAttendees,
   listSessionCharacters,
   listSessionEvents,
@@ -49,6 +50,7 @@ import type {
 import type {
   CampaignMemberRecord,
   CampaignRecord,
+  CampaignCharacterRecord,
   GameSessionRecord,
   RewardPacket,
   SessionAttendeeRecord,
@@ -115,11 +117,13 @@ export function DmScreenPage() {
   const [campaigns, setCampaigns] = useState<CampaignRecord[]>([]);
   const [sessions, setSessions] = useState<GameSessionRecord[]>([]);
   const [members, setMembers] = useState<CampaignMemberRecord[]>([]);
+  const [campaignCharacters, setCampaignCharacters] = useState<CampaignCharacterRecord[]>([]);
   const [sessionAttendees, setSessionAttendees] = useState<SessionAttendeeRecord[]>([]);
   const [sessionCharacters, setSessionCharacters] = useState<SessionCharacterRecord[]>([]);
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [gameName, setGameName] = useState("Convergence Game");
   const [campaignName, setCampaignName] = useState("Convergence Campaign");
   const [memberUserId, setMemberUserId] = useState("");
   const [memberDisplayName, setMemberDisplayName] = useState("");
@@ -141,6 +145,8 @@ export function DmScreenPage() {
 
   const selectedCampaign = campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
   const selectedSession = sessions.find((session) => session.id === selectedSessionId) ?? null;
+  const activeSession = sessions.find((session) => session.status === "active") ?? null;
+  const canUseLiveSession = selectedSession?.status === "active";
   const playerCharacters = characters.filter((character) => character.ownerRole === "player");
   const dmCharacters = characters.filter((character) => character.ownerRole === "dm");
   const visiblePins = events.filter((event) => event.kind === "pin");
@@ -191,28 +197,36 @@ export function DmScreenPage() {
     if (!client || !selectedCampaignId) {
       setSessions([]);
       setMembers([]);
+      setCampaignCharacters([]);
       setSelectedSessionId("");
       return;
     }
     const supabase = client;
 
     async function loadCampaignDetails(): Promise<void> {
-      const [sessionResult, memberResult] = await Promise.all([
-        listActiveSessions({ client: supabase, campaignId: selectedCampaignId }),
+      const [sessionResult, memberResult, characterResult] = await Promise.all([
+        listCampaignSessions({ client: supabase, campaignId: selectedCampaignId }),
         listCampaignMembers({ client: supabase, campaignId: selectedCampaignId }),
+        listCampaignCharacters({ client: supabase, campaignId: selectedCampaignId }),
       ]);
 
       if ("error" in sessionResult) {
         setPanelMessage(sessionResult.error);
       } else {
         setSessions(sessionResult);
-        setSelectedSessionId(sessionResult[0]?.id || "");
+        setSelectedSessionId(sessionResult.find((session) => session.status === "active")?.id || "");
       }
 
       if ("error" in memberResult) {
         setPanelMessage(memberResult.error);
       } else {
         setMembers(memberResult);
+      }
+
+      if ("error" in characterResult) {
+        setPanelMessage(characterResult.error);
+      } else {
+        setCampaignCharacters(characterResult);
       }
     }
 
@@ -314,6 +328,7 @@ export function DmScreenPage() {
 
     const result = await createCampaign({
       client,
+      gameName: gameName.trim() || "Convergence Game",
       name: campaignName.trim() || "Convergence Campaign",
       ownerUserId: online.user.id,
       ownerDisplayName: online.profile?.displayName ?? online.user.email ?? "DM",
@@ -406,13 +421,13 @@ export function DmScreenPage() {
       return;
     }
 
-    setSessions([result]);
+    setSessions((current) => [result, ...current.filter((session) => session.id !== result.id)]);
     setSelectedSessionId(result.id);
     setPanelMessage("Current session started.");
   }
 
   async function handleEndSession(): Promise<void> {
-    if (!client || !selectedCampaignId || !selectedSession) {
+    if (!client || !selectedCampaignId || !activeSession) {
       return;
     }
 
@@ -426,7 +441,9 @@ export function DmScreenPage() {
       return;
     }
 
-    setSessions([]);
+    setSessions((current) =>
+      current.map((session) => (session.id === result.id ? result : session))
+    );
     setSelectedSessionId("");
     setEvents([]);
     setSessionAttendees([]);
@@ -435,13 +452,13 @@ export function DmScreenPage() {
   }
 
   async function handleAddMemberToSession(member: CampaignMemberRecord): Promise<void> {
-    if (!client || !online.user || !selectedSessionId) {
+    if (!client || !online.user || !activeSession) {
       return;
     }
 
     const result = await upsertSessionAttendee({
       client,
-      sessionId: selectedSessionId,
+      sessionId: activeSession.id,
       userId: member.userId,
       role: member.role,
       displayName: member.displayName || member.userId,
@@ -462,7 +479,7 @@ export function DmScreenPage() {
   }
 
   async function handleSyncCharacters(): Promise<void> {
-    if (!client || !selectedSessionId) {
+    if (!client || !activeSession) {
       return;
     }
 
@@ -480,7 +497,7 @@ export function DmScreenPage() {
     const result = await upsertSessionCharacters({
       client,
       records: syncableCharacters.map((character) => ({
-        sessionId: selectedSessionId,
+        sessionId: activeSession.id,
         characterId: character.id,
         ownerUserId: ownerByCharacterId.get(character.id) ?? null,
         ownerRole: character.ownerRole === "dm" ? "dm" : "player",
@@ -889,6 +906,11 @@ export function DmScreenPage() {
             </label>
             <div className="dm-inline-controls">
               <input
+                value={gameName}
+                onChange={(event) => setGameName(event.target.value)}
+                placeholder="Game name"
+              />
+              <input
                 value={campaignName}
                 onChange={(event) => setCampaignName(event.target.value)}
                 placeholder="Campaign name"
@@ -908,8 +930,8 @@ export function DmScreenPage() {
             <div className="dm-screen-row">
               <strong>Current Session</strong>
               <span>
-                {selectedSession
-                  ? `${selectedSession.label} | ${new Date(selectedSession.startedAt).toLocaleString()}`
+                {activeSession
+                  ? `${activeSession.label} | ${new Date(activeSession.startedAt).toLocaleString()}`
                   : "No active session"}
               </span>
             </div>
@@ -918,7 +940,7 @@ export function DmScreenPage() {
                 type="button"
                 className="flow-secondary"
                 onClick={handleStartSession}
-                disabled={!selectedCampaign || Boolean(selectedSession)}
+                disabled={!selectedCampaign || Boolean(activeSession)}
               >
                 Start Session
               </button>
@@ -926,7 +948,7 @@ export function DmScreenPage() {
                 type="button"
                 className="flow-secondary"
                 onClick={handleEndSession}
-                disabled={!selectedSession}
+                disabled={!activeSession}
               >
                 End Session
               </button>
@@ -950,7 +972,7 @@ export function DmScreenPage() {
                     <button
                       type="button"
                       className="flow-secondary"
-                      disabled={!selectedSessionId}
+                    disabled={!activeSession}
                       onClick={() => handleAddMemberToSession(member)}
                     >
                       Add To Session
@@ -994,21 +1016,21 @@ export function DmScreenPage() {
 
           <article className="sheet-card dm-screen-panel dm-screen-wide">
             <p className="section-kicker">Characters</p>
-            <h2>Player Character Summary</h2>
+            <h2>Campaign Character Sheets</h2>
             <button
               type="button"
               className="flow-secondary"
-              disabled={!selectedSessionId}
+              disabled={!activeSession}
               onClick={handleSyncCharacters}
             >
               Sync Local DM/NPC Characters To Session
             </button>
             <div className="dm-screen-table">
-              {sessionCharacters.filter((character) => character.ownerRole === "player").map((character) => (
+              {campaignCharacters.map((character) => (
                 <div key={character.id} className="dm-screen-table-row">
                   <strong>{character.displayName}</strong>
-                  <span>player</span>
-                  <span>{character.ownerUserId ?? "no account"}</span>
+                  <span>campaign</span>
+                  <span>{character.ownerUserId}</span>
                   <span>{new Date(character.updatedAt).toLocaleString()}</span>
                 </div>
               ))}
@@ -1021,7 +1043,9 @@ export function DmScreenPage() {
                 </div>
               ))}
             </div>
-            <p className="dm-summary-line">{sessionCharacters.length} character rows in the live session.</p>
+            <p className="dm-summary-line">
+              {campaignCharacters.length} player character sheet(s) in this campaign. {sessionCharacters.length} live session character snapshot(s).
+            </p>
           </article>
 
           <article className="sheet-card dm-screen-panel">
@@ -1042,7 +1066,7 @@ export function DmScreenPage() {
                 <option value="public">Public</option>
               </select>
             </label>
-            <button type="button" className="flow-primary" disabled={!selectedSessionId} onClick={handleRoll}>
+            <button type="button" className="flow-primary" disabled={!canUseLiveSession} onClick={handleRoll}>
               Roll
             </button>
           </article>
@@ -1091,7 +1115,7 @@ export function DmScreenPage() {
                 ))}
               </div>
             ) : null}
-            <button type="button" className="flow-primary" disabled={!selectedSessionId} onClick={handleShare}>
+            <button type="button" className="flow-primary" disabled={!canUseLiveSession} onClick={handleShare}>
               Share
             </button>
           </article>
@@ -1153,7 +1177,7 @@ export function DmScreenPage() {
               }
               placeholder="Reward note"
             />
-            <button type="button" className="flow-primary" disabled={!selectedSessionId} onClick={handleReward}>
+            <button type="button" className="flow-primary" disabled={!canUseLiveSession} onClick={handleReward}>
               Apply Rewards
             </button>
           </article>
@@ -1172,7 +1196,7 @@ export function DmScreenPage() {
             </label>
             <div className="dm-inline-controls">
               <input value={pinLabel} onChange={(event) => setPinLabel(event.target.value)} placeholder="Pin label" />
-              <button type="button" className="flow-secondary" disabled={!selectedSessionId} onClick={handlePin}>
+              <button type="button" className="flow-secondary" disabled={!canUseLiveSession} onClick={handlePin}>
                 Pin
               </button>
             </div>
@@ -1204,8 +1228,30 @@ export function DmScreenPage() {
           </article>
 
           <article className="sheet-card dm-screen-panel dm-screen-wide">
+            <p className="section-kicker">Session History</p>
+            <h2>Campaign Sessions</h2>
+            <div className="dm-screen-table">
+              {sessions.map((session) => (
+                <div key={session.id} className="dm-screen-table-row">
+                  <strong>{session.label}</strong>
+                  <span>{session.status}</span>
+                  <span>{new Date(session.startedAt).toLocaleString()}</span>
+                  <span>{session.endedAt ? new Date(session.endedAt).toLocaleString() : "active"}</span>
+                  <button
+                    type="button"
+                    className="flow-secondary"
+                    onClick={() => setSelectedSessionId(session.id)}
+                  >
+                    View Log
+                  </button>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="sheet-card dm-screen-panel dm-screen-wide">
             <p className="section-kicker">Persistent Log</p>
-            <h2>Session Events</h2>
+            <h2>{selectedSession ? `${selectedSession.label} Events` : "Session Events"}</h2>
             <div className="dm-session-event-list">
               {events.map((event) => (
                 <div key={event.id} className="dm-session-event">
