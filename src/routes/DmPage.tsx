@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { useAppFlow } from "../state/appFlow";
 
@@ -33,6 +33,7 @@ const tabs: Array<{ id: DashboardTab; label: string }> = [
 
 export function DmPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     roleChoice,
     characters,
@@ -47,6 +48,7 @@ export function DmPage() {
     activeCombatEncounter,
   } = useAppFlow();
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+  const selectedGameName = new URLSearchParams(location.search).get("gameName") ?? "Portals";
 
   if (roleChoice !== "dm") {
     return <Navigate to="/role" replace />;
@@ -271,7 +273,7 @@ export function DmPage() {
       <section className="dm-shell dm-command-shell">
         <header className="dm-command-chrome">
           <div className="dm-command-brand">
-            <strong>Portals</strong>
+            <strong>{selectedGameName}</strong>
             <span>game_hub5</span>
           </div>
           <div className="dm-command-title">
@@ -291,7 +293,7 @@ export function DmPage() {
         <section className="dm-command-top-zone">
           <article className="dm-command-panel dm-command-session-panel">
             <p className="section-kicker">Campaign Command</p>
-            <h2>Convergence Table</h2>
+            <h2>{selectedGameName} Table</h2>
             <p>
               Local DM dashboard for live table operations, combat preparation, world assets,
               items, and knowledge management.

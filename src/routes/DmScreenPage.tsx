@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState, startTransition } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { rollD10Faces } from "../lib/dice.ts";
-import type { GameHistoryEntry } from "../config/characterTemplate.ts";
+import {
+  normalizeCharacterDraft,
+  type CharacterDraft,
+  type GameHistoryEntry,
+} from "../config/characterTemplate.ts";
 import {
   applyKnowledgeBatch,
   buildKnowledgeRevisionLabel,
@@ -17,8 +21,7 @@ import {
   createShareSessionEvent,
 } from "../lib/realtimeSession.ts";
 import {
-  addCampaignMember,
-  createCampaign,
+  createCampaignInGame,
   deleteEmptyCampaign,
   endCurrentGameSession,
   insertSessionEvent,
@@ -29,12 +32,14 @@ import {
   listSessionAttendees,
   listSessionCharacters,
   listSessionEvents,
+  removeSessionAttendee,
   startCurrentGameSession,
   subscribeToCampaignMembers,
   subscribeToSessionEvents,
   subscribeToSessionCharacters,
   updateGameSessionNotes,
   upsertKnowledgeRecords,
+  upsertCampaignCharacter,
   upsertSessionAttendee,
   upsertSessionCharacters,
 } from "../lib/realtimeSessionRepository.ts";
@@ -100,6 +105,39 @@ function getEventVisibilityLabel(event: SessionEvent): string {
   }
 }
 
+function formatRewardPacket(payload: Record<string, unknown>): string {
+  const packet = payload.packet as Partial<RewardPacket> | undefined;
+  if (!packet) {
+    return "";
+  }
+
+  const parts = [
+    ["XP", packet.xpEarnedDelta],
+    ["Insp", packet.inspirationDelta],
+    ["Temp", packet.temporaryInspirationDelta],
+    ["Money", packet.moneyDelta],
+    ["Karma+", packet.positiveKarmaDelta],
+    ["Karma-", packet.negativeKarmaDelta],
+  ]
+    .filter(([, value]) => typeof value === "number" && value !== 0)
+    .map(([label, value]) => `${label} ${value}`);
+
+  return parts.join(" | ");
+}
+
+function formatEventTime(timestamp: string): string {
+  return new Date(timestamp).toLocaleString();
+}
+
+function formatCompactEventTime(timestamp: string): string {
+  return new Date(timestamp).toLocaleString([], {
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function DmScreenPage() {
   const navigate = useNavigate();
   const client = useMemo(() => getSupabaseClient(), []);
@@ -110,6 +148,7 @@ export function DmScreenPage() {
     knowledgeEntities,
     knowledgeRevisions,
     knowledgeOwnerships,
+    selectCharacter,
     replaceCharacters,
     updateKnowledgeState,
     activeCombatEncounter,
@@ -124,11 +163,8 @@ export function DmScreenPage() {
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
-  const [gameName, setGameName] = useState("Convergence Game");
-  const [campaignName, setCampaignName] = useState("Convergence Campaign");
-  const [memberUserId, setMemberUserId] = useState("");
-  const [memberDisplayName, setMemberDisplayName] = useState("");
-  const [memberCharacterId, setMemberCharacterId] = useState("");
+  const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+  const [newCampaignName, setNewCampaignName] = useState("");
   const [panelMessage, setPanelMessage] = useState("");
   const [rollPool, setRollPool] = useState("3");
   const [rollLabel, setRollLabel] = useState("Secret resolution");
@@ -140,6 +176,7 @@ export function DmScreenPage() {
   const [rewardCharacterIds, setRewardCharacterIds] = useState<string[]>([]);
   const [rewardCardRevisionIds, setRewardCardRevisionIds] = useState<string[]>([]);
   const [rewardDraft, setRewardDraft] = useState<RewardDraft>(emptyRewardDraft);
+  const [inlineRewardCharacterId, setInlineRewardCharacterId] = useState("");
   const [pinLabel, setPinLabel] = useState("");
   const [pinKind, setPinKind] = useState<"npc" | "card" | "location" | "note">("note");
   const [sessionNotes, setSessionNotes] = useState("");
@@ -154,6 +191,24 @@ export function DmScreenPage() {
     null;
   const playerCharacters = characters.filter((character) => character.ownerRole === "player");
   const dmCharacters = characters.filter((character) => character.ownerRole === "dm");
+  const campaignPlayerCharacters = useMemo(
+    () =>
+      campaignCharacters.map((character) => ({
+        id: character.characterId,
+        ownerRole: "player" as const,
+        sheet: normalizeCharacterDraft(character.sheetPayload as CharacterDraft),
+      })),
+    [campaignCharacters]
+  );
+  const rewardablePlayerCharacters = useMemo(() => {
+    const campaignCharacterIds = new Set(
+      campaignPlayerCharacters.map((character) => character.id)
+    );
+    return [
+      ...campaignPlayerCharacters,
+      ...playerCharacters.filter((character) => !campaignCharacterIds.has(character.id)),
+    ];
+  }, [campaignPlayerCharacters, playerCharacters]);
   const visiblePins = events.filter((event) => event.kind === "pin");
   const knowledgeState = {
     knowledgeEntities,
@@ -327,30 +382,6 @@ export function DmScreenPage() {
     return <Navigate to="/role" replace />;
   }
 
-  async function handleCreateCampaign(): Promise<void> {
-    if (!client || !online.user) {
-      return;
-    }
-
-    const result = await createCampaign({
-      client,
-      gameName: gameName.trim() || "Convergence Game",
-      name: campaignName.trim() || "Convergence Campaign",
-      ownerUserId: online.user.id,
-      ownerDisplayName: online.profile?.displayName ?? online.user.email ?? "DM",
-    });
-
-    if ("error" in result) {
-      setPanelMessage(result.error);
-      return;
-    }
-
-    setCampaigns((current) => [result.campaign, ...current]);
-    setMembers([result.member]);
-    setSelectedCampaignId(result.campaign.id);
-    setPanelMessage("Campaign created.");
-  }
-
   async function handleDeleteCampaign(): Promise<void> {
     if (!client || !selectedCampaign) {
       return;
@@ -386,18 +417,17 @@ export function DmScreenPage() {
     setPanelMessage("Campaign deleted.");
   }
 
-  async function handleAddMember(): Promise<void> {
-    if (!client || !selectedCampaignId || !memberUserId.trim()) {
+  async function handleCreateCampaignInCurrentGame(): Promise<void> {
+    if (!client || !online.user || !selectedCampaign?.gameId || !newCampaignName.trim()) {
       return;
     }
 
-    const result = await addCampaignMember({
+    const result = await createCampaignInGame({
       client,
-      campaignId: selectedCampaignId,
-      userId: memberUserId.trim(),
-      role: "player",
-      displayName: memberDisplayName.trim() || memberUserId.trim(),
-      selectedCharacterId: memberCharacterId || null,
+      gameId: selectedCampaign.gameId,
+      name: newCampaignName.trim(),
+      ownerUserId: online.user.id,
+      ownerDisplayName: online.profile?.displayName ?? online.user.email ?? "DM",
     });
 
     if ("error" in result) {
@@ -405,11 +435,17 @@ export function DmScreenPage() {
       return;
     }
 
-    setMembers((current) => [...current.filter((member) => member.userId !== result.userId), result]);
-    setMemberUserId("");
-    setMemberDisplayName("");
-    setMemberCharacterId("");
-    setPanelMessage("Player account added.");
+    setCampaigns((current) => [result.campaign, ...current]);
+    setMembers([result.member]);
+    setSelectedCampaignId(result.campaign.id);
+    setSelectedSessionId("");
+    setSessions([]);
+    setCampaignCharacters([]);
+    setSessionCharacters([]);
+    setSessionAttendees([]);
+    setNewCampaignName("");
+    setIsCreatingCampaign(false);
+    setPanelMessage("Campaign created.");
   }
 
   async function handleStartSession(): Promise<void> {
@@ -516,6 +552,37 @@ export function DmScreenPage() {
     setPanelMessage(`Added ${memberCharacters.length} character sheet(s) to the current session.`);
   }
 
+  async function handleRemoveMemberFromSession(member: CampaignMemberRecord): Promise<void> {
+    if (!client || !activeSession) {
+      return;
+    }
+
+    const result = await removeSessionAttendee({
+      client,
+      sessionId: activeSession.id,
+      userId: member.userId,
+    });
+
+    if (typeof result !== "string") {
+      setPanelMessage(result.error);
+      return;
+    }
+
+    const memberCharacters = campaignCharacters.filter(
+      (character) => character.ownerUserId === member.userId
+    );
+    setSessionAttendees((current) => current.filter((attendee) => attendee.userId !== result));
+    setSessionCharacters((current) =>
+      current.filter(
+        (character) =>
+          !memberCharacters.some(
+            (memberCharacter) => memberCharacter.characterId === character.characterId
+          )
+      )
+    );
+    setPanelMessage(`${member.displayName || member.userId} removed from the current session.`);
+  }
+
   async function handleSyncCharacters(): Promise<void> {
     if (!client || !activeSession) {
       return;
@@ -571,6 +638,9 @@ export function DmScreenPage() {
   function buildOwnerUserIdByCharacterId(): Record<string, string | null> {
     const entries = new Map<string, string | null>();
 
+    campaignCharacters.forEach((character) => {
+      entries.set(character.characterId, character.ownerUserId);
+    });
     members.forEach((member) => {
       if (member.selectedCharacterId) {
         entries.set(member.selectedCharacterId, member.userId);
@@ -581,6 +651,44 @@ export function DmScreenPage() {
     });
 
     return Object.fromEntries(entries);
+  }
+
+  function handleViewCampaignCharacter(record: CampaignCharacterRecord): void {
+    const character = {
+      id: record.characterId,
+      ownerRole: "player" as const,
+      sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
+    };
+    replaceCharacters([
+      ...characters.filter((entry) => entry.id !== record.characterId),
+      character,
+    ]);
+    selectCharacter(record.characterId);
+    navigate(`/dm/character?characterId=${encodeURIComponent(record.characterId)}`);
+  }
+
+  function handlePrepareRewards(characterId: string): void {
+    setInlineRewardCharacterId(characterId);
+    setRewardCharacterIds([characterId]);
+    setPanelMessage("Reward target selected. Fill the Rewards panel, then apply.");
+  }
+
+  function updateInlineReward(field: keyof RewardDraft, value: string): void {
+    setRewardDraft((current) => ({
+      ...current,
+      [field]: parseIntegerInput(value),
+    }));
+  }
+
+  function cancelInlineReward(): void {
+    setInlineRewardCharacterId("");
+    setRewardDraft(emptyRewardDraft);
+    setRewardCharacterIds([]);
+  }
+
+  function getSheetNumber(sheetPayload: unknown, key: string): string {
+    const value = (sheetPayload as Record<string, unknown>)[key];
+    return typeof value === "number" ? value.toString() : "-";
   }
 
   function getCardOption(revisionId: string) {
@@ -705,6 +813,7 @@ export function DmScreenPage() {
     if (!client || !online.user || !selectedSessionId || rewardCharacterIds.length === 0) {
       return;
     }
+    const currentUserId = online.user.id;
 
     const packet: RewardPacket = {
       ...createDefaultRewardPacket(rewardCharacterIds),
@@ -712,11 +821,18 @@ export function DmScreenPage() {
       characterIds: rewardCharacterIds,
       cardRevisionIds: rewardCardRevisionIds,
     };
+    const rewardBaseCharacters = [
+      ...characters.filter(
+        (character) =>
+          !rewardablePlayerCharacters.some((rewardCharacter) => rewardCharacter.id === character.id)
+      ),
+      ...rewardablePlayerCharacters,
+    ];
     const result = applyRewardPacket({
       sessionId: selectedSessionId,
-      characters,
+      characters: rewardBaseCharacters,
       packet,
-      actorUserId: online.user.id,
+      actorUserId: currentUserId,
       actorDisplayName: online.profile?.displayName ?? "DM",
     });
 
@@ -756,12 +872,13 @@ export function DmScreenPage() {
     const updatedRewardCharacters = nextCharacters.filter((character) =>
       rewardCharacterIds.includes(character.id)
     );
+    const ownerUserIdByCharacterId = buildOwnerUserIdByCharacterId();
     const sessionCharacterResult = await upsertSessionCharacters({
       client,
       records: updatedRewardCharacters.map((character) => ({
         sessionId: selectedSessionId,
         characterId: character.id,
-        ownerUserId: buildOwnerUserIdByCharacterId()[character.id] ?? null,
+        ownerUserId: ownerUserIdByCharacterId[character.id] ?? null,
         ownerRole: character.ownerRole === "dm" ? "dm" : "player",
         displayName: getCharacterName(character),
         sheetPayload: character.sheet,
@@ -771,6 +888,42 @@ export function DmScreenPage() {
     if ("error" in sessionCharacterResult) {
       setPanelMessage(sessionCharacterResult.error);
       return;
+    }
+    if (selectedCampaignId) {
+      const campaignRewardUpdates = await Promise.all(
+        updatedRewardCharacters
+          .filter((character) =>
+            campaignCharacters.some((campaignCharacter) => campaignCharacter.characterId === character.id)
+          )
+          .map((character) =>
+            upsertCampaignCharacter({
+              client,
+              campaignId: selectedCampaignId,
+              characterId: character.id,
+              ownerUserId: ownerUserIdByCharacterId[character.id] ?? currentUserId,
+              displayName: getCharacterName(character),
+              sheetPayload: character.sheet,
+            })
+          )
+      );
+      const campaignRewardError = campaignRewardUpdates.find(
+        (entry): entry is { error: string } => "error" in entry
+      );
+      if (campaignRewardError) {
+        setPanelMessage(campaignRewardError.error);
+        return;
+      }
+      setCampaignCharacters((current) => [
+        ...current.filter(
+          (entry) =>
+            !campaignRewardUpdates.some(
+              (updated) => !("error" in updated) && updated.characterId === entry.characterId
+            )
+        ),
+        ...campaignRewardUpdates.filter(
+          (entry): entry is CampaignCharacterRecord => !("error" in entry)
+        ),
+      ]);
     }
     setSessionCharacters((current) => [
       ...current.filter(
@@ -803,6 +956,7 @@ export function DmScreenPage() {
     setRewardDraft(emptyRewardDraft);
     setRewardCharacterIds([]);
     setRewardCardRevisionIds([]);
+    setInlineRewardCharacterId("");
   }
 
   async function handlePin(): Promise<void> {
@@ -895,7 +1049,7 @@ export function DmScreenPage() {
   }
 
   return (
-    <main className="dm-page">
+    <main className="dm-page dm-screen-page">
       <section className="dm-shell">
         <header className="dm-topbar">
           <div>
@@ -908,6 +1062,9 @@ export function DmScreenPage() {
           <div className="dm-nav-actions dm-nav-actions-wrap">
             <button type="button" className="sheet-nav-button" onClick={() => navigate("/dm")}>
               DM Dashboard
+            </button>
+            <button type="button" className="sheet-nav-button" onClick={() => navigate("/")}>
+              Main Menu
             </button>
             <button
               type="button"
@@ -922,7 +1079,7 @@ export function DmScreenPage() {
         {panelMessage ? <p className="dm-status-line">{panelMessage}</p> : null}
 
         <section className="dm-screen-grid">
-          <article className="sheet-card dm-screen-panel">
+          <article className="sheet-card dm-screen-panel dm-screen-half">
             <p className="section-kicker">Session Setup</p>
             <h2>Campaign</h2>
             <label className="dm-field">
@@ -943,18 +1100,13 @@ export function DmScreenPage() {
               </select>
             </label>
             <div className="dm-inline-controls">
-              <input
-                value={gameName}
-                onChange={(event) => setGameName(event.target.value)}
-                placeholder="Game name"
-              />
-              <input
-                value={campaignName}
-                onChange={(event) => setCampaignName(event.target.value)}
-                placeholder="Campaign name"
-              />
-              <button type="button" className="flow-secondary" onClick={handleCreateCampaign}>
-                Create
+              <button
+                type="button"
+                className="flow-secondary"
+                disabled={!selectedCampaign?.gameId}
+                onClick={() => setIsCreatingCampaign((current) => !current)}
+              >
+                Create New Campaign
               </button>
               <button
                 type="button"
@@ -962,9 +1114,26 @@ export function DmScreenPage() {
                 disabled={!selectedCampaign}
                 onClick={handleDeleteCampaign}
               >
-                Delete Selected
+                Delete Selected Campaign
               </button>
             </div>
+            {isCreatingCampaign ? (
+              <div className="dm-inline-controls">
+                <input
+                  value={newCampaignName}
+                  onChange={(event) => setNewCampaignName(event.target.value)}
+                  placeholder="Campaign name"
+                />
+                <button
+                  type="button"
+                  className="flow-primary"
+                  disabled={!newCampaignName.trim()}
+                  onClick={handleCreateCampaignInCurrentGame}
+                >
+                  Create
+                </button>
+              </div>
+            ) : null}
             <div className="dm-screen-row">
               <strong>Current Session</strong>
               <span>
@@ -993,13 +1162,13 @@ export function DmScreenPage() {
             </div>
           </article>
 
-          <article className="sheet-card dm-screen-panel">
+          <article className="sheet-card dm-screen-panel dm-screen-half">
             <p className="section-kicker">Participants</p>
             <h2>Accounts</h2>
             <p className="dm-summary-line">Your account id: {online.user?.id}</p>
             <div className="dm-screen-list">
               {members.map((member) => (
-                <div key={member.userId} className="dm-screen-row">
+                <div key={member.userId} className="dm-screen-row dm-participant-row">
                   <strong>{member.displayName || member.userId}</strong>
                   <span>
                     {sessionAttendees.some((attendee) => attendee.userId === member.userId)
@@ -1009,86 +1178,39 @@ export function DmScreenPage() {
                   {member.role === "player" ? (
                     <button
                       type="button"
-                      className="flow-secondary"
-                    disabled={!activeSession}
-                      onClick={() => handleAddMemberToSession(member)}
+                      className="flow-secondary dm-compact-action"
+                      disabled={!activeSession}
+                      onClick={() =>
+                        sessionAttendees.some((attendee) => attendee.userId === member.userId)
+                          ? handleRemoveMemberFromSession(member)
+                          : handleAddMemberToSession(member)
+                      }
                     >
-                      Add To Session
+                      {sessionAttendees.some((attendee) => attendee.userId === member.userId)
+                        ? "Remove"
+                        : "Add"}
                     </button>
                   ) : null}
                 </div>
               ))}
-            </div>
-            <div className="dm-inline-controls">
-              <input
-                value={memberUserId}
-                onChange={(event) => setMemberUserId(event.target.value)}
-                placeholder="Player account UUID"
-              />
-              <input
-                value={memberDisplayName}
-                onChange={(event) => setMemberDisplayName(event.target.value)}
-                placeholder="Display name"
-              />
-              <select
-                value={memberCharacterId}
-                onChange={(event) => setMemberCharacterId(event.target.value)}
-              >
-                <option value="">No character link</option>
-                {playerCharacters.map((character) => (
-                  <option key={character.id} value={character.id}>
-                    {getCharacterName(character)}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="flow-secondary"
-                disabled={!selectedCampaignId}
-                onClick={handleAddMember}
-              >
-                Add
-              </button>
             </div>
           </article>
 
           <article className="sheet-card dm-screen-panel dm-screen-wide">
             <p className="section-kicker">Characters</p>
             <h2>Campaign Character Sheets</h2>
-            <button
-              type="button"
-              className="flow-secondary"
-              disabled={!activeSession}
-              onClick={handleSyncCharacters}
-            >
-              Sync Local DM/NPC Characters To Session
-            </button>
             <div className="dm-screen-table">
               {campaignCharacters.map((character) => (
-                <div key={character.id} className="dm-screen-table-row">
+                <div key={character.id} className="dm-screen-table-row dm-character-sheet-row">
                   <strong>{character.displayName}</strong>
-                  <span>campaign</span>
-                  <span>{character.ownerUserId}</span>
-                  <span>{new Date(character.updatedAt).toLocaleString()}</span>
+                  <span>Player sheet</span>
+                  <span>Updated {new Date(character.updatedAt).toLocaleString()}</span>
                   <button
                     type="button"
                     className="flow-secondary"
-                    onClick={() => setSelectedCampaignCharacterId(character.characterId)}
+                    onClick={() => handleViewCampaignCharacter(character)}
                   >
-                    View
-                  </button>
-                  <button
-                    type="button"
-                    className="flow-secondary"
-                    disabled={!activeSession}
-                    onClick={() => {
-                      const member = members.find((entry) => entry.userId === character.ownerUserId);
-                      if (member) {
-                        void handleAddMemberToSession(member);
-                      }
-                    }}
-                  >
-                    Add To Session
+                    View Character Sheet
                   </button>
                 </div>
               ))}
@@ -1106,12 +1228,80 @@ export function DmScreenPage() {
             </p>
             {selectedCampaignCharacter ? (
               <div className="dm-screen-table">
-                <div className="dm-screen-table-row">
+                <div
+                  className={`dm-screen-table-row dm-reward-summary-row${
+                    inlineRewardCharacterId === selectedCampaignCharacter.characterId
+                      ? " dm-reward-edit-row"
+                      : ""
+                  }`}
+                >
                   <strong>{selectedCampaignCharacter.displayName}</strong>
-                  <span>HP {String((selectedCampaignCharacter.sheetPayload as { currentHp?: unknown }).currentHp ?? "-")}</span>
-                  <span>Mana {String((selectedCampaignCharacter.sheetPayload as { currentMana?: unknown }).currentMana ?? "-")}</span>
-                  <span>XP {String((selectedCampaignCharacter.sheetPayload as { xpEarned?: unknown }).xpEarned ?? "-")}</span>
-                  <span>Money {String((selectedCampaignCharacter.sheetPayload as { money?: unknown }).money ?? "-")}</span>
+                  {inlineRewardCharacterId === selectedCampaignCharacter.characterId ? (
+                    <>
+                      <label className="dm-inline-reward-field">
+                        <span>XP</span>
+                        <input
+                          type="number"
+                          value={rewardDraft.xpEarnedDelta}
+                          onChange={(event) => updateInlineReward("xpEarnedDelta", event.target.value)}
+                        />
+                      </label>
+                      <label className="dm-inline-reward-field">
+                        <span>Positive Karma</span>
+                        <input
+                          type="number"
+                          value={rewardDraft.positiveKarmaDelta}
+                          onChange={(event) => updateInlineReward("positiveKarmaDelta", event.target.value)}
+                        />
+                      </label>
+                      <label className="dm-inline-reward-field">
+                        <span>Negative Karma</span>
+                        <input
+                          type="number"
+                          value={rewardDraft.negativeKarmaDelta}
+                          onChange={(event) => updateInlineReward("negativeKarmaDelta", event.target.value)}
+                        />
+                      </label>
+                      <label className="dm-inline-reward-field">
+                        <span>Inspiration</span>
+                        <input
+                          type="number"
+                          value={rewardDraft.inspirationDelta}
+                          onChange={(event) => updateInlineReward("inspirationDelta", event.target.value)}
+                        />
+                      </label>
+                      <div className="dm-inline-action-stack">
+                        <button
+                          type="button"
+                          className="flow-primary"
+                          disabled={!canUseLiveSession}
+                          onClick={handleReward}
+                        >
+                          Apply
+                        </button>
+                        <button
+                          type="button"
+                          className="flow-secondary"
+                          onClick={cancelInlineReward}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span>XP {getSheetNumber(selectedCampaignCharacter.sheetPayload, "xpEarned")}</span>
+                      <span>Karma +{getSheetNumber(selectedCampaignCharacter.sheetPayload, "positiveKarma")} / -{getSheetNumber(selectedCampaignCharacter.sheetPayload, "negativeKarma")}</span>
+                      <span>Inspiration {getSheetNumber(selectedCampaignCharacter.sheetPayload, "inspiration")} / Temp {getSheetNumber(selectedCampaignCharacter.sheetPayload, "temporaryInspiration")}</span>
+                      <button
+                        type="button"
+                        className="flow-secondary"
+                        onClick={() => handlePrepareRewards(selectedCampaignCharacter.characterId)}
+                      >
+                        Reward Character
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ) : null}
@@ -1193,7 +1383,7 @@ export function DmScreenPage() {
             <p className="section-kicker">Rewards</p>
             <h2>Core Reward Packet</h2>
             <div className="knowledge-recipient-list dm-screen-recipient-grid">
-              {playerCharacters.map((character) => (
+              {rewardablePlayerCharacters.map((character) => (
                 <label key={character.id} className="knowledge-checkbox">
                   <input
                     type="checkbox"
@@ -1296,7 +1486,7 @@ export function DmScreenPage() {
             </p>
           </article>
 
-          <article className="sheet-card dm-screen-panel dm-screen-wide">
+          <article className="sheet-card dm-screen-panel dm-screen-half">
             <p className="section-kicker">Session History</p>
             <h2>Campaign Sessions</h2>
             <div className="dm-screen-table">
@@ -1304,8 +1494,8 @@ export function DmScreenPage() {
                 <div key={session.id} className="dm-screen-table-row">
                   <strong>{session.label}</strong>
                   <span>{session.status}</span>
-                  <span>{new Date(session.startedAt).toLocaleString()}</span>
-                  <span>{session.endedAt ? new Date(session.endedAt).toLocaleString() : "active"}</span>
+                  <span>{formatCompactEventTime(session.startedAt)}</span>
+                  <span>{session.endedAt ? formatCompactEventTime(session.endedAt) : "active"}</span>
                   <button
                     type="button"
                     className="flow-secondary"
@@ -1318,15 +1508,15 @@ export function DmScreenPage() {
             </div>
           </article>
 
-          <article className="sheet-card dm-screen-panel dm-screen-wide">
+          <article className="sheet-card dm-screen-panel dm-screen-half">
             <p className="section-kicker">Persistent Log</p>
             <h2>{selectedSession ? `${selectedSession.label} Events` : "Session Events"}</h2>
             <div className="dm-session-event-list">
               {events.map((event) => (
                 <div key={event.id} className="dm-session-event">
-                  <span>{getEventVisibilityLabel(event)}</span>
                   <strong>{event.summary}</strong>
-                  <small>{event.actorDisplayName} | {new Date(event.createdAt).toLocaleString()}</small>
+                  <span>{formatEventTime(event.createdAt)}</span>
+                  <span>{event.kind === "reward" ? formatRewardPacket(event.payload) : ""}</span>
                 </div>
               ))}
             </div>

@@ -430,6 +430,45 @@ export async function addCampaignMember(args: {
   return mapCampaignMember(data);
 }
 
+export async function createCampaignInGame(args: {
+  client: SupabaseClient;
+  gameId: string;
+  name: string;
+  ownerUserId: string;
+  ownerDisplayName: string;
+}): Promise<{ campaign: CampaignRecord; member: CampaignMemberRecord } | { error: string }> {
+  const { data: campaignData, error: campaignError } = await args.client
+    .from("campaigns")
+    .insert({
+      game_id: args.gameId,
+      name: args.name,
+      owner_user_id: args.ownerUserId,
+    })
+    .select("id, name, owner_user_id, created_at, game_id, games(id, name)")
+    .single();
+
+  if (campaignError || !campaignData) {
+    return { error: formatRealtimeSessionError(campaignError, "Failed to create campaign.") };
+  }
+
+  const member = await addCampaignMember({
+    client: args.client,
+    campaignId: campaignData.id,
+    userId: args.ownerUserId,
+    role: "dm",
+    displayName: args.ownerDisplayName,
+  });
+
+  if ("error" in member) {
+    return member;
+  }
+
+  return {
+    campaign: mapCampaign(campaignData),
+    member,
+  };
+}
+
 export async function listCampaigns(
   client: SupabaseClient
 ): Promise<CampaignRecord[] | { error: string }> {
@@ -600,6 +639,24 @@ export async function upsertSessionAttendee(args: {
   }
 
   return mapSessionAttendee(data);
+}
+
+export async function removeSessionAttendee(args: {
+  client: SupabaseClient;
+  sessionId: string;
+  userId: string;
+}): Promise<string | { error: string }> {
+  const { error } = await args.client
+    .from("session_attendees")
+    .delete()
+    .eq("session_id", args.sessionId)
+    .eq("user_id", args.userId);
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to remove session attendee.") };
+  }
+
+  return args.userId;
 }
 
 export async function listCampaignMembers(args: {

@@ -9,6 +9,7 @@ import { DmItemEditPage } from "./routes/DmItemEditPage";
 import { DmItemDefinitionManagementPage } from "./routes/DmItemDefinitionManagementPage";
 import { DmItemInteractionsPage } from "./routes/DmItemInteractionsPage";
 import { DmItemsListPage } from "./routes/DmItemsListPage";
+import { DmGameSetupPage } from "./routes/DmGameSetupPage";
 import { DmKnowledgePage } from "./routes/DmKnowledgePage";
 import { DmMobGroupsPage } from "./routes/DmMobGroupsPage";
 import { DmMobsPage } from "./routes/DmMobsPage";
@@ -36,6 +37,7 @@ export default function App() {
       <Route path="/player/auction-house" element={<PlayerAuctionHousePage />} />
       <Route path="/player/combat" element={<PlayerCombatPage />} />
       <Route path="/dm" element={<DmPage />} />
+      <Route path="/dm/games/new" element={<DmGameSetupPage />} />
       <Route path="/dm/screen" element={<DmScreenPage />} />
       <Route path="/dm/characters" element={<DmCharacterHubPage />} />
       <Route path="/dm/character" element={<PlayerCharacterPage viewMode="dm-readonly" />} />
