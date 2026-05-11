@@ -3,7 +3,7 @@ title: Split Decisions
 topic: history
 kind: register
 status: active
-updated: 2026-04-27
+updated: 2026-05-11
 confidence: high
 ---
 
@@ -13,20 +13,20 @@ This is the living register of gaps between current implementation and intended 
 
 ## Current State
 
-Open splits revalidated on 2026-04-27:
+Open splits revalidated on 2026-05-11:
 
 | Split ID | Status | Current State | Source Trail |
 | --- | --- | --- | --- |
 | `COMBAT-ACT-01` | open | Physical attacks and ranged gear work now, but action cost, timing, weapon speed, and multi-attack throughput are still simplified. This gap is intentionally deferred to the very end of the project and may remain unimplemented. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, thread `5` |
 | `DOC-OBJECTIVE-01` | open | `references/project_objective.md` still describes the older manual `Brute Defiance` trigger, while current code, roadmap, and notes reflect the passive version. | `references/project_objective.md`, `references/plan.md`, `references/current_notes.md`, `src/engine/encounterExecutionEngine.ts` |
 | `VIEW-PERSONALIZATION-01` | open | The user wants personalized player/DM page design soon, but current code has fixed layouts and no persisted view-profile system yet. | `raw/user-approved/2026-04-24-view-personalization-roadmap.md`, `references/plan.md`, `project_tracking/tasks_todo.md` |
-| `WIKI-SKILL-ACL-01` | open | The active wiki branch policy is `codex/powers-implementation`, but `.agents/skills/llm-wiki-maintainer/SKILL.md` still says `codex/llm-wiki`; this run could not update that file because the local ACL denied writes under `.agents/`. | `AGENTS.md`, `.agents/skills/llm-wiki-maintainer/SKILL.md`, `wiki/workflow/wiki-maintenance.md` |
 
 Resolved splits:
 
 | Split ID | Status | Resolution |
 | --- | --- | --- |
 | `AA-01` | resolved | Inventory `Identify` remains the user-facing `Artifact Appraisal` surface, now granting or refreshing the current canonical item-card revision, appending linked history rows, and using current-revision ownership for hidden bonus visibility. |
+| `WIKI-SKILL-ACL-01` | resolved | `.agents/skills/llm-wiki-maintainer/SKILL.md` was restored and its automation branch rule now matches `AGENTS.md` and `wiki/workflow/wiki-maintenance.md`: use `codex/powers-implementation` for wiki refresh work. |
 | `PLAN-DRIFT-01` | resolved | `references/plan.md`, `references/current_notes.md`, and tracker/wiki pages were reconciled to the implemented `AA-01` state, so the roadmap no longer lags this branch on the current milestone. |
 | `KNOW-V2-01` | resolved | The standalone knowledge model now supports DM-authored `place`, `faction`, `story`, and `custom` subjects through `/dm/knowledge`, while the player-side Knowledge Library continues to browse mixed owned revisions. |
 | `ITEM-VAL-01` | resolved | Shared items now persist `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride`, with DM-only value authoring/display on the live item surfaces. |
@@ -41,7 +41,6 @@ Resolved splits:
 - `COMBAT-ACT-01`: keep the timing/action-economy idea recorded, but treat it as endgame-only and optional rather than the default next milestone.
 - `DOC-OBJECTIVE-01`: reconcile the stale current-state objective doc with the passive `Brute Defiance` behavior already live in code.
 - `VIEW-PERSONALIZATION-01`: implement constrained personalized layouts through safe persisted profiles, registered page sections, reversible presets, and auto-design recommendations.
-- `WIKI-SKILL-ACL-01`: update the repo-local skill branch rule once `.agents/` write access is available.
 
 ## Key Decisions
 
@@ -51,7 +50,7 @@ Resolved splits:
 
 ## Deferred / Open
 
-- Awaiting eventual user or implementation resolution for: `COMBAT-ACT-01`, `DOC-OBJECTIVE-01`, `VIEW-PERSONALIZATION-01`, `WIKI-SKILL-ACL-01`.
+- Awaiting eventual user or implementation resolution for: `COMBAT-ACT-01`, `DOC-OBJECTIVE-01`, `VIEW-PERSONALIZATION-01`.
 
 ## Sources
 

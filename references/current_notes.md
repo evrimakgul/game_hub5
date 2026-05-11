@@ -20,6 +20,8 @@ This file tracks active reminders for the current implementation block.
 - Player Auction Shopping follow-up is now complete.
 - Player Combat Mode V1 is now complete.
 - Realtime DM/Player Session V1 is now complete.
+- Character Sheet Fixed Dashboard Refactor is now complete.
+- Player-owned live character sheet sync is now complete.
 - `VIEW-PERSONALIZATION-01` is now the planned next follow-up: personalized player/DM page design with safe manual controls, page layouts, presets, and automatic recommendations.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 
@@ -48,7 +50,12 @@ This file tracks active reminders for the current implementation block.
 - Classic ranged blueprints are now split so `Short Bow` and `Light Crossbow` are separate identities.
 - Crossbow armor penetration now reduces DR during physical attack resolution.
 - Older saves now backfill missing seeded item blueprints and item definitions during hydration without overwriting same-id persisted edits.
-- Supplementary `orbital`, `earring`, and `charm/talisman` slots now use persisted per-character activation and stay hidden until enabled.
+- Character loadout now uses `head`, `neck`, `body`, `weapon_primary`, `weapon_secondary`, `earring_right`, `earring_left`, `ring_right`, `ring_left`, and `orbital`.
+- Legacy single `earring` equipment hydrates into `earring_left`; new earring items can equip to either side.
+- `charm/talisman` is no longer an equipment slot. Charms are carried inventory items and grant carried-item buffs only while active.
+- Player character sheets now use a fixed three-zone dark dashboard: top read-only identity/resources/combat/resistances, middle compact summaries, and bottom detailed tabs.
+- The bottom `Inventory` tab is the single loadout/inventory workspace: loadout slots render first, then non-equipped inventory items below.
+- Mid-section loadout slots open a slot-specific popup picker. The picker lists eligible carried inventory items, keeps the currently equipped item highlighted at the top, and routes changes through the same equip mutations.
 - Item knowledge cards now exist as standalone `KnowledgeEntity.type = "item"` revisions keyed by shared item id.
 - Sharing an item card now also marks that shared item learned and visible for the recipients.
 - Inventory `Identify` remains the user-facing `Artifact Appraisal` shortcut.
@@ -82,6 +89,8 @@ This file tracks active reminders for the current implementation block.
 - DM private rolls are `dm_only`; player hidden rolls are `dm_and_actor`.
 - Live card sharing and reward card grants reuse knowledge ownerships and can write matching Supabase knowledge rows.
 - DM reward packets update XP earned, inspiration, temporary inspiration, money, karma, character history, DM audit entries, session character rows, and a persistent reward event.
+- DM reward packets also update campaign character snapshots, and player-owned local character sheets hydrate from matching Supabase campaign/session snapshots.
+- Player flow filters character access by the signed-in Supabase account owner; DMs can still inspect campaign character sheets through DM flow.
 - `COMBAT-ACT-01` is intentionally pushed to the very end of the project and may be skipped entirely unless priorities change.
 - Characters now persist `apparelMode: humanoid | none`.
 - `clothing / robes` remain the existing chest-item baseline at `Initiative +2, DR +0`.

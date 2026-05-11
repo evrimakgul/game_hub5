@@ -3,7 +3,7 @@ title: Items And Equipment
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-20
+updated: 2026-05-04
 confidence: high
 ---
 
@@ -16,7 +16,10 @@ The item system has already crossed the important architecture boundary: items a
 - `src/lib/items.ts` defines default persisted item category/subcategory definitions, blueprint records, and shared item behavior helpers.
 - `src/mutations/characterItemMutations.ts` handles equip/unequip behavior, anchor slots, and occupied-slot normalization.
 - `src/state/appFlow.tsx` and `src/state/appFlowPersistence.ts` persist item definitions, blueprints, instances, and migration/backfill behavior.
-- Supplementary `orbital`, `earring`, and `charm/talisman` slots are live and per-character activatable.
+- Character loadout slots are now `head`, `neck`, `body`, `weapon_primary`, `weapon_secondary`, `earring_right`, `earring_left`, `ring_right`, `ring_left`, and `orbital`.
+- Legacy single `earring` equipment hydrates into `earring_left`; new earring items can equip to either left or right earring.
+- `charm/talisman` is no longer an equipment slot. Charms remain inventory items and grant their carried-item buffs only while the character carries them and marks them active.
+- `activeItemIds` is the current persisted mechanism for charm/talisman carried-item activation.
 - Shared items now persist `baseStrength`, computed `anchorValue`, and optional `anchorValueOverride` as item-instance fields.
 - Shared items may now also retain an `auctionEntryId` source link when they were auto-created from the auction-house catalog.
 - Shared items purchased from the player auction house are created as normal shared item instances, assigned directly to the buying character, and appear on the character sheet through the normal `ownedItemIds` / `inventoryItemIds` references.
@@ -48,6 +51,7 @@ The item system has already crossed the important architecture boundary: items a
 - Shared item entities, ownership/possession, equip state, and bonus knowledge are separate concepts.
 - Persisted item category/subcategory definitions drive equip behavior.
 - Multi-slot occupancy resolves through anchor-slot logic.
+- Equipment slot behavior should use the real loadout slot list; do not reintroduce `charm/talisman` as an equipped slot.
 - Item-card visibility should key off owned current knowledge, not a separate raw identify flag or stale revision ownership.
 - Auction purchases should land in the exact same shared-item architecture as DM-created or manually assigned items.
 
@@ -61,7 +65,10 @@ The item system has already crossed the important architecture boundary: items a
 - [references/current_notes.md](../../references/current_notes.md)
 - [project_tracking/new_thread_context.md](../../project_tracking/new_thread_context.md)
 - [src/lib/items.ts](../../src/lib/items.ts)
+- [src/types/items.ts](../../src/types/items.ts)
+- [src/config/characterTemplate.ts](../../src/config/characterTemplate.ts)
 - [src/mutations/characterItemMutations.ts](../../src/mutations/characterItemMutations.ts)
+- [src/components/player-character/CharacterInventorySection.tsx](../../src/components/player-character/CharacterInventorySection.tsx)
 - [src/routes/DmItemDefinitionManagementPage.tsx](../../src/routes/DmItemDefinitionManagementPage.tsx)
 - [src/routes/DmItemInteractionsPage.tsx](../../src/routes/DmItemInteractionsPage.tsx)
 - [src/routes/DmAuctionHousePage.tsx](../../src/routes/DmAuctionHousePage.tsx)

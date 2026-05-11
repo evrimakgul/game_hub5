@@ -3,7 +3,7 @@ title: Game Hub 5 Overview
 topic: project
 kind: overview
 status: active
-updated: 2026-04-24
+updated: 2026-05-11
 confidence: high
 ---
 
@@ -23,6 +23,9 @@ confidence: high
 - Shared item entities, persisted item category/subcategory definitions, revisioned knowledge records, and the new mob/group/portal authoring records are live project concepts, not just planned concepts.
 - DM tooling now includes a standalone mob library with live derived-combat summary output, reusable mob groups with CR-budget controls, and a portal workshop that now serves as the portal-first `portal_bundle` Codex entrypoint before manual stage export into the combat dashboard.
 - Combat now has both a DM encounter runtime and a player-facing masked combat mode, with the active encounter shared through local persisted app state.
+- Player/DM character sheets now share a fixed dark dashboard layout with top read-only identity/resources/combat/resistances, middle compact summaries, and bottom detail tabs.
+- The character-sheet inventory workspace now uses the real loadout slot list, left/right earring slots, and inventory-active charms instead of treating charm/talisman as equipped gear.
+- Live player character ownership now keys to Supabase user id, so DM rewards can sync back to the owning player's sheet while player flow hides other players' characters.
 - Personalized player/DM page design is now a planned near-term follow-up, not an implemented system.
 - Canonical non-code project truth currently lives across `references/` and `project_tracking/`, while detailed provenance lives in historical threads and chats.
 
@@ -34,6 +37,7 @@ confidence: high
 - Use this wiki as the durable synthesis layer between raw conversations/docs and future implementation.
 - Keep "current implementation state" and "intended direction" separate whenever the code has not yet caught up with the latest decision.
 - Add view personalization through constrained profiles, registered page sections, presets, and auto-design recommendations while preserving hidden-information rules.
+- Build personalization on top of the fixed character dashboard and registered route sections rather than replacing the current character-sheet route.
 
 ## Key Decisions
 
@@ -43,6 +47,7 @@ confidence: high
 - `History` remains an event log; durable knowledge belongs in standalone revisioned knowledge records.
 - Items are modeled as shared entities outside character sheets, with equip state and knowledge handled separately.
 - Portal and mob generation is currently a manual Codex request/response bridge layered on top of a strict website-side schema and editor, with the preferred flow now starting from a portal-first `portal_bundle` request on `/dm/portals`.
+- The fixed character dashboard is the current character-sheet foundation for player, DM-readonly, and DM-editable views.
 
 ## Deferred / Open
 

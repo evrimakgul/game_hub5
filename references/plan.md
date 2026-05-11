@@ -497,6 +497,24 @@ This roadmap is the active implementation source of truth for this branch.
 - RLS policies are implemented in SQL and still need manual Supabase local/project verification beyond repository unit tests.
 - Existing local app state remains the offline/dev truth; live DM/player coordination is authoritative only inside configured Supabase sessions.
 
+## Completed Follow-Up: Character Sheet Fixed Dashboard Refactor
+
+- `/player/character` keeps the existing route and view-mode split, but now renders as a fixed three-zone dashboard: top read-only identity/resources/combat/resistances, middle compact summaries, and bottom detailed workspace.
+- Bottom workspace tabs are `Stats`, `Skills`, `Powers`, `Inventory`, `Knowledge`, `History`, and `Notes`.
+- The single `Inventory` tab shows loadout slots first, then non-equipped inventory items below; the middle loadout summary opens this same tab.
+- The middle loadout summary is also interactive: clicking a slot opens a slot-specific popup picker, highlights the currently equipped item at the top, and equips eligible carried inventory items through the same mutation path.
+- Loadout now uses `head`, `neck`, `body`, `weapon_primary`, `weapon_secondary`, `earring_right`, `earring_left`, `ring_right`, `ring_left`, and `orbital`.
+- Legacy `earring` hydrates into `earring_left`; `charm/talisman` no longer hydrates as equipment and instead behaves as an active carried inventory item.
+- Existing mutations, appraisal, auction access, money handling, powers, knowledge cards, history, and DM/player permissions remain authoritative.
+
+## Completed Follow-Up: Player-Owned Live Character Sheet Sync
+
+- Player-created characters now carry optional `ownerUserId` metadata in local persisted state.
+- Player flow filters character access to the signed-in account's own player characters while preserving legacy local-only characters with no owner id.
+- DM flow can still view campaign character sheets regardless of player ownership.
+- Supabase campaign/session character snapshots hydrate matching player-owned local sheets, so DM rewards reflected in campaign/session rows are visible when the owning player opens the character sheet.
+- The sync helper lives in `src/lib/onlineCharacterSync.ts`; repository access to visible campaign character snapshots lives in `listVisibleCampaignCharacters`.
+
 ## Planned Follow-Up: Personalized Page Design And Auto-Design
 
 ### 13.1 View Profile Foundation

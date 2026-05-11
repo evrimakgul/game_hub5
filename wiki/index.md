@@ -8,9 +8,9 @@ Project-level pages track scope, roadmap, and what is already implemented.
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [game-hub5-overview](./project/game-hub5-overview.md) | High-level product, constraints, architecture posture, and source hierarchy. | 2026-04-20 |
-| [current-objective-and-roadmap](./project/current-objective-and-roadmap.md) | Current branch objective and the near-term roadmap anchored to canonical docs. | 2026-04-20 |
-| [implemented-vs-deferred](./project/implemented-vs-deferred.md) | Snapshot of completed systems versus explicitly deferred work. | 2026-04-20 |
+| [game-hub5-overview](./project/game-hub5-overview.md) | High-level product, constraints, architecture posture, and source hierarchy. | 2026-05-11 |
+| [current-objective-and-roadmap](./project/current-objective-and-roadmap.md) | Current branch objective and the near-term roadmap anchored to canonical docs. | 2026-05-11 |
+| [implemented-vs-deferred](./project/implemented-vs-deferred.md) | Snapshot of completed systems versus explicitly deferred work. | 2026-05-11 |
 
 ## Runtime
 
@@ -18,8 +18,8 @@ Runtime pages track application structure, persistence, and user-facing navigati
 
 | Article | Summary | Updated |
 | --- | --- | --- |
-| [state-and-persistence](./runtime/state-and-persistence.md) | Local-first app state, hydration flow, and persistence boundaries. | 2026-04-20 |
-| [ui-and-routes-map](./runtime/ui-and-routes-map.md) | Current route map and the main player/DM interaction surfaces. | 2026-04-20 |
+| [state-and-persistence](./runtime/state-and-persistence.md) | Local-first app state, hydration flow, and persistence boundaries. | 2026-05-11 |
+| [ui-and-routes-map](./runtime/ui-and-routes-map.md) | Current route map and the main player/DM interaction surfaces. | 2026-05-11 |
 
 ## Domains
 
@@ -29,10 +29,10 @@ Domain pages capture rules and implementation posture for the main game systems.
 | --- | --- | --- |
 | [combat-encounter](./domains/combat-encounter.md) | Encounter runtime responsibilities, stable combat behavior, and deferred engine work. | 2026-04-20 |
 | [powers-and-casting](./domains/powers-and-casting.md) | Power runtime, cast flow, world-vs-encounter boundaries, and locked source-rule decisions. | 2026-04-15 |
-| [items-and-equipment](./domains/items-and-equipment.md) | Shared items, persisted definitions, equipment occupancy, and item knowledge interactions. | 2026-04-20 |
+| [items-and-equipment](./domains/items-and-equipment.md) | Shared items, persisted definitions, equipment occupancy, and item knowledge interactions. | 2026-05-04 |
 | [knowledge-cards](./domains/knowledge-cards.md) | Revisioned knowledge model, ownership, history linking, and current subject coverage. | 2026-04-15 |
 | [portal-content-patterns](./domains/portal-content-patterns.md) | Authored Grey Portal content patterns: themed portal scenarios, staged mob packs, bosses, loot, and closing rewards. | 2026-04-19 |
-| [realtime-sessions](./domains/realtime-sessions.md) | Optional Supabase-backed live DM/player sessions, secret rolls, sharing, rewards, events, and RLS-backed tables. | 2026-04-27 |
+| [realtime-sessions](./domains/realtime-sessions.md) | Optional Supabase-backed live DM/player sessions, secret rolls, sharing, rewards, events, and RLS-backed tables. | 2026-05-11 |
 | [view-personalization](./domains/view-personalization.md) | Planned safe personalization system for player/DM themes, layouts, presets, and auto-design recommendations. | 2026-04-24 |
 | [world-casting](./domains/world-casting.md) | Out-of-combat casting scope, shared backend path, and known limitations. | 2026-04-15 |
 
@@ -43,7 +43,7 @@ Workflow pages tell Codex how to operate on this repo and this wiki.
 | Article | Summary | Updated |
 | --- | --- | --- |
 | [codex-operating-rules](./workflow/codex-operating-rules.md) | Repo-specific operating policy for implementation and wiki maintenance. | 2026-04-17 |
-| [wiki-maintenance](./workflow/wiki-maintenance.md) | Ingest, query, lint, automation, and allowed-write rules for the wiki. | 2026-04-27 |
+| [wiki-maintenance](./workflow/wiki-maintenance.md) | Ingest, query, lint, automation, and allowed-write rules for the wiki. | 2026-05-11 |
 
 ## History
 
@@ -52,4 +52,4 @@ History pages track provenance, chronology, and unresolved divergence.
 | Article | Summary | Updated |
 | --- | --- | --- |
 | [thread-chronology](./history/thread-chronology.md) | Ordered summary of Codex threads, ChatGPT chats, and their implementation impact. | 2026-04-17 |
-| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-04-27 |
+| [split-decisions](./history/split-decisions.md) | Open and resolved gaps between current implementation and intended direction. | 2026-05-11 |

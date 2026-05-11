@@ -3,7 +3,7 @@ title: State And Persistence
 topic: runtime
 kind: architecture
 status: active
-updated: 2026-04-24
+updated: 2026-05-11
 confidence: high
 ---
 
@@ -20,6 +20,10 @@ confidence: high
 - Persistence is local-only unless Supabase env vars are configured. Live DM/player sessions use Supabase Auth, Postgres rows, RLS, and realtime subscriptions.
 - `src/state/onlineSession.tsx` owns authenticated account/profile state, while `src/lib/realtimeSessionRepository.ts` owns live campaign/session/event repository operations.
 - The hydration layer already carries migration burden for older item storage and seeded data evolution.
+- Character hydration now normalizes old single `earring` equipment into `earring_left`, keeps left/right earring slots distinct, and treats legacy charm/talisman equipment as carried active inventory where applicable.
+- `activeItemIds` remain the persisted switch for carried-item buffs such as charm/talisman effects.
+- Local character records now carry optional `ownerUserId` metadata for live-session account ownership.
+- Player-owned Supabase campaign/session snapshots hydrate matching local player sheets, while legacy ownerless local characters remain readable for offline/dev continuity.
 - Auction-house state now seeds from the workbook-derived catalog when old saves do not have an `auctionEntries` collection yet, while newer saves persist their current auction row set directly.
 - Auction entries now persist both:
   - original stock/source text in `itemQuantity`
@@ -59,6 +63,8 @@ confidence: high
 - Negative HP and richer derived state must survive persistence/hydration.
 - Authoring content is persisted as top-level local collections now, but its shape is already being kept compatible with a future `metadata columns + jsonb payload` storage model.
 - Future personalization persistence should store constrained design/layout preferences, not executable code.
+- Loadout persistence should keep using canonical slot ids so summary controls, the detailed inventory tab, and combat-derived equipment behavior stay aligned.
+- Live-session reward sync should preserve account ownership boundaries: players hydrate only their own character snapshots, while DMs continue to view campaign character sheets.
 
 ## Deferred / Open
 

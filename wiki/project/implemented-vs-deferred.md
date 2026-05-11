@@ -3,7 +3,7 @@ title: Implemented Vs Deferred
 topic: project
 kind: status
 status: active
-updated: 2026-04-24
+updated: 2026-05-11
 confidence: high
 ---
 
@@ -18,8 +18,10 @@ Implemented and live:
 - Local-first character persistence, hydration, and backup recovery.
 - DM and player route flows.
 - Optional Supabase-backed live sessions with Auth, DM Screen, Player Session, persistent events, secret rolls, sharing, and reward packets.
+- Player-owned live character sheet sync from Supabase campaign/session snapshots, including DM reward reflection and player-flow ownership filtering.
 - Combat encounter runtime with initiative, parties, effects, summons, and logs.
 - Player combat mode with masked initiative/party/activity views, AE-based opponent reveal, local shared encounter state, and own-turn action controls for the viewing character.
+- Fixed player/DM character-sheet dashboard with top identity/resources/combat/resistance overview, middle summaries, and bottom detail tabs.
 - Power rewrite/reconciliation for the major current power families.
 - Knowledge System V1 with standalone revisioned character and item cards.
 - Knowledge subject expansion for DM-authored place, faction, story, and custom cards through the DM Knowledge Hub.
@@ -35,6 +37,8 @@ Implemented and live:
   - portal/stage difficulty controls
   - manual Codex request-packet import/export, now including portal-first `portal_bundle` imports
 - Supplementary slots and anchor-slot occupancy.
+- Current character loadout slots: `head`, `neck`, `body`, `weapon_primary`, `weapon_secondary`, `earring_right`, `earring_left`, `ring_right`, `ring_left`, and `orbital`.
+- Inventory-active charm/talisman behavior; charm/talisman is not a loadout equipment slot.
 - World Casting V1 for a limited set of supported powers.
 - `Artifact Appraisal` integration through the inventory shortcut, canonical item-card revision refresh, and linked history-entry flow.
 

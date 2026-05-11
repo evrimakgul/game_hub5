@@ -3,8 +3,8 @@ title: Realtime Sessions
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-27
-confidence: medium
+updated: 2026-05-11
+confidence: high
 ---
 
 ## Summary
@@ -28,6 +28,9 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Player session campaign access remains membership-based, so the same account can be a DM in one campaign and a player/member in another.
 - Session event visibility supports `public`, `limited`, `dm_only`, and `dm_and_actor`.
 - Reward packets update character sheets, history, DM audit log, session character rows, optional card grants, and persistent reward events.
+- Campaign character snapshots are now updated when the DM rewards a campaign character, not only when the player publishes.
+- Player-owned local character sheets hydrate from matching Supabase campaign/session snapshots, so reward deltas applied by the DM appear on the player's own character sheet.
+- Player flow filters visible player characters by signed-in account owner; DM flow can still inspect campaign characters across owners.
 
 ## Intended Direction
 
@@ -45,6 +48,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Rewards use deltas and clamp nonnegative tracked resources.
 - Campaign membership is currently managed by Supabase user UUID.
 - Profile bootstrap tolerates both the current `profiles.id` schema and older `profiles.user_id` schemas.
+- Player character ownership is keyed by Supabase user id in live-session contexts; legacy local-only player characters without an owner id remain visible to avoid deleting old offline work.
 
 ## Deferred / Open
 
@@ -59,8 +63,11 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - [src/state/onlineSession.tsx](../../src/state/onlineSession.tsx)
 - [src/lib/realtimeSession.ts](../../src/lib/realtimeSession.ts)
 - [src/lib/realtimeSessionRepository.ts](../../src/lib/realtimeSessionRepository.ts)
+- [src/lib/onlineCharacterSync.ts](../../src/lib/onlineCharacterSync.ts)
 - [src/routes/DmScreenPage.tsx](../../src/routes/DmScreenPage.tsx)
 - [src/routes/PlayerSessionPage.tsx](../../src/routes/PlayerSessionPage.tsx)
+- [src/routes/PlayerHubPage.tsx](../../src/routes/PlayerHubPage.tsx)
+- [src/routes/PlayerCharacterPage.tsx](../../src/routes/PlayerCharacterPage.tsx)
 - [supabase/migrations/202604240001_realtime_dm_screen.sql](../../supabase/migrations/202604240001_realtime_dm_screen.sql)
 - [supabase/migrations/202604240002_account_access_hardening.sql](../../supabase/migrations/202604240002_account_access_hardening.sql)
 - [supabase/migrations/202604250001_campaign_owner_membership_policy.sql](../../supabase/migrations/202604250001_campaign_owner_membership_policy.sql)

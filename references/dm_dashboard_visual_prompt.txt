@@ -1,0 +1,122 @@
+Create a high-fidelity desktop UI mockup for a dark fantasy / modern TTRPG web app called "Convergence".
+
+Goal:
+Design a Dungeon Master dashboard that visually matches an existing dark "Convergence Character Sheet" dashboard. The design should use the same visual language: deep navy-black background, warm amber/gold borders, teal/cyan highlights, compact RPG-style panels, tabbed bottom workspace, and a polished command-center feeling. It should not look like a generic admin dashboard.
+
+Canvas:
+- Desktop browser screenshot, 16:9 or similar wide layout.
+- Use a dark browser/app frame.
+- Page title: "Convergence DM Dashboard".
+- Brand text in the top-left: "PORTALS game_hub5".
+- Overall mood: occult command center, elegant, organized, readable, slightly cinematic.
+
+Color and Style:
+- Background: near-black, deep blue-black, subtle gradients and faint texture.
+- Panels: dark glass / metal cards with thin amber-gold borders.
+- Primary accent: warm amber / gold.
+- Secondary accent: teal / cyan for active state and live status.
+- Alert accent: muted red/orange for danger or unresolved issues.
+- Text: ivory, warm beige, muted gray-brown secondary labels.
+- Use crisp, compact typography with uppercase section labels.
+- Use small icons or simple line glyphs where helpful, but keep them coherent.
+- The app should feel like a tabletop RPG control console, not a corporate dashboard.
+
+Required Layout:
+The page must have three main visual zones: top, middle, bottom.
+
+TOP SECTION: "Live Table Overview"
+This is a wide read-only/status area across the top, similar to the character sheet top zone. Include:
+- Left: DM identity / campaign identity panel with circular crest/avatar.
+- Campaign name example: "Portals Campaign".
+- Session label example: "Session 12: Glass Market".
+- Date/time block.
+- Live status indicators:
+  - "Online Players: 4 / 5"
+  - "Active Combat: None" or "Combat Ready"
+  - "Open Rolls: 2"
+  - "Pending Rewards: 1"
+- Quick action buttons on the right:
+  - "DM Screen"
+  - "Start Combat"
+  - "Live Session"
+  - "Main Menu"
+This section is mostly status and navigation, not deep editing.
+
+MIDDLE SECTION: "Operational Command Cards"
+This section should use compact dashboard cards, like the middle cards on a character sheet. It should summarize the most important DM actions. Use 4 large cards in a row:
+1. "Live Table"
+   - Shows secret rolls, sharing, rewards, notes.
+   - Big button: "Open DM Screen".
+   - Small status chips: "3 events", "2 private rolls".
+2. "Characters"
+   - Shows player characters and NPC creator.
+   - Include miniature rows for "Player Characters" and "NPC Creator".
+   - Small buttons or icon buttons.
+3. "Combat"
+   - Shows combat setup, saved mobs, mob groups, portal stages.
+   - Include "Combat Setup" and "Encounter Tools".
+   - A teal "Ready" chip.
+4. "World Assets"
+   - Shows auction, items, knowledge, portals.
+   - Include tiny badges like "Items", "Cards", "Auction", "Portals".
+
+These middle cards should be compact and visually scannable, not huge text blocks.
+
+BOTTOM SECTION: Tabbed Workspace
+This section should take the bottom half of the page and use tabs similar to the character sheet. Tabs should be:
+- Overview
+- Session
+- Combat
+- Characters
+- World
+- Items
+- Knowledge
+- Notes
+
+Show the "Overview" tab selected. The selected tab should use a teal/cyan highlight and amber border.
+
+Inside the selected Overview tab, show a split panel:
+Left side: "Immediate Actions"
+- DM Screen
+- Combat Setup
+- Player Characters
+- Item Management
+- Knowledge Hub
+Each action appears as a dense row with icon, title, short description, and a small action button.
+
+Right side: "Current Session Snapshot"
+- Event feed with 4 short entries.
+- Pinned cards/locations/NPCs area.
+- Reward reminder area.
+- Small "Session Notes" panel.
+
+Important Interaction Intent:
+This is a visual mockup only, but make it clear how it would work:
+- Top section gives current session context.
+- Middle section gives high-priority command shortcuts.
+- Bottom section organizes all DM tools into tabs.
+- Existing DM dashboard route cards are not removed; they are reorganized into the tabbed workspace.
+
+Content to include:
+- DM Screen
+- Player Characters
+- NPC Creator
+- Mob Templates
+- Mob Groups
+- Portal Templates
+- Combat Setup
+- Auction House
+- Item Management
+- Item Interactions
+- Knowledge Hub
+
+Avoid:
+- Do not use a light theme.
+- Do not use purple as the main accent.
+- Do not make it look like a generic SaaS dashboard.
+- Do not make every card equal importance.
+- Do not clutter the screen with full paragraphs.
+- Do not use plain white cards.
+
+Desired final impression:
+A polished dark RPG command dashboard that clearly belongs to the same app as a dark Convergence Character Sheet. It should feel like the DM is sitting behind a live control panel for a campaign, with immediate command access and tabbed organization for deeper tools.

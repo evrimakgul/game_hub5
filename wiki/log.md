@@ -180,3 +180,48 @@
 - Updated: `domains/realtime-sessions`
 - Updated: `workflow/wiki-maintenance`
 - Updated: `history/split-decisions`
+
+## [2026-04-29] refresh | character sheet fixed dashboard refactor
+- Reconciled docs with the fixed `/player/character` dashboard refactor and the new top/mid/bottom section model.
+- Recorded the current loadout slot list, left/right earring split, legacy earring migration, and inventory-active charm/talisman rule.
+- Recorded that mid-section loadout slots open popup pickers backed by the same equip mutations as the bottom Inventory workspace.
+- Updated: `references/current_notes.md`
+- Updated: `references/plan.md`
+- Updated: `project_tracking/tasks_done.md`
+- Updated: `project_tracking/tasks_todo.md`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/items-and-equipment`
+
+## [2026-05-04] refresh | source revalidation and dashboard consolidation
+- Revalidated tracked repo docs, current code landmarks, and external workflow snapshots; no material external workflow drift was found.
+- Could not update or restore `.agents/skills/llm-wiki-maintainer/SKILL.md` because local ACL denied writes under `.agents/`; `WIKI-SKILL-ACL-01` remains open.
+- Recorded that the current checkout is `ui-change` with existing uncommitted app/runtime edits, so this run did not switch branches or create a commit over unrelated worktree changes.
+- Consolidated fixed character dashboard, canonical loadout slots, left/right earring hydration, and inventory-active charm/talisman behavior across the project, runtime, UI, and item wiki pages.
+- Updated: `raw/source-index.md`
+- Updated: `project/game-hub5-overview`
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/items-and-equipment`
+- Updated: `workflow/wiki-maintenance`
+- Updated: `history/split-decisions`
+
+## [2026-05-11] refresh | player-owned live sheet sync and wiki cleanup
+- Recorded that live player character ownership is keyed by Supabase user id and that player-owned local sheets hydrate from Supabase campaign/session snapshots.
+- Recorded that DM rewards now update campaign/session snapshots so the owning player sees the rewarded sheet state.
+- Restored `.agents/skills/llm-wiki-maintainer/SKILL.md` and aligned its wiki-refresh branch rule with `codex/powers-implementation`, resolving `WIKI-SKILL-ACL-01`.
+- Added the DM dashboard visual prompt as a tracked design reference.
+- Updated: `references/current_notes.md`
+- Updated: `references/plan.md`
+- Updated: `project_tracking/tasks_done.md`
+- Updated: `raw/source-index.md`
+- Updated: `domains/realtime-sessions`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/game-hub5-overview`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `workflow/wiki-maintenance`
+- Updated: `history/split-decisions`
+- Updated: `wiki/index.md`

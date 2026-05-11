@@ -3,7 +3,7 @@ title: UI And Routes Map
 topic: runtime
 kind: map
 status: active
-updated: 2026-04-24
+updated: 2026-05-11
 confidence: high
 ---
 
@@ -43,7 +43,14 @@ Current route surface from `src/App.tsx`:
 
 Supporting component clusters:
 
-- `src/components/player-character/*` owns character-sheet sections, knowledge UI, history, powers, inventory, and the player-sheet auction-house entry button.
+- `src/routes/PlayerCharacterPage.tsx` owns the fixed dark dashboard character sheet for player, DM-readonly, and DM-editable view modes.
+- `src/components/player-character/*` owns character-sheet sections, knowledge UI, history, powers, inventory/loadout interactions, and the player-sheet auction-house entry button.
+- `/player/character` now presents three visual zones: top read-only identity/resources/combat/resistances, middle compact summaries, and a bottom tab workspace for Stats, Skills, Powers, Inventory, Knowledge, History, and Notes.
+- `/player` filters visible player characters by signed-in account owner when live auth is configured.
+- `/player/character` redirects away from another player's owned sheet in player mode; DM readonly/editable routes can still inspect campaign characters.
+- The `Inventory` workspace owns both detailed loadout slot controls and non-equipped inventory item actions; the middle loadout summary opens that same tab.
+- The middle loadout summary opens slot-specific popup pickers for assigning eligible carried inventory items, with the currently equipped item highlighted first.
+- DM readonly and DM editable character views reuse the same dashboard route component with DM edit/override controls layered onto that shared surface.
 - `src/routes/PlayerCombatPage.tsx` owns the player-facing masked combat view, own-turn player action surface, and shared encounter-state wiring instead of inventing a second combat system.
 - `src/routes/DmScreenPage.tsx` and `src/routes/PlayerSessionPage.tsx` own Supabase-backed live session operations.
 - `src/components/combat-encounter/*` owns encounter runtime interaction surfaces.

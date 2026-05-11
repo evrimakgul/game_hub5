@@ -3,7 +3,7 @@ title: Current Objective And Roadmap
 topic: project
 kind: roadmap
 status: active
-updated: 2026-04-24
+updated: 2026-05-11
 confidence: high
 ---
 
@@ -22,6 +22,8 @@ The current branch objective is no longer broad combat stabilization, and the re
 - `AUCTION-PLAYER-01` is now complete: player character sheets now link into `/player/auction-house`, completed `Bid` and `Buyout` actions spend character money, purchased items land in the buying character's `Items` section, and live auction stock now decrements until it reaches `0`.
 - `COMBAT-PLAYER-01` is now complete: DM-started encounters now also expose `/player/combat`, player character sheets and the player hub now link into `Combat Mode` for participating characters, hidden opponents stay masked unless the viewing character owns `Assess Entity` knowledge for that target, and the active encounter persists locally so DM/player windows stay aligned.
 - `REALTIME-SESSION-01` is now complete: optional Supabase Auth/session wiring now backs `/dm/screen` and `/player/session` with persistent events, secret rolls, limited sharing, card sharing, and reward packets.
+- The Character Sheet Fixed Dashboard Refactor is now complete: `/player/character`, DM readonly, and DM editable character views use the fixed top/mid/bottom dashboard structure, with loadout and inventory work consolidated into the bottom `Inventory` tab.
+- Player-owned live character sheet sync is now complete: DM rewards update Supabase snapshots that hydrate the owning player's local sheet, while player flow hides other players' characters.
 - `VIEW-PERSONALIZATION-01` is now the planned next item: browser-local personalized page design with safe manual controls, page section registries, reversible presets, and auto-design recommendations.
 - `COMBAT-ACT-01` is now intentionally parked at the very end of the project and may be skipped entirely unless priorities change.
 - Recent completed milestone groups include:
@@ -30,6 +32,7 @@ The current branch objective is no longer broad combat stabilization, and the re
   - item multi-slot and hand-state cleanup
   - supplementary-slot and item knowledge UX
   - World Casting V1
+  - character-sheet fixed dashboard and current loadout/inventory cleanup
 - `references/plan.md`, `references/current_notes.md`, and `project_tracking/tasks_todo.md` now all reflect the closed `AA-01` state.
 - `references/current_notes.md` records successful validation for `typecheck`, `test`, and `build` at the end of the latest major pass.
 - `references/project_objective.md` is no longer fully aligned with current implementation; it still mentions the older manual `Brute Defiance` trigger while current code/notes record the passive version.
@@ -42,6 +45,7 @@ The current branch objective is no longer broad combat stabilization, and the re
 - Treat the wiki as the place that reconciles roadmap intent against current implementation facts.
 - Keep future work disciplined around explicit open items rather than restarting already-closed architecture debates.
 - Treat personalization as constrained customization: safe tokens, registered sections, presets, and recommendations rather than arbitrary CSS/JS or unrestricted page building.
+- Treat the fixed character dashboard as the first personalization target, not as a temporary layout to discard.
 
 ## Key Decisions
 

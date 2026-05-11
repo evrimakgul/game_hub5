@@ -27,7 +27,7 @@
 - `ITEM-RANGE-01` completed for the classic subset. `Short Bow` and `Light Crossbow` are now separate blueprint identities, `weapon:ranged_light` migrates to `range:light_crossbow`, older saves backfill missing seeded blueprints/definitions during hydration, crossbow armor penetration now reduces DR at runtime, and unsupported classic bow / crossbow timing details remain note-only until the combat-action pass.
 
 ### Group 5: Supplementary Slots And Item Knowledge UX
-- `EQUIP-SUP-01` completed. Supplementary `orbital`, `earring`, and `charm/talisman` slots now use persisted per-character activation state, remain hidden until enabled, and disabling an active slot clears only that equipment slot.
+- `EQUIP-SUP-01` completed. The current loadout keeps `orbital` as an equipment slot, splits legacy `earring` into `earring_left` / `earring_right`, and treats `charm/talisman` as an active carried inventory item rather than an equipment slot.
 - `B01` completed for item cards. Added an item-focused DM interaction hub that can activate supplementary slots for selected characters, generate or refresh canonical item knowledge cards, inspect item revisions, and share one item card revision to multiple characters at once while also syncing item learned/visible state.
 
 ### Group 6: World Casting V1
