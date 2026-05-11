@@ -100,7 +100,7 @@ type AppFlowContextValue = {
   activeCombatEncounter: CombatEncounterState | null;
   chooseAuth: (choice: Exclude<AuthChoice, null>) => void;
   chooseRole: (choice: Exclude<RoleChoice, null>) => void;
-  createCharacter: (ownerRole?: CharacterOwnerRole) => string;
+  createCharacter: (ownerRole?: CharacterOwnerRole, ownerUserId?: string | null) => string;
   createItem: (
     blueprintId: ItemBlueprintId,
     overrides?: Partial<
@@ -369,7 +369,10 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  function createCharacter(ownerRole: CharacterOwnerRole = "player"): string {
+  function createCharacter(
+    ownerRole: CharacterOwnerRole = "player",
+    ownerUserId: string | null = null
+  ): string {
     const characterId = `character-${Date.now()}-${characters.length + 1}`;
 
     setCharacters((currentCharacters) => [
@@ -377,6 +380,7 @@ export function AppFlowProvider({ children }: PropsWithChildren) {
       {
         id: characterId,
         ownerRole,
+        ownerUserId,
         sheet: PLAYER_CHARACTER_TEMPLATE.createInstance(),
       },
     ]);

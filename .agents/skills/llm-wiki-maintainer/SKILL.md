@@ -72,7 +72,7 @@ Auto-fix structural issues when safe. Report semantic contradictions when judgme
 
 ## Automation Rules
 
-- Run wiki refresh work on branch `codex/llm-wiki`.
+- Run wiki refresh work on branch `codex/powers-implementation`.
 - Allowed refresh outputs are the same as the allowed-write set above.
 - If an external fetch fails:
   - keep existing wiki content unchanged
@@ -81,4 +81,3 @@ Auto-fix structural issues when safe. Report semantic contradictions when judgme
   - continue processing the remaining sources
 - If refresh work changes the wiki, use the commit message format:
   - `docs(wiki): auto-refresh YYYY-MM-DD HH:mm`
-

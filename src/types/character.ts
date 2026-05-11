@@ -7,6 +7,7 @@ export type CharacterOwnerRole = (typeof CHARACTER_OWNER_ROLES)[number];
 export type CharacterRecord = {
   id: string;
   ownerRole: CharacterOwnerRole;
+  ownerUserId?: string | null;
   sheet: import("../config/characterTemplate").CharacterDraft;
 };
 

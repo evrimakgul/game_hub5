@@ -1,10 +1,15 @@
 import { Navigate, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { getSupabaseClient } from "../lib/supabaseClient.ts";
+import { isCharacterPlayableByUser, mergeVisibleCampaignCharacters } from "../lib/onlineCharacterSync.ts";
+import { listVisibleCampaignCharacters } from "../lib/realtimeSessionRepository.ts";
 import { useAppFlow } from "../state/appFlow";
+import { useOnlineSession } from "../state/onlineSession.tsx";
 
 export function PlayerHubPage() {
   const navigate = useNavigate();
+  const online = useOnlineSession();
   const {
     roleChoice,
     characters,
@@ -12,19 +17,56 @@ export function PlayerHubPage() {
     createCharacter,
     selectCharacter,
     deleteCharacter,
+    replaceCharacters,
   } = useAppFlow();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const playerCharacters = characters.filter((character) => character.ownerRole === "player");
+  const currentUserId = online.status === "authenticated" ? online.user?.id ?? null : null;
+  const playerCharacters = characters.filter((character) =>
+    isCharacterPlayableByUser(character, currentUserId)
+  );
   const activeCombatCharacterIds = new Set(
     activeCombatEncounter?.participants.map((participant) => participant.characterId) ?? []
   );
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    const userId = online.user?.id ?? null;
+    if (!supabase || !userId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncVisibleCharacters(): Promise<void> {
+      const result = await listVisibleCampaignCharacters({ client: supabase! });
+      if (cancelled || "error" in result) {
+        return;
+      }
+
+      const nextCharacters = mergeVisibleCampaignCharacters({
+        localCharacters: characters,
+        campaignCharacters: result,
+        currentUserId: userId!,
+      });
+
+      if (nextCharacters !== characters) {
+        replaceCharacters(nextCharacters);
+      }
+    }
+
+    void syncVisibleCharacters();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [online.user?.id]);
 
   if (roleChoice !== "player") {
     return <Navigate to="/role" replace />;
   }
 
   function handleCreateCharacter(): void {
-    const characterId = createCharacter("player");
+    const characterId = createCharacter("player", currentUserId);
     setPendingDeleteId(null);
     navigate(`/player/character?characterId=${encodeURIComponent(characterId)}`);
   }

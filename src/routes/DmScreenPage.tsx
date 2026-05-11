@@ -196,6 +196,7 @@ export function DmScreenPage() {
       campaignCharacters.map((character) => ({
         id: character.characterId,
         ownerRole: "player" as const,
+        ownerUserId: character.ownerUserId,
         sheet: normalizeCharacterDraft(character.sheetPayload as CharacterDraft),
       })),
     [campaignCharacters]
@@ -657,6 +658,7 @@ export function DmScreenPage() {
     const character = {
       id: record.characterId,
       ownerRole: "player" as const,
+      ownerUserId: record.ownerUserId,
       sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
     };
     replaceCharacters([

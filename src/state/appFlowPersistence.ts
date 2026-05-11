@@ -65,7 +65,7 @@ export const CHARACTER_STORAGE_BACKUP_KEY = "convergence.local.characters.backup
 
 type PersistedCharacterEnvelope = {
   version: number;
-  characters: Array<{ id: string; ownerRole?: unknown; sheet: unknown }>;
+  characters: Array<{ id: string; ownerRole?: unknown; ownerUserId?: unknown; sheet: unknown }>;
   itemCategoryDefinitions?: unknown[];
   itemSubcategoryDefinitions?: unknown[];
   itemBlueprints?: unknown[];
@@ -264,6 +264,7 @@ function hydrateCharacterRecordBestEffort(
     return {
       id: entry.id,
       ownerRole: normalizeOwnerRole(entry.ownerRole),
+      ownerUserId: typeof entry.ownerUserId === "string" ? entry.ownerUserId : null,
       sheet: hydrateCharacterDraft(migrated.nextSheet),
     };
   } catch {
@@ -277,6 +278,7 @@ function hydrateCharacterRecordBestEffort(
     return {
       id: entry.id,
       ownerRole: normalizeOwnerRole(entry.ownerRole),
+      ownerUserId: typeof entry.ownerUserId === "string" ? entry.ownerUserId : null,
       sheet: fallbackSheet,
     };
   }
@@ -1013,6 +1015,7 @@ export function serializePersistedCharacters(
     characters: state.characters.map((character) => ({
       id: character.id,
       ownerRole: character.ownerRole,
+      ownerUserId: character.ownerUserId ?? null,
       sheet: character.sheet,
     })),
     itemCategoryDefinitions: state.itemCategoryDefinitions,

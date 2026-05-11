@@ -758,6 +758,21 @@ export async function listCampaignCharacters(args: {
   return (data ?? []).map(mapCampaignCharacter);
 }
 
+export async function listVisibleCampaignCharacters(args: {
+  client: SupabaseClient;
+}): Promise<CampaignCharacterRecord[] | { error: string }> {
+  const { data, error } = await args.client
+    .from("campaign_characters")
+    .select("id, campaign_id, character_id, owner_user_id, display_name, sheet_payload, updated_at")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to load visible campaign characters.") };
+  }
+
+  return (data ?? []).map(mapCampaignCharacter);
+}
+
 export async function listSessionCharacters(args: {
   client: SupabaseClient;
   sessionId: string;

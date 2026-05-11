@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState, startTransition } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { rollD10Faces } from "../lib/dice.ts";
-import type { GameHistoryEntry } from "../config/characterTemplate.ts";
+import {
+  normalizeCharacterDraft,
+  type CharacterDraft,
+  type GameHistoryEntry,
+} from "../config/characterTemplate.ts";
 import {
   applyKnowledgeBatch,
   buildKnowledgeRevisionLabel,
@@ -55,6 +59,10 @@ function appendUniqueEvent(events: SessionEvent[], event: SessionEvent): Session
 function parseIntegerInput(value: string): number {
   const parsed = Number.parseInt(value.trim(), 10);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function areSheetsEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 export function PlayerSessionPage() {
@@ -110,6 +118,40 @@ export function PlayerSessionPage() {
         }))
       )
     : [];
+
+  useEffect(() => {
+    const userId = online.user?.id ?? null;
+    if (!userId || sessionCharacters.length === 0) {
+      return;
+    }
+
+    let didChange = false;
+    const nextCharacters = characters.map((character) => {
+      const sessionCharacter = sessionCharacters.find(
+        (entry) => entry.characterId === character.id && entry.ownerUserId === userId
+      );
+
+      if (!sessionCharacter) {
+        return character;
+      }
+
+      const nextSheet = normalizeCharacterDraft(sessionCharacter.sheetPayload as CharacterDraft);
+      if (character.ownerUserId === userId && areSheetsEqual(character.sheet, nextSheet)) {
+        return character;
+      }
+
+      didChange = true;
+      return {
+        ...character,
+        ownerUserId: userId,
+        sheet: nextSheet,
+      };
+    });
+
+    if (didChange) {
+      replaceCharacters(nextCharacters);
+    }
+  }, [characters, online.user?.id, replaceCharacters, sessionCharacters]);
 
   useEffect(() => {
     if (!client || online.status !== "authenticated") {

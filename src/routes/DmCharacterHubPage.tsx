@@ -69,6 +69,7 @@ export function DmCharacterHubPage() {
     const character = {
       id: record.characterId,
       ownerRole: "player" as const,
+      ownerUserId: record.ownerUserId,
       sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
     };
     replaceCharacters([

@@ -20,6 +20,12 @@ import {
 } from "../config/characterRuntime.ts";
 import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
+import { getSupabaseClient } from "../lib/supabaseClient.ts";
+import {
+  isCharacterPlayableByUser,
+  mergeVisibleCampaignCharacters,
+} from "../lib/onlineCharacterSync.ts";
+import { listVisibleCampaignCharacters } from "../lib/realtimeSessionRepository.ts";
 import {
   characterOwnsCurrentItemKnowledgeCard,
   getKnowledgeEntityById,
@@ -28,6 +34,7 @@ import {
 } from "../lib/knowledge.ts";
 import { prependGameHistoryEntry } from "../lib/historyEntries.ts";
 import { usePlayerCharacterMutations } from "../hooks/usePlayerCharacterMutations";
+import { useOnlineSession } from "../state/onlineSession.tsx";
 import {
   buildItemIndex,
   canViewerSeeItemBonusDetails,
@@ -128,6 +135,7 @@ export function PlayerCharacterPage({
     activeDmCharacter,
     activeCombatEncounter,
     updateCharacter,
+    replaceCharacters,
     updateKnowledgeState,
     executeWorldCast,
     executeArtifactAppraisal,
@@ -137,6 +145,7 @@ export function PlayerCharacterPage({
   } = useAppFlow();
   const navigate = useNavigate();
   const location = useLocation();
+  const online = useOnlineSession();
   const [isEditMode, setIsEditMode] = useState(false);
   const [dmEditMode, setDmEditMode] = useState(false);
   const [adminOverrideMode, setAdminOverrideMode] = useState(false);
@@ -168,6 +177,7 @@ export function PlayerCharacterPage({
   const isDmReadOnlyView = viewMode === "dm-readonly";
   const isDmEditableView = viewMode === "dm-editable";
   const isDmView = viewMode !== "player";
+  const currentUserId = online.status === "authenticated" ? online.user?.id ?? null : null;
   const characterIdFromQuery = new URLSearchParams(location.search).get("characterId");
   const queriedCharacter =
     characterIdFromQuery
@@ -184,6 +194,39 @@ export function PlayerCharacterPage({
     (activeCombatEncounter?.participants.some(
       (participant) => participant.characterId === activeCharacter.id
     ) ?? false);
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    const userId = online.user?.id ?? null;
+    if (isDmView || !supabase || !userId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncVisibleCharacters(): Promise<void> {
+      const result = await listVisibleCampaignCharacters({ client: supabase! });
+      if (cancelled || "error" in result) {
+        return;
+      }
+
+      const nextCharacters = mergeVisibleCampaignCharacters({
+        localCharacters: characters,
+        campaignCharacters: result,
+        currentUserId: userId!,
+      });
+
+      if (nextCharacters !== characters) {
+        replaceCharacters(nextCharacters);
+      }
+    }
+
+    void syncVisibleCharacters();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [characters, isDmView, online.user?.id]);
 
   useEffect(() => {
     function handleMouseMove(event: globalThis.MouseEvent): void {
@@ -480,6 +523,10 @@ export function PlayerCharacterPage({
         replace
       />
     );
+  }
+
+  if (!isDmView && currentUserId && !isCharacterPlayableByUser(activeCharacter, currentUserId)) {
+    return <Navigate to="/player" replace />;
   }
 
   const selectedCharacter = activeCharacter;
