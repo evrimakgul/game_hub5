@@ -12,6 +12,7 @@ import { RollHelperPopover } from "../components/player-character/RollHelperPopo
 import {
   PLAYER_CHARACTER_TEMPLATE,
   statGroups,
+  type CharacterDraft,
 } from "../config/characterTemplate";
 import {
   getCurrentStatValue,
@@ -22,7 +23,6 @@ import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
 import {
-  attachCampaignCharacterMetadata,
   isCharacterPlayableByUser,
   mergeVisibleCampaignCharacters,
 } from "../lib/onlineCharacterSync.ts";
@@ -84,6 +84,10 @@ type CustomRollModifier = {
   id: number;
   value: number;
 };
+
+type CharacterSheetUpdater =
+  | CharacterDraft
+  | ((current: CharacterDraft) => CharacterDraft);
 
 export type PlayerCharacterPageViewMode = "player" | "dm-readonly" | "dm-editable";
 
@@ -283,7 +287,6 @@ export function PlayerCharacterPage({
         ownerUserId,
         displayName: activeSheet.name.trim() || activeCharacter.id,
         sheetPayload: activeSheet,
-        expectedUpdatedAt: activeCharacter.onlineSheetUpdatedAt ?? null,
       });
 
       if ("error" in result) {
@@ -293,13 +296,6 @@ export function PlayerCharacterPage({
 
       lastPersistedSheetKeyRef.current = sheetKey;
       setSheetSyncMessage("Character sheet saved.");
-      replaceCharacters(
-        characters.map((character) =>
-          character.id === activeCharacter.id
-            ? attachCampaignCharacterMetadata(character, result)
-            : character
-        )
-      );
     }, 700);
 
     return () => window.clearTimeout(timeoutId);
@@ -446,6 +442,65 @@ export function PlayerCharacterPage({
   const customRollPool = customRollModifiers.reduce((total, modifier) => total + modifier.value, 0);
   const selectedRollPool =
     selectedRollTargets.reduce((total, target) => total + target.value, 0) + customRollPool;
+
+  function canPersistOnlineSheet(character: CharacterRecord | null): character is CharacterRecord {
+    if (!character || !activeOnlineCampaignId || !client || !online.user) {
+      return false;
+    }
+
+    const canSaveCurrentSheet =
+      !isReadOnlyView || dmEditMode || adminOverrideMode || isDmEditableView;
+    if (!canSaveCurrentSheet) {
+      return false;
+    }
+
+    const ownerUserId = character.ownerUserId ?? online.user.id;
+    return isDmView || ownerUserId === online.user.id;
+  }
+
+  async function persistOnlineCharacterSheet(
+    character: CharacterRecord,
+    sheet: CharacterDraft
+  ): Promise<void> {
+    if (!canPersistOnlineSheet(character) || !activeOnlineCampaignId || !client || !online.user) {
+      return;
+    }
+
+    const ownerUserId = character.ownerUserId ?? online.user.id;
+    const sheetKey = `${activeOnlineCampaignId}|${character.id}|${JSON.stringify(sheet)}`;
+    const result = await updateCampaignCharacterSheet({
+      client,
+      campaignId: activeOnlineCampaignId,
+      characterId: character.id,
+      ownerUserId,
+      displayName: sheet.name.trim() || character.id,
+      sheetPayload: sheet,
+    });
+
+    if ("error" in result) {
+      setSheetSyncMessage(result.error);
+      return;
+    }
+
+    lastPersistedSheetKeyRef.current = sheetKey;
+    setSheetSyncMessage("Character sheet saved.");
+  }
+
+  function updateCharacterAndPersist(
+    characterId: string,
+    updater: CharacterSheetUpdater
+  ): void {
+    const character = characters.find((entry) => entry.id === characterId) ?? null;
+    if (!character) {
+      updateCharacter(characterId, updater);
+      return;
+    }
+
+    const nextSheet = typeof updater === "function" ? updater(character.sheet) : updater;
+    updateCharacter(characterId, updater);
+    void persistOnlineCharacterSheet(character, nextSheet);
+  }
+
   const mutations = usePlayerCharacterMutations({
     activeCharacter,
     sheetState,
@@ -461,7 +516,7 @@ export function PlayerCharacterPage({
     editSessionStatFloor,
     pendingPowerId,
     sessionNotes,
-    updateCharacter,
+    updateCharacter: updateCharacterAndPersist,
     executeArtifactAppraisal,
     itemBlueprints,
     itemCategoryDefinitions,
@@ -595,7 +650,7 @@ export function PlayerCharacterPage({
 
   function appendHistoryEntries(entries: Array<{ characterId: string; entry: CharacterRecord["sheet"]["gameHistory"][number] }>): void {
     entries.forEach(({ characterId, entry }) => {
-      updateCharacter(characterId, (currentSheet) => ({
+      updateCharacterAndPersist(characterId, (currentSheet) => ({
         ...currentSheet,
         gameHistory: prependGameHistoryEntry(currentSheet.gameHistory ?? [], entry),
       }));
