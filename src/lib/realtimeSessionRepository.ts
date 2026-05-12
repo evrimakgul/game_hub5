@@ -994,6 +994,28 @@ export function subscribeToSessionCharacters(args: {
     .subscribe();
 }
 
+export function subscribeToVisibleCampaignCharacters(args: {
+  client: SupabaseClient;
+  onRecord: (record: CampaignCharacterRecord) => void;
+}): RealtimeChannel {
+  return args.client
+    .channel("campaign-characters:visible")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "campaign_characters",
+      },
+      (payload) => {
+        if (payload.new && Object.keys(payload.new).length > 0) {
+          args.onRecord(mapCampaignCharacter(payload.new as CampaignCharacterRow));
+        }
+      }
+    )
+    .subscribe();
+}
+
 export function subscribeToCampaignMembers(args: {
   client: SupabaseClient;
   campaignId: string;

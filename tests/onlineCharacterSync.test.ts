@@ -86,5 +86,27 @@ export async function runOnlineCharacterSyncTests(): Promise<void> {
         assert.equal(linked.onlineSheetUpdatedAt, "2026-05-12T12:00:00.000Z");
       },
     },
+    {
+      name: "mergeVisibleCampaignCharacters can hydrate a DM-visible non-owned sheet",
+      run: () => {
+        const remote = createCampaignCharacter({
+          characterId: "character-2",
+          ownerUserId: "player-1",
+          sheetPayload: createSheet("DM visible"),
+        });
+
+        const merged = mergeVisibleCampaignCharacters({
+          localCharacters: [],
+          campaignCharacters: [remote],
+          currentUserId: "dm-1",
+          canUseRemoteSheet: (record) => record.characterId === "character-2",
+        });
+
+        assert.equal(merged.length, 1);
+        assert.equal(merged[0]?.id, "character-2");
+        assert.equal(merged[0]?.ownerUserId, "player-1");
+        assert.equal(merged[0]?.sheet.name, "DM visible");
+      },
+    },
   ]);
 }

@@ -28,6 +28,7 @@ import {
 } from "../lib/onlineCharacterSync.ts";
 import {
   listVisibleCampaignCharacters,
+  subscribeToVisibleCampaignCharacters,
   updateCampaignCharacterSheet,
 } from "../lib/realtimeSessionRepository.ts";
 import {
@@ -213,35 +214,73 @@ export function PlayerCharacterPage({
   useEffect(() => {
     const supabase = client;
     const userId = online.user?.id ?? null;
-    if (isDmView || !supabase || !userId) {
+    if (!supabase || !userId) {
       return;
     }
 
     let cancelled = false;
 
-    async function syncVisibleCharacters(): Promise<void> {
-      const result = await listVisibleCampaignCharacters({ client: supabase! });
-      if (cancelled || "error" in result) {
-        return;
-      }
+    function shouldUseRemoteSheet(record: { characterId: string; campaignId: string; ownerUserId: string }): boolean {
+      const isOwnedPlayerSheet = record.ownerUserId === userId;
+      const isViewedCampaignSheet =
+        isDmView &&
+        record.characterId === characterIdFromQuery &&
+        record.campaignId === activeOnlineCampaignId;
 
+      return isOwnedPlayerSheet || isViewedCampaignSheet;
+    }
+
+    function mergeCampaignRows(rows: Parameters<typeof mergeVisibleCampaignCharacters>[0]["campaignCharacters"]): void {
       const nextCharacters = mergeVisibleCampaignCharacters({
         localCharacters: characters,
-        campaignCharacters: result,
+        campaignCharacters: rows,
         currentUserId: userId!,
+        canUseRemoteSheet: shouldUseRemoteSheet,
       });
 
       if (nextCharacters !== characters) {
         replaceCharacters(nextCharacters);
+        setSheetSyncMessage("Character sheet synced.");
       }
     }
 
+    async function syncVisibleCharacters(): Promise<void> {
+      const result = await listVisibleCampaignCharacters({ client: supabase! });
+      if (cancelled || "error" in result) {
+        if (!cancelled && "error" in result) {
+          setSheetSyncMessage(result.error);
+        }
+        return;
+      }
+
+      mergeCampaignRows(result.filter(shouldUseRemoteSheet));
+    }
+
     void syncVisibleCharacters();
+    const channel = subscribeToVisibleCampaignCharacters({
+      client: supabase,
+      onRecord: (record) => {
+        if (cancelled || !shouldUseRemoteSheet(record)) {
+          return;
+        }
+
+        mergeCampaignRows([record]);
+      },
+    });
 
     return () => {
       cancelled = true;
+      void channel.unsubscribe();
     };
-  }, [client, isDmView, online.user?.id]);
+  }, [
+    activeOnlineCampaignId,
+    characterIdFromQuery,
+    characters,
+    client,
+    isDmView,
+    online.user?.id,
+    replaceCharacters,
+  ]);
 
   useEffect(() => {
     if (!activeCharacter || !activeOnlineCampaignId || !activeCharacter.onlineSheetUpdatedAt) {

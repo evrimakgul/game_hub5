@@ -37,6 +37,7 @@ export function mergeVisibleCampaignCharacters(args: {
   localCharacters: CharacterRecord[];
   campaignCharacters: CampaignCharacterRecord[];
   currentUserId: string;
+  canUseRemoteSheet?: (record: CampaignCharacterRecord) => boolean;
 }): CharacterRecord[] {
   const remoteByCharacterId = new Map(
     getLatestCampaignCharacters(args.campaignCharacters).map((character) => [
@@ -54,7 +55,8 @@ export function mergeVisibleCampaignCharacters(args: {
     }
 
     const remoteSheet = normalizeCharacterDraft(remote.sheetPayload as CharacterDraft);
-    const shouldUseRemoteSheet = remote.ownerUserId === args.currentUserId;
+    const shouldUseRemoteSheet =
+      args.canUseRemoteSheet?.(remote) ?? remote.ownerUserId === args.currentUserId;
     const nextCharacter: CharacterRecord = {
       ...character,
       ownerUserId: remote.ownerUserId,
@@ -76,7 +78,9 @@ export function mergeVisibleCampaignCharacters(args: {
   });
 
   args.campaignCharacters.forEach((remote) => {
-    if (remote.ownerUserId !== args.currentUserId || existingIds.has(remote.characterId)) {
+    const shouldUseRemoteSheet =
+      args.canUseRemoteSheet?.(remote) ?? remote.ownerUserId === args.currentUserId;
+    if (!shouldUseRemoteSheet || existingIds.has(remote.characterId)) {
       return;
     }
 
