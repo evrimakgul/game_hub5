@@ -136,7 +136,16 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           anchorValueOverride: 123_456,
         });
         const payload = serializePersistedCharacters({
-          characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+          characters: [
+            {
+              id: "writer-1",
+              ownerRole: "player",
+              ownerUserId: "user-1",
+              onlineCampaignId: "campaign-1",
+              onlineSheetUpdatedAt: "2026-05-12T10:00:00.000Z",
+              sheet,
+            },
+          ],
           itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
           itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
           itemBlueprints: createDefaultItemBlueprints(),
@@ -162,7 +171,16 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
             },
           },
           {
-            characters: [{ id: "writer-1", ownerRole: "player", sheet }],
+            characters: [
+              {
+                id: "writer-1",
+                ownerRole: "player",
+                ownerUserId: "user-1",
+                onlineCampaignId: "campaign-1",
+                onlineSheetUpdatedAt: "2026-05-12T10:00:00.000Z",
+                sheet,
+              },
+            ],
             itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
             itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
             itemBlueprints: createDefaultItemBlueprints(),
@@ -200,6 +218,9 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(payload.starterItemsInitialized, true);
         assert.equal(payload.activePlayerCharacterId, "writer-1");
         assert.equal(payload.characters[0]?.ownerRole, "player");
+        assert.equal(payload.characters[0]?.ownerUserId, "user-1");
+        assert.equal(payload.characters[0]?.onlineCampaignId, "campaign-1");
+        assert.equal(payload.characters[0]?.onlineSheetUpdatedAt, "2026-05-12T10:00:00.000Z");
         assert.equal(
           JSON.parse(writes.get(CHARACTER_STORAGE_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"

@@ -6,13 +6,43 @@ function areSheetsEqual(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function getLatestCampaignCharacters(
+  campaignCharacters: CampaignCharacterRecord[]
+): CampaignCharacterRecord[] {
+  const latestByCharacterId = new Map<string, CampaignCharacterRecord>();
+
+  campaignCharacters.forEach((character) => {
+    const current = latestByCharacterId.get(character.characterId);
+    if (!current || character.updatedAt.localeCompare(current.updatedAt) > 0) {
+      latestByCharacterId.set(character.characterId, character);
+    }
+  });
+
+  return [...latestByCharacterId.values()];
+}
+
+export function attachCampaignCharacterMetadata(
+  character: CharacterRecord,
+  record: CampaignCharacterRecord
+): CharacterRecord {
+  return {
+    ...character,
+    ownerUserId: record.ownerUserId,
+    onlineCampaignId: record.campaignId,
+    onlineSheetUpdatedAt: record.updatedAt,
+  };
+}
+
 export function mergeVisibleCampaignCharacters(args: {
   localCharacters: CharacterRecord[];
   campaignCharacters: CampaignCharacterRecord[];
   currentUserId: string;
 }): CharacterRecord[] {
   const remoteByCharacterId = new Map(
-    args.campaignCharacters.map((character) => [character.characterId, character])
+    getLatestCampaignCharacters(args.campaignCharacters).map((character) => [
+      character.characterId,
+      character,
+    ])
   );
   const existingIds = new Set(args.localCharacters.map((character) => character.id));
   let didChange = false;
@@ -28,11 +58,15 @@ export function mergeVisibleCampaignCharacters(args: {
     const nextCharacter: CharacterRecord = {
       ...character,
       ownerUserId: remote.ownerUserId,
+      onlineCampaignId: remote.campaignId,
+      onlineSheetUpdatedAt: remote.updatedAt,
       sheet: shouldUseRemoteSheet ? remoteSheet : character.sheet,
     };
 
     if (
       nextCharacter.ownerUserId !== character.ownerUserId ||
+      nextCharacter.onlineCampaignId !== character.onlineCampaignId ||
+      nextCharacter.onlineSheetUpdatedAt !== character.onlineSheetUpdatedAt ||
       (shouldUseRemoteSheet && !areSheetsEqual(nextCharacter.sheet, character.sheet))
     ) {
       didChange = true;
@@ -51,6 +85,8 @@ export function mergeVisibleCampaignCharacters(args: {
       id: remote.characterId,
       ownerRole: "player",
       ownerUserId: remote.ownerUserId,
+      onlineCampaignId: remote.campaignId,
+      onlineSheetUpdatedAt: remote.updatedAt,
       sheet: normalizeCharacterDraft(remote.sheetPayload as CharacterDraft),
     });
   });

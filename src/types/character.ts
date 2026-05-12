@@ -8,6 +8,8 @@ export type CharacterRecord = {
   id: string;
   ownerRole: CharacterOwnerRole;
   ownerUserId?: string | null;
+  onlineCampaignId?: string | null;
+  onlineSheetUpdatedAt?: string | null;
   sheet: import("../config/characterTemplate").CharacterDraft;
 };
 

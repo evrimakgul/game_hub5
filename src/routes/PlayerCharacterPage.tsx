@@ -22,10 +22,14 @@ import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
 import {
+  attachCampaignCharacterMetadata,
   isCharacterPlayableByUser,
   mergeVisibleCampaignCharacters,
 } from "../lib/onlineCharacterSync.ts";
-import { listVisibleCampaignCharacters } from "../lib/realtimeSessionRepository.ts";
+import {
+  listVisibleCampaignCharacters,
+  updateCampaignCharacterSheet,
+} from "../lib/realtimeSessionRepository.ts";
 import {
   characterOwnsCurrentItemKnowledgeCard,
   getKnowledgeEntityById,
@@ -145,6 +149,7 @@ export function PlayerCharacterPage({
   } = useAppFlow();
   const navigate = useNavigate();
   const location = useLocation();
+  const client = useMemo(() => getSupabaseClient(), []);
   const online = useOnlineSession();
   const [isEditMode, setIsEditMode] = useState(false);
   const [dmEditMode, setDmEditMode] = useState(false);
@@ -166,6 +171,8 @@ export function PlayerCharacterPage({
   const [activeDetailTab, setActiveDetailTab] = useState<CharacterDetailTabId>("inventory");
   const [activeLoadoutSlotId, setActiveLoadoutSlotId] = useState<CanonicalEquipmentSlotId | null>(null);
   const [openKnowledgeRevisionId, setOpenKnowledgeRevisionId] = useState<string | null>(null);
+  const [sheetSyncMessage, setSheetSyncMessage] = useState("");
+  const lastPersistedSheetKeyRef = useRef("");
   const dragRef = useRef<{ active: boolean; moved: boolean; offsetX: number; offsetY: number }>(
     {
       active: false,
@@ -178,7 +185,9 @@ export function PlayerCharacterPage({
   const isDmEditableView = viewMode === "dm-editable";
   const isDmView = viewMode !== "player";
   const currentUserId = online.status === "authenticated" ? online.user?.id ?? null : null;
-  const characterIdFromQuery = new URLSearchParams(location.search).get("characterId");
+  const queryParams = new URLSearchParams(location.search);
+  const characterIdFromQuery = queryParams.get("characterId");
+  const campaignIdFromQuery = queryParams.get("campaignId");
   const queriedCharacter =
     characterIdFromQuery
       ? characters.find((character) => character.id === characterIdFromQuery) ?? null
@@ -187,6 +196,8 @@ export function PlayerCharacterPage({
   const activeCharacter =
     queriedCharacter ?? (isDmEditableView ? activeDmCharacter : activePlayerCharacter);
   const activeSheet = activeCharacter?.sheet ?? null;
+  const activeOnlineCampaignId =
+    activeCharacter?.onlineCampaignId ?? campaignIdFromQuery ?? null;
   const sheetState = activeSheet ?? PLAYER_CHARACTER_TEMPLATE.createInstance();
   const isPlayerCombatant =
     !isDmView &&
@@ -196,7 +207,7 @@ export function PlayerCharacterPage({
     ) ?? false);
 
   useEffect(() => {
-    const supabase = getSupabaseClient();
+    const supabase = client;
     const userId = online.user?.id ?? null;
     if (isDmView || !supabase || !userId) {
       return;
@@ -226,7 +237,86 @@ export function PlayerCharacterPage({
     return () => {
       cancelled = true;
     };
-  }, [characters, isDmView, online.user?.id]);
+  }, [client, isDmView, online.user?.id]);
+
+  useEffect(() => {
+    if (!activeCharacter || !activeOnlineCampaignId || !activeCharacter.onlineSheetUpdatedAt) {
+      return;
+    }
+
+    lastPersistedSheetKeyRef.current = `${activeOnlineCampaignId}|${activeCharacter.id}|${JSON.stringify(activeCharacter.sheet)}`;
+  }, [activeCharacter?.id, activeCharacter?.onlineSheetUpdatedAt, activeOnlineCampaignId]);
+
+  useEffect(() => {
+    if (
+      !activeCharacter ||
+      !activeSheet ||
+      !activeOnlineCampaignId ||
+      !client ||
+      !online.user
+    ) {
+      return;
+    }
+
+    const canSaveCurrentSheet =
+      !isReadOnlyView || dmEditMode || adminOverrideMode || isDmEditableView;
+    if (!canSaveCurrentSheet) {
+      return;
+    }
+
+    const ownerUserId = activeCharacter.ownerUserId ?? online.user.id;
+    const canWriteSheet = isDmView || ownerUserId === online.user.id;
+    if (!canWriteSheet) {
+      return;
+    }
+
+    const sheetKey = `${activeOnlineCampaignId}|${activeCharacter.id}|${JSON.stringify(activeSheet)}`;
+    if (sheetKey === lastPersistedSheetKeyRef.current) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      const result = await updateCampaignCharacterSheet({
+        client,
+        campaignId: activeOnlineCampaignId,
+        characterId: activeCharacter.id,
+        ownerUserId,
+        displayName: activeSheet.name.trim() || activeCharacter.id,
+        sheetPayload: activeSheet,
+        expectedUpdatedAt: activeCharacter.onlineSheetUpdatedAt ?? null,
+      });
+
+      if ("error" in result) {
+        setSheetSyncMessage(result.error);
+        return;
+      }
+
+      lastPersistedSheetKeyRef.current = sheetKey;
+      setSheetSyncMessage("Character sheet saved.");
+      replaceCharacters(
+        characters.map((character) =>
+          character.id === activeCharacter.id
+            ? attachCampaignCharacterMetadata(character, result)
+            : character
+        )
+      );
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    activeCharacter,
+    activeOnlineCampaignId,
+    activeSheet,
+    characters,
+    client,
+    adminOverrideMode,
+    dmEditMode,
+    isDmEditableView,
+    isDmView,
+    isReadOnlyView,
+    online.user,
+    replaceCharacters,
+  ]);
 
   useEffect(() => {
     function handleMouseMove(event: globalThis.MouseEvent): void {
@@ -896,6 +986,11 @@ export function PlayerCharacterPage({
               />
             ) : null}
             {adminOverrideError ? <strong>{adminOverrideError}</strong> : null}
+          </section>
+        ) : null}
+        {sheetSyncMessage ? (
+          <section className="cs-admin-strip">
+            <strong>{sheetSyncMessage}</strong>
           </section>
         ) : null}
 

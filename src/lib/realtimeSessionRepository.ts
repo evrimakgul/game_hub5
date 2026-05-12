@@ -741,6 +741,49 @@ export async function upsertCampaignCharacter(args: {
   return mapCampaignCharacter(data);
 }
 
+export async function updateCampaignCharacterSheet(args: {
+  client: SupabaseClient;
+  campaignId: string;
+  characterId: string;
+  ownerUserId: string;
+  displayName: string;
+  sheetPayload: unknown;
+  expectedUpdatedAt?: string | null;
+}): Promise<CampaignCharacterRecord | { error: string; conflict?: boolean }> {
+  const nextUpdatedAt = new Date().toISOString();
+  let query = args.client
+    .from("campaign_characters")
+    .update({
+      owner_user_id: args.ownerUserId,
+      display_name: args.displayName,
+      sheet_payload: args.sheetPayload,
+      updated_at: nextUpdatedAt,
+    })
+    .eq("campaign_id", args.campaignId)
+    .eq("character_id", args.characterId);
+
+  if (args.expectedUpdatedAt) {
+    query = query.eq("updated_at", args.expectedUpdatedAt);
+  }
+
+  const { data, error } = await query
+    .select("id, campaign_id, character_id, owner_user_id, display_name, sheet_payload, updated_at")
+    .maybeSingle();
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to update campaign character.") };
+  }
+
+  if (!data) {
+    return {
+      error: "Character sheet changed elsewhere. Refresh before saving again.",
+      conflict: true,
+    };
+  }
+
+  return mapCampaignCharacter(data);
+}
+
 export async function listCampaignCharacters(args: {
   client: SupabaseClient;
   campaignId: string;

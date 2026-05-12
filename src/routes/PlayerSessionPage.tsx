@@ -35,6 +35,7 @@ import {
   upsertKnowledgeRecords,
   upsertSessionCharacters,
 } from "../lib/realtimeSessionRepository.ts";
+import { attachCampaignCharacterMetadata } from "../lib/onlineCharacterSync.ts";
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
 import { useAppFlow } from "../state/appFlow";
 import { useOnlineSession } from "../state/onlineSession.tsx";
@@ -384,6 +385,14 @@ export function PlayerSessionPage() {
       setPanelMessage(result.error);
       return false;
     }
+
+    replaceCharacters(
+      characters.map((character) =>
+        character.id === activePlayerCharacter.id
+          ? attachCampaignCharacterMetadata(character, result)
+          : character
+      )
+    );
 
     return true;
   }

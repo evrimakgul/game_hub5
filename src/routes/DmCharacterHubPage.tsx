@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { normalizeCharacterDraft, type CharacterDraft } from "../config/characterTemplate.ts";
+import { attachCampaignCharacterMetadata } from "../lib/onlineCharacterSync.ts";
 import { listCampaignCharacters, listCampaignsForRole } from "../lib/realtimeSessionRepository.ts";
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
 import { useAppFlow } from "../state/appFlow";
@@ -66,18 +67,23 @@ export function DmCharacterHubPage() {
   }
 
   function handleOpenCampaignCharacter(record: CampaignCharacterRecord): void {
-    const character = {
-      id: record.characterId,
-      ownerRole: "player" as const,
-      ownerUserId: record.ownerUserId,
-      sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
-    };
+    const character = attachCampaignCharacterMetadata(
+      {
+        id: record.characterId,
+        ownerRole: "player" as const,
+        ownerUserId: record.ownerUserId,
+        sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
+      },
+      record
+    );
     replaceCharacters([
       ...characters.filter((entry) => entry.id !== record.characterId),
       character,
     ]);
     selectCharacter(record.characterId);
-    navigate(`/dm/character?characterId=${encodeURIComponent(record.characterId)}`);
+    navigate(
+      `/dm/character?characterId=${encodeURIComponent(record.characterId)}&campaignId=${encodeURIComponent(record.campaignId)}`
+    );
   }
 
   async function handleSignOut(): Promise<void> {

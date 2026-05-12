@@ -14,6 +14,7 @@ import {
   getKnowledgeEntityById,
   getKnowledgeRevisionById,
 } from "../lib/knowledge.ts";
+import { attachCampaignCharacterMetadata } from "../lib/onlineCharacterSync.ts";
 import {
   applyRewardPacket,
   createDefaultRewardPacket,
@@ -656,18 +657,23 @@ export function DmScreenPage() {
   }
 
   function handleViewCampaignCharacter(record: CampaignCharacterRecord): void {
-    const character = {
-      id: record.characterId,
-      ownerRole: "player" as const,
-      ownerUserId: record.ownerUserId,
-      sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
-    };
+    const character = attachCampaignCharacterMetadata(
+      {
+        id: record.characterId,
+        ownerRole: "player" as const,
+        ownerUserId: record.ownerUserId,
+        sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
+      },
+      record
+    );
     replaceCharacters([
       ...characters.filter((entry) => entry.id !== record.characterId),
       character,
     ]);
     selectCharacter(record.characterId);
-    navigate(`/dm/character?characterId=${encodeURIComponent(record.characterId)}`);
+    navigate(
+      `/dm/character?characterId=${encodeURIComponent(record.characterId)}&campaignId=${encodeURIComponent(record.campaignId)}`
+    );
   }
 
   function handlePrepareRewards(characterId: string): void {

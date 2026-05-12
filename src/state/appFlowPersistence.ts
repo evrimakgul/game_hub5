@@ -65,7 +65,14 @@ export const CHARACTER_STORAGE_BACKUP_KEY = "convergence.local.characters.backup
 
 type PersistedCharacterEnvelope = {
   version: number;
-  characters: Array<{ id: string; ownerRole?: unknown; ownerUserId?: unknown; sheet: unknown }>;
+  characters: Array<{
+    id: string;
+    ownerRole?: unknown;
+    ownerUserId?: unknown;
+    onlineCampaignId?: unknown;
+    onlineSheetUpdatedAt?: unknown;
+    sheet: unknown;
+  }>;
   itemCategoryDefinitions?: unknown[];
   itemSubcategoryDefinitions?: unknown[];
   itemBlueprints?: unknown[];
@@ -265,6 +272,9 @@ function hydrateCharacterRecordBestEffort(
       id: entry.id,
       ownerRole: normalizeOwnerRole(entry.ownerRole),
       ownerUserId: typeof entry.ownerUserId === "string" ? entry.ownerUserId : null,
+      onlineCampaignId: typeof entry.onlineCampaignId === "string" ? entry.onlineCampaignId : null,
+      onlineSheetUpdatedAt:
+        typeof entry.onlineSheetUpdatedAt === "string" ? entry.onlineSheetUpdatedAt : null,
       sheet: hydrateCharacterDraft(migrated.nextSheet),
     };
   } catch {
@@ -279,6 +289,9 @@ function hydrateCharacterRecordBestEffort(
       id: entry.id,
       ownerRole: normalizeOwnerRole(entry.ownerRole),
       ownerUserId: typeof entry.ownerUserId === "string" ? entry.ownerUserId : null,
+      onlineCampaignId: typeof entry.onlineCampaignId === "string" ? entry.onlineCampaignId : null,
+      onlineSheetUpdatedAt:
+        typeof entry.onlineSheetUpdatedAt === "string" ? entry.onlineSheetUpdatedAt : null,
       sheet: fallbackSheet,
     };
   }
@@ -1016,6 +1029,8 @@ export function serializePersistedCharacters(
       id: character.id,
       ownerRole: character.ownerRole,
       ownerUserId: character.ownerUserId ?? null,
+      onlineCampaignId: character.onlineCampaignId ?? null,
+      onlineSheetUpdatedAt: character.onlineSheetUpdatedAt ?? null,
       sheet: character.sheet,
     })),
     itemCategoryDefinitions: state.itemCategoryDefinitions,

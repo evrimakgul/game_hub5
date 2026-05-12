@@ -11,6 +11,7 @@ import { runLibHelpersTests } from "./libHelpers.test.ts";
 import { runEncounterExecutionEngineTests } from "./encounterExecutionEngine.test.ts";
 import { runItemBehaviorTests } from "./itemBehaviors.test.ts";
 import { runKnowledgeTests } from "./knowledge.test.ts";
+import { runOnlineCharacterSyncTests } from "./onlineCharacterSync.test.ts";
 import { runPowerEffectsTests } from "./powerEffects.test.ts";
 import { runPowerRegistryTests } from "./powerRegistry.test.ts";
 import { runPlayerCombatTests } from "./playerCombat.test.ts";
@@ -38,6 +39,7 @@ async function main(): Promise<void> {
   await runCombatEncounterCastingTests();
   await runPlayerCombatTests();
   await runRealtimeSessionTests();
+  await runOnlineCharacterSyncTests();
   await runPowerEffectsTests();
   await runPowerRegistryTests();
   await runWorldCastingTests();
