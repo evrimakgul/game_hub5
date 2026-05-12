@@ -185,6 +185,7 @@ export function DmScreenPage() {
   const selectedSession = sessions.find((session) => session.id === selectedSessionId) ?? null;
   const activeSession = sessions.find((session) => session.status === "active") ?? null;
   const canUseLiveSession = selectedSession?.status === "active";
+  const canRewardCharacter = selectedCampaignId.length > 0 || selectedSessionId.length > 0;
   const selectedCampaignCharacter =
     campaignCharacters.find((character) => character.characterId === selectedCampaignCharacterId) ??
     campaignCharacters[0] ??
@@ -812,7 +813,15 @@ export function DmScreenPage() {
   }
 
   async function handleReward(): Promise<void> {
-    if (!client || !online.user || !selectedSessionId || rewardCharacterIds.length === 0) {
+    if (!client || !online.user || rewardCharacterIds.length === 0) {
+      return;
+    }
+    if (!selectedCampaignId && !selectedSessionId) {
+      setPanelMessage("Select a campaign before rewarding a character.");
+      return;
+    }
+    if (!selectedSessionId && rewardCardRevisionIds.length > 0) {
+      setPanelMessage("Card rewards require an active session. Core rewards can be applied without one.");
       return;
     }
     const currentUserId = online.user.id;
@@ -831,7 +840,7 @@ export function DmScreenPage() {
       ...rewardablePlayerCharacters,
     ];
     const result = applyRewardPacket({
-      sessionId: selectedSessionId,
+      sessionId: selectedSessionId ?? `campaign-${selectedCampaignId}`,
       characters: rewardBaseCharacters,
       packet,
       actorUserId: currentUserId,
@@ -875,22 +884,7 @@ export function DmScreenPage() {
       rewardCharacterIds.includes(character.id)
     );
     const ownerUserIdByCharacterId = buildOwnerUserIdByCharacterId();
-    const sessionCharacterResult = await upsertSessionCharacters({
-      client,
-      records: updatedRewardCharacters.map((character) => ({
-        sessionId: selectedSessionId,
-        characterId: character.id,
-        ownerUserId: ownerUserIdByCharacterId[character.id] ?? null,
-        ownerRole: character.ownerRole === "dm" ? "dm" : "player",
-        displayName: getCharacterName(character),
-        sheetPayload: character.sheet,
-      })),
-    });
 
-    if ("error" in sessionCharacterResult) {
-      setPanelMessage(sessionCharacterResult.error);
-      return;
-    }
     if (selectedCampaignId) {
       const campaignRewardUpdates = await Promise.all(
         updatedRewardCharacters
@@ -927,17 +921,41 @@ export function DmScreenPage() {
         ),
       ]);
     }
-    setSessionCharacters((current) => [
-      ...current.filter(
-        (entry) =>
-          !sessionCharacterResult.some(
-            (updated) => updated.characterId === entry.characterId
-          )
-      ),
-      ...sessionCharacterResult,
-    ]);
+
+    if (selectedSessionId) {
+      const sessionCharacterResult = await upsertSessionCharacters({
+        client,
+        records: updatedRewardCharacters.map((character) => ({
+          sessionId: selectedSessionId,
+          characterId: character.id,
+          ownerUserId: ownerUserIdByCharacterId[character.id] ?? null,
+          ownerRole: character.ownerRole === "dm" ? "dm" : "player",
+          displayName: getCharacterName(character),
+          sheetPayload: character.sheet,
+        })),
+      });
+
+      if ("error" in sessionCharacterResult) {
+        setPanelMessage(sessionCharacterResult.error);
+        return;
+      }
+
+      setSessionCharacters((current) => [
+        ...current.filter(
+          (entry) =>
+            !sessionCharacterResult.some(
+              (updated) => updated.characterId === entry.characterId
+            )
+        ),
+        ...sessionCharacterResult,
+      ]);
+    }
 
     if (grantedEntities.length > 0 || grantedRevisions.length > 0 || grantedOwnerships.length > 0) {
+      if (!selectedSessionId) {
+        setPanelMessage("Card rewards require an active session.");
+        return;
+      }
       const knowledgeResult = await upsertKnowledgeRecords({
         client,
         sessionId: selectedSessionId,
@@ -954,13 +972,19 @@ export function DmScreenPage() {
       }
     }
 
-    await publishEvent(result.event);
+    if (selectedSessionId) {
+      await publishEvent(result.event);
+    }
     setRewardDraft(emptyRewardDraft);
     setRewardCharacterIds([]);
     setRewardCardRevisionIds([]);
     setInlineRewardCharacterId("");
+    setPanelMessage(
+      selectedSessionId
+        ? "Reward applied to the campaign sheet and current session."
+        : "Reward applied to the campaign character sheet."
+    );
   }
-
   async function handlePin(): Promise<void> {
     if (!online.user || !selectedSessionId || !pinLabel.trim()) {
       return;
@@ -1276,7 +1300,7 @@ export function DmScreenPage() {
                         <button
                           type="button"
                           className="flow-primary"
-                          disabled={!canUseLiveSession}
+                          disabled={!canRewardCharacter}
                           onClick={handleReward}
                         >
                           Apply
@@ -1438,7 +1462,7 @@ export function DmScreenPage() {
               }
               placeholder="Reward note"
             />
-            <button type="button" className="flow-primary" disabled={!canUseLiveSession} onClick={handleReward}>
+            <button type="button" className="flow-primary" disabled={!canRewardCharacter} onClick={handleReward}>
               Apply Rewards
             </button>
           </article>
