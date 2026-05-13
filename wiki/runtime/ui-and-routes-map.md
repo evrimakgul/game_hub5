@@ -3,7 +3,7 @@ title: UI And Routes Map
 topic: runtime
 kind: map
 status: active
-updated: 2026-05-12
+updated: 2026-05-13
 confidence: high
 ---
 
@@ -53,7 +53,7 @@ Supporting component clusters:
 - The middle loadout summary opens slot-specific popup pickers for assigning eligible carried inventory items, with the currently equipped item highlighted first.
 - DM readonly and DM editable character views reuse the same dashboard route component with DM edit/override controls layered onto that shared surface.
 - `src/routes/PlayerCombatPage.tsx` owns the player-facing masked combat view, own-turn player action surface, and shared encounter-state wiring instead of inventing a second combat system.
-- `src/routes/DmScreenPage.tsx` and `src/routes/PlayerSessionPage.tsx` own Supabase-backed live session operations.
+- `src/routes/DmScreenPage.tsx` and `src/routes/PlayerSessionPage.tsx` own Supabase-backed live session operations; `/player/session` now includes the live combat follow panel.
 - `src/components/combat-encounter/*` owns encounter runtime interaction surfaces.
 - `src/routes/DmKnowledgePage.tsx` owns DM-only authoring for non-character/item knowledge subjects.
 - `src/routes/DmMobsPage.tsx`, `src/routes/DmMobGroupsPage.tsx`, and `src/routes/DmPortalsPage.tsx` now own the manual mob/group/portal authoring workshop, including CR controls and the portal-first `portal_bundle` request/import flow.

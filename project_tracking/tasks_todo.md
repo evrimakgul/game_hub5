@@ -54,6 +54,7 @@
 
 ### Group 13: Realtime DM/Player Sessions
 - `REALTIME-SESSION-01` completed. Added optional Supabase Auth/client wiring, SQL migrations with RLS policies, realtime repository helpers, `/dm/screen`, `/player/session`, persistent session events, DM-only and DM-and-actor rolls, public/limited text and card sharing, reward packets with audit/history updates, and navigation from DM/player/combat/character surfaces.
+- `REALTIME-COMBAT-FEED-01` completed. The selected live session now receives DM-published combat snapshots as DM-only full state plus per-player masked views, and `/player/session` shows a follow-only live combat panel.
 
 ## Blocked / Deferred
 ### Deferred Group D1: Future Expansion

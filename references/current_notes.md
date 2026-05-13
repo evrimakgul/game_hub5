@@ -20,6 +20,7 @@ This file tracks active reminders for the current implementation block.
 - Player Auction Shopping follow-up is now complete.
 - Player Combat Mode V1 is now complete.
 - Realtime DM/Player Session V1 is now complete.
+- Live Session Combat Feed is now complete: the DM encounter page publishes masked per-player combat views to the selected live session, and `/player/session` can follow active combat.
 - Character Sheet Fixed Dashboard Refactor is now complete.
 - Player-owned live character sheet sync is now complete.
 - `VIEW-PERSONALIZATION-01` is now the planned next follow-up: personalized player/DM page design with safe manual controls, page layouts, presets, and automatic recommendations.
@@ -80,7 +81,7 @@ This file tracks active reminders for the current implementation block.
 - Player-side `Buyout` and `Bid` transactions now spend character money, create/assign a shared item to the buying character, append a history row, and decrement live stock by one.
 - Player-side `Bid` currently resolves as an immediate winning-bid completion rather than a delayed pending-bid lifecycle.
 - Auction entries now persist live `stockQuantity` values alongside the original imported stock text.
-- Active combat encounters now persist in the local-first app-state payload so DM and player browser windows can read the same live encounter.
+- Active combat encounters persist in the local-first app-state payload, and configured live sessions now receive DM-published masked per-player combat views.
 - Player combat mode now lives at `/player/combat` and shows initiative order, masked party health bars, and encounter activities for the selected player combatant.
 - Hidden opponents now stay masked as `Opponent N` on the player combat route unless the viewing character owns an `Assess Entity` knowledge card for that target.
 - Supabase-backed live sessions now exist behind `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; local-only play remains available when those env vars are absent.
@@ -149,7 +150,7 @@ This file tracks active reminders for the current implementation block.
 ## Deferred But Recorded
 - Full item-authoring UX remains deferred.
 - Full portal-run state, boss-clear reward automation, and exit unlocking remain deferred.
-- Backend sync and richer encounter persistence beyond the current local browser-storage surface remain out of scope.
+- Full Supabase-backed encounter execution and player action submission remain out of scope; live sessions currently receive a follow-only masked combat feed.
 
 ## Resolved Design Direction
 - Aura spells should stay modeled as dedicated aura spells, not as normal targeted buffs.

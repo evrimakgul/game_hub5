@@ -22,12 +22,14 @@ import {
   insertSessionEvent,
   joinCampaign,
   listActiveSessions,
+  listSessionCombatView,
   listCampaignMembers,
   listJoinableCampaigns,
   listSessionAttendees,
   listSessionCharacters,
   listSessionEvents,
   subscribeToCampaignMembers,
+  subscribeToSessionCombatViews,
   subscribeToSessionEvents,
   subscribeToSessionCharacters,
   upsertSessionAttendee,
@@ -44,6 +46,7 @@ import type {
   CampaignMemberRecord,
   CampaignRecord,
   GameSessionRecord,
+  SessionCombatViewRecord,
   SessionAttendeeRecord,
   SessionCharacterRecord,
   SessionEvent,
@@ -86,6 +89,7 @@ export function PlayerSessionPage() {
   const [sessionAttendees, setSessionAttendees] = useState<SessionAttendeeRecord[]>([]);
   const [sessionCharacters, setSessionCharacters] = useState<SessionCharacterRecord[]>([]);
   const [events, setEvents] = useState<SessionEvent[]>([]);
+  const [combatView, setCombatView] = useState<SessionCombatViewRecord | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [panelMessage, setPanelMessage] = useState("");
@@ -119,6 +123,7 @@ export function PlayerSessionPage() {
         }))
       )
     : [];
+  const combatPayload = combatView?.viewPayload ?? null;
 
   useEffect(() => {
     const userId = online.user?.id ?? null;
@@ -291,6 +296,51 @@ export function PlayerSessionPage() {
       void characterChannel.unsubscribe();
     };
   }, [client, selectedSessionId]);
+
+  useEffect(() => {
+    if (!client || !selectedSessionId || !activePlayerCharacter) {
+      setCombatView(null);
+      return;
+    }
+    const supabase = client;
+    const viewerCharacterId = activePlayerCharacter.id;
+
+    async function loadCombatView(): Promise<void> {
+      const result = await listSessionCombatView({
+        client: supabase,
+        sessionId: selectedSessionId,
+        viewerCharacterId,
+      });
+
+      if (result && "error" in result) {
+        setPanelMessage(result.error);
+        return;
+      }
+
+      setCombatView(result);
+    }
+
+    void loadCombatView();
+    const combatChannel = subscribeToSessionCombatViews({
+      client: supabase,
+      sessionId: selectedSessionId,
+      viewerCharacterId,
+      onRecord: (record) => {
+        startTransition(() => {
+          setCombatView(record);
+        });
+      },
+      onDelete: () => {
+        startTransition(() => {
+          setCombatView(null);
+        });
+      },
+    });
+
+    return () => {
+      void combatChannel.unsubscribe();
+    };
+  }, [activePlayerCharacter?.id, client, selectedSessionId]);
 
   if (roleChoice !== "player") {
     return <Navigate to="/role" replace />;
@@ -706,6 +756,58 @@ export function PlayerSessionPage() {
             <p className="dm-summary-line">
               {selectedSession ? selectedSession.sessionNotes || "No session notes yet." : "Ask the DM to start the session."}
             </p>
+          </article>
+
+          <article className="sheet-card dm-screen-panel dm-screen-wide">
+            <p className="section-kicker">Live Combat</p>
+            <h2>{combatPayload?.encounterLabel ?? "No Combat Feed"}</h2>
+            {combatPayload ? (
+              <>
+                <div className="dm-item-edit-grid dm-item-edit-grid-two-up">
+                  <div className="dm-detail-card">
+                    <span>Round</span>
+                    <strong>{combatPayload.round}</strong>
+                  </div>
+                  <div className="dm-detail-card">
+                    <span>Turn</span>
+                    <strong>{combatPayload.activeCombatantLabel ?? "No active combatant"}</strong>
+                  </div>
+                </div>
+                <div className="dm-party-member-list">
+                  {combatPayload.combatants.map((combatant) => (
+                    <div
+                      key={combatant.characterId}
+                      className={`dm-party-member-card${combatant.isActive ? " is-active" : ""}`}
+                    >
+                      <div className="dm-party-hp-row">
+                        <span>{combatant.label}</span>
+                        <small>{combatant.partyLabel}</small>
+                      </div>
+                      <div className="dm-party-hp-bar" aria-hidden="true">
+                        <div
+                          className="dm-party-hp-fill"
+                          style={{ width: `${combatant.hpPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="dm-session-event-list">
+                  {combatPayload.activityLog.slice(-5).map((entry) => (
+                    <div key={entry.id} className="dm-session-event">
+                      <span>combat</span>
+                      <strong>{entry.summary}</strong>
+                      <small>{new Date(entry.createdAt).toLocaleString()}</small>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="dm-summary-line">
+                Sync your character to the current session. The DM combat page publishes this feed
+                when combat is active.
+              </p>
+            )}
           </article>
 
           <article className="sheet-card dm-screen-panel">

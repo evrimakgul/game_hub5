@@ -1,5 +1,9 @@
 # Wiki Log
 
+## [2026-05-13] refresh | live combat session feed
+- Recorded the Supabase-backed live combat feed correction: DM encounter publishing now stores DM-only full state plus per-player masked views, and `/player/session` can follow active combat.
+- Updated: `domains/realtime-sessions`, `domains/combat-encounter`, `runtime/ui-and-routes-map`
+
 ## [2026-04-15] ingest | game_hub5 llm wiki bootstrap
 - Captured repo docs, tracking docs, current code landmarks, seven Codex threads, two ChatGPT share threads, one ChatGPT follow-up supplement, and external workflow references into `raw/`.
 - Updated: `project/game-hub5-overview`

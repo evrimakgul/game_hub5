@@ -3,7 +3,7 @@ title: Combat Encounter
 topic: domains
 kind: domain
 status: active
-updated: 2026-04-20
+updated: 2026-05-13
 confidence: high
 ---
 
@@ -16,7 +16,7 @@ Combat encounter is a live, stable runtime surface. The current system already h
 - `src/engine/encounterExecutionEngine.ts` applies prepared requests into character, encounter, and knowledge state.
 - Encounter-visible combat supports initiative ordering, parties, transient combatants, ongoing maintained states, summon lifecycle, aura-linked effects, and encounter activity logs.
 - DM combat continues to run through `/dm/combat/encounter`, while `/player/combat` now exposes a masked player surface over the same encounter with initiative order, encounter activities, AE-based reveal, and turn-limited action controls for the viewing character.
-- `activeCombatEncounter` now persists locally, which is what lets the DM and player routes stay aligned without backend sync.
+- `activeCombatEncounter` still persists locally for the DM runtime, and configured live sessions now receive masked per-player combat views for `/player/session`.
 - Physical attacks resolve from equipped loadout state through `src/lib/combatEncounterPhysicalAttacks.ts`, including `unarmed`, `brawl`, one-handed, two-handed, oversized, and ranged profiles.
 - Current notes lock in several combat-adjacent rules:
   - negative HP stays valid and visible
@@ -42,7 +42,7 @@ Combat encounter is a live, stable runtime surface. The current system already h
 
 - `ARCH-REM-01` controller/engine extraction follow-up remains recorded.
 - Full timing/action-budget enforcement and broader player-side combat permissions beyond the current own-turn action surface remain deferred.
-- Encounter persistence beyond the current local browser-storage surface remains deferred.
+- Full Supabase-backed encounter execution and player action submission remain deferred.
 - `COMBAT-ACT-01` timing/action-budget work remains open.
 
 ## Sources

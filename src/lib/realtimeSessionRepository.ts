@@ -6,10 +6,14 @@ import type {
   CampaignRecord,
   GameSessionRecord,
   OnlineSessionRole,
+  SessionCombatStateRecord,
+  SessionCombatViewPayload,
+  SessionCombatViewRecord,
   SessionAttendeeRecord,
   SessionCharacterRecord,
   SessionEvent,
 } from "../types/realtimeSession.ts";
+import type { CombatEncounterState } from "../types/combatEncounter.ts";
 import type {
   KnowledgeEntity,
   KnowledgeOwnership,
@@ -109,6 +113,25 @@ type SessionCharacterRow = {
   updated_at: string;
 };
 
+type SessionCombatStateRow = {
+  session_id: string;
+  encounter_id: string;
+  encounter_label: string;
+  encounter_payload: unknown;
+  updated_by_user_id: string | null;
+  updated_at: string;
+};
+
+type SessionCombatViewRow = {
+  session_id: string;
+  viewer_character_id: string;
+  encounter_id: string;
+  encounter_label: string;
+  view_payload: SessionCombatViewPayload;
+  updated_by_user_id: string | null;
+  updated_at: string;
+};
+
 type CampaignCharacterRow = {
   id: string;
   campaign_id: string;
@@ -149,7 +172,8 @@ type KnowledgeOwnershipRow = {
 const LIVE_SESSION_SCHEMA_HELP =
   "Live session database schema is not installed or Supabase schema cache is stale. " +
   "Run supabase/migrations/202604240001_realtime_dm_screen.sql, then " +
-  "supabase/migrations/202604240002_account_access_hardening.sql in the Supabase SQL Editor.";
+  "supabase/migrations/202604240002_account_access_hardening.sql and latest follow-up migrations " +
+  "in the Supabase SQL Editor.";
 
 export function formatRealtimeSessionError(
   error: { code?: string; message?: string } | null | undefined,
@@ -238,6 +262,29 @@ function mapCampaignCharacter(row: CampaignCharacterRow): CampaignCharacterRecor
     ownerUserId: row.owner_user_id,
     displayName: row.display_name,
     sheetPayload: row.sheet_payload,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapSessionCombatState(row: SessionCombatStateRow): SessionCombatStateRecord {
+  return {
+    sessionId: row.session_id,
+    encounterId: row.encounter_id,
+    encounterLabel: row.encounter_label,
+    encounterPayload: row.encounter_payload,
+    updatedByUserId: row.updated_by_user_id,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapSessionCombatView(row: SessionCombatViewRow): SessionCombatViewRecord {
+  return {
+    sessionId: row.session_id,
+    viewerCharacterId: row.viewer_character_id,
+    encounterId: row.encounter_id,
+    encounterLabel: row.encounter_label,
+    viewPayload: row.view_payload,
+    updatedByUserId: row.updated_by_user_id,
     updatedAt: row.updated_at,
   };
 }
@@ -833,6 +880,108 @@ export async function listSessionCharacters(args: {
   return (data ?? []).map(mapSessionCharacter);
 }
 
+export async function upsertSessionCombatState(args: {
+  client: SupabaseClient;
+  sessionId: string;
+  encounter: CombatEncounterState;
+  updatedByUserId: string | null;
+}): Promise<SessionCombatStateRecord | { error: string }> {
+  const { data, error } = await args.client
+    .from("session_combat_states")
+    .upsert(
+      {
+        session_id: args.sessionId,
+        encounter_id: args.encounter.encounterId,
+        encounter_label: args.encounter.label,
+        encounter_payload: args.encounter,
+        updated_by_user_id: args.updatedByUserId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "session_id" }
+    )
+    .select(
+      "session_id, encounter_id, encounter_label, encounter_payload, updated_by_user_id, updated_at"
+    )
+    .single();
+
+  if (error || !data) {
+    return { error: formatRealtimeSessionError(error, "Failed to update live combat state.") };
+  }
+
+  return mapSessionCombatState(data);
+}
+
+export async function replaceSessionCombatViews(args: {
+  client: SupabaseClient;
+  sessionId: string;
+  updatedByUserId: string | null;
+  records: Array<{
+    viewerCharacterId: string;
+    encounterId: string;
+    encounterLabel: string;
+    viewPayload: SessionCombatViewPayload;
+  }>;
+}): Promise<SessionCombatViewRecord[] | { error: string }> {
+  const deleteResult = await args.client
+    .from("session_combat_views")
+    .delete()
+    .eq("session_id", args.sessionId);
+
+  if (deleteResult.error) {
+    return {
+      error: formatRealtimeSessionError(deleteResult.error, "Failed to clear live combat views."),
+    };
+  }
+
+  if (args.records.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await args.client
+    .from("session_combat_views")
+    .insert(
+      args.records.map((record) => ({
+        session_id: args.sessionId,
+        viewer_character_id: record.viewerCharacterId,
+        encounter_id: record.encounterId,
+        encounter_label: record.encounterLabel,
+        view_payload: record.viewPayload,
+        updated_by_user_id: args.updatedByUserId,
+        updated_at: new Date().toISOString(),
+      }))
+    )
+    .select(
+      "session_id, viewer_character_id, encounter_id, encounter_label, view_payload, updated_by_user_id, updated_at"
+    );
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to publish live combat views.") };
+  }
+
+  return (data ?? []).map(mapSessionCombatView);
+}
+
+export async function listSessionCombatView(args: {
+  client: SupabaseClient;
+  sessionId: string;
+  viewerCharacterId: string;
+}): Promise<SessionCombatViewRecord | null | { error: string }> {
+  const { data, error } = await args.client
+    .from("session_combat_views")
+    .select(
+      "session_id, viewer_character_id, encounter_id, encounter_label, view_payload, updated_by_user_id, updated_at"
+    )
+    .eq("session_id", args.sessionId)
+    .eq("viewer_character_id", args.viewerCharacterId)
+    .maybeSingle();
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to load live combat view.") };
+  }
+
+  return data ? mapSessionCombatView(data) : null;
+}
+
 export async function insertSessionEvent(args: {
   client: SupabaseClient;
   event: SessionEvent;
@@ -988,6 +1137,45 @@ export function subscribeToSessionCharacters(args: {
       (payload) => {
         if (payload.new && Object.keys(payload.new).length > 0) {
           args.onRecord(mapSessionCharacter(payload.new as SessionCharacterRow));
+        }
+      }
+    )
+    .subscribe();
+}
+
+export function subscribeToSessionCombatViews(args: {
+  client: SupabaseClient;
+  sessionId: string;
+  viewerCharacterId: string;
+  onRecord: (record: SessionCombatViewRecord) => void;
+  onDelete?: () => void;
+}): RealtimeChannel {
+  return args.client
+    .channel(`session-combat-views:${args.sessionId}:${args.viewerCharacterId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "session_combat_views",
+        filter: `session_id=eq.${args.sessionId}`,
+      },
+      (payload) => {
+        if (payload.eventType === "DELETE") {
+          const oldRecord = payload.old as Partial<SessionCombatViewRow>;
+          if (oldRecord.viewer_character_id === args.viewerCharacterId) {
+            args.onDelete?.();
+          }
+          return;
+        }
+
+        if (!payload.new || Object.keys(payload.new).length === 0) {
+          return;
+        }
+
+        const record = mapSessionCombatView(payload.new as SessionCombatViewRow);
+        if (record.viewerCharacterId === args.viewerCharacterId) {
+          args.onRecord(record);
         }
       }
     )

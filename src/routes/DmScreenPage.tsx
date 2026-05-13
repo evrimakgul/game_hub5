@@ -16,6 +16,10 @@ import {
 } from "../lib/knowledge.ts";
 import { attachCampaignCharacterMetadata } from "../lib/onlineCharacterSync.ts";
 import {
+  readSelectedLiveSessionId,
+  writeSelectedLiveSessionId,
+} from "../lib/liveSessionSelection.ts";
+import {
   applyRewardPacket,
   createDefaultRewardPacket,
   createRollSessionEvent,
@@ -163,7 +167,9 @@ export function DmScreenPage() {
   const [selectedCampaignCharacterId, setSelectedCampaignCharacterId] = useState("");
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
-  const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState(() =>
+    readSelectedLiveSessionId(typeof window === "undefined" ? null : window.localStorage)
+  );
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
   const [newCampaignName, setNewCampaignName] = useState("");
   const [panelMessage, setPanelMessage] = useState("");
@@ -218,6 +224,13 @@ export function DmScreenPage() {
     knowledgeRevisions,
     knowledgeOwnerships,
   };
+
+  useEffect(() => {
+    writeSelectedLiveSessionId(
+      typeof window === "undefined" ? null : window.localStorage,
+      selectedSessionId
+    );
+  }, [selectedSessionId]);
   const knowledgeCardOptions = knowledgeRevisions
     .map((revision) => {
       const entity = getKnowledgeEntityById(knowledgeState, revision.entityId);

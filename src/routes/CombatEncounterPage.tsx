@@ -14,8 +14,16 @@ import {
 } from "../powers/runtimeSupport.ts";
 import { rollD10Faces } from "../lib/dice";
 import { buildItemIndex } from "../lib/items.ts";
+import { readSelectedLiveSessionId } from "../lib/liveSessionSelection.ts";
+import { buildSessionCombatViewPayloads } from "../lib/sessionCombat.ts";
+import {
+  replaceSessionCombatViews,
+  upsertSessionCombatState,
+} from "../lib/realtimeSessionRepository.ts";
+import { getSupabaseClient } from "../lib/supabaseClient.ts";
 import { buildEncounterRollTargets, getEncounterPartyMembers } from "../selectors/encounterViewModel";
 import { useAppFlow } from "../state/appFlow";
+import { useOnlineSession } from "../state/onlineSession.tsx";
 import { EncounterExecutionEngine, type EncounterExecutionResult } from "../engine/encounterExecutionEngine.ts";
 import type {
   CastRequestPayload,
@@ -24,6 +32,7 @@ import type {
   PreparedCastRequest,
 } from "../types/combatEncounterView";
 import type { CharacterRecord } from "../types/character";
+import type { CombatEncounterState } from "../types/combatEncounter.ts";
 import { EncounterCastConfirmationDialog } from "../components/combat-encounter/EncounterCastConfirmationDialog";
 import { EncounterActivityLogPanel } from "../components/combat-encounter/EncounterActivityLogPanel";
 import { EncounterInitiativePanel } from "../components/combat-encounter/EncounterInitiativePanel";
@@ -67,8 +76,51 @@ function applySheetUpdater(
   return typeof updater === "function" ? updater(currentSheet) : updater;
 }
 
+function buildEncounterParticipantViews(args: {
+  encounter: CombatEncounterState;
+  characters: CharacterRecord[];
+  itemsById: ReturnType<typeof buildItemIndex>;
+}): EncounterParticipantView[] {
+  return args.encounter.participants.map((participant) => {
+    const encounterOwnedMob =
+      (args.encounter.encounterOwnedMobs ?? []).find(
+        (entry) => entry.id === participant.characterId
+      ) ?? null;
+    const transientCombatant =
+      args.encounter.transientCombatants.find(
+        (entry) => entry.id === participant.characterId
+      ) ?? null;
+    const character =
+      args.characters.find((entry) => entry.id === participant.characterId) ??
+      (encounterOwnedMob
+        ? {
+            id: encounterOwnedMob.id,
+            ownerRole: encounterOwnedMob.ownerRole,
+            sheet: encounterOwnedMob.sheet,
+          }
+        : null) ??
+      (transientCombatant
+        ? {
+            id: transientCombatant.id,
+            ownerRole: transientCombatant.ownerRole,
+            sheet: transientCombatant.sheet,
+          }
+        : null);
+
+    return {
+      participant,
+      character,
+      encounterOwnedMob,
+      transientCombatant,
+      snapshot: character ? buildCharacterEncounterSnapshot(character.sheet, args.itemsById) : null,
+    };
+  });
+}
+
 export function CombatEncounterPage() {
   const navigate = useNavigate();
+  const online = useOnlineSession();
+  const liveClient = getSupabaseClient();
   const {
     roleChoice,
     activeCombatEncounter,
@@ -88,6 +140,7 @@ export function CombatEncounterPage() {
   const [pendingCastConfirmation, setPendingCastConfirmation] =
     useState<PendingCastConfirmation | null>(null);
   const [pendingCastError, setPendingCastError] = useState<string | null>(null);
+  const [liveCombatPublishStatus, setLiveCombatPublishStatus] = useState("");
   const [isDiceOpen, setIsDiceOpen] = useState(false);
   const [dicePosition, setDicePosition] = useState({ x: 24, y: 24 });
   const [selectedCombatantId, setSelectedCombatantId] = useState("");
@@ -104,6 +157,7 @@ export function CombatEncounterPage() {
       offsetY: 0,
     }
   );
+  const lastLiveCombatPublishRef = useRef("");
 
   useEffect(() => {
     function handleMouseMove(event: globalThis.MouseEvent): void {
@@ -149,6 +203,109 @@ export function CombatEncounterPage() {
     };
   }, [pendingCastConfirmation]);
 
+  useEffect(() => {
+    if (!liveClient || online.status !== "authenticated" || !online.user || !activeCombatEncounter) {
+      return;
+    }
+    const encounter = activeCombatEncounter;
+
+    const sessionId = readSelectedLiveSessionId(
+      typeof window === "undefined" ? null : window.localStorage
+    );
+    if (!sessionId) {
+      setLiveCombatPublishStatus("No selected live session for combat feed.");
+      return;
+    }
+
+    const publishSignature = JSON.stringify({
+      sessionId,
+      encounter,
+      characters,
+      items,
+      knowledgeEntities,
+      knowledgeRevisions,
+      knowledgeOwnerships,
+    });
+    if (lastLiveCombatPublishRef.current === publishSignature) {
+      return;
+    }
+    lastLiveCombatPublishRef.current = publishSignature;
+
+    let cancelled = false;
+
+    async function publishLiveCombat(): Promise<void> {
+      const encounterParticipantsForPublish = buildEncounterParticipantViews({
+        encounter,
+        characters,
+        itemsById,
+      });
+      const viewPayloads = buildSessionCombatViewPayloads({
+        encounter,
+        encounterParticipants: encounterParticipantsForPublish,
+        knowledgeState: {
+          knowledgeEntities,
+          knowledgeRevisions,
+          knowledgeOwnerships,
+        },
+        itemsById,
+      });
+
+      const stateResult = await upsertSessionCombatState({
+        client: liveClient!,
+        sessionId,
+        encounter,
+        updatedByUserId: online.user?.id ?? null,
+      });
+      if ("error" in stateResult) {
+        if (!cancelled) {
+          setLiveCombatPublishStatus(stateResult.error);
+        }
+        return;
+      }
+
+      const viewResult = await replaceSessionCombatViews({
+        client: liveClient!,
+        sessionId,
+        updatedByUserId: online.user?.id ?? null,
+        records: viewPayloads.map((payload) => ({
+          viewerCharacterId: payload.viewerCharacterId,
+          encounterId: payload.encounterId,
+          encounterLabel: payload.encounterLabel,
+          viewPayload: payload,
+        })),
+      });
+      if ("error" in viewResult) {
+        if (!cancelled) {
+          setLiveCombatPublishStatus(viewResult.error);
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        setLiveCombatPublishStatus(
+          `Published to live session: ${viewPayloads.length} player view(s).`
+        );
+      }
+    }
+
+    void publishLiveCombat();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeCombatEncounter,
+    characters,
+    items,
+    itemsById,
+    knowledgeEntities,
+    knowledgeOwnerships,
+    knowledgeRevisions,
+    liveClient,
+    online.status,
+    online.user,
+  ]);
+
   if (roleChoice !== "dm") {
     return <Navigate to="/role" replace />;
   }
@@ -157,43 +314,11 @@ export function CombatEncounterPage() {
     return <Navigate to="/dm/combat" replace />;
   }
 
-  const encounterParticipants: EncounterParticipantView[] = activeCombatEncounter.participants.map(
-    (participant) => {
-      const encounterOwnedMob =
-        (activeCombatEncounter.encounterOwnedMobs ?? []).find(
-          (entry) => entry.id === participant.characterId
-        ) ?? null;
-      const transientCombatant =
-        activeCombatEncounter.transientCombatants.find(
-          (entry) => entry.id === participant.characterId
-        ) ?? null;
-      const character =
-        characters.find((entry) => entry.id === participant.characterId) ??
-        (encounterOwnedMob
-          ? {
-              id: encounterOwnedMob.id,
-              ownerRole: encounterOwnedMob.ownerRole,
-              sheet: encounterOwnedMob.sheet,
-            }
-          : null) ??
-        (transientCombatant
-          ? {
-              id: transientCombatant.id,
-              ownerRole: transientCombatant.ownerRole,
-              sheet: transientCombatant.sheet,
-            }
-          : null);
-      const snapshot = character ? buildCharacterEncounterSnapshot(character.sheet, itemsById) : null;
-
-      return {
-        participant,
-        character,
-        encounterOwnedMob,
-        transientCombatant,
-        snapshot,
-      };
-    }
-  );
+  const encounterParticipants = buildEncounterParticipantViews({
+    encounter: activeCombatEncounter,
+    characters,
+    itemsById,
+  });
   const encounterParties = activeCombatEncounter.parties;
   const currentTurnState = activeCombatEncounter.turnState;
   const activeCombatantLabel =
@@ -627,6 +752,9 @@ export function CombatEncounterPage() {
             <p className="dm-summary-line">
               Initiative has been rolled for {activeCombatEncounter.participants.length} combatants.
             </p>
+            {liveCombatPublishStatus ? (
+              <p className="dm-status-line">{liveCombatPublishStatus}</p>
+            ) : null}
             <div className="dm-action-grid">
               <div>
                 <span>Created</span>

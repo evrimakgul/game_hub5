@@ -1,4 +1,5 @@
 import type { CharacterRecord } from "./character.ts";
+import type { EncounterActivityLogEntry } from "./combatEncounter.ts";
 
 export type OnlineSessionRole = "dm" | "player";
 
@@ -158,5 +159,49 @@ export type CampaignCharacterRecord = {
   ownerUserId: string;
   displayName: string;
   sheetPayload: unknown;
+  updatedAt: string;
+};
+
+export type SessionCombatParticipant = {
+  characterId: string;
+  label: string;
+  partyLabel: string;
+  hpPercent: number;
+  isViewer: boolean;
+  isAllied: boolean;
+  isOpponent: boolean;
+  isActive: boolean;
+  canInspect: boolean;
+};
+
+export type SessionCombatViewPayload = {
+  schemaVersion: 1;
+  encounterId: string;
+  encounterLabel: string;
+  viewerCharacterId: string;
+  round: number;
+  activeParticipantId: string | null;
+  activeCombatantLabel: string | null;
+  generatedAt: string;
+  combatants: SessionCombatParticipant[];
+  activityLog: EncounterActivityLogEntry[];
+};
+
+export type SessionCombatStateRecord = {
+  sessionId: string;
+  encounterId: string;
+  encounterLabel: string;
+  encounterPayload: unknown;
+  updatedByUserId: string | null;
+  updatedAt: string;
+};
+
+export type SessionCombatViewRecord = {
+  sessionId: string;
+  viewerCharacterId: string;
+  encounterId: string;
+  encounterLabel: string;
+  viewPayload: SessionCombatViewPayload;
+  updatedByUserId: string | null;
   updatedAt: string;
 };

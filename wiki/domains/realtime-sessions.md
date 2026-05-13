@@ -3,7 +3,7 @@ title: Realtime Sessions
 topic: domains
 kind: domain
 status: active
-updated: 2026-05-12
+updated: 2026-05-13
 confidence: high
 ---
 
@@ -26,6 +26,8 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - DM route `/dm/screen` supports campaign/session creation, participant linking, character sync, secret/global rolls, event feed, sharing, reward packets, pins, notes, and combat shortcuts.
 - The DM Screen lists only campaigns where the signed-in account has `campaign_members.role = 'dm'`.
 - Player route `/player/session` supports character publishing, hidden rolls for DM, public/limited sharing, owned-card sharing, event feed, and shortcuts back to character/combat surfaces.
+- Player route `/player/session` now also shows a live combat follow panel when the DM encounter page publishes combat to the selected live session.
+- Live combat publishing writes a DM-only full encounter snapshot and per-player masked combat views, so players subscribe only to their character's safe view.
 - Player session campaign access remains membership-based, so the same account can be a DM in one campaign and a player/member in another.
 - Session event visibility supports `public`, `limited`, `dm_only`, and `dm_and_actor`.
 - Reward packets update character sheets, history, DM audit log, session character rows, optional card grants, and persistent reward events.
@@ -56,6 +58,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Manual Supabase RLS verification remains required.
 - Adding campaign members by email/display-name lookup is not implemented yet.
 - Richer session lifecycle controls beyond active-session creation are future work.
+- Player-side Supabase combat action submission is not implemented yet; DM encounter execution remains authoritative.
 - Existing Supabase projects may need the follow-up hardening, owner-membership, and campaign-character realtime publication migrations applied after the base realtime migration.
 
 ## Sources

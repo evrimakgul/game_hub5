@@ -497,6 +497,12 @@ This roadmap is the active implementation source of truth for this branch.
 - RLS policies are implemented in SQL and still need manual Supabase local/project verification beyond repository unit tests.
 - Existing local app state remains the offline/dev truth; live DM/player coordination is authoritative only inside configured Supabase sessions.
 
+### 12.6 Live Combat Feed Correction
+- Active DM combat can now publish to the selected live session.
+- Supabase stores a DM-only full encounter snapshot plus per-player masked combat views.
+- `/player/session` now shows a live combat panel with round, active turn, masked combatants, HP bars, and recent sanitized combat activity.
+- Player-side Supabase combat action submission remains deferred; DM encounter execution is still the authoritative mutation path.
+
 ## Completed Follow-Up: Character Sheet Fixed Dashboard Refactor
 
 - `/player/character` keeps the existing route and view-mode split, but now renders as a fixed three-zone dashboard: top read-only identity/resources/combat/resistances, middle compact summaries, and bottom detailed workspace.
