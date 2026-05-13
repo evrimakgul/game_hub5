@@ -3,7 +3,7 @@ title: Game Hub 5 Overview
 topic: project
 kind: overview
 status: active
-updated: 2026-05-11
+updated: 2026-05-12
 confidence: high
 ---
 
@@ -25,7 +25,8 @@ confidence: high
 - Combat now has both a DM encounter runtime and a player-facing masked combat mode, with the active encounter shared through local persisted app state.
 - Player/DM character sheets now share a fixed dark dashboard layout with top read-only identity/resources/combat/resistances, middle compact summaries, and bottom detail tabs.
 - The character-sheet inventory workspace now uses the real loadout slot list, left/right earring slots, and inventory-active charms instead of treating charm/talisman as equipped gear.
-- Live player character ownership now keys to Supabase user id, so DM rewards can sync back to the owning player's sheet while player flow hides other players' characters.
+- Live player character ownership now keys to Supabase user id, so DM rewards can sync back to the owning player's sheet through Supabase fetch/realtime hydration while player flow hides other players' characters.
+- DM campaign character inspection can hydrate the explicitly selected campaign sheet even when that sheet belongs to another player.
 - Personalized player/DM page design is now a planned near-term follow-up, not an implemented system.
 - Canonical non-code project truth currently lives across `references/` and `project_tracking/`, while detailed provenance lives in historical threads and chats.
 
@@ -65,6 +66,7 @@ confidence: high
 - [wiki/domains/view-personalization.md](../domains/view-personalization.md)
 - [src/App.tsx](../../src/App.tsx)
 - [src/state/appFlow.tsx](../../src/state/appFlow.tsx)
+- [src/lib/onlineCharacterSync.ts](../../src/lib/onlineCharacterSync.ts)
 
 ## Raw
 

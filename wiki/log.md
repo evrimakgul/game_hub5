@@ -225,3 +225,25 @@
 - Updated: `workflow/wiki-maintenance`
 - Updated: `history/split-decisions`
 - Updated: `wiki/index.md`
+
+## [2026-05-11] refresh | source revalidation no-op
+- Revalidated tracked repo docs, recent code landmarks, and external workflow snapshots against the current wiki state; no material wiki article drift was found.
+- Local PowerShell external fetches failed with a TLS receive error, but browser/web fetches reached the tracked upstream workflow sources and showed no material workflow drift.
+- Requested branch `codex/powers-implementation` could not be checked out because Git still cannot create `.git/index.lock`; refresh edits stayed inside `raw/` and `wiki/` on the current clean checkout.
+- Updated: `raw/source-index.md`
+- Updated: `workflow/wiki-maintenance`
+
+## [2026-05-12] refresh | realtime campaign sheet hydration
+- Revalidated tracked repo docs, current code landmarks, and external workflow snapshots. Local PowerShell/curl GitHub raw fetches still failed with TLS receive errors, but browser/web verification reached the tracked upstream workflow sources and found no material workflow drift.
+- Reconciled the wiki with commit `e0bc06c`: `campaign_characters` can now be published through Supabase Realtime, `/player/character` subscribes to visible campaign-character rows, player-owned sheets hydrate from realtime campaign snapshots, and DM campaign-character views can hydrate explicitly viewed non-owned sheets.
+- Requested branch `codex/powers-implementation` was not checked out because the current worktree already contained wiki-only refresh edits and Git index writes are still expected to be blocked on this path.
+- Updated: `raw/source-index.md`
+- Updated: `project/game-hub5-overview`
+- Updated: `project/current-objective-and-roadmap`
+- Updated: `project/implemented-vs-deferred`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/realtime-sessions`
+- Updated: `workflow/wiki-maintenance`
+- Updated: `history/split-decisions`
+- Updated: `wiki/index.md`

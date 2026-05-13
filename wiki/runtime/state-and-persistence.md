@@ -3,7 +3,7 @@ title: State And Persistence
 topic: runtime
 kind: architecture
 status: active
-updated: 2026-05-11
+updated: 2026-05-12
 confidence: high
 ---
 
@@ -24,6 +24,8 @@ confidence: high
 - `activeItemIds` remain the persisted switch for carried-item buffs such as charm/talisman effects.
 - Local character records now carry optional `ownerUserId` metadata for live-session account ownership.
 - Player-owned Supabase campaign/session snapshots hydrate matching local player sheets, while legacy ownerless local characters remain readable for offline/dev continuity.
+- Supabase-backed campaign character snapshots now hydrate through an initial visible-character fetch plus realtime `campaign_characters` subscriptions.
+- DM campaign character views may hydrate the selected campaign sheet even when the current signed-in account is not that character's owner; player flow remains owner-filtered.
 - Auction-house state now seeds from the workbook-derived catalog when old saves do not have an `auctionEntries` collection yet, while newer saves persist their current auction row set directly.
 - Auction entries now persist both:
   - original stock/source text in `itemQuantity`
@@ -64,7 +66,7 @@ confidence: high
 - Authoring content is persisted as top-level local collections now, but its shape is already being kept compatible with a future `metadata columns + jsonb payload` storage model.
 - Future personalization persistence should store constrained design/layout preferences, not executable code.
 - Loadout persistence should keep using canonical slot ids so summary controls, the detailed inventory tab, and combat-derived equipment behavior stay aligned.
-- Live-session reward sync should preserve account ownership boundaries: players hydrate only their own character snapshots, while DMs continue to view campaign character sheets.
+- Live-session reward sync should preserve account ownership boundaries: players hydrate only their own character snapshots, while DMs can hydrate the explicitly selected campaign character sheet for campaign inspection/edit workflows.
 
 ## Deferred / Open
 
@@ -78,6 +80,8 @@ confidence: high
 - [src/state/appFlow.tsx](../../src/state/appFlow.tsx)
 - [src/state/onlineSession.tsx](../../src/state/onlineSession.tsx)
 - [src/lib/realtimeSessionRepository.ts](../../src/lib/realtimeSessionRepository.ts)
+- [src/lib/onlineCharacterSync.ts](../../src/lib/onlineCharacterSync.ts)
+- [src/routes/PlayerCharacterPage.tsx](../../src/routes/PlayerCharacterPage.tsx)
 - [src/state/appFlowPersistence.ts](../../src/state/appFlowPersistence.ts)
 - [src/routes/PlayerAuctionHousePage.tsx](../../src/routes/PlayerAuctionHousePage.tsx)
 - [src/routes/PlayerCombatPage.tsx](../../src/routes/PlayerCombatPage.tsx)

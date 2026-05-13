@@ -3,7 +3,7 @@ title: Wiki Maintenance
 topic: workflow
 kind: workflow
 status: active
-updated: 2026-05-11
+updated: 2026-05-12
 confidence: high
 ---
 
@@ -41,7 +41,7 @@ The wiki uses the Karpathy-style raw/wiki/schema split. `raw/` stores immutable 
   - continue with other sources
 - Allowed wiki-maintenance writes are limited to `raw/`, `wiki/`, `.agents/skills/llm-wiki-maintainer/`, and wiki-specific rules in `AGENTS.md`.
 - The branch/worktree cleanup guidance was captured as durable workflow context so future wiki runs do not recreate a second dedicated wiki branch unless the user explicitly wants that isolation again.
-- External workflow snapshots were revalidated on 2026-05-04 and kept active; no material workflow drift found.
+- External workflow snapshots were revalidated on 2026-05-12 and kept active; no material workflow drift found. Local PowerShell/curl fetches still fail against GitHub raw URLs, so browser/web verification remains the fallback for these sources.
 
 ## Deferred / Open
 

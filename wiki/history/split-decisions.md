@@ -3,7 +3,7 @@ title: Split Decisions
 topic: history
 kind: register
 status: active
-updated: 2026-05-11
+updated: 2026-05-12
 confidence: high
 ---
 
@@ -13,13 +13,15 @@ This is the living register of gaps between current implementation and intended 
 
 ## Current State
 
-Open splits revalidated on 2026-05-11:
+Open splits revalidated on 2026-05-12:
 
 | Split ID | Status | Current State | Source Trail |
 | --- | --- | --- | --- |
 | `COMBAT-ACT-01` | open | Physical attacks and ranged gear work now, but action cost, timing, weapon speed, and multi-attack throughput are still simplified. This gap is intentionally deferred to the very end of the project and may remain unimplemented. | `references/current_notes.md`, `project_tracking/tasks_todo.md`, thread `5` |
 | `DOC-OBJECTIVE-01` | open | `references/project_objective.md` still describes the older manual `Brute Defiance` trigger, while current code, roadmap, and notes reflect the passive version. | `references/project_objective.md`, `references/plan.md`, `references/current_notes.md`, `src/engine/encounterExecutionEngine.ts` |
 | `VIEW-PERSONALIZATION-01` | open | The user wants personalized player/DM page design soon, but current code has fixed layouts and no persisted view-profile system yet. | `raw/user-approved/2026-04-24-view-personalization-roadmap.md`, `references/plan.md`, `project_tracking/tasks_todo.md` |
+
+New 2026-05-12 source drift did not create a new split: campaign-character realtime hydration is implemented in code, while existing Supabase projects may still need the new publication migration applied operationally.
 
 Resolved splits:
 

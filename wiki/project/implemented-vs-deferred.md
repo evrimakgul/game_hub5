@@ -3,7 +3,7 @@ title: Implemented Vs Deferred
 topic: project
 kind: status
 status: active
-updated: 2026-05-11
+updated: 2026-05-12
 confidence: high
 ---
 
@@ -18,7 +18,7 @@ Implemented and live:
 - Local-first character persistence, hydration, and backup recovery.
 - DM and player route flows.
 - Optional Supabase-backed live sessions with Auth, DM Screen, Player Session, persistent events, secret rolls, sharing, and reward packets.
-- Player-owned live character sheet sync from Supabase campaign/session snapshots, including DM reward reflection and player-flow ownership filtering.
+- Player-owned live character sheet sync from Supabase campaign/session snapshots, including DM reward reflection, realtime `campaign_characters` subscriptions, DM-visible campaign sheet hydration, and player-flow ownership filtering.
 - Combat encounter runtime with initiative, parties, effects, summons, and logs.
 - Player combat mode with masked initiative/party/activity views, AE-based opponent reveal, local shared encounter state, and own-turn action controls for the viewing character.
 - Fixed player/DM character-sheet dashboard with top identity/resources/combat/resistance overview, middle summaries, and bottom detail tabs.
@@ -78,6 +78,8 @@ Deferred or partial:
 - [references/project_objective.md](../../references/project_objective.md)
 - [project_tracking/tasks_todo.md](../../project_tracking/tasks_todo.md)
 - [project_tracking/new_thread_context.md](../../project_tracking/new_thread_context.md)
+- [src/lib/onlineCharacterSync.ts](../../src/lib/onlineCharacterSync.ts)
+- [src/routes/PlayerCharacterPage.tsx](../../src/routes/PlayerCharacterPage.tsx)
 - [wiki/domains/view-personalization.md](../domains/view-personalization.md)
 - [wiki/domains/realtime-sessions.md](../domains/realtime-sessions.md)
 

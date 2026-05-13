@@ -3,7 +3,7 @@ title: Realtime Sessions
 topic: domains
 kind: domain
 status: active
-updated: 2026-05-11
+updated: 2026-05-12
 confidence: high
 ---
 
@@ -20,6 +20,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
   - `202604240002_account_access_hardening.sql` tolerates both `profiles.id` and older `profiles.user_id` schemas and adds safer session-character insert policy coverage.
   - `202604250001_campaign_owner_membership_policy.sql` restores owner-only campaign-member insertion through `public.is_campaign_owner(campaign_id)`.
   - `202604250002_backfill_campaign_owner_memberships.sql` backfills campaign-owner DM memberships for existing campaigns.
+  - `202605120001_campaign_character_realtime.sql` adds `public.campaign_characters` to the Supabase realtime publication when the publication exists.
 - Repository helpers live in `src/lib/realtimeSessionRepository.ts`.
 - Session event/reward/share logic lives in `src/lib/realtimeSession.ts`.
 - DM route `/dm/screen` supports campaign/session creation, participant linking, character sync, secret/global rolls, event feed, sharing, reward packets, pins, notes, and combat shortcuts.
@@ -29,8 +30,8 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Session event visibility supports `public`, `limited`, `dm_only`, and `dm_and_actor`.
 - Reward packets update character sheets, history, DM audit log, session character rows, optional card grants, and persistent reward events.
 - Campaign character snapshots are now updated when the DM rewards a campaign character, not only when the player publishes.
-- Player-owned local character sheets hydrate from matching Supabase campaign/session snapshots, so reward deltas applied by the DM appear on the player's own character sheet.
-- Player flow filters visible player characters by signed-in account owner; DM flow can still inspect campaign characters across owners.
+- Player-owned local character sheets hydrate from matching Supabase campaign/session snapshots through both initial fetch and realtime `campaign_characters` subscriptions, so reward deltas applied by the DM appear on the player's own character sheet.
+- DM campaign character views can hydrate a selected non-owned campaign sheet through the same visible campaign-character path, while player flow still filters visible player characters by signed-in account owner.
 
 ## Intended Direction
 
@@ -55,7 +56,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Manual Supabase RLS verification remains required.
 - Adding campaign members by email/display-name lookup is not implemented yet.
 - Richer session lifecycle controls beyond active-session creation are future work.
-- Existing Supabase projects may need the follow-up hardening/owner-membership migrations applied after the base realtime migration.
+- Existing Supabase projects may need the follow-up hardening, owner-membership, and campaign-character realtime publication migrations applied after the base realtime migration.
 
 ## Sources
 
@@ -64,6 +65,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - [src/lib/realtimeSession.ts](../../src/lib/realtimeSession.ts)
 - [src/lib/realtimeSessionRepository.ts](../../src/lib/realtimeSessionRepository.ts)
 - [src/lib/onlineCharacterSync.ts](../../src/lib/onlineCharacterSync.ts)
+- [tests/onlineCharacterSync.test.ts](../../tests/onlineCharacterSync.test.ts)
 - [src/routes/DmScreenPage.tsx](../../src/routes/DmScreenPage.tsx)
 - [src/routes/PlayerSessionPage.tsx](../../src/routes/PlayerSessionPage.tsx)
 - [src/routes/PlayerHubPage.tsx](../../src/routes/PlayerHubPage.tsx)
@@ -72,6 +74,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - [supabase/migrations/202604240002_account_access_hardening.sql](../../supabase/migrations/202604240002_account_access_hardening.sql)
 - [supabase/migrations/202604250001_campaign_owner_membership_policy.sql](../../supabase/migrations/202604250001_campaign_owner_membership_policy.sql)
 - [supabase/migrations/202604250002_backfill_campaign_owner_memberships.sql](../../supabase/migrations/202604250002_backfill_campaign_owner_memberships.sql)
+- [supabase/migrations/202605120001_campaign_character_realtime.sql](../../supabase/migrations/202605120001_campaign_character_realtime.sql)
 
 ## Raw
 

@@ -3,7 +3,7 @@ title: UI And Routes Map
 topic: runtime
 kind: map
 status: active
-updated: 2026-05-11
+updated: 2026-05-12
 confidence: high
 ---
 
@@ -48,6 +48,7 @@ Supporting component clusters:
 - `/player/character` now presents three visual zones: top read-only identity/resources/combat/resistances, middle compact summaries, and a bottom tab workspace for Stats, Skills, Powers, Inventory, Knowledge, History, and Notes.
 - `/player` filters visible player characters by signed-in account owner when live auth is configured.
 - `/player/character` redirects away from another player's owned sheet in player mode; DM readonly/editable routes can still inspect campaign characters.
+- `/player/character` also listens for visible Supabase campaign-character snapshot changes when live auth is configured, so owner player sheets and explicitly viewed DM campaign sheets can update from realtime rows.
 - The `Inventory` workspace owns both detailed loadout slot controls and non-equipped inventory item actions; the middle loadout summary opens that same tab.
 - The middle loadout summary opens slot-specific popup pickers for assigning eligible carried inventory items, with the currently equipped item highlighted first.
 - DM readonly and DM editable character views reuse the same dashboard route component with DM edit/override controls layered onto that shared surface.
