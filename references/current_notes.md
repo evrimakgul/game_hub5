@@ -21,6 +21,7 @@ This file tracks active reminders for the current implementation block.
 - Player Combat Mode V1 is now complete.
 - Realtime DM/Player Session V1 is now complete.
 - Live Session Combat Feed is now complete: the DM encounter page publishes masked per-player combat views to the selected live session, and `/player/session` can follow active combat.
+- Live session campaign entry is repaired: players who join a campaign now immediately load available sessions, and DMs can add a player to the campaign by Supabase account UUID from `/dm/screen`.
 - Character Sheet Fixed Dashboard Refactor is now complete.
 - Player-owned live character sheet sync is now complete.
 - `VIEW-PERSONALIZATION-01` is now the planned next follow-up: personalized player/DM page design with safe manual controls, page layouts, presets, and automatic recommendations.

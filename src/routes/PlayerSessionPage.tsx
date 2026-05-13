@@ -414,7 +414,30 @@ export function PlayerSessionPage() {
       )
     );
     setMembers((current) => [...current.filter((member) => member.userId !== result.userId), result]);
-    setPanelMessage("Joined campaign.");
+
+    const [sessionResult, memberResult] = await Promise.all([
+      listActiveSessions({ client, campaignId: result.campaignId }),
+      listCampaignMembers({ client, campaignId: result.campaignId }),
+    ]);
+
+    if ("error" in sessionResult) {
+      setPanelMessage(sessionResult.error);
+      return;
+    }
+
+    if ("error" in memberResult) {
+      setPanelMessage(memberResult.error);
+      return;
+    }
+
+    setSessions(sessionResult);
+    setSelectedSessionId(sessionResult[0]?.id || "");
+    setMembers(memberResult);
+    setPanelMessage(
+      sessionResult[0]
+        ? "Joined campaign. Current session is available."
+        : "Joined campaign. Ask the DM to start a session."
+    );
   }
 
   async function syncActiveCharacterToCampaign(): Promise<boolean> {

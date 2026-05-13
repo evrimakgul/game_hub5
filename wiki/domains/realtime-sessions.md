@@ -24,8 +24,10 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Repository helpers live in `src/lib/realtimeSessionRepository.ts`.
 - Session event/reward/share logic lives in `src/lib/realtimeSession.ts`.
 - DM route `/dm/screen` supports campaign/session creation, participant linking, character sync, secret/global rolls, event feed, sharing, reward packets, pins, notes, and combat shortcuts.
+- DM route `/dm/screen` also exposes UUID-based player addition to the selected campaign before session add/remove.
 - The DM Screen lists only campaigns where the signed-in account has `campaign_members.role = 'dm'`.
 - Player route `/player/session` supports character publishing, hidden rolls for DM, public/limited sharing, owned-card sharing, event feed, and shortcuts back to character/combat surfaces.
+- Player campaign self-join refreshes campaign members and active sessions immediately after the join succeeds.
 - Player route `/player/session` now also shows a live combat follow panel when the DM encounter page publishes combat to the selected live session.
 - Live combat publishing writes a DM-only full encounter snapshot and per-player masked combat views, so players subscribe only to their character's safe view.
 - Player session campaign access remains membership-based, so the same account can be a DM in one campaign and a player/member in another.

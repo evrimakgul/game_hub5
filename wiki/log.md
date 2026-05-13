@@ -1,5 +1,9 @@
 # Wiki Log
 
+## [2026-05-13] refresh | live session membership repair
+- Recorded the DM/player membership UI repair: `/dm/screen` exposes UUID-based player campaign addition, and `/player/session` refreshes campaign/session state immediately after self-join.
+- Updated: `domains/realtime-sessions`
+
 ## [2026-05-13] refresh | live combat session feed
 - Recorded the Supabase-backed live combat feed correction: DM encounter publishing now stores DM-only full state plus per-player masked views, and `/player/session` can follow active combat.
 - Updated: `domains/realtime-sessions`, `domains/combat-encounter`, `runtime/ui-and-routes-map`

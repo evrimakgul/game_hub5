@@ -26,6 +26,7 @@ import {
   createShareSessionEvent,
 } from "../lib/realtimeSession.ts";
 import {
+  addCampaignMember,
   createCampaignInGame,
   deleteEmptyCampaign,
   endCurrentGameSession,
@@ -172,6 +173,8 @@ export function DmScreenPage() {
   );
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
   const [newCampaignName, setNewCampaignName] = useState("");
+  const [newMemberUserId, setNewMemberUserId] = useState("");
+  const [newMemberDisplayName, setNewMemberDisplayName] = useState("");
   const [panelMessage, setPanelMessage] = useState("");
   const [rollPool, setRollPool] = useState("3");
   const [rollLabel, setRollLabel] = useState("Secret resolution");
@@ -482,6 +485,33 @@ export function DmScreenPage() {
     setSessions((current) => [result, ...current.filter((session) => session.id !== result.id)]);
     setSelectedSessionId(result.id);
     setPanelMessage("Current session started.");
+  }
+
+  async function handleAddCampaignMember(): Promise<void> {
+    if (!client || !selectedCampaignId || !newMemberUserId.trim()) {
+      return;
+    }
+
+    const result = await addCampaignMember({
+      client,
+      campaignId: selectedCampaignId,
+      userId: newMemberUserId.trim(),
+      role: "player",
+      displayName: newMemberDisplayName.trim() || newMemberUserId.trim(),
+    });
+
+    if ("error" in result) {
+      setPanelMessage(result.error);
+      return;
+    }
+
+    setMembers((current) => [
+      ...current.filter((member) => member.userId !== result.userId),
+      result,
+    ]);
+    setNewMemberUserId("");
+    setNewMemberDisplayName("");
+    setPanelMessage("Player added to campaign.");
   }
 
   async function handleEndSession(): Promise<void> {
@@ -1211,6 +1241,32 @@ export function DmScreenPage() {
             <p className="section-kicker">Participants</p>
             <h2>Accounts</h2>
             <p className="dm-summary-line">Your account id: {online.user?.id}</p>
+            <div className="dm-item-edit-grid">
+              <label className="dm-field">
+                <span>Player Account UUID</span>
+                <input
+                  value={newMemberUserId}
+                  onChange={(event) => setNewMemberUserId(event.target.value)}
+                  placeholder="Supabase user id"
+                />
+              </label>
+              <label className="dm-field">
+                <span>Display Name</span>
+                <input
+                  value={newMemberDisplayName}
+                  onChange={(event) => setNewMemberDisplayName(event.target.value)}
+                  placeholder="Player name"
+                />
+              </label>
+              <button
+                type="button"
+                className="flow-secondary"
+                disabled={!selectedCampaignId || !newMemberUserId.trim()}
+                onClick={handleAddCampaignMember}
+              >
+                Add Player To Campaign
+              </button>
+            </div>
             <div className="dm-screen-list">
               {members.map((member) => (
                 <div key={member.userId} className="dm-screen-row dm-participant-row">

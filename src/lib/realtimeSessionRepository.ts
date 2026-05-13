@@ -456,19 +456,14 @@ export async function addCampaignMember(args: {
   selectedCharacterId?: string | null;
 }): Promise<CampaignMemberRecord | { error: string }> {
   const { data, error } = await args.client
-    .from("campaign_members")
-    .upsert(
-      {
-        campaign_id: args.campaignId,
-        user_id: args.userId,
-        role: args.role,
-        display_name: args.displayName,
-        selected_character_id: args.selectedCharacterId ?? null,
-      },
-      { onConflict: "campaign_id,user_id" }
-    )
-    .select("campaign_id, user_id, role, display_name, selected_character_id, joined_at")
-    .single();
+    .rpc("add_campaign_member", {
+      p_campaign_id: args.campaignId,
+      p_user_id: args.userId,
+      p_role: args.role,
+      p_display_name: args.displayName,
+      p_selected_character_id: args.selectedCharacterId ?? null,
+    })
+    .single<CampaignMemberRow>();
 
   if (error || !data) {
     return { error: formatRealtimeSessionError(error, "Failed to add campaign member.") };
