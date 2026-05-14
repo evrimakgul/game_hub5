@@ -515,11 +515,13 @@ This roadmap is the active implementation source of truth for this branch.
 
 ## Completed Follow-Up: Player-Owned Live Character Sheet Sync
 
-- Player-created characters now carry optional `ownerUserId` metadata in local persisted state.
-- Player flow filters character access to the signed-in account's own player characters while preserving legacy local-only characters with no owner id.
+- Player-created characters now carry optional `ownerUserId` metadata while they are in runtime state.
+- Supabase now owns account-level player character persistence through `player_characters`, so same-account player hub character lists can hydrate across browsers/devices.
+- Server-backed player characters are intentionally omitted from browser localStorage serialization; local storage remains a migration/cache path, not the player-character source of truth.
+- Player flow filters character access to the signed-in account's own player characters and exposes a `/player` upload action for legacy ownerless local characters.
 - DM flow can still view campaign character sheets regardless of player ownership.
 - Supabase campaign/session character snapshots hydrate matching player-owned local sheets, so DM rewards reflected in campaign/session rows are visible when the owning player opens the character sheet.
-- The sync helper lives in `src/lib/onlineCharacterSync.ts`; repository access to visible campaign character snapshots lives in `listVisibleCampaignCharacters`.
+- The sync helper lives in `src/lib/onlineCharacterSync.ts`; repository access to account character rows lives in `listPlayerCharacters`, while visible campaign snapshot access remains in `listVisibleCampaignCharacters`.
 
 ## Planned Follow-Up: Personalized Page Design And Auto-Design
 

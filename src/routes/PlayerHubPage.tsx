@@ -2,10 +2,19 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
-import { isCharacterPlayableByUser, mergeVisibleCampaignCharacters } from "../lib/onlineCharacterSync.ts";
-import { listVisibleCampaignCharacters } from "../lib/realtimeSessionRepository.ts";
+import {
+  attachPlayerCharacterMetadata,
+  isCharacterPlayableByUser,
+  mergePlayerCharacters,
+} from "../lib/onlineCharacterSync.ts";
+import {
+  deletePlayerCharacter,
+  listPlayerCharacters,
+  upsertPlayerCharacter,
+} from "../lib/realtimeSessionRepository.ts";
 import { useAppFlow } from "../state/appFlow";
 import { useOnlineSession } from "../state/onlineSession.tsx";
+import type { PlayerCharacterRecord } from "../types/realtimeSession.ts";
 
 export function PlayerHubPage() {
   const navigate = useNavigate();
@@ -20,10 +29,18 @@ export function PlayerHubPage() {
     replaceCharacters,
   } = useAppFlow();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [panelMessage, setPanelMessage] = useState("");
+  const [isMigrating, setIsMigrating] = useState(false);
   const currentUserId = online.status === "authenticated" ? online.user?.id ?? null : null;
   const playerCharacters = characters.filter((character) =>
     isCharacterPlayableByUser(character, currentUserId)
   );
+  const localOnlyPlayerCharacters =
+    currentUserId === null
+      ? []
+      : characters.filter(
+          (character) => character.ownerRole === "player" && character.ownerUserId == null
+        );
   const activeCombatCharacterIds = new Set(
     activeCombatEncounter?.participants.map((participant) => participant.characterId) ?? []
   );
@@ -37,16 +54,18 @@ export function PlayerHubPage() {
 
     let cancelled = false;
 
-    async function syncVisibleCharacters(): Promise<void> {
-      const result = await listVisibleCampaignCharacters({ client: supabase! });
+    async function syncAccountCharacters(): Promise<void> {
+      const result = await listPlayerCharacters({ client: supabase! });
       if (cancelled || "error" in result) {
+        if (!cancelled && "error" in result) {
+          setPanelMessage(result.error);
+        }
         return;
       }
 
-      const nextCharacters = mergeVisibleCampaignCharacters({
+      const nextCharacters = mergePlayerCharacters({
         localCharacters: characters,
-        campaignCharacters: result,
-        currentUserId: userId!,
+        playerCharacters: result,
       });
 
       if (nextCharacters !== characters) {
@@ -54,7 +73,7 @@ export function PlayerHubPage() {
       }
     }
 
-    void syncVisibleCharacters();
+    void syncAccountCharacters();
 
     return () => {
       cancelled = true;
@@ -81,7 +100,23 @@ export function PlayerHubPage() {
     setPendingDeleteId(characterId);
   }
 
-  function handleDeleteConfirm(characterId: string): void {
+  async function handleDeleteConfirm(characterId: string): Promise<void> {
+    const character = characters.find((entry) => entry.id === characterId) ?? null;
+    const supabase = getSupabaseClient();
+
+    if (character?.ownerUserId && currentUserId && supabase) {
+      const result = await deletePlayerCharacter({
+        client: supabase,
+        characterId,
+        ownerUserId: currentUserId,
+      });
+
+      if (result && "error" in result) {
+        setPanelMessage(result.error);
+        return;
+      }
+    }
+
     deleteCharacter(characterId);
     setPendingDeleteId(null);
   }
@@ -96,11 +131,49 @@ export function PlayerHubPage() {
     navigate(`/player/combat?characterId=${encodeURIComponent(characterId)}`);
   }
 
+  async function handleUploadLocalCharacters(): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase || !currentUserId || localOnlyPlayerCharacters.length === 0) {
+      return;
+    }
+
+    setIsMigrating(true);
+    const uploadedCharacters: Array<{ characterId: string; record: PlayerCharacterRecord }> = [];
+    for (const character of localOnlyPlayerCharacters) {
+      const result = await upsertPlayerCharacter({
+        client: supabase,
+        characterId: character.id,
+        ownerUserId: currentUserId,
+        displayName: character.sheet.name.trim() || character.id,
+        sheetPayload: character.sheet,
+      });
+
+      if ("error" in result) {
+        setPanelMessage(result.error);
+        setIsMigrating(false);
+        return;
+      }
+
+      uploadedCharacters.push({ characterId: character.id, record: result });
+    }
+
+    replaceCharacters(
+      characters.map((character) => {
+        const uploaded = uploadedCharacters.find((entry) => entry.characterId === character.id);
+        return uploaded ? attachPlayerCharacterMetadata(character, uploaded.record) : character;
+      })
+    );
+    setPendingDeleteId(null);
+    setIsMigrating(false);
+    setPanelMessage(`${uploadedCharacters.length} local character(s) uploaded to Supabase.`);
+  }
+
   return (
     <main className="flow-page">
       <section className="flow-card">
         <p className="section-kicker">Player</p>
         <h1>Character Access</h1>
+        {panelMessage ? <p className="dm-status-line">{panelMessage}</p> : null}
         <div className="flow-actions">
           <button type="button" className="flow-primary" onClick={() => navigate("/player/session")}>
             Live Session
@@ -160,6 +233,21 @@ export function PlayerHubPage() {
               </div>
             );
           })}
+          {localOnlyPlayerCharacters.length > 0 ? (
+            <div className="character-access-row">
+              <span>
+                {localOnlyPlayerCharacters.length} local-only character(s) found.
+              </span>
+              <button
+                type="button"
+                className="flow-secondary"
+                disabled={isMigrating}
+                onClick={handleUploadLocalCharacters}
+              >
+                {isMigrating ? "Uploading..." : "Upload To Supabase"}
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
     </main>

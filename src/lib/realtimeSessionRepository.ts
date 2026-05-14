@@ -6,6 +6,7 @@ import type {
   CampaignRecord,
   GameSessionRecord,
   OnlineSessionRole,
+  PlayerCharacterRecord,
   SessionCombatStateRecord,
   SessionCombatViewPayload,
   SessionCombatViewRecord,
@@ -142,6 +143,16 @@ type CampaignCharacterRow = {
   updated_at: string;
 };
 
+type PlayerCharacterRow = {
+  id: string;
+  character_id: string;
+  owner_user_id: string;
+  display_name: string;
+  sheet_payload: unknown;
+  created_at: string;
+  updated_at: string;
+};
+
 type SessionEventRow = {
   id: string;
   session_id: string;
@@ -262,6 +273,18 @@ function mapCampaignCharacter(row: CampaignCharacterRow): CampaignCharacterRecor
     ownerUserId: row.owner_user_id,
     displayName: row.display_name,
     sheetPayload: row.sheet_payload,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapPlayerCharacter(row: PlayerCharacterRow): PlayerCharacterRecord {
+  return {
+    id: row.id,
+    characterId: row.character_id,
+    ownerUserId: row.owner_user_id,
+    displayName: row.display_name,
+    sheetPayload: row.sheet_payload,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
@@ -856,6 +879,77 @@ export async function listVisibleCampaignCharacters(args: {
   }
 
   return (data ?? []).map(mapCampaignCharacter);
+}
+
+export async function listPlayerCharacters(args: {
+  client: SupabaseClient;
+}): Promise<PlayerCharacterRecord[] | { error: string }> {
+  const { data, error } = await args.client
+    .from("player_characters")
+    .select("id, character_id, owner_user_id, display_name, sheet_payload, created_at, updated_at")
+    .order("display_name", { ascending: true });
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to load account characters.") };
+  }
+
+  return (data ?? []).map(mapPlayerCharacter);
+}
+
+export async function upsertPlayerCharacter(args: {
+  client: SupabaseClient;
+  characterId: string;
+  ownerUserId: string;
+  displayName: string;
+  sheetPayload: unknown;
+}): Promise<PlayerCharacterRecord | { error: string }> {
+  const now = new Date().toISOString();
+  const { data, error } = await args.client
+    .from("player_characters")
+    .upsert(
+      {
+        character_id: args.characterId,
+        owner_user_id: args.ownerUserId,
+        display_name: args.displayName,
+        sheet_payload: args.sheetPayload,
+        updated_at: now,
+      },
+      { onConflict: "owner_user_id,character_id" }
+    )
+    .select("id, character_id, owner_user_id, display_name, sheet_payload, created_at, updated_at")
+    .single();
+
+  if (error || !data) {
+    return { error: formatRealtimeSessionError(error, "Failed to save account character.") };
+  }
+
+  return mapPlayerCharacter(data);
+}
+
+export async function updatePlayerCharacterSheet(args: {
+  client: SupabaseClient;
+  characterId: string;
+  ownerUserId: string;
+  displayName: string;
+  sheetPayload: unknown;
+}): Promise<PlayerCharacterRecord | { error: string }> {
+  return upsertPlayerCharacter(args);
+}
+
+export async function deletePlayerCharacter(args: {
+  client: SupabaseClient;
+  characterId: string;
+  ownerUserId: string;
+}): Promise<void | { error: string }> {
+  const { error } = await args.client
+    .from("player_characters")
+    .delete()
+    .eq("character_id", args.characterId)
+    .eq("owner_user_id", args.ownerUserId);
+
+  if (error) {
+    return { error: formatRealtimeSessionError(error, "Failed to delete account character.") };
+  }
 }
 
 export async function listSessionCharacters(args: {

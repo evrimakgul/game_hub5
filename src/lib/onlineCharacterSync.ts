@@ -1,6 +1,9 @@
 import { normalizeCharacterDraft, type CharacterDraft } from "../config/characterTemplate.ts";
 import type { CharacterRecord } from "../types/character.ts";
-import type { CampaignCharacterRecord } from "../types/realtimeSession.ts";
+import type {
+  CampaignCharacterRecord,
+  PlayerCharacterRecord,
+} from "../types/realtimeSession.ts";
 
 function areSheetsEqual(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -31,6 +34,52 @@ export function attachCampaignCharacterMetadata(
     onlineCampaignId: record.campaignId,
     onlineSheetUpdatedAt: record.updatedAt,
   };
+}
+
+export function attachPlayerCharacterMetadata(
+  character: CharacterRecord,
+  record: PlayerCharacterRecord
+): CharacterRecord {
+  return {
+    ...character,
+    ownerRole: "player",
+    ownerUserId: record.ownerUserId,
+    onlineSheetUpdatedAt: record.updatedAt,
+  };
+}
+
+export function mergePlayerCharacters(args: {
+  localCharacters: CharacterRecord[];
+  playerCharacters: PlayerCharacterRecord[];
+}): CharacterRecord[] {
+  const localByCharacterId = new Map(
+    args.localCharacters.map((character) => [character.id, character])
+  );
+  const remoteByCharacterId = new Map(
+    args.playerCharacters.map((character) => [character.characterId, character])
+  );
+  const preservedLocalCharacters = args.localCharacters.filter(
+    (character) =>
+      character.ownerRole !== "player" ||
+      (character.ownerUserId == null && !remoteByCharacterId.has(character.id))
+  );
+  const remoteCharacters = args.playerCharacters.map((record) => {
+    const local = localByCharacterId.get(record.characterId);
+
+    return {
+      id: record.characterId,
+      ownerRole: "player" as const,
+      ownerUserId: record.ownerUserId,
+      onlineCampaignId: local?.onlineCampaignId ?? null,
+      onlineSheetUpdatedAt: record.updatedAt,
+      sheet: normalizeCharacterDraft(record.sheetPayload as CharacterDraft),
+    };
+  });
+  const nextCharacters = [...preservedLocalCharacters, ...remoteCharacters];
+
+  return JSON.stringify(nextCharacters) === JSON.stringify(args.localCharacters)
+    ? args.localCharacters
+    : nextCharacters;
 }
 
 export function mergeVisibleCampaignCharacters(args: {
@@ -106,5 +155,5 @@ export function isCharacterPlayableByUser(
     return false;
   }
 
-  return currentUserId === null || character.ownerUserId == null || character.ownerUserId === currentUserId;
+  return currentUserId === null ? true : character.ownerUserId === currentUserId;
 }

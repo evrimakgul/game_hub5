@@ -1023,9 +1023,20 @@ export function readPersistedCharactersFromStorage(
 export function serializePersistedCharacters(
   state: PersistedCharacterState
 ): PersistedCharacterEnvelope {
+  const persistedCharacters = state.characters.filter(
+    (character) => !(character.ownerRole === "player" && character.ownerUserId)
+  );
+  const activePlayerCharacterId =
+    state.activePlayerCharacterId &&
+    persistedCharacters.some(
+      (character) => character.id === state.activePlayerCharacterId && character.ownerRole === "player"
+    )
+      ? state.activePlayerCharacterId
+      : null;
+
   return {
     version: CHARACTER_DRAFT_SCHEMA_VERSION,
-    characters: state.characters.map((character) => ({
+    characters: persistedCharacters.map((character) => ({
       id: character.id,
       ownerRole: character.ownerRole,
       ownerUserId: character.ownerUserId ?? null,
@@ -1046,7 +1057,7 @@ export function serializePersistedCharacters(
     portalTemplates: state.portalTemplates,
     activeCombatEncounter: state.activeCombatEncounter,
     starterItemsInitialized: state.starterItemsInitialized,
-    activePlayerCharacterId: state.activePlayerCharacterId,
+    activePlayerCharacterId,
     activeDmCharacterId: state.activeDmCharacterId,
   };
 }

@@ -162,6 +162,16 @@ export type CampaignCharacterRecord = {
   updatedAt: string;
 };
 
+export type PlayerCharacterRecord = {
+  id: string;
+  characterId: string;
+  ownerUserId: string;
+  displayName: string;
+  sheetPayload: unknown;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SessionCombatParticipant = {
   characterId: string;
   label: string;

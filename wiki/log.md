@@ -252,6 +252,17 @@
 - Updated: `runtime/state-and-persistence`
 - Updated: `runtime/ui-and-routes-map`
 - Updated: `domains/realtime-sessions`
+- Updated: `wiki/index.md`
 - Updated: `workflow/wiki-maintenance`
 - Updated: `history/split-decisions`
 - Updated: `wiki/index.md`
+
+## [2026-05-14] update | account-level player characters
+- Added account-level Supabase player character persistence through `player_characters`, with backfill from existing campaign character snapshots.
+- Recorded that `/player` hydrates server-backed player characters, can upload legacy local-only player characters, and no longer serializes server-backed player characters into browser localStorage.
+- Updated: `references/current_notes.md`
+- Updated: `references/plan.md`
+- Updated: `project_tracking/tasks_done.md`
+- Updated: `runtime/state-and-persistence`
+- Updated: `runtime/ui-and-routes-map`
+- Updated: `domains/realtime-sessions`

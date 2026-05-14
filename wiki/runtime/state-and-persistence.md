@@ -3,13 +3,13 @@ title: State And Persistence
 topic: runtime
 kind: architecture
 status: active
-updated: 2026-05-12
+updated: 2026-05-14
 confidence: high
 ---
 
 ## Summary
 
-`game_hub5` remains local-first for offline/dev play, but live DM/player coordination now has an optional Supabase session layer. The central runtime owns local characters, items, auctions, knowledge, authored content, and active combat state, while configured live sessions persist campaign/session/event/character/knowledge rows through Supabase.
+`game_hub5` remains local-first for offline/dev play, but signed-in player characters now use Supabase account rows as the cross-device source of truth. The central runtime still owns local items, auctions, knowledge, authored content, DM/NPC characters, and active combat state, while configured live sessions persist campaign/session/event/character/knowledge rows through Supabase.
 
 ## Current State
 
@@ -22,8 +22,10 @@ confidence: high
 - The hydration layer already carries migration burden for older item storage and seeded data evolution.
 - Character hydration now normalizes old single `earring` equipment into `earring_left`, keeps left/right earring slots distinct, and treats legacy charm/talisman equipment as carried active inventory where applicable.
 - `activeItemIds` remain the persisted switch for carried-item buffs such as charm/talisman effects.
-- Local character records now carry optional `ownerUserId` metadata for live-session account ownership.
-- Player-owned Supabase campaign/session snapshots hydrate matching local player sheets, while legacy ownerless local characters remain readable for offline/dev continuity.
+- Local character records now carry optional `ownerUserId` metadata for live-session account ownership while they are in runtime state.
+- `public.player_characters` stores account-level player sheets in Supabase; `/player` loads those rows and can upload legacy ownerless local player characters before they are dropped from local persistence.
+- Browser localStorage serialization now omits server-backed player characters, so same-account player lists are server-owned rather than device-owned.
+- Player-owned Supabase campaign/session snapshots still hydrate matching runtime player sheets, while legacy ownerless local characters remain available only for migration/offline dev continuity.
 - Supabase-backed campaign character snapshots now hydrate through an initial visible-character fetch plus realtime `campaign_characters` subscriptions.
 - DM campaign character views may hydrate the selected campaign sheet even when the current signed-in account is not that character's owner; player flow remains owner-filtered.
 - Auction-house state now seeds from the workbook-derived catalog when old saves do not have an `auctionEntries` collection yet, while newer saves persist their current auction row set directly.
@@ -57,7 +59,7 @@ confidence: high
 
 ## Key Decisions
 
-- Local storage is the default persistence boundary; Supabase is the live-session boundary.
+- Local storage is the default persistence boundary for offline/dev and DM-local data; Supabase is the account-backed player-character and live-session boundary.
 - Backup recovery is part of the runtime contract, not an afterthought.
 - Seeded item definitions and blueprints may backfill missing persisted data without overwriting same-id user edits.
 - Auction-linked shared items persist their source `auctionEntryId` alongside the normal blueprint/item-instance data.

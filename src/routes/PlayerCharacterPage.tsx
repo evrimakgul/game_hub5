@@ -23,6 +23,7 @@ import { formatDateDayMonthYear } from "../lib/dateTime";
 import { rollD10Faces } from "../lib/dice";
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
 import {
+  attachPlayerCharacterMetadata,
   isCharacterPlayableByUser,
   mergeVisibleCampaignCharacters,
 } from "../lib/onlineCharacterSync.ts";
@@ -30,6 +31,7 @@ import {
   listVisibleCampaignCharacters,
   subscribeToVisibleCampaignCharacters,
   updateCampaignCharacterSheet,
+  updatePlayerCharacterSheet,
 } from "../lib/realtimeSessionRepository.ts";
 import {
   characterOwnsCurrentItemKnowledgeCard,
@@ -178,6 +180,7 @@ export function PlayerCharacterPage({
   const [openKnowledgeRevisionId, setOpenKnowledgeRevisionId] = useState<string | null>(null);
   const [sheetSyncMessage, setSheetSyncMessage] = useState("");
   const lastPersistedSheetKeyRef = useRef("");
+  const lastPersistedAccountSheetKeyRef = useRef("");
   const dragRef = useRef<{ active: boolean; moved: boolean; offsetX: number; offsetY: number }>(
     {
       active: false,
@@ -293,6 +296,19 @@ export function PlayerCharacterPage({
   useEffect(() => {
     if (
       !activeCharacter ||
+      activeCharacter.ownerRole !== "player" ||
+      activeCharacter.ownerUserId !== online.user?.id ||
+      !activeCharacter.onlineSheetUpdatedAt
+    ) {
+      return;
+    }
+
+    lastPersistedAccountSheetKeyRef.current = `account|${activeCharacter.id}|${JSON.stringify(activeCharacter.sheet)}`;
+  }, [activeCharacter?.id, activeCharacter?.onlineSheetUpdatedAt, online.user?.id]);
+
+  useEffect(() => {
+    if (
+      !activeCharacter ||
       !activeSheet ||
       !activeOnlineCampaignId ||
       !client ||
@@ -349,6 +365,61 @@ export function PlayerCharacterPage({
     isDmEditableView,
     isDmView,
     isReadOnlyView,
+    online.user,
+    replaceCharacters,
+  ]);
+
+  useEffect(() => {
+    if (
+      !activeCharacter ||
+      !activeSheet ||
+      !client ||
+      !online.user ||
+      isDmView ||
+      activeCharacter.ownerRole !== "player" ||
+      activeCharacter.ownerUserId !== online.user.id
+    ) {
+      return;
+    }
+
+    const sheetKey = `account|${activeCharacter.id}|${JSON.stringify(activeSheet)}`;
+    if (sheetKey === lastPersistedAccountSheetKeyRef.current) {
+      return;
+    }
+
+    const userId = online.user.id;
+    const timeoutId = window.setTimeout(async () => {
+      const result = await updatePlayerCharacterSheet({
+        client,
+        characterId: activeCharacter.id,
+        ownerUserId: userId,
+        displayName: activeSheet.name.trim() || activeCharacter.id,
+        sheetPayload: activeSheet,
+      });
+
+      if ("error" in result) {
+        setSheetSyncMessage(result.error);
+        return;
+      }
+
+      lastPersistedAccountSheetKeyRef.current = sheetKey;
+      replaceCharacters(
+        characters.map((character) =>
+          character.id === activeCharacter.id
+            ? attachPlayerCharacterMetadata(character, result)
+            : character
+        )
+      );
+      setSheetSyncMessage("Character sheet saved.");
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    activeCharacter,
+    activeSheet,
+    characters,
+    client,
+    isDmView,
     online.user,
     replaceCharacters,
   ]);

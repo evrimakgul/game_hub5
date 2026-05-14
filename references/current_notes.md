@@ -23,7 +23,8 @@ This file tracks active reminders for the current implementation block.
 - Live Session Combat Feed is now complete: the DM encounter page publishes masked per-player combat views to the selected live session, and `/player/session` can follow active combat.
 - Live session campaign entry is repaired: players who join a campaign now immediately load available sessions, and DMs can add a player to the campaign by Supabase account UUID from `/dm/screen`.
 - Character Sheet Fixed Dashboard Refactor is now complete.
-- Player-owned live character sheet sync is now complete.
+- Player-owned live character sheet sync is now complete, with account-level Supabase `player_characters` rows as the cross-device source for player hub characters.
+- Server-backed player characters are no longer serialized back into browser localStorage; legacy local-only player characters can be uploaded from `/player` before local persistence drops them.
 - `VIEW-PERSONALIZATION-01` is now the planned next follow-up: personalized player/DM page design with safe manual controls, page layouts, presets, and automatic recommendations.
 - Validation passed at the end of the pass: `npm run typecheck`, `npm test`, and `npm run build`.
 

@@ -140,9 +140,9 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
             {
               id: "writer-1",
               ownerRole: "player",
-              ownerUserId: "user-1",
-              onlineCampaignId: "campaign-1",
-              onlineSheetUpdatedAt: "2026-05-12T10:00:00.000Z",
+              ownerUserId: null,
+              onlineCampaignId: null,
+              onlineSheetUpdatedAt: null,
               sheet,
             },
           ],
@@ -175,9 +175,9 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
               {
                 id: "writer-1",
                 ownerRole: "player",
-                ownerUserId: "user-1",
-                onlineCampaignId: "campaign-1",
-                onlineSheetUpdatedAt: "2026-05-12T10:00:00.000Z",
+                ownerUserId: null,
+                onlineCampaignId: null,
+                onlineSheetUpdatedAt: null,
                 sheet,
               },
             ],
@@ -218,9 +218,9 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
         assert.equal(payload.starterItemsInitialized, true);
         assert.equal(payload.activePlayerCharacterId, "writer-1");
         assert.equal(payload.characters[0]?.ownerRole, "player");
-        assert.equal(payload.characters[0]?.ownerUserId, "user-1");
-        assert.equal(payload.characters[0]?.onlineCampaignId, "campaign-1");
-        assert.equal(payload.characters[0]?.onlineSheetUpdatedAt, "2026-05-12T10:00:00.000Z");
+        assert.equal(payload.characters[0]?.ownerUserId, null);
+        assert.equal(payload.characters[0]?.onlineCampaignId, null);
+        assert.equal(payload.characters[0]?.onlineSheetUpdatedAt, null);
         assert.equal(
           JSON.parse(writes.get(CHARACTER_STORAGE_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"
@@ -229,6 +229,52 @@ export async function runAppFlowPersistenceTests(): Promise<void> {
           JSON.parse(writes.get(CHARACTER_STORAGE_BACKUP_KEY) ?? "{}").activePlayerCharacterId,
           "writer-1"
         );
+      },
+    },
+    {
+      name: "serializePersistedCharacters omits server-backed player characters",
+      run: () => {
+        const playerSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        playerSheet.name = "Server Player";
+        const dmSheet = PLAYER_CHARACTER_TEMPLATE.createInstance();
+        dmSheet.name = "Local DM";
+
+        const payload = serializePersistedCharacters({
+          characters: [
+            {
+              id: "server-player-1",
+              ownerRole: "player",
+              ownerUserId: "user-1",
+              onlineSheetUpdatedAt: "2026-05-14T10:00:00.000Z",
+              sheet: playerSheet,
+            },
+            {
+              id: "dm-1",
+              ownerRole: "dm",
+              sheet: dmSheet,
+            },
+          ],
+          itemCategoryDefinitions: createDefaultItemCategoryDefinitions(),
+          itemSubcategoryDefinitions: createDefaultItemSubcategoryDefinitions(),
+          itemBlueprints: createDefaultItemBlueprints(),
+          items: [],
+          auctionEntries: defaultAuctionEntries,
+          knowledgeEntities: [],
+          knowledgeRevisions: [],
+          knowledgeOwnerships: [],
+          mobTemplates: [],
+          mobGroups: [],
+          portalTemplates: [],
+          activeCombatEncounter: null,
+          starterItemsInitialized: true,
+          activePlayerCharacterId: "server-player-1",
+          activeDmCharacterId: "dm-1",
+        });
+
+        assert.equal(payload.characters.length, 1);
+        assert.equal(payload.characters[0]?.id, "dm-1");
+        assert.equal(payload.activePlayerCharacterId, null);
+        assert.equal(payload.activeDmCharacterId, "dm-1");
       },
     },
     {

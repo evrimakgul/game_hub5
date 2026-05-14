@@ -35,9 +35,13 @@ import {
   upsertSessionAttendee,
   upsertCampaignCharacter,
   upsertKnowledgeRecords,
+  upsertPlayerCharacter,
   upsertSessionCharacters,
 } from "../lib/realtimeSessionRepository.ts";
-import { attachCampaignCharacterMetadata } from "../lib/onlineCharacterSync.ts";
+import {
+  attachCampaignCharacterMetadata,
+  attachPlayerCharacterMetadata,
+} from "../lib/onlineCharacterSync.ts";
 import { getSupabaseClient } from "../lib/supabaseClient.ts";
 import { useAppFlow } from "../state/appFlow";
 import { useOnlineSession } from "../state/onlineSession.tsx";
@@ -445,6 +449,19 @@ export function PlayerSessionPage() {
       return false;
     }
 
+    const accountResult = await upsertPlayerCharacter({
+      client,
+      characterId: activePlayerCharacter.id,
+      ownerUserId: online.user.id,
+      displayName: activeCharacterName,
+      sheetPayload: activePlayerCharacter.sheet,
+    });
+
+    if ("error" in accountResult) {
+      setPanelMessage(accountResult.error);
+      return false;
+    }
+
     const result = await upsertCampaignCharacter({
       client,
       campaignId: selectedCampaignId,
@@ -462,7 +479,10 @@ export function PlayerSessionPage() {
     replaceCharacters(
       characters.map((character) =>
         character.id === activePlayerCharacter.id
-          ? attachCampaignCharacterMetadata(character, result)
+          ? attachCampaignCharacterMetadata(
+              attachPlayerCharacterMetadata(character, accountResult),
+              result
+            )
           : character
       )
     );

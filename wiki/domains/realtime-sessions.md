@@ -3,13 +3,13 @@ title: Realtime Sessions
 topic: domains
 kind: domain
 status: active
-updated: 2026-05-13
+updated: 2026-05-14
 confidence: high
 ---
 
 ## Summary
 
-Live DM/player coordination now has an optional Supabase-backed session layer. Local-only play remains available, but configured live sessions use Supabase Auth, Postgres, RLS, realtime subscriptions, persistent events, secret rolls, sharing, and reward packets.
+Live DM/player coordination now has an optional Supabase-backed session layer. Local-only play remains available, but signed-in player character libraries and configured live sessions use Supabase Auth, Postgres, RLS, persistent events, secret rolls, sharing, reward packets, and selected realtime subscriptions.
 
 ## Current State
 
@@ -34,6 +34,8 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Session event visibility supports `public`, `limited`, `dm_only`, and `dm_and_actor`.
 - Reward packets update character sheets, history, DM audit log, session character rows, optional card grants, and persistent reward events.
 - Campaign character snapshots are now updated when the DM rewards a campaign character, not only when the player publishes.
+- Account-level player characters now persist in Supabase `player_characters`; `/player` hydrates those rows and offers an upload path for legacy ownerless local player characters.
+- Server-backed player characters are omitted from browser localStorage serialization so cross-device player character access comes from Supabase, not per-browser storage.
 - Player-owned local character sheets hydrate from matching Supabase campaign/session snapshots through both initial fetch and realtime `campaign_characters` subscriptions, so reward deltas applied by the DM appear on the player's own character sheet.
 - DM campaign character views can hydrate a selected non-owned campaign sheet through the same visible campaign-character path, while player flow still filters visible player characters by signed-in account owner.
 
@@ -53,7 +55,7 @@ Live DM/player coordination now has an optional Supabase-backed session layer. L
 - Rewards use deltas and clamp nonnegative tracked resources.
 - Campaign membership is currently managed by Supabase user UUID.
 - Profile bootstrap tolerates both the current `profiles.id` schema and older `profiles.user_id` schemas.
-- Player character ownership is keyed by Supabase user id in live-session contexts; legacy local-only player characters without an owner id remain visible to avoid deleting old offline work.
+- Player character ownership is keyed by Supabase user id. Legacy local-only player characters without an owner id are no longer treated as normal signed-in player characters; they are migration candidates from `/player`.
 
 ## Deferred / Open
 

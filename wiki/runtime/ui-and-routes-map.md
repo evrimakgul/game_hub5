@@ -3,7 +3,7 @@ title: UI And Routes Map
 topic: runtime
 kind: map
 status: active
-updated: 2026-05-13
+updated: 2026-05-14
 confidence: high
 ---
 
@@ -46,7 +46,7 @@ Supporting component clusters:
 - `src/routes/PlayerCharacterPage.tsx` owns the fixed dark dashboard character sheet for player, DM-readonly, and DM-editable view modes.
 - `src/components/player-character/*` owns character-sheet sections, knowledge UI, history, powers, inventory/loadout interactions, and the player-sheet auction-house entry button.
 - `/player/character` now presents three visual zones: top read-only identity/resources/combat/resistances, middle compact summaries, and a bottom tab workspace for Stats, Skills, Powers, Inventory, Knowledge, History, and Notes.
-- `/player` filters visible player characters by signed-in account owner when live auth is configured.
+- `/player` hydrates signed-in player characters from Supabase account rows, filters visible player characters by signed-in account owner, and exposes upload for legacy local-only player characters.
 - `/player/character` redirects away from another player's owned sheet in player mode; DM readonly/editable routes can still inspect campaign characters.
 - `/player/character` also listens for visible Supabase campaign-character snapshot changes when live auth is configured, so owner player sheets and explicitly viewed DM campaign sheets can update from realtime rows.
 - The `Inventory` workspace owns both detailed loadout slot controls and non-equipped inventory item actions; the middle loadout summary opens that same tab.

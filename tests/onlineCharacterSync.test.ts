@@ -2,11 +2,16 @@ import assert from "node:assert/strict";
 
 import { PLAYER_CHARACTER_TEMPLATE } from "../src/config/characterTemplate.ts";
 import {
+  attachPlayerCharacterMetadata,
   attachCampaignCharacterMetadata,
+  mergePlayerCharacters,
   mergeVisibleCampaignCharacters,
 } from "../src/lib/onlineCharacterSync.ts";
 import type { CharacterRecord } from "../src/types/character.ts";
-import type { CampaignCharacterRecord } from "../src/types/realtimeSession.ts";
+import type {
+  CampaignCharacterRecord,
+  PlayerCharacterRecord,
+} from "../src/types/realtimeSession.ts";
 import { runTestSuite } from "./harness.ts";
 
 function createSheet(name: string) {
@@ -30,8 +35,57 @@ function createCampaignCharacter(
   };
 }
 
+function createPlayerCharacter(
+  overrides: Partial<PlayerCharacterRecord> = {}
+): PlayerCharacterRecord {
+  return {
+    id: overrides.id ?? "player-character-1",
+    characterId: overrides.characterId ?? "character-1",
+    ownerUserId: overrides.ownerUserId ?? "user-1",
+    displayName: overrides.displayName ?? "Remote",
+    sheetPayload: overrides.sheetPayload ?? createSheet("Remote"),
+    createdAt: overrides.createdAt ?? "2026-05-12T09:00:00.000Z",
+    updatedAt: overrides.updatedAt ?? "2026-05-12T10:00:00.000Z",
+  };
+}
+
 export async function runOnlineCharacterSyncTests(): Promise<void> {
   await runTestSuite("onlineCharacterSync", [
+    {
+      name: "mergePlayerCharacters replaces account-owned player sheets from Supabase",
+      run: () => {
+        const local: CharacterRecord = {
+          id: "character-1",
+          ownerRole: "player",
+          ownerUserId: "user-1",
+          sheet: createSheet("Local"),
+        };
+
+        const merged = mergePlayerCharacters({
+          localCharacters: [local],
+          playerCharacters: [createPlayerCharacter({ sheetPayload: createSheet("Remote") })],
+        });
+
+        assert.equal(merged.length, 1);
+        assert.equal(merged[0]?.sheet.name, "Remote");
+        assert.equal(merged[0]?.ownerUserId, "user-1");
+      },
+    },
+    {
+      name: "attachPlayerCharacterMetadata links migrated local sheets to the account",
+      run: () => {
+        const local: CharacterRecord = {
+          id: "character-1",
+          ownerRole: "player",
+          sheet: createSheet("Local"),
+        };
+        const linked = attachPlayerCharacterMetadata(local, createPlayerCharacter());
+
+        assert.equal(linked.sheet.name, "Local");
+        assert.equal(linked.ownerUserId, "user-1");
+        assert.equal(linked.onlineSheetUpdatedAt, "2026-05-12T10:00:00.000Z");
+      },
+    },
     {
       name: "mergeVisibleCampaignCharacters attaches campaign metadata and latest owned sheet",
       run: () => {
